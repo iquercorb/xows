@@ -1,0 +1,331 @@
+{
+  "Loading...":
+  "",
+  
+  "Login":
+  "",
+  
+  "Please enter your username and password":
+  "",
+  
+  "Login automatically":
+  "",
+
+  "Account creation":
+  "",
+  
+  "Please enter new account username and password":
+  "",
+  
+  "Username":
+  "",
+  
+  "Password":
+  "",
+  
+  "Connect":
+  "",
+
+  "Register a new account":
+  "",
+
+  "Register":
+  "",
+  
+  "Login with an existing account":
+  "",
+  
+  "Connecting...":
+  "",
+  
+  "Error":
+  "",
+  
+  "Warning":
+  "",
+  
+  "Success":
+  "",
+  
+  "Information":
+  "",
+  
+  "OK":
+  "",
+  
+  "Congratulation !":
+  "",
+  
+  "The account":
+  "",
+  
+  "was successfully created.":
+  "",
+  
+  "You can now login using":
+  "",
+  
+  "as username.":
+  "",
+  
+  "Socket connection error":
+  "",
+  
+  "Server closed the socket":
+  "",
+  
+  "Incomplete JID (undefined domain)":
+  "",
+  
+  "Invalid server framing":
+  "",
+  
+  "Server closed the stream":
+  "",
+  
+  "Server thrown a stream error":
+  "",
+  
+  "Unable to find a suitable authentication mechanism":
+  "",
+  
+  "Server does not provide required stream features":
+  "",
+  
+  "Wrong username or password":
+  "",
+  
+  "Authentication failure":
+  "",
+  
+  "Server integrity check failed":
+  "",
+  
+  "Resource bind failure":
+  "",
+  
+  "Session establishment failure":
+  "",
+  
+  "Chatrooms":
+  "",
+  
+  "Chatroom list":
+  "",
+  
+  "Contacts":
+  "",
+  
+  "Contact list":
+  "",
+  
+  "Add contact":
+  "",
+  
+  "Create room":
+  "",
+  
+  "Moderators":
+  "",
+  
+  "Participants":
+  "",
+  
+  "Send a message":
+  "",
+  
+  "Add an emoji":
+  "",
+  
+  "Uploading":
+  "",
+  
+  "Upload a file":
+  "",
+  
+  "Upload failed":
+  "",
+  
+  "Abort":
+  "",
+  
+  "Close":
+  "",
+  
+  "Cancel":
+  "",
+  
+  "at":
+  "",
+  
+  "Allow":
+  "",
+  
+  "Deny":
+  "",
+  
+  "Send a message to":
+  "",
+  
+  "is currently writing":
+  "",
+  
+  "and":
+  "",
+  
+  "other(s)":
+  "",
+  
+  "are currently writing":
+  "",
+  
+  "No status defined":
+  "",
+  
+  "Indicate a status":
+  "",
+  
+  "Start of history":
+  "",
+  
+  "New messages":
+  "",
+  
+  "Disconnect":
+  "",
+  
+  "Do Not Disturb":
+  "",
+  
+  "Extended Away":
+  "",
+  
+  "Away":
+  "",
+  
+  "Available":
+  "",
+  
+  "Available For Chat":
+  "",
+  
+  "Add contact":
+  "",
+  
+  "Enter the JID address of the contact to add":
+  "",
+  
+  "Add this contact to your contact list ?":
+  "",
+  
+  "user@domain.tld":
+  "",
+  
+  "Add":
+  "",
+  
+  "Please enter a valid JID address in the form: user@domain.tld":
+  ""
+  
+  "Create chatroom":
+  "",
+  
+  "Enter the chatroom name and a nickname":
+  "",
+  
+  "chatroom":
+  "",
+  
+  "nickname":
+  "",
+  
+  "Join":
+  "",
+  
+  "Save":
+  "",
+  
+  "Configure room...":
+  "",
+  
+  "Set room subject...":
+  "",
+  
+  "Chatoom configuration":
+  "",
+  
+  "Enter new subject for the room":
+  "",
+  
+  "Room informations":
+  "",
+
+  "Room access":
+  "",
+
+  "Other options":
+  "",
+
+  "Title:":
+  "",
+
+  "Description:":
+  "",
+
+  "Persistent":
+  "",
+
+  "Public":
+  "",
+
+  "Password:":
+  "",
+
+  "Allow only members":
+  "",
+
+  "Moderated":
+  "",
+
+  "Occupants address visible for:":
+  "",
+
+  "Moderators only":
+  "",
+
+  "Anyone":
+  "",
+  
+  "History length:":
+  "",
+  
+  "Default history messages:":
+  "",
+
+  "Enable archiving":
+  "",
+
+  "Edit visit card...":
+  "",
+
+  "Set avatar picture...":
+  "",
+  
+  "Visit card":
+  "",
+  
+  "Enter a custom nickname and choose avatar image":
+  "",
+  
+  "Nickname:":
+  "",
+
+  "My Nickname":
+  "",
+  
+  "Avatar image:":
+  "",
+  
+  "Data in open access":
+  ""
+}

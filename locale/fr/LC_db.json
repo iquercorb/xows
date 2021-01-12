@@ -1,0 +1,331 @@
+{
+  "Loading...":
+  "Chargement...",
+  
+  "Login":
+  "Connexion",
+  
+  "Please enter your username and password":
+  "Entrez votre nom d'utilisateur et votre mot de passe",
+  
+  "Login automatically":
+  "Se connecter automatiquement",
+
+  "Account creation":
+  "Creation de compte",
+  
+  "Please enter new account username and password":
+  "Entrez le nom d'utilisateur et le mot de passe du nouveau compte",
+
+  "Username":
+  "Nom d'utilisateur",
+  
+  "Password":
+  "Mot de passe",
+  
+  "Connect":
+  "Connexion",
+  
+  "Register a new account":
+  "Créer un nouveau compte",
+  
+  "Register":
+  "Inscription",
+  
+  "Login with an existing account":
+  "Se connecter avec un compte existant",
+  
+  "Connecting...":
+  "Connexion...",
+  
+  "Error":
+  "Erreur",
+  
+  "Warning":
+  "Alerte",
+  
+  "Success":
+  "Succès",
+  
+  "Information":
+  "Information",
+  
+  "OK":
+  "OK",
+  
+  "Congratulation !":
+  "Félicitations !",
+  
+  "The account":
+  "Le compte",
+  
+  "was successfully created.":
+  "a été créé avec succès.",
+  
+  "You can now login using":
+  "Vous pouvez maintenant vous connecter en utilisant",
+  
+  "as username.":
+  "comme nom d'utilisateur.",
+  
+  "Socket connection error":
+  "Erreur de connexion du socket",
+  
+  "Server closed the socket":
+  "Le serveur a fermé le socket",
+  
+  "Incomplete JID (undefined domain)":
+  "JID incomplet (domaine non défini)",
+  
+  "Invalid server framing":
+  "Cadrage de serveur non valide",
+  
+  "Server closed the stream":
+  "Le serveur a fermé le flux",
+  
+  "Server thrown a stream error":
+  "Le serveur a renvoyé une erreur de flux",
+  
+  "Unable to find a suitable authentication mechanism":
+  "Impossible de trouver un mécanisme d'authentification approprié",
+  
+  "Server does not provide required stream features":
+  "Le serveur ne fournit pas les fonctionnalités de flux requises",
+  
+  "Wrong username or password":
+  "Nom d'utilisateur ou mot de passe incorrect",
+  
+  "Authentication failure":
+  "Échec d'authentification",
+  
+  "Server integrity check failed":
+  "Échec de la vérification de l'intégrité du serveur",
+  
+  "Resource bind failure":
+  "Échec de liaison de ressource",
+  
+  "Session establishment failure":
+  "Échec d'établissement de session",
+  
+  "Chatrooms":
+  "Salons",
+  
+  "Chatroom list":
+  "Liste des salons",
+  
+  "Contacts":
+  "Contacts",
+  
+  "Contact list":
+  "List des contacts",
+  
+  "Add contact":
+  "Ajouter un contact",
+  
+  "Create room":
+  "Créer un salon",
+  
+  "Moderators":
+  "Modérateurs",
+  
+  "Participants":
+  "Participants",
+  
+  "Send a message":
+  "Envoyer un message",
+  
+  "Add an emoji":
+  "Ajouter un emoji",
+  
+  "Uploading":
+  "Envois",
+  
+  "Upload a file":
+  "Envoyer un fichier",
+  
+  "Upload failed":
+  "Echec de l'envoi",
+  
+  "Abort":
+  "Annuler",
+  
+  "Close":
+  "Fermer",
+  
+  "Cancel":
+  "Annuler",
+  
+  "at":
+  "à",
+  
+  "Allow":
+  "Accepter",
+  
+  "Deny":
+  "Refuser",
+  
+  "Send a message to":
+  "Envoyer un message à",
+  
+  "is currently writing":
+  "est en train d'écrire",
+  
+  "and":
+  "et",
+  
+  "other(s)":
+  "autre(s)",
+  
+  "are currently writing":
+  "sont en train d'écrire",
+  
+  "No status defined":
+  "Aucun statut défini",
+  
+  "Indicate a status":
+  "Indiquez un statut",
+  
+  "Start of history":
+  "Début de l'historique",
+  
+  "New messages":
+  "Nouveaux messsages",
+  
+  "Disconnect":
+  "Se déconnecter",
+  
+  "Do Not Disturb":
+  "Ne Pas Déranger",
+  
+  "Extended Away":
+  "Longue Absence",
+  
+  "Away":
+  "Absent",
+  
+  "Available":
+  "Disponible",
+  
+  "Available For Chat":
+  "Disponible pour discuter",
+  
+  "Add contact":
+  "Ajouter un contact",
+  
+  "Enter the JID address of the contact to add":
+  "Entrez l'adresse JID du contact à ajouter",
+  
+  "Add this contact to your contact list ?":
+  "Ajouter ce contact à votre list de contacts ?",
+  
+  "user@domain.tld":
+  "utilisateur@domaine.tld",
+  
+  "Add":
+  "Ajouter",
+  
+  "Please enter a valid JID address in the form: user@domain.tld":
+  "Veuillez entrer une adresse JID valide sous la forme: utilisateur@domaine.tld",
+  
+  "Create chatroom":
+  "Créer un salon",
+  
+  "Enter the chatroom name and a nickname":
+  "Entrez le nom du salon et un pseudonyme",
+  
+  "chatroom":
+  "salon",
+  
+  "nickname":
+  "pseudonyme",
+  
+  "Join":
+  "Rejoindre",
+  
+  "Save":
+  "Enregistrer",
+  
+  "Configure room...":
+  "Configurer le salon...",
+  
+  "Set room subject...":
+  "Définir le sujet du salon...",
+  
+  "Chatoom configuration":
+  "Configuration du salon",
+  
+  "Enter new subject for the room":
+  "Entrez un nouveau sujet pour le salon",
+  
+  "Room informations":
+  "Informations du salon",
+
+  "Room access":
+  "Accès au salon",
+
+  "Other options":
+  "Autres options",
+
+  "Title:":
+  "Titre:",
+
+  "Description:":
+  "Description:",
+
+  "Persistent":
+  "Persistant",
+
+  "Public":
+  "Public",
+
+  "Password:":
+  "Mod de pass:",
+
+  "Allow only members":
+  "Seulement autorisé aux membres",
+
+  "Moderated":
+  "Modéré",
+
+  "Occupants address visible for:":
+  "Adresses occupants visibles pour:",
+
+  "Moderators only":
+  "Modérateurs seuls",
+
+  "Anyone":
+  "N'importe qui",
+  
+  "History length:":
+  "Taille de l'historique:",
+  
+  "Default history messages:":
+  "Messages d'historiques par défault:",
+  
+  "Enable archiving":
+  "Activer l'archivage",
+
+  "Edit visit card...":
+  "Editer la carte de visite...",
+
+  "Set avatar picture...":
+  "Définir l'image d'avatar...",
+  
+  "Visit card":
+  "Carte de visite",
+  
+  "Enter a custom nickname and choose avatar image":
+  "Entrez un pseudonyme personnalisé et choisissez une image d'avatar",
+  
+  "Nickname:":
+  "Pseudonyme:",
+  
+  "My Nickname":
+  "Mon Pseudonyme",
+  
+  "Avatar image:":
+  "Image d'avatar:",
+  
+  "Data in open access":
+  "Données en libre accès"
+}

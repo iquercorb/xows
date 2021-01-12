@@ -1,0 +1,70 @@
+<div class="dialog-box dialog-visible">
+  <h1 class="dialog-title">${'Chatoom configuration'}</h1>
+  <div id="room_edit" class="hidden">
+    <div class="dialog-text">
+      ${'Enter new subject for the room'}
+    </div>
+    <input id="room_subj" placeholder="${'subject'}" type="text"></input>
+  </div>
+  <div id="room_conf" class="hidden">
+    <br>
+    <div class="dialog-text">${'Room informations'}</div>
+    <div class="dialog-field">
+      <label for="room_titl">${'Title:'}</label>
+      <input id="room_titl" placeholder="${'title'}" type="text"></input>
+    </div>
+    <div class="dialog-field">
+      <label for="room_desc">${'Description:'}</label>
+      <input id="room_desc" placeholder="${'description'}" type="text"></input>
+    </div>
+    <div class="dialog-field">
+      <input id="room_pers" type="checkbox"/></input> 
+      <label for="room_pers">${'Persistent'}</label>
+    </div>
+    <div class="dialog-field">
+      <input id="room_publ" type="checkbox"/></input>
+      <label for="room_publ">${'Public'}</label>
+    </div>
+    <br>
+    <div class="dialog-text">${'Room access'}</div>
+    <!--
+    <div class="dialog-field">
+      <input id="room_priv" type="checkbox"/></input>  
+      <label for="room_pass">${'Password:'}</label>
+      <input id="room_pass" placeholder="${'password'}" type="text" disabled></input>
+    </div>
+    -->
+    <div class="dialog-field">
+      <input id="room_mbon" type="checkbox"/></input>
+      <label for="room_mbon">${'Allow only members'}</label>
+    </div>
+    <div class="dialog-field">
+      <input id="room_modo" type="checkbox"/></input>
+      <label for="room_modo">${'Moderated'}</label>
+    </div>
+    <div class="dialog-field">
+      <label for="room_jids">${'Occupants address visible for:'}</label>
+      <select id="room_jids">
+        <option value="moderators">${'Moderators only'}</option>
+        <option value="anyone">${'Anyone'}</option>
+      </select>
+    </div>
+    <br>
+    <div class="dialog-text">${'Other options'}</div>
+    <div class="dialog-field">
+      <label for="room_hmax">${'History length:'}</label>
+      <input id="room_hmax" type="number" min="0" max="60" step="5"/></input>
+    </div>
+    <div class="dialog-field">
+      <label for="room_hdef">${'Default history messages:'}</label>
+      <input id="room_hdef" type="number" min="0" max="60" step="5"/></input>
+    </div>
+    <div class="dialog-field">
+      <input id="room_arch" type="checkbox"/></input>
+      <label for="room_arch">${'Enable archiving'}</label>
+    </div>
+  </div>
+  <button class="dialog-btn" id="room_canc">${'Cancel'}</button>
+  <button class="dialog-btn" id="room_subm">${'Save'}</button>
+</div>
+

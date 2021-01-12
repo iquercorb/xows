@@ -1,0 +1,139 @@
+<div class="column-wrap">
+  <div id="col_lside" class="column-side">
+    <div class="column-frame">
+      <!-- Head Frame -->
+      <div id="rost_tabs" class="frame-head rost-head">
+        <button id="cont_tab" class="rost-tab cont-tab tab-enabled" title="${'Contacts'}">
+          <figure></figure>
+          <div class="tab-unrd hidden" id="cont_unrd"></div>
+          <div class="tab-subs hidden" id="subs_unrd"></div>
+        </button>
+        <button id="room_tab" class="rost-tab room-tab" title="${'Chatrooms'}" disabled>
+          <figure></figure>
+          <div id="room_unrd" class="tab-unrd hidden"></div>
+        </button>
+      </div>
+      <!-- Main Frame -->
+      <div class="frame-main user-rost">
+        <div id="cont_list" class="cont-list" >
+          <ul id="subs_ul">
+            <li class="rost-subs" name="" is_instance></li>
+          </ul>
+          <ul id="cont_ul">
+            <li class="rost-cont" name="" is_instance></li>
+          </ul>
+          <div class="rost-action">
+            <button id="cont_add" class="cont-add" title="${'Add contact'}"></button>
+          </div>
+        </div>
+        <div id="room_list" class="room-list hidden">
+          <ul id="room_ul">
+            <li class="rost-room" name="" is_instance></li>
+          </ul>
+          <div class="rost-action">
+            <button id="room_add" class="room-add" title="${'Create room'}"></button>
+            <button id="room_upd" class="room-upd" title="${'Refresh list'}"></button>
+          </div>
+        </div>
+      </div>
+      <!-- Froot Frame -->
+      <div class="frame-foot user-fram">
+        <div id="drop_show" class="menu-drop drop-show hidden" has_template></div>
+        <button id="menu_user" class="user-edit"  title="${'Edit informations'}"></button>
+        <div id="menu_show" class="cont-icon">
+          <figure id="user_avat"></figure>
+          <div id="user_show" class="cont-show" show="-1"></div>
+        </div>
+        <div class="cont-info">
+          <div id="user_name" class="cont-name"></div>
+          <div id="user_addr" class="cont-addr"></div>
+        </div>
+        <input id="user_stat" class="user-stat" placeholder="${'No status defined'}"></input>
+      </div>
+    </div>
+  </div>
+  <!-- Left Handle -->
+  <div id="hnd_lside" class="column-handle"></div>
+  <!-- Middle Collumn -->
+  <div id="col_main" class="column-main">
+    <div id="chat_fram" class="column-frame hidden">
+      <!-- Head Frame -->
+      <div class="frame-head chat-head">
+        <div class="head-info">
+          <div id="chat_titl" class="chat-titl"></div>
+          <div id="chat_addr" class="chat-addr"></div>
+          <div id="chat_show" class="chat-show hidden"  show="-1"></div>
+        </div>
+        <div id="head_meta" class="head-meta"></div>
+        <div class="head-acts">
+          <button id="chat_noti" class="chat-noti hidden"></button>
+          <button id="chat_mute" class="chat-mute"></button>
+          <button id="chat_menu" class="chat-menu"></button>
+        </div>
+      </div>
+      <!-- Main Frame -->
+      <div id="chat_main" class="frame-main chat-main">
+        <div id="chat_hist" class="chat-hist">
+
+          <div id="hist_beg" class="hist-bound hist-start"></div>
+          <ul id="hist_ul">
+            <li class="mesg-full" is_instance></li>
+            <li class="mesg-aggr" is_instance></li>
+          </ul>
+          <div id="hist_end" class="hist-bound hist-end hidden"></div>
+          <div id="hist_new" class="hist-new hidden">
+            ${'New messages'}
+          </div>
+        </div>
+      </div>
+      <!-- Froot Frame -->
+      <div class="frame-foot chat-foot">
+        <div class="chat-panl">
+          <button id="chat_upld" class="chat-upld" title="${'Upload a file'}">
+            <figure></figure>
+            <input id="chat_file" class="chat-file" type="file"></input>
+          </button>
+          
+          <!-- <input id="chat_send" class="chat-send" title="${'Send a message'}" spellcheck></input> -->
+          <!-- <textarea id="chat_send" class="chat-send" title="${'Send a message'}" spellcheck></textarea> -->
+          
+          <div id="send_wrap" class="send-wrap send-phld" placeholder="${'Send a message'}">
+            <div id="send_edit" class="send-edit" contenteditable spellcheck></div>
+          </div>
+        
+          <button id="menu_emoj" class="chat-emoj" title="${'Add an emoji'}">
+            <figure></figure>
+          </button>
+        </div>
+        <div id="chat_stat" class="chat-stat hidden"></div>
+        <div id="drop_emoj" class="drop-emoj hidden" has_template></div>
+      </div>
+    </div>
+  </div>
+  <!-- Right Handle -->
+  <div id="hnd_rside" class="column-handle"></div>
+  <!-- Right Collumn -->
+  <div id="col_rside" class="column-side column-hide">
+    <!-- Head Frame -->
+    <div class="column-frame">
+      <div class="frame-head room-head">
+        <div class="head-acts">
+          <button id="menu_room" class="room-menu" disabled></button>
+          <div id="drop_room" class="menu-drop hidden" has_template></div>
+        </div>
+        <div id="head_meta" class="head-meta"></div> 
+      </div>
+      <!-- Main Frame -->
+      <div id="occu_list" class="frame-main occu-list">
+        <h4>${'Moderators'}</h4>
+        <ul id="modo_ul">
+        </ul>
+        <h4>${'Participants'}</h4>
+        <ul id="memb_ul">
+          <div class="room-occu" name="" is_instance></div>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+

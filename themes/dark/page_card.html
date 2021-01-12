@@ -1,0 +1,24 @@
+<div class="dialog-box dialog-visible">
+  <h1 class="dialog-title">${'Visit card'}</h1>
+  <div class="dialog-text">
+    ${'Enter a custom nickname and choose avatar image'}
+  </div>
+  <div class="dialog-field">
+    <label for="card_name">${'Nickname:'}</label>
+    <input id="card_name" placeholder="${'My Nickname'}" type="text"/></input>
+  </div>
+  <div class="dialog-avat">
+    <label for="card_file">${'Avatar image:'}</label>
+    <div id="card_icon" class="card-icon" name="${'Select image'}">
+      <div id="card_avat" class="card-avat"></div>
+    </div>
+    <input id="card_file" class="card-file" type="file" accept="image/*"></input>
+  </div>
+  <div class="dialog-field">
+    <input id="card_open" type="checkbox" checked></input>
+    <label for="card_open">${'Data in open access'}</label>
+  </div>
+  <button id="card_canc" class="dialog-btn">${'Cancel'}</button>
+  <button id="card_subm" class="dialog-btn">${'Save'}</button>
+</div>
+
