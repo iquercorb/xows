@@ -47,6 +47,15 @@ XMPP Client Features
 - Partial support for Multi-User Chat (XEP-0045)
 
 
+Screenshots
+----------------------------------------------------------------------------------------
+![Login page](snapshots/01.jpg)
+
+![User chat](snapshots/02.jpg)
+
+![Chat room](snapshots/03.jpg)
+
+
 Version history
 ----------------------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.8.7 - (Dec. 2020)
+ *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -51,7 +51,7 @@
  */
 const XOWS_APP_NAME = "Xows";
 const XOWS_APP_VERS = "0.9.0";
-const XOWS_APP_NODE = "http://www.dest1.org/xows";
+const XOWS_APP_NODE = "https://github.com/sedenion/xows";
 
 /**
  * Xows Logo SVG path
