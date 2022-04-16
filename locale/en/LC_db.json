@@ -227,13 +227,8 @@
   "Contact address (JID)":
   "",
   
-<<<<<<< HEAD
-  "Please enter a valid JID address in the form: user@domain.tld":
-  "",
-=======
   "XMPP/Jabber address":
   "Adresse XMPP/Jabber",
->>>>>>> da85399 (Code refactoring and GUI enhancement)
   
   "The contact will be added but unavailable, a subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
   "",
