@@ -1,77 +1,11 @@
 {
-  "Loading...":
+  "Unsername already exists":
   "",
   
-  "Login":
-  "",
-  
-  "Please enter your username and password":
-  "",
-  
-  "Login automatically":
+  "Username contains illegal characters":
   "",
 
-  "Account creation":
-  "",
-  
-  "Please enter new account username and password":
-  "",
-  
-  "Username":
-  "",
-  
-  "Password":
-  "",
-  
-  "Connect":
-  "",
-
-  "Register a new account":
-  "",
-
-  "Register":
-  "",
-  
-  "Login with an existing account":
-  "",
-  
-  "Connecting...":
-  "",
-  
-  "Error":
-  "",
-  
-  "Warning":
-  "",
-  
-  "Success":
-  "",
-  
-  "Information":
-  "",
-  
-  "OK":
-  "",
-  
-  "Congratulation !":
-  "",
-  
-  "The account":
-  "",
-  
-  "was successfully created.":
-  "",
-  
-  "You can now login using":
-  "",
-  
-  "as username.":
-  "",
-  
   "Socket connection error":
-  "",
-  
-  "Server closed the socket":
   "",
   
   "Incomplete JID (undefined domain)":
@@ -97,7 +31,7 @@
   
   "Authentication failure":
   "",
-  
+
   "Server integrity check failed":
   "",
   
@@ -107,22 +41,115 @@
   "Session establishment failure":
   "",
   
-  "Chatrooms":
+  "Login":
   "",
   
-  "Chatroom list":
+  "Please enter your username and password":
+  "",
+  
+  "Login automatically":
+  "",
+  
+  "Username":
+  "",
+  
+  "Password":
+  "",
+  
+  "Connect":
+  "",
+
+  "Register a new account":
+  "",
+
+  "Account creation":
+  "",
+  
+  "Please enter new account username and password":
+  "",
+  
+  "I am not a robot":
+  "",
+
+  "Login with an existing account":
+  "",
+  
+  "Register":
+  "",
+  
+  "It remains unsaved changes":
+  "",
+  
+  "Save changes":
+  "",
+  
+  "Reset":
+  "",
+  
+  "Loading...":
+  "",
+  
+  "Connecting...":
+  "",
+  
+  "Please wait...":
   "",
   
   "Contacts":
   "",
   
-  "Contact list":
+  "Add a contact":
   "",
   
-  "Add contact":
+  "Resend authorization request":
   "",
   
-  "Create room":
+  "Remove contact":
+  "",
+  
+  "Awaiting authorization":
+  "",
+  
+  "Chat rooms":
+  "",
+  
+  "Join a chat room":
+  "",
+  
+  "Query public chat rooms list":
+  "",
+  
+  "Edit user profile":
+  "",
+  
+  "No status defined":
+  "",
+  
+  "Available For Chat":
+  "",
+  
+  "Available":
+  "",
+  
+  "Away":
+  "",
+  
+  "Extended Away":
+  "",
+  
+  "Do Not Disturb":
+  "",
+  
+  "Disconnect":
+  "",
+
+  "New messages":
+  "",
+  
+  "Upload a file":
+  "",
+  
+  "Add an emoji":
   "",
   
   "Moderators":
@@ -131,37 +158,49 @@
   "Participants":
   "",
   
-  "Send a message":
+  "Add this contact":
   "",
   
-  "Add an emoji":
+  "Room name":
   "",
   
-  "Uploading":
+  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
   "",
   
-  "Upload a file":
+  "Join Room (create it if does not exist)":
   "",
   
-  "Upload failed":
+  "Join":
   "",
   
-  "Abort":
+  "The Room will be created, do you want to configure it ?":
   "",
   
-  "Close":
+  "Join now":
   "",
   
-  "Cancel":
+  "Configure":
+  "",
+
+  "Request subscription authorisation":
   "",
   
-  "at":
+  "Allow contact subscription ?":
   "",
   
   "Allow":
   "",
   
   "Deny":
+  "",
+  
+  "New authorization request was sent":
+  "",
+  
+  "Add contact and request authorisation ?":
+  "",
+  
+  "Remove contact and revoke authorization ?":
   "",
   
   "Send a message to":
@@ -179,70 +218,33 @@
   "are currently writing":
   "",
   
-  "No status defined":
-  "",
-  
-  "Indicate a status":
-  "",
-  
   "Start of history":
   "",
   
-  "New messages":
+  "at":
+  "",
+
+  "Contact address (JID)":
   "",
   
-  "Disconnect":
-  "",
-  
-  "Do Not Disturb":
-  "",
-  
-  "Extended Away":
-  "",
-  
-  "Away":
-  "",
-  
-  "Available":
-  "",
-  
-  "Available For Chat":
-  "",
-  
-  "Add contact":
-  "",
-  
-  "Enter the JID address of the contact to add":
-  "",
-  
-  "Add this contact to your contact list ?":
-  "",
-  
-  "user@domain.tld":
-  "",
-  
-  "Add":
-  "",
-  
+<<<<<<< HEAD
   "Please enter a valid JID address in the form: user@domain.tld":
   "",
+=======
+  "XMPP/Jabber address":
+  "Adresse XMPP/Jabber",
+>>>>>>> da85399 (Code refactoring and GUI enhancement)
   
-  "Create chatroom":
+  "The contact will be added but unavailable, a subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
   "",
   
-  "Enter the chatroom name and a nickname":
+  "Add contact and request authorisation":
   "",
   
-  "chatroom":
-  "",
-  
-  "nickname":
+  "Submit":
   "",
   
   "Join":
-  "",
-  
-  "Save":
   "",
   
   "Configure room...":
@@ -254,78 +256,111 @@
   "Chatoom configuration":
   "",
   
-  "Enter new subject for the room":
+  "Room subject":
   "",
   
   "Room informations":
   "",
 
-  "Room access":
+  "Access &amp; moderation":
   "",
 
   "Other options":
   "",
 
-  "Title:":
+  "Room title":
   "",
 
-  "Description:":
+  "Room description":
   "",
 
-  "Persistent":
-  "",
-
-  "Public":
-  "",
-
-  "Password:":
-  "",
-
-  "Allow only members":
-  "",
-
-  "Moderated":
-  "",
-
-  "Occupants address visible for:":
-  "",
-
-  "Moderators only":
-  "",
-
-  "Anyone":
+  "Persistent Room":
   "",
   
-  "History length:":
-  "",
-  
-  "Default history messages:":
+  "In contrary to a temporary Room, a persistent Room is not destroyed if the last occupant exits":
   "",
 
-  "Enable archiving":
-  "",
-
-  "Edit visit card...":
-  "",
-
-  "Set avatar picture...":
+  "Public Room":
   "",
   
-  "Visit card":
-  "",
-  
-  "Enter a custom nickname and choose avatar image":
-  "",
-  
-  "Nickname:":
+  "A public Room can be found by any user through normal means such as searching and service discovery":
   "",
 
+  "Room password":
+  "",
+
+  "Allowed to members only":
+  "",
+  
+  "A user cannot enter without being on the Room's member list":
+  "",
+
+  "Moderated Room":
+  "",
+  
+  "Only those with \"voice\" are allowed to send messages to all occupants":
+  ""
+  
+  "Occupants anonymity":
+  "",
+  
+  "In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address":
+  "",
+  
+  "Semi-Anonymous":
+  "",
+
+  "Non-Anonymous":
+  "",
+  
+  "History max length":
+  "",
+  
+  "This is the maximum count of messages to store in the message history":
+  "",
+  
+  "History default length":
+  "",
+  
+  "This is the default count of history messages to deliver to user when enters the Room":
+  "",
+
+  "Enable messages archiving":
+  "",
+
+  "Stores messages in persistent way using Message Archive Management":
+  "",
+  
+  "User profile":
+  "",
+  
+  "Display name":
+  "",
+  
   "My Nickname":
   "",
-  
-  "Avatar image:":
+
+  "Avatar image":
+  "",
+
+  "Profile access":
   "",
   
-  "Data in open access":
+  "Profile data in open access":
+  "",
+  
+  "Uploading file":
+  "",
+  
+  "Error":
+  "",
+  
+  "Abort":
+  "",
+  
+  "Close":
+  "",
+  
+  "Cancel":
   ""
 }

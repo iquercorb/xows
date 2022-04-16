@@ -1,16 +1,21 @@
 <li id="dummy" class="rost-cont"> 
-  <div class="cont-icon">
+  <!--
+  <div class="peer-icon">
     <figure></figure>
-    <div class="cont-show" show="-1"></div>
-    <div class="cont-unrd hidden"></div>
+    <div class="peer-show" show="-1"></div>
+    <div class="peer-unrd hidden"></div>
   </div>
-  <div class="cont-info">
-    <div class="cont-name"></div>
-    <p class="cont-stat"></p>
+  -->
+  <figure>
+    <div class="peer-show" show="-1"></div>
+    <div class="peer-unrd hidden"></div>
+  </figure>
+  <div class="peer-info">
+    <h3></h3>
+    <p></p>
   </div>
-  <div class="cont-acts">
-    <button class="cont-subs hidden" title="${'Resend authorization request'}">
-      <img src="xows/themes/dark/images/subscribe.svg"></img>
-    </button>
+  <div class="peer-acts">
+    <button name="subs" class="peer-subs hidden" title="${'Resend authorization request'}"></button>
+    <button name="rem" class="peer-rem" title="${'Remove contact'}"></button>
   </div>
 </li>

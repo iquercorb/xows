@@ -1,11 +1,11 @@
-<div class="dialog-box dialog-visible">
-  <h1 class="dialog-title">${'Create chatroom'}</h1>
-  <div id="join_text" class="dialog-text">
-    ${'Enter the room ID to join or create'}
-  </div>
-  <input id="join_room" placeholder="${'chatroom'}" type="text"/></input>
+<header>
+  <h1>${'Join a chat room'}</h1>
+</header>
+<fieldset>
+  <h2>${'Room name'}</h2>
+  <input id="join_room" placeholder="${'chat room'}" type="text"/></input>
   <!--<input id="join_pass" placeholder="${'password'}" type="password"/></input>-->
-  <button id="join_canc" class="dialog-btn">${'Cancel'}</button>
-  <button id="join_subm" class="dialog-btn">${'Join'}</button>
-</div>
+  <p>${'If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.'}</p>
+</fieldset>
+
 

@@ -1,16 +1,15 @@
-<div class="dialog-box dialog-visible">
-  <h1 class="dialog-title">${'Account creation'}</h1>
-  <div id="regi_text" class="dialog-text">
-    ${'Please enter new account username and password'}
-  </div>
-  <input id="regi_user" placeholder="${'Username'}" type="text"/></input>
-  <input id="regi_pass" placeholder="${'Password'}" type="password"/></input>
-  <div class="dialog-field">
-    <button id="regi_capt" class="captcha"></button>
-    <label class="dialog-text">${'I am not a robot'}</label>
-  </div>
-  <button id="regi_subm" class="dialog-btn" >${'Register'}</button>
-  <a id="regi_canc" class="dialog-text">
-    ${'Login with an existing account'}
-  </a>
-</div>
+<header>
+  <h1>${'Account creation'}</h1>
+</header>
+<p>${'Please enter new account username and password'}</p>
+<form id="regi_form">
+  <input id="regi_user" placeholder="${'Username'}" type="text"     autocomplete="username"/>
+  <input id="regi_pass" placeholder="${'Password'}" type="password" autocomplete="new-password"/>
+</form>
+<fieldset>
+  <div id="regi_capt" class="captcha"></div>
+  <label>${'I am not a robot'}</label>
+</fieldset>
+<button id="regi_subm" class="btn-valid" type="submit">${'Register'}</button>
+<a id="regi_canc">${'Login with an existing account'}</a>
+

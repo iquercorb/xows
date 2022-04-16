@@ -1,0 +1,33 @@
+<!--<h1 class="page-title">${'Account settings'}</h1>
+<h2>${'XMPP Account'}</h2>
+<fieldset>
+  <input id="card_addr" type="text" disabled/>
+</fieldset>
+<p>${'Change account password.'}</p>
+<fieldset>
+  <input id="card_olpw" placeholder="${'Current password'}" type="text"/>
+  <input id="card_nwpw" placeholder="${'New password'}" type="text"/>
+  <button id="card_psch" class="btn-valid" disabled>${'Apply'}</button>
+</fieldset>-->
+<header>
+  <h1>${'User profile'}</h1>
+</header>
+<fieldset>
+  <h2>${'Display name'}</h2>
+  <input id="card_name" placeholder="${'My Nickname'}" type="text"/>
+</fieldset>
+<fieldset>
+  <h2>${'Avatar image'}</h2>
+  <div id="card_icon" class="card-icon">
+    <div id="card_avat" class="card-avat"></div>
+  </div>
+  <button id="card_avch" class="btn-valid">${'Change'}</button>
+  <button id="card_avrm" class="btn-abort">${'Remove'}</button>
+  <input id="card_file" class="card-file" type="file" accept="image/*"/>
+</fieldset>
+<fieldset>
+  <h2>${'Profile access'}</h2>
+  <label class="switch"><input id="card_open" type="checkbox" checked><span></span></label>
+  <label for="card_open">${'Profile data in open access'}</label>
+</fieldset>  
+

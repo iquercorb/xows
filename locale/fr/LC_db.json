@@ -1,78 +1,12 @@
 {
-  "Loading...":
-  "Chargement...",
+  "Unsername already exists":
+  "Ce nom d'utilisateur existe déjà",
   
-  "Login":
-  "Connexion",
-  
-  "Please enter your username and password":
-  "Entrez votre nom d'utilisateur et votre mot de passe",
-  
-  "Login automatically":
-  "Se connecter automatiquement",
-
-  "Account creation":
-  "Creation de compte",
-  
-  "Please enter new account username and password":
-  "Entrez le nom d'utilisateur et le mot de passe du nouveau compte",
-
-  "Username":
-  "Nom d'utilisateur",
-  
-  "Password":
-  "Mot de passe",
-  
-  "Connect":
-  "Connexion",
-  
-  "Register a new account":
-  "Créer un nouveau compte",
-  
-  "Register":
-  "Inscription",
-  
-  "Login with an existing account":
-  "Se connecter avec un compte existant",
-  
-  "Connecting...":
-  "Connexion...",
-  
-  "Error":
-  "Erreur",
-  
-  "Warning":
-  "Alerte",
-  
-  "Success":
-  "Succès",
-  
-  "Information":
-  "Information",
-  
-  "OK":
-  "OK",
-  
-  "Congratulation !":
-  "Félicitations !",
-  
-  "The account":
-  "Le compte",
-  
-  "was successfully created.":
-  "a été créé avec succès.",
-  
-  "You can now login using":
-  "Vous pouvez maintenant vous connecter en utilisant",
-  
-  "as username.":
-  "comme nom d'utilisateur.",
+  "Username contains illegal characters":
+  "Le nom d'utilisateur contient des caractères non autorisés",
   
   "Socket connection error":
   "Erreur de connexion du socket",
-  
-  "Server closed the socket":
-  "Le serveur a fermé le socket",
   
   "Incomplete JID (undefined domain)":
   "JID incomplet (domaine non défini)",
@@ -107,62 +41,167 @@
   "Session establishment failure":
   "Échec d'établissement de session",
   
-  "Chatrooms":
-  "Salons",
+  "Login":
+  "Connexion",
   
-  "Chatroom list":
-  "Liste des salons",
+  "Please enter your username and password":
+  "Entrez votre nom d'utilisateur et votre mot de passe",
+  
+  "Login automatically":
+  "Se connecter automatiquement",
+
+  "Username":
+  "Nom d'utilisateur",
+  
+  "Password":
+  "Mot de passe",
+  
+  "Connect":
+  "Se connecter",
+  
+  "Register a new account":
+  "Créer un nouveau compte",
+
+  "Account creation":
+  "Creation de compte",
+  
+  "Please enter new account username and password":
+  "Entrez le nom d'utilisateur et le mot de passe du nouveau compte",
+  
+  "I am not a robot":
+  "Je ne suis pas un robot",
+  
+  "Register":
+  "S'enregistrer",
+  
+  "Login with an existing account":
+  "Se connecter avec un compte existant",
+  
+  "It remains unsaved changes":
+  "Il reste des modifications non enregistrées",
+  
+  "Save changes":
+  "Enregistrer les modifications",
+  
+  "Reset":
+  "Réinitialiser",
+  
+  "Loading...":
+  "Chargement...",
+  
+  "Connecting...":
+  "Connexion...",
+  
+  "Please wait...":
+  "Veuillez patienter...",
   
   "Contacts":
   "Contacts",
-  
-  "Contact list":
-  "List des contacts",
-  
-  "Add contact":
+
+  "Add a contact":
   "Ajouter un contact",
   
-  "Create room":
-  "Créer un salon",
+  "Resend authorization request":
+  "Renvoyer une demande d'autorisation",
   
+  "Remove contact":
+  "Supprimer le contact",
+  
+  "Awaiting authorization":
+  "En attente d'autorisation",
+  
+  "Chat rooms":
+  "Salons",
+  
+  "Join a chat room":
+  "Rejoindre un salon",
+   
+  "Query public chat rooms list":
+  "Interroger la liste des salons publics",
+  
+  "Edit user profile":
+  "Modifier le profil utilisateur",
+  
+  "No status defined":
+  "Aucun statut défini",
+
+  "Available For Chat":
+  "Disponible pour discuter",
+  
+  "Available":
+  "Disponible",
+  
+  "Away":
+  "Absent",
+  
+  "Extended Away":
+  "Longue Absence",
+  
+  "Do Not Disturb":
+  "Ne Pas Déranger",
+  
+  "Disconnect":
+  "Se déconnecter",
+  
+  "New messages":
+  "Nouveaux messsages",
+  
+  "Upload a file":
+  "Envoyer un fichier",
+  
+  "Add an emoji":
+  "Ajouter un emoji",
+
   "Moderators":
   "Modérateurs",
   
   "Participants":
   "Participants",
   
-  "Send a message":
-  "Envoyer un message",
+  "Add this contact":
+  "Ajouter ce contact",
   
-  "Add an emoji":
-  "Ajouter un emoji",
+  "Room name":
+  "Nom du Salon",
   
-  "Uploading":
-  "Envois",
+  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
+  "Si le Salon spécifié n'existe pas et si le serveur ne limite pas la création des Salons, un nouveau Salon sera créé avec vous en tant que propriétaire.",
   
-  "Upload a file":
-  "Envoyer un fichier",
+  "Join Room (create it if does not exist)":
+  "Rejoindre le Salon (le créer si il n'existe pas)",
   
-  "Upload failed":
-  "Echec de l'envoi",
+  "Join":
+  "Rejoindre",
   
-  "Abort":
-  "Annuler",
+  "The Room will be created, do you want to configure it ?":
+  "Le Salon va être créé, voulez-vous le configurer ?",
   
-  "Close":
-  "Fermer",
+  "Join now":
+  "Rejoindre maintenant",
   
-  "Cancel":
-  "Annuler",
+  "Configure":
+  "Configurer",
   
-  "at":
-  "à",
+  "Request subscription authorisation":
+  "Faire une demande d'autorisation d'abonnement",
+  
+  "Allow contact subscription ?":
+  "Autoriser l'abonnement du contact ?",
   
   "Allow":
-  "Accepter",
+  "Autoriser",
   
   "Deny":
   "Refuser",
+
+  "New authorization request was sent":
+  "Une nouvelle demande d'autorisation a été envoyée",
+
+  "Add contact and request authorisation ?":
+  "Ajouter le contact et faire une demande d'autorisation ?",
+  
+  "Remove contact and revoke authorization ?":
+  "Supprimer le contact et révoquer l'autorisation ?",
   
   "Send a message to":
   "Envoyer un message à",
@@ -179,71 +218,26 @@
   "are currently writing":
   "sont en train d'écrire",
   
-  "No status defined":
-  "Aucun statut défini",
-  
-  "Indicate a status":
-  "Indiquez un statut",
-  
   "Start of history":
   "Début de l'historique",
   
-  "New messages":
-  "Nouveaux messsages",
+  "at":
+  "à",
   
-  "Disconnect":
-  "Se déconnecter",
+  "Contact address (JID)":
+  "Adresse (JID) du Contact",
   
-  "Do Not Disturb":
-  "Ne Pas Déranger",
+  "XMPP/Jabber address":
+  "Adresse XMPP/Jabber",
   
-  "Extended Away":
-  "Longue Absence",
+  "The contact will be added but unavailable, a subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
+  "Le contact sera ajouté mais indisponible, une demande d'autorisation d'abonnement sera envoyée à l'adresse indiquée, vous devrez attendre que le contact autorise cette demande.",
   
-  "Away":
-  "Absent",
+  "Add contact and request authorisation":
+  "Ajouter le contact et faire une demande d'autorisation",
   
-  "Available":
-  "Disponible",
-  
-  "Available For Chat":
-  "Disponible pour discuter",
-  
-  "Add contact":
-  "Ajouter un contact",
-  
-  "Enter the JID address of the contact to add":
-  "Entrez l'adresse JID du contact à ajouter",
-  
-  "Add this contact to your contact list ?":
-  "Ajouter ce contact à votre list de contacts ?",
-  
-  "user@domain.tld":
-  "utilisateur@domaine.tld",
-  
-  "Add":
-  "Ajouter",
-  
-  "Please enter a valid JID address in the form: user@domain.tld":
-  "Veuillez entrer une adresse JID valide sous la forme: utilisateur@domaine.tld",
-  
-  "Create chatroom":
-  "Créer un salon",
-  
-  "Enter the chatroom name and a nickname":
-  "Entrez le nom du salon et un pseudonyme",
-  
-  "chatroom":
-  "salon",
-  
-  "nickname":
-  "pseudonyme",
-  
-  "Join":
-  "Rejoindre",
-  
-  "Save":
-  "Enregistrer",
+  "Submit":
+  "Envoyer",
   
   "Configure room...":
   "Configurer le salon...",
@@ -254,78 +248,111 @@
   "Chatoom configuration":
   "Configuration du salon",
   
-  "Enter new subject for the room":
-  "Entrez un nouveau sujet pour le salon",
+  "Room subject":
+  "Sujet du Salon",
   
   "Room informations":
-  "Informations du salon",
+  "Informations du Salon",
 
-  "Room access":
-  "Accès au salon",
+  "Access &amp; moderation":
+  "Accès &amp; modération",
 
   "Other options":
   "Autres options",
 
-  "Title:":
-  "Titre:",
+  "Room title":
+  "Titre du Salon",
 
-  "Description:":
-  "Description:",
+  "Room description":
+  "Description du Salon",
 
-  "Persistent":
-  "Persistant",
-
-  "Public":
-  "Public",
-
-  "Password:":
-  "Mod de pass:",
-
-  "Allow only members":
-  "Seulement autorisé aux membres",
-
-  "Moderated":
-  "Modéré",
-
-  "Occupants address visible for:":
-  "Adresses occupants visibles pour:",
-
-  "Moderators only":
-  "Modérateurs seuls",
-
-  "Anyone":
-  "N'importe qui",
+  "Persistent Room":
+  "Salon persistant",
   
-  "History length:":
-  "Taille de l'historique:",
-  
-  "Default history messages:":
-  "Messages d'historiques par défault:",
-  
-  "Enable archiving":
-  "Activer l'archivage",
+  "In contrary to a temporary Room, a persistent Room is not destroyed if the last occupant exits":
+  "Contrairement à une pièce temporaire, une pièce persistante n'est pas détruite si le dernier occupant en sort",
 
-  "Edit visit card...":
-  "Editer la carte de visite...",
+  "Public Room":
+  "Salon publique",
+  
+  "A public Room can be found by any user through normal means such as searching and service discovery":
+  "Une salle publique peut être trouvée par n'importe quel utilisateur par des moyens normaux tels que la recherche et la découverte de services",
 
-  "Set avatar picture...":
-  "Définir l'image d'avatar...",
+  "Room password":
+  "Mot de passe de Salon",
+
+  "Allowed to members only":
+  "Autorisé aux membres uniquement",
   
-  "Visit card":
-  "Carte de visite",
+  "A user cannot enter without being on the Room's member list":
+  "Un utilisateur ne peut pas entrer sans être sur la liste des membres de la salle",
   
-  "Enter a custom nickname and choose avatar image":
-  "Entrez un pseudonyme personnalisé et choisissez une image d'avatar",
+  "Moderated Room":
+  "Salon modéré",
+
+  "Only those with \"voice\" are allowed to send messages to all occupants":
+  "Seuls ceux qui ont la \"voix\" sont autorisés à envoyer des messages à tous les occupants",
+
+  "Occupants anonymity":
+  "Anonymat des occupants",
   
-  "Nickname:":
-  "Pseudonyme:",
+  "In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address":
+  "Dans une salle non anonyme, l'adresse des occupants est exposée aux autres, sinon seuls les modérateurs peuvent voir l'adresse des occupants",
+
+  "Semi-Anonymous":
+  "Semi-Anonyme",
+
+  "Non-Anonymous":
+  "Non-Anonyme",
+  
+  "History max length":
+  "Taille maximum de l'historique",
+  
+  "This is the maximum count of messages to store in the message history":
+  "Il s'agit du nombre maximal de messages à stocker dans l'historique des messages",
+  
+  "History default length":
+  "Taille par default de l'historique",
+  
+  "This is the default count of history messages to deliver to user when enters the Room":
+  "Il s'agit du nombre par défaut de messages d'historique à remettre à l'utilisateur lorsqu'il entre dans la salle",
+  
+  "Enable messages archiving":
+  "Activer l'archivage des messages",
+  
+  "Stores messages in persistent way using Message Archive Management":
+  "Stocke les messages de manière persistante à l'aide de Message Archive Management",
+  
+  "User profile":
+  "Profil d'utilisateur",
+  
+  "Display name":
+  "Nom d'affichage",
   
   "My Nickname":
-  "Mon Pseudonyme",
+  "Mon pseudonyme",
+
+  "Avatar image":
+  "Image d'avatar",
   
-  "Avatar image:":
-  "Image d'avatar:",
+  "Profile access":
+  "Accès au profile",
   
-  "Data in open access":
-  "Données en libre accès"
+  "Profile data in open access":
+  "Données du profile en accès libre",
+
+  "Uploading file":
+  "Envoi du fichier",
+  
+  "Error":
+  "Erreur",
+  
+  "Abort":
+  "Annuler",
+  
+  "Close":
+  "Fermer",
+  
+  "Cancel":
+  "Annuler"
 }
