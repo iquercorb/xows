@@ -1,68 +1,67 @@
 <div id="main_wrap">
   <!-- App Collumn -->
-  <div id="main_tabs" class="main-col-tabs">
-    <div class="main-col-frame">
+  <div id="main_tabs" class="col-tabs">
+    <div class="col-frame">
       <!-- Head Frame (App Menu button) -->
-      <div class="main-row-head">
-        <button id="app_menu" class="app-menu" title="" disabled></button>
+      <div class="row-head">
+        <button id="app_menu" class="app-menu" title=""></button>
       </div>
       <!-- Main Frame (Roster Tabs selector) -->
-      <div id="rost_tabs" class="main-row-main rost-tabs">
-        <button id="tab_cont" class="tab-cont tab-enabled" title="${'Contacts'}">
-          <div class="tab-unrd hidden" id="cont_unrd"></div>
-          <div class="tab-subs hidden" id="subs_unrd"></div>
+      <div id="rost_tabs" class="row-main rost-tabs">
+        <button id="tab_cont" class="tab-cont ENABLED" title="${'Contacts'}">
+          <div id="cont_unrd" class="UNRD-SPOT HIDDEN"></div>
+          <div id="subs_unrd" class="UNRD-SPOT HIDDEN"></div>
         </button>
         <button id="tab_room" class="tab-room" title="${'Chat rooms'}" disabled>
-          <div id="room_unrd" class="tab-unrd hidden"></div>
+          <div id="room_unrd" class="UNRD-SPOT HIDDEN"></div>
         </button>
       </div>
       <!-- Froot Frame (App About button) -->
-      <div class="main-row-foot logo-fram">
-
+      <div class="row-foot logo-fram">
       </div>
     </div>
   </div>
   <!-- Left Collumn (User Roster) -->
-  <div id="main_coll" class="main-col-side">
+  <div id="main_coll" class="col-side">
     <!-- Left Panel -->
-    <div class="main-col-frame">
+    <div class="col-frame">
       <!-- Head Frame (Roster Title bar) -->
-      <div id="rost_head" class="main-row-head rost-head">
+      <div id="rost_head" class="row-head rost-head">
         <div id="rost_titl" class="head-info">${'Contacts'}</div>
         <div class="head-meta"></div>
         <div class="head-acts">
-          <button id="room_upd" class="room-upd hidden" title="${'Query public chat rooms list'}"></button>
-          <button id="room_add" class="room-add hidden" title="${'Join a chat room'}"></button>
+          <button id="room_upd" class="room-upd HIDDEN" title="${'Query public chat rooms list'}"></button>
+          <button id="room_add" class="room-add HIDDEN" title="${'Join a chat room'}"></button>
           <button id="cont_add" class="peer-add" title="${'Add a contact'}"></button>
         </div>
       </div>
       <!-- Main Frame (Roster Lists) -->
-      <div class="main-row-main user-rost">
-        <div id="cont_list" class="cont-list" >
+      <div class="row-main user-rost">
+        <div id="cont_list" class="cont-list list-scroll" >
           <ul id="subs_ul">
-            <li class="rost-subs" name="" is_instance></li>
+            <li class="ROST-SUBS" name="" is_instance></li>
           </ul>
           <ul id="cont_ul">
-            <li class="rost-cont" name="" is_instance></li>
+            <li class="ROST-CONT" name="" is_instance></li>
           </ul>
         </div>
-        <div id="room_list" class="room-list hidden">
+        <div id="room_list" class="room-list list-scroll HIDDEN">
           <h4 class="list-title">${'Favorite rooms'}</h4>
           <ul id="favs_ul">
           </ul>
           <h4 class="list-title">${'Public rooms'}</h4>
           <ul id="room_ul">
-            <li class="rost-room" name="" is_instance></li>
+            <li class="ROST-ROOM" name="" is_instance></li>
           </ul>
         </div>
       </div>
       <!-- Froot Frame (User profil) -->
-      <div class="main-row-foot user-fram">
-        <div id="drop_show" class="menu-drop drop-show hidden" has_template></div>
+      <div class="row-foot user-fram">
+        <div id="drop_show" class="menu-drop drop-show HIDDEN" has_template></div>
         <div class="user-cont">
           <div id="menu_show" class="peer-icon">
             <figure id="user_avat">
-              <div id="user_show" class="peer-show" show="-1"></div>
+              <div id="user_show" class="PEER-SHOW" show="-1"></div>
             </figure>
           </div>
           <div class="peer-info">
@@ -73,47 +72,47 @@
             <button id="menu_user" class="user-edit"  title="${'Edit user profile'}"></button>
           </div>
         </div>
-        <div id="user_stat" class="user-stat">
-          <input placeholder="${'No status defined'}"></input>
-          <button></button>
-        </div>
+        <!-- <div class="user-stat"> -->
+          <input id="user_stat" class="user-stat" placeholder="${'No status defined'}"></input>
+          <!-- <button></button> -->
+        <!-- </div> -->
       </div>
     </div>
     <!-- Left Handle -->
-    <div id="main_hndl" class="main-col-hnd"></div>
+    <div id="main_hndl" class="col-hnd"></div>
   </div>
   <!-- Middle Collumn (Chat Window) -->
-  <div id="main_colc" class="main-col-cntr">
-    <div id="chat_fram" class="main-col-frame hidden">
+  <div id="main_colc" class="col-cntr">
+    <div id="chat_fram" class="col-frame HIDDEN">
       <!-- Head Frame (Chat Title bar) -->
-      <div class="main-row-head chat-head">
+      <div class="row-head chat-head">
         <div class="head-info">
           <div id="chat_titl" class="chat-titl"></div>
           <div id="chat_addr" class="chat-addr"></div>
-          <div id="chat_show" class="chat-show hidden"  show="-1"></div>
+          <div id="chat_show" class="chat-show HIDDEN" show="-1"></div>
         </div>
-        <div id="head_meta" class="head-meta"></div>
+        <div id="chat_meta" class="head-meta"></div>
         <div class="head-acts">
-          <button id="chat_noti" class="chat-noti hidden"></button>
-          <button id="chat_mute" class="chat-mute"></button>
-          <button id="chat_menu" class="chat-menu" disabled></button>
+          <button id="chat_conf" class="chat-conf" title="${'Room configuration'}"></button>
+          <button id="chat_noti" class="CHAT-NOTI" title="${'Enable notifications'}"></button>
+          <button id="chat_occu" class="chat-occu" title="${'Room occupants list'}"></button>
         </div>
       </div>
       <!-- Main Frame (Chat Messages history) -->
-      <div id="chat_main" class="main-row-main chat-main">
+      <div id="chat_main" class="row-main chat-main">
         <div id="chat_hist" class="chat-hist">
 
           <div id="hist_beg" class="hist-bound hist-start"></div>
           <ul id="hist_ul">
-            <li class="mesg-full" is_instance></li>
-            <li class="mesg-aggr" is_instance></li>
+            <li class="MESG-FULL" is_instance></li>
+            <li class="MESG-AGGR" is_instance></li>
           </ul>
-          <div id="hist_end" class="hist-bound hist-end hidden"></div>
-          <div id="hist_new" class="hist-new hidden">
-            ${'New messages'}
+          <div id="hist_end" class="hist-bound hist-end HIDDEN"></div>
+          <div id="hist_new" class="hist-new HIDDEN">
+            ${'New unread messages'}
           </div>
         </div>
-        <div id="hist_upld" class="hist-upld hidden">
+        <div id="hist_upld" class="hist-upld HIDDEN">
           <section>
             <h3>${'Uploading file'}</h3>
             <p id="upld_text"></p>
@@ -127,46 +126,50 @@
         </div>
       </div>
       <!-- Froot Frame (Chat Input Panel) -->
-      <div class="main-row-foot chat-foot">
+      <div class="row-foot chat-foot">
         <div class="chat-panl">
           <button id="chat_upld" class="chat-upld" title="${'Upload a file'}">
             <input id="chat_file" class="chat-file" type="file"></input>
           </button>
-          <div id="send_wrap" class="send-wrap send-phld" placeholder="${'Send a message'}">
+          <div id="send_wrap" class="send-wrap SEND-PHLD" placeholder="${'Send a message'}">
             <div id="send_edit" class="send-edit" contenteditable spellcheck></div>
           </div>
           <button id="menu_emoj" class="chat-emoj" title="${'Add an emoji'}">
-            <div id="drop_emoj" class="drop-emoj hidden" has_template></div>
+            <div id="drop_emoj" class="drop-emoj HIDDEN" has_template></div>
           </button>
         </div>
         <footer>
-          <div id="chat_stat" class="chat-stat hidden"></div>
+          <div id="chat_stat" class="chat-stat HIDDEN"></div>
         </footer> 
       </div>
     </div>
   </div>
   <!-- Right Collumn (Room Roster) -->
-  <div id="main_colr" class="main-col-side main-col-hide">
+  <div id="main_colr" class="col-side COL-HIDE">
     <!-- Right Handle -->
-    <div id="main_hndr" class="main-col-hnd"></div>
+    <div id="main_hndr" class="col-hnd"></div>
     <!-- Right Panel -->
-    <div class="main-col-frame">
+    <div class="col-frame">
       <!-- Head Frame (Room Title bar) -->
-      <div class="main-row-head room-head">
+      <div class="row-head room-head">
+        <div class="head-info">${'Occupants'}</div>
+        <div class="head-meta"></div> 
         <div class="head-acts">
-          <button id="menu_room" class="room-menu" disabled></button>
-          <div id="drop_room" class="menu-drop hidden" has_template></div>
+          <!--
+          <button id="room_edit" class="room-edit" title="${'Room configuration'}" disabled></button>
+          <button id="room_topc" class="room-topc" title="${'Change Room topic'}" disabled></button>
+          -->
         </div>
-        <div id="head_meta" class="head-meta"></div> 
+        
       </div>
       <!-- Main Frame (Room Occupants List) -->
-      <div id="occu_list" class="main-row-main occu-list">
+      <div id="occu_list" class="row-main occu-list list-scroll">
         <h4 class="list-title">${'Moderators'}</h4>
         <ul id="modo_ul">
         </ul>
         <h4 class="list-title">${'Participants'}</h4>
         <ul id="memb_ul">
-          <div class="room-occu" name="" is_instance></div>
+          <div class="ROOM-OCCU" name="" is_instance></div>
         </ul>
       </div>
     </div>

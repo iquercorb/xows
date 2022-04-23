@@ -83,7 +83,7 @@ function xows_init_login_user()
 /**
  * Function to automatically login using browser saved credential
  * 
- * @param   {object}  cred   Found credential to login.
+ * @param {object}  cred   Found credential to login.
  */
 function xows_init_login_auto(cred)
 {
@@ -158,8 +158,8 @@ function xows_init_onl10n()
  * Initialize and start the main_menucation using the specified parameters
  * and options.
  * 
- * @param   {string}  url       XMPP over WebSocket service URL
- * @param   {object}  options   Application option as dictionary object
+ * @param {string}  url       XMPP over WebSocket service URL
+ * @param {object}  options   Application option as dictionary object
  */
 function xows_init(options)
 {

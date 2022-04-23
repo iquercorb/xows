@@ -72,12 +72,12 @@ let xows_sck_fw_onclose = function() {};
  * - recv   : Socket received data.
  * - close  : Socket closed.
  * 
- * @param   {string}    type      Event type to assign callback to.
- * @param   {function}  callback  Function to set as callback.
+ * @param {string}    type      Event type to assign callback to.
+ * @param {function}  callback  Function to set as callback.
  */
 function xows_sck_set_callback(type, callback)
 {
-  if(!xows_is_func(callback))
+  if(!xows_isfunc(callback))
     return;
     
   switch(type.toLowerCase()) {
@@ -90,7 +90,7 @@ function xows_sck_set_callback(type, callback)
 /**
  * WebSocket object onerror callback.
  * 
- * @param   {object}  event   Error event
+ * @param {object}  event   Error event
  */
 function xows_sck_error(event)
 {
@@ -103,7 +103,7 @@ function xows_sck_error(event)
 /**
  * WebSocket object onclose callback.
  * 
- * @param   {object}  event   Close event
+ * @param {object}  event   Close event
  */
 function xows_sck_closed(event)
 {
@@ -144,7 +144,7 @@ function xows_sck_closed(event)
 /**
  * WebSocket object onopen callback.
  * 
- * @param   {object}  event   Open event
+ * @param {object}  event   Open event
  */
 function xows_sck_opened(event)
 {
@@ -157,7 +157,7 @@ function xows_sck_opened(event)
 /**
  * WebSocket object onmessage callback.
  * 
- * @param   {object}  event   Message event
+ * @param {object}  event   Message event
  */
 function xows_sck_recv(event)
 {
@@ -170,8 +170,8 @@ function xows_sck_recv(event)
 /**
  * Create a new WebSocket object and open connection.
  * 
- * @param   {string}    url        WS service URL
- * @param   {string[]}  protocols  Sub-protocols to select on WS service.
+ * @param {string}    url        WS service URL
+ * @param {string[]}  protocols  Sub-protocols to select on WS service.
  */
 function xows_sck_create(url, protocols)
 {
@@ -205,7 +205,7 @@ function xows_sck_destroy()
 /**
  * Send data to WebSocket socket.
  * 
- * @param   {string}  data    Text data to send.
+ * @param {string}  data    Text data to send.
  */
 function xows_sck_send(data)
 {

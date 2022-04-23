@@ -68,7 +68,7 @@ function xows_xml_escap_fnc(m) {return XOWS_XML_ESCAP_MAP[m];}
 /**
  * Rewrites the given string with XML escapes for reserved characters.
  * 
- * @param   {string}  str   String to be escaped.
+ * @param {string}  str   String to be escaped.
  * 
  * @return  {string}  Escaped string.
  */
@@ -85,7 +85,7 @@ function xows_xml_unesc_fnc(m) {return XOWS_XML_UNESC_MAP[m];}
 /**
  * Rewrites the given XML escaped string with proper ASCII charaters.
  * 
- * @param   {string} str    String to be unescaped.
+ * @param {string} str    String to be unescaped.
  * 
  * @return  {string} Unescaped string.
  */
@@ -100,8 +100,8 @@ function xows_xml_unesc(str)
  * The children data can be a single XML Element object, a DOMString, 
  * or an Array of the previous types.
  * 
- * @param   {object}              parent  Parent XML element object.
- * @param   {(object|string|[])}  child   Data to append as child.
+ * @param {object}              parent  Parent XML element object.
+ * @param {(object|string|[])}  child   Data to append as child.
  */
 function xows_xml_parent(parent, child)
 {
@@ -136,9 +136,9 @@ function xows_xml_parent(parent, child)
  * The children data can be a single XML Element object, a DOMString, 
  * or an Array of the previous types.
  * 
- * @param   {string}              name    Tag name.
- * @param   {object}              attr    Optional attributes as dictionary.
- * @param   {(object|string|[])}  child   Optional childrend data.
+ * @param {string}              name    Tag name.
+ * @param {object}              attr    Optional attributes as dictionary.
+ * @param {(object|string|[])}  child   Optional childrend data.
  *                    
  * @return  {object} The created XML Element object.
  */
@@ -168,9 +168,9 @@ function xows_xml_node(name, attr, child)
  * then replaced by the given one otherwise  a node is created with 
  * the given child.
  * 
- * @param   {object}              parent  Parent node where to search.
- * @param   {string}              name    Node Tag name to search.
- * @param   {object|string|[]}    child   Childrend data to set.
+ * @param {object}              parent  Parent node where to search.
+ * @param {string}              name    Node Tag name to search.
+ * @param {object|string|[]}    child   Childrend data to set.
  *                    
  * @return  {object} The found or created XML node.
  */
@@ -199,7 +199,7 @@ function xows_xml_edit(parent, name, child)
 /**
  * Serialize an XML Element object tree.
  *  
- * @param   {object}  node    XML Element object tree.
+ * @param {object}  node    XML Element object tree.
  *                    
  * @return  {string}  Resulting string.
  */
@@ -237,7 +237,7 @@ function xows_xml_serialize(node)
 /**
  * Parse the supplied XML data string to DOM object.
  *  
- * @param   {string}  str    Input string to parse as XML.
+ * @param {string}  str    Input string to parse as XML.
  *                    
  * @return  {object} Resuling DOM object.
  */
@@ -249,7 +249,7 @@ function xows_xml_parse(str)
 /**
  * Get inner text of an XML node.
  *  
- * @param   {object}  node    XML Element object to get inner text.
+ * @param {object}  node    XML Element object to get inner text.
  *                    
  * @return  {string} Node text content or empty string.
  */

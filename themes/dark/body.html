@@ -1,44 +1,51 @@
-<div id="scr_main" class="scr-main hidden" has_template>
-  <!-- main interface frame -->
+<div id="scr_main" class="scr-main HIDDEN" has_template>
+  <!-- main interface frame, defined in scr_main.html -->
 </div>
 
-<div id="scr_page" class="scr-page hidden">
+<div id="scr_page" class="scr-page HIDDEN">
   
-  <div class="page-col-wrap">
-    <div class="page-col-side">
+  <div class="page-wrap">
+    <div class="col-padd">
     </div>
     <!-- Middle Collumn -->
-    <div class="page-col-cntr">
-      <div id="page_cont" class="page page-back page-cont hidden" has_template></div>
-      <div id="page_user" class="page page-back page-user hidden" has_template></div>
-      <div id="page_join" class="page page-back page-join hidden" has_template></div>
-      <div id="page_room" class="page page-back page-room hidden" has_template></div>
-      <div id="page_auth" class="page page-back page-auth hidden" has_template></div>
-      <div id="page_regi" class="page page-back page-regi hidden" has_template></div>
-      <div id="page_wait" class="page page-wait hidden" has_template></div>
+    <div class="col-page">
+      <div id="page_cont" class="page page-back page-cont HIDDEN" has_template>
+      </div>
+      <div id="page_user" class="page page-back page-user HIDDEN" has_template>
+      </div>
+      <div id="page_join" class="page page-back page-join HIDDEN" has_template>
+      </div>
+      <div id="page_room" class="page page-back page-room HIDDEN" has_template>
+      </div>
+      <div id="page_auth" class="page page-back page-auth HIDDEN" has_template>
+      </div>
+      <div id="page_regi" class="page page-back page-regi HIDDEN" has_template>
+      </div>
+      <div id="page_wait" class="page page-wait HIDDEN" has_template>
+      </div>
     </div>
     <!-- Right Collumn -->
-    <div id="colr_exit" class="page-col-exit hidden">
+    <div id="colr_exit" class="col-exit HIDDEN">
       <button id="page_exit" class="btn-close">
     </div>
-    <div class="page-col-side">
+    <div class="col-padd">
     </div>
   </div>
 
 </div>
 
-<div id="scr_void" class="scr-void hidden">
+<div id="scr_void" class="scr-void HIDDEN">
   <!-- invisible frame to capture mouse click outside menus or dialogs -->
 </div>
 
-<dialog id="over_view" class="over-view hidden">
+<dialog id="over_view" class="over-view HIDDEN">
   <figure>
     <img id="view_img" src="">
     <a id="view_open" href="" target="_blank">${'Open in new tab'}</a>
   </figure>
 </dialog>
 
-<dialog id="over_mbox" class="over-mbox hidden">
+<dialog id="over_mbox" class="over-mbox HIDDEN">
   <p id="mbox_text"></p>
   <fieldset>
     <button id="mbox_abort" class="btn-abort"></button>

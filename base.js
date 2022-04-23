@@ -61,12 +61,12 @@ const XOWS_LOGO_SVG = new Path2D("M8.282 6.527l2.514 3.942c-2.33 1.463-3.431 3.5
 /**
  * Check whether the the given value matches the specified bitmask.
  *  
- * @param   {number}  value   Value to check bits.
- * @param   {number}  mask    Mask to test bits in value.
+ * @param {number}  value   Value to check bits.
+ * @param {number}  mask    Mask to test bits in value.
  * 
  * @return  {boolean} true if mask matches value, false otherwise
  */
-function xows_has_bits(value, mask)
+function xows_hasbits(value, mask)
 {
   return ((value & mask) === mask);
 }
@@ -74,11 +74,11 @@ function xows_has_bits(value, mask)
 /**
  * Check whether an object is a valid JavaScript function.
  *  
- * @param   {object}  obj     Object or variable to check.
+ * @param {object}  obj     Object or variable to check.
  * 
  * @return  {boolean} True if object is a function, false otherwise.
  */
-function xows_is_func(obj) {
+function xows_isfunc(obj) {
   return (obj && obj.constructor && obj.call && obj.apply);
 }
 
@@ -86,7 +86,7 @@ function xows_is_func(obj) {
  * Pseudo-random, seed based, number generation using the
  * Mulberry32 PRNG algorithm.
  * 
- * @param   {number}  seed   Seed to generate number.
+ * @param {number}  seed   Seed to generate number.
  * 
  * @return  {number}  Pseudo-random number between 0.0 and 1.0
  */
@@ -108,11 +108,11 @@ const XOWS_SIG_LOG = 2;
 /**
  * Output formated log string to javascript console.
  *  
- * @param   {number}  level       Verbose level.
- * @param   {string}  scope       Message origin, scope or context.
- * @param   {string}  message     Main content or title.
- * @param   {string}  [details]   Additional details.
- * @param   {string}  [color]     Color to apply to content.
+ * @param {number}  level       Verbose level.
+ * @param {string}  scope       Message origin, scope or context.
+ * @param {string}  message     Main content or title.
+ * @param {string}  [details]   Additional details.
+ * @param {string}  [color]     Color to apply to content.
  */
 function xows_log(level, scope, message, details, color)
 {
@@ -142,7 +142,7 @@ function xows_log(level, scope, message, details, color)
       if(style) {
         console.log(output, style); 
       } else {
-        console.log(output); 
+        console.log(output);
       }
       break;
     }
@@ -170,7 +170,7 @@ const XOWS_CMAP_B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
  * is anyway parsed as UTF-16) but is numerically valid and can be 
  * safely transposed char by char into an Uint8Array.
  * 
- * @param   {string}  str     DOMString (UTF-16) to encode.
+ * @param {string}  str     DOMString (UTF-16) to encode.
  * 
  * @return  {string}  New DOMString with UTF-8 values as characters.
  */
@@ -204,7 +204,7 @@ function xows_str_to_utf8(str)
  * Get the length in bytes of the given UTF-16 DOMstring as encoded 
  * to its UTF-8 equivalent.
  * 
- * @param   {string}  str     DOMString (UTF-16) to compute length.
+ * @param {string}  str     DOMString (UTF-16) to compute length.
  * 
  * @return  {string}  Encoded UTF-8 equivalent length in bytes.
  */
@@ -227,8 +227,8 @@ function xows_str_bytes_len(str)
  * If len parameter is defined, the function returns an Uint8Array of 
  * the specified length instead of the required to store data.
  * 
- * @param   {string}  str     Input string to encode.
- * @param   {number}  len     Optional length of the returned Uint8Array.
+ * @param {string}  str     Input string to encode.
+ * @param {number}  len     Optional length of the returned Uint8Array.
  * 
  * @return  {Uint8Array} UTF-8 encoded string as Uint8Array
  */
@@ -263,7 +263,7 @@ function xows_str_to_bytes(str, len)
  * Convert bytes values to a string of the same length
  * with same values but as ASCII characters.
  * 
- * @param   {Uint8Array}  uint8   Input bytes data.
+ * @param {Uint8Array}  uint8   Input bytes data.
  * 
  * @return  {string} Resulting DOMString object.
  */
@@ -284,7 +284,7 @@ function xows_bytes_to_str(uint8)
 /**
  * Encodes bytes data to base64.
  * 
- * @param   {Uint8Array}  uint8   Input bytes data.
+ * @param {Uint8Array}  uint8   Input bytes data.
  * 
  * @return  {string} Resulting base64 string.
  */
@@ -315,7 +315,7 @@ function xows_bytes_to_b64(uint8)
 /**
  * Get the hexadecimal representation of the given bytes data.
  * 
- * @param   {Uint8Array}  uint8  Input bytes data.
+ * @param {Uint8Array}  uint8  Input bytes data.
  * 
  * @return  {string} Hexadecimal representation string.
  */
@@ -362,7 +362,7 @@ function xows_gen_uuid()
  * Get hexadecimal representation of a randomly 
  * generated number bytes sequence.
  *  
- * @param   {number}  len   Bytes sequence length in bytes.
+ * @param {number}  len   Bytes sequence length in bytes.
  * 
  * @return  {string} Hexadecimal representation string.
  */
@@ -385,7 +385,7 @@ function xows_gen_nonce_hex(len)
  * Generates random alphanumerical ASCII string of the 
  * specified length.
  *  
- * @param   {number}  len   Length of the string to generate.
+ * @param {number}  len   Length of the string to generate.
  * 
  * @return  {string}  Randomly generated alphanumeric string.
  */
@@ -403,7 +403,7 @@ function xows_gen_nonce_asc(len)
 /**
  * Generate MD5 Hash of a given string or bytes array.
  * 
- * @param   {(string|Uint8Array)}   input  Input data to compute hash.
+ * @param {(string|Uint8Array)}   input  Input data to compute hash.
  *               
  * @return  {Uint8Array}  16 bytes MD5 hash
  */
@@ -532,7 +532,7 @@ function xows_hash_md5(input)
 /**
  * Generate SHA-1 Hash of a given string or bytes array.
  * 
- * @param   {(string|Uint8Array)}   input  Input data to compute hash.
+ * @param {(string|Uint8Array)}   input  Input data to compute hash.
  *               
  * @return  {Uint8Array}  20 bytes SHA-1 hash
  */
@@ -627,8 +627,8 @@ function xows_hash_sha1(input)
 /**
  * Calculate the HMAC-SHA1 using the given key and data.
  * 
- * @param   {(string|Uint8Array)}   key  Key to calculate HMAC.
- * @param   {(string|Uint8Array)}   data Data to calculate HMAC.
+ * @param {(string|Uint8Array)}   key  Key to calculate HMAC.
+ * @param {(string|Uint8Array)}   data Data to calculate HMAC.
  *               
  * @return  {Uint8Array}  20 bytes of the HMAC-SHA1 result.
  */
@@ -666,7 +666,7 @@ function xows_hmac_sha1(key, data)
 /**
  * Generate SHA-256 Hash of a given string or bytes array.
  * 
- * @param   {(string|Uint8Array)}   input  Input data to compute hash.
+ * @param {(string|Uint8Array)}   input  Input data to compute hash.
  *               
  * @return  {Uint8Array}  32 bytes SHA-256 hash
  */
@@ -786,12 +786,12 @@ const XOWS_REG_TEST_JID = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 /**
  * Check whether given string is a valid JID
  * 
- * @param   {string}  str  String to check.
+ * @param {string}  str  String to check.
  * 
  * @return  {boolean}  True if supplied string is a valid 
  *                     JID, false otherwise
  */
-function xows_is_jid(str)
+function xows_isjid(str)
 {
   return XOWS_REG_TEST_JID.test(str);
 }
@@ -801,7 +801,7 @@ function xows_is_jid(str)
  * 
  * 'user@sever/resource' => 'user@sever'
  * 
- * @param   {string}  jid  JID to get the bare part.
+ * @param {string}  jid  JID to get the bare part.
  * 
  * @return  {string}  Extracted bare JID
  */
@@ -816,7 +816,7 @@ function xows_jid_to_bare(jid)
  * 
  * 'user@sever/resource' => 'user'
  * 
- * @param   {string}  jid  JID to get the bare part.
+ * @param {string}  jid  JID to get the bare part.
  * 
  * @return  {string}  Extracted bare JID
  */
@@ -831,7 +831,7 @@ function xows_jid_to_user(jid)
  * 
  * * 'user@sever/resource' => 'resource'
  * 
- * @param   {string}  jid  JID to get the nick or resource part.
+ * @param {string}  jid  JID to get the nick or resource part.
  * 
  * @return  {string}  Extracted nick, resource or null if unavailable.
  */
@@ -844,7 +844,7 @@ function xows_jid_to_nick(jid)
 /**
  * Get the data part of the given Data-URL string.
  * 
- * @param   {string}  url    Data-URL to parse.
+ * @param {string}  url    Data-URL to parse.
  * 
  * @return  {string}  Parsed data or null.
  */
@@ -860,7 +860,7 @@ function xows_url_to_data(url)
  * Get the decoded data from the given Data-URL string, 
  * assuming data is base64 encoded.
  * 
- * @param   {string}  url    Data-URL to parse.
+ * @param {string}  url    Data-URL to parse.
  * 
  * @return  {string}  Decoded data as bytes sting or null.
  */
@@ -875,7 +875,7 @@ function xows_url_to_bytes(url)
 /**
  * Get the MIME type part of the given Data-URL string.
  * 
- * @param   {string}  url    Data-URL to parse.
+ * @param {string}  url    Data-URL to parse.
  * 
  * @return  {string}  Parsed MIME type or null.
  */
@@ -901,7 +901,7 @@ function xows_html_escap_fnc(m) {return XOWS_HTML_ESCAP_MAP[m];}
  * Rewrites the given string with HTML escapes for reserved or special 
  * characters.
  * 
- * @param   {string}  str   String to be escaped.
+ * @param {string}  str   String to be escaped.
  * 
  * @return  {string}  Escaped string.
  */
@@ -918,7 +918,7 @@ function xows_html_escape(str)
  * Remove empty or useless text nodes such as CR/LF 
  * from DOM tree.
  * 
- * @param   {object}  node    Root node of DOM tree to clean.
+ * @param {object}  node    Root node of DOM tree to clean.
  * 
  * @return  {object}  DOM node passed as parameter.
  */
@@ -944,10 +944,10 @@ function xows_clean_dom(node)
 /**
  *  Draw an icon with the specified paramers
  * 
- * @param   {number}  size     Icon size in pixels
- * @param   {Image}   image    Optional background image
- * @param   {string}  name     Optional name to generate background and Letter
- * @param   {string}  font     Optional font for center letter
+ * @param {number}  size     Icon size in pixels
+ * @param {Image}   image    Optional background image
+ * @param {string}  name     Optional name to generate background and Letter
+ * @param {string}  font     Optional font for center letter
  *  
  * @return  {string}  Resulting icon as Data-URL string.
  */

@@ -29,7 +29,7 @@ let xows_sasl_get_request = function() {return "";};
  * initialized mechanism.This function is intended to be replaced
  * by the proper SASL mechanism.
  * 
- * @param   {string}  challenge    Received SASL challenge.
+ * @param {string}  challenge    Received SASL challenge.
  * 
  * @return  {string}  SASL challenge response string
  */
@@ -40,7 +40,7 @@ let xows_sasl_get_response = function(challenge) {return "";};
  * initialized mechanism. This function is intended to be replaced
  * by the proper SASL mechanism.
  * 
- * @param   {string}  signature    Received SASL signature.
+ * @param {string}  signature    Received SASL signature.
  * 
  * @return  {string}  True if integrity check succeed, false otherwise
  */
@@ -87,7 +87,7 @@ function xows_sasl_plain_req()
 /**
  * SASL auth PLAIN mechanism challenge dummy function. 
  * 
- * @param   {string}  challenge   Received SASL challenge.
+ * @param {string}  challenge   Received SASL challenge.
  * 
  * @return  {string}  Nothing (PLAIN mechanism does not require challenge)
  */
@@ -99,7 +99,7 @@ function xows_sasl_plain_resp(challenge)
 /**
  * SASL auth PLAIN mechanism integrity check dummy function. 
  * 
- * @param   {string}  signature   Received SASL signature.
+ * @param {string}  signature   Received SASL signature.
  * 
  * @return  {string}  Always true (PLAIN mechanism does not check integrity)
  */
@@ -132,7 +132,7 @@ function xows_sasl_sha1_req()
 /**
  * SASL mechanism SCRAM-SHA-1 challenge response function. 
  * 
- * @param   {string}  challenge   Received SASL challenge.
+ * @param {string}  challenge   Received SASL challenge.
  * 
  * @return  {string}  Computed response to server challenge
  */
@@ -154,7 +154,7 @@ function xows_sasl_sha1_resp(challenge)
     xows_sasl_data = {}; //< clear auth data
     xows_log(0, "sasl_sha1_resp","SCRAM-SHA-1 challenge error",
                 "missing cnonce in server nonce");
-    if(xows_is_func(xows_sasl_failure_cb)) 
+    if(xows_isfunc(xows_sasl_failure_cb)) 
       xows_sasl_failure_cb();
     return "";
   }
@@ -199,7 +199,7 @@ function xows_sasl_sha1_resp(challenge)
 /**
  * SASL mechanism SCRAM-SHA-1 integrity check function. 
  * 
- * @param   {string}  signature   Received server signature string.
+ * @param {string}  signature   Received server signature string.
  * 
  * @return  {string}  True if supplied signature matches the computed  
  *                    one, false otherwise.
@@ -241,7 +241,7 @@ function xows_sasl_md5_req()
  * Notice that this function was never tested live and may not work. 
  * Anyway DIGEST-MD5 seem to be deprecated almost everywhere.
  * 
- * @param   {string}  challenge   Received SASL challenge.
+ * @param {string}  challenge   Received SASL challenge.
  * 
  * @return  {string}  Computed response to server challenge
  */
@@ -303,7 +303,7 @@ function xows_sasl_md5_resp(challenge)
 /**
  * SASL mechanism DIGEST-MD5 integrity check dummy function. 
  * 
- * @param   {string}  signature   Received SASL signature.
+ * @param {string}  signature   Received SASL signature.
  * 
  * @return  {string}  Always true (DIGEST-MD5 mechanism does not check integrity)
  */
@@ -336,12 +336,12 @@ const xows_sasl_mechanisms = [
  * Select and initialize the proper SASL mechanism according the
  * supplied available list with the given auth data.
  * 
- * @param   {string[]}  candidates   List of candidate mechanisms.
- * @param   {string}    authz        Authorization ID.
- * @param   {string}    authc        Authentication ID.
- * @param   {string}    passw        Authentication Password.
- * @param   {function}  onsuccess    Optional callback for SASL success.
- * @param   {function}  onfailure    Optional callback for SASL failure.
+ * @param {string[]}  candidates   List of candidate mechanisms.
+ * @param {string}    authz        Authorization ID.
+ * @param {string}    authc        Authentication ID.
+ * @param {string}    passw        Authentication Password.
+ * @param {function}  onsuccess    Optional callback for SASL success.
+ * @param {function}  onfailure    Optional callback for SASL failure.
  * 
  * @return  {boolean} Ture if initialization succeed, false if no 
  *                    suitable implemented mechanism was found.

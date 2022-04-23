@@ -142,14 +142,35 @@
   
   "Disconnect":
   "",
-
-  "New messages":
+  
+  "Change Room topic":
+  "",
+  
+  "Room configuration":
+  "",
+  
+  "Enable notifications":
+  "",
+  
+  "Disable notifications":
+  "",
+  
+  "Room occupants list":
+  "",
+  
+  "New unread messages":
   "",
   
   "Upload a file":
   "",
   
+  "Send a message":
+  "",
+  
   "Add an emoji":
+  "",
+  
+  "Occupants":
   "",
   
   "Moderators":
@@ -158,7 +179,7 @@
   "Participants":
   "",
   
-  "Add this contact":
+  "Add this Contact":
   "",
   
   "Room name":

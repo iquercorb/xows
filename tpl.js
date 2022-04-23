@@ -41,46 +41,6 @@
  * ------------------------------------------------------------------ */
 
 /**
- * List of CSS classes for common template instances
- */ 
-const XOWS_CLS_FLATTEN        = "flatten";      //< Flattened element (height forced to 0)
-const XOWS_CLS_HIDDEN         = "hidden";       //< Hidden element (display forced to none)
-const XOWS_CLS_BLINK          = "blink";        //< Global background blink animation
-
-const XOWS_CLS_ROST_CONT      = "rost-cont";    //< Roster Contact Instance <li>
-const XOWS_CLS_ROST_SUBS      = "rost-subs";    //< Roster Subscribe Request Instance <li>
-const XOWS_CLS_ROST_ROOM      = "rost-room";    //< Roster Room Instance <li>
-const XOWS_CLS_ROST_LOAD      = "rost-load";    //< Roster Loading animation <li>
-const XOWS_CLS_PEER_SHOW      = "peer-show";    //< Peer/Contact Show dot <div>
-const XOWS_CLS_PEER_UNRD      = "peer-unrd";    //< Peer/Contact Unread Notification <div>
-const XOWS_CLS_PEER_DENY      = "peer-deny";    //< Peer/Contact Unsuscribed/Subscribe Denied <div>
-const XOWS_CLS_PEER_SUBS      = "peer-subs";    //< Resend subscribe request <button>
-const XOWS_CLS_ROOM_LOCK      = "room-lock";    //< Room Locked <div>
-const XOWS_CLS_ROOM_OCCU      = "room-occu";    //< Room Contact Instance <li>
-const XOWS_CLS_OCCU_SUBS      = "occu-subs";    //< Room Contact Add Button <button>
-const XOWS_CLS_MESG_FULL      = "mesg-full";    //< Chat History Message Instance (Full) <li>
-const XOWS_CLS_MESG_AGGR      = "mesg-aggr";    //< Chat History Message Instance (Aggregated)  <li>
-const XOWS_CLS_MESG_FROM      = "mesg-from";    //< Chat History Message From <div>
-const XOWS_CLS_MESG_DATE      = "mesg-date";    //< Chat History Message Date <div>
-const XOWS_CLS_MESG_HOUR      = "mesg-hour";    //< Chat History Message Hour <div>
-const XOWS_CLS_MESG_EMBD      = "mesg-embd";    //< Chat History Message Embed <div>
-const XOWS_CLS_MESG_SENT      = "mesg-sent";    //< Chat History Message Style: Outgoing 
-const XOWS_CLS_MESG_RECV      = "mesg-recv";    //< Chat History Message Style: Incoming 
-const XOWS_CLS_MESG_RECP      = "mesg-recp";    //< Chat History Message Style: Receipt Received
-
-const XOWS_CLS_EMBD_LOAD      = "media-load";    //< Embeded element loading (loading spinner)
-
-/**
- * Custom attributes constants
- */ 
-const XOWS_ATTR_NOLOAD        = "noload";      //< Embeded media NoLoading attribute
-
-/**
- * Lazy-Loader constants
- */ 
-const XOWS_LAZY_SRC_ATTR      = "data_src";         //< Lazy-Loader source attribute to track
-
-/**
  * Private parser for HTML parsing from string.
  */
 const xows_tpl_template_parser = new DOMParser();
@@ -207,8 +167,8 @@ const xows_tpl_emot_map = {
 /**
  * Launch the download of the specified template file.
  * 
- * @param   {string}  name    Template name to retreive file path.
- * @param   {boolean} isinst  Indicate whether is instantiable, 
+ * @param {string}  name    Template name to retreive file path.
+ * @param {boolean} isinst  Indicate whether is instantiable, 
  *                            otherwise parse as static.
  */
 function xows_tpl_template_load(name, isinst)
@@ -277,9 +237,9 @@ function xows_tpl_template_done()
  * that a static templates cannot be included within instanciables ones
  * and will be ignored in this case.
  * 
- * @param   {string}  html    HTML data to parse.
- * @param   {string}  path    File URL/Path the data come from.
- * @param   {boolean} isinst  Indicate whether is instantiable, 
+ * @param {string}  html    HTML data to parse.
+ * @param {string}  path    File URL/Path the data come from.
+ * @param {boolean} isinst  Indicate whether is instantiable, 
  *                            otherwise parse as static.
  */
 function xows_tpl_template_parse(html, path, isinst)
@@ -362,7 +322,7 @@ function xows_tpl_template_parse(html, path, isinst)
  * This function must be called once to load the desired set of 
  * template.
  * 
- * @param   {object}    onready   Callback function to be called once 
+ * @param {object}    onready   Callback function to be called once 
  *                                templates successfully loaded.
  */
 function xows_tpl_init(onready)
@@ -406,19 +366,24 @@ function xows_tpl_init(onready)
  * the embeded media. If the element parameter is null, it is simply
  * ignored.
  * 
- * @param   {string}    element   Media or embeded element to wrap.
- * @param   {string}    cls       Optional class name to add to wrapper.
+ * @param {string}    href      Media original URL.
+ * @param {string}    media     Media or embeded element to wrap.
+ * @param {string}    style     Optional class name to style wrapper.
+ * @param {string}    title     Optional title to add to wrapper.
  * 
  * @return  {string} Remplacement HTML sample.
  */
-function xows_tpl_embed_wrap(element, cls)
+function xows_tpl_embed_wrap(href, media, style, title)
 {
-  // Add media wrapper div
-  let wrap = "<div class=\"media "; if(cls) wrap += cls; 
+  let wrap = "<aside class=\""; if(style) wrap += style;
   wrap += "\" onclick=\"xows_doc_view_open(this.firstChild)\">";
   
+  if(title) wrap += "<a href=\""+href+"\" target=\"_blank\">"+title+"</a>";
+  
   // Replace src attribute for lazy loading
-  wrap += element.replace(/src=/g,XOWS_LAZY_SRC_ATTR+"="); wrap += "</div>";
+  wrap += media.replace(/src=/g,"lazy_src="); 
+  
+  wrap += "</aside>";
   
   return wrap;
 }
@@ -426,47 +391,53 @@ function xows_tpl_embed_wrap(element, cls)
 /**
  * Function to create HTML embeded image from url.
  * 
- * @param   {string}  href  Image URL
- * @param   {string}  ext   Image file extension part.
+ * @param {string}  href  Image URL
+ * @param {string}  ext   Image file extension part.
  * 
  * @return  {string} Replacement HTML sample.
  */
 function xows_tpl_embed_image(href, ext)
 {
-  const noload = (ext === "GIF") ? XOWS_ATTR_NOLOAD : "";
-  return xows_tpl_embed_wrap("<img src=\""+href+"\" "+noload+">", "media-img");
+  const noload = (ext === "GIF") ? "NOLOADER" : "";
+  return xows_tpl_embed_wrap(href, 
+              "<img src=\""+href+"\" "+noload+">",
+              "EMBD-IMG");
 }
 
 /**
  * Function to create HTML embeded movie from url.
  * 
- * @param   {string}  href  Movie URL
- * @param   {string}  ext   Movie file extension part.
+ * @param {string}  href  Movie URL
+ * @param {string}  ext   Movie file extension part.
  * 
  * @return  {string} Replacement HTML sample.
  */
 function xows_tpl_embed_movie(href, ext)
 {
-  return xows_tpl_embed_wrap("<video controls src=\""+href+"\" "+XOWS_ATTR_NOLOAD+"></video>", "media-video");
+  return xows_tpl_embed_wrap(href,
+              "<video controls src=\""+href+"\" NOLOADER></video>",
+              "EMBD-VID");
 }
 /**
  * Function to create HTML embeded audio from url.
  * 
- * @param   {string}  href  Audio URL
- * @param   {string}  ext   Audio file extension part.
+ * @param {string}  href  Audio URL
+ * @param {string}  ext   Audio file extension part.
  * 
  * @return  {string} Replacement HTML sample.
  */
 function xows_tpl_embed_audio(href, ext)
 {
-  return xows_tpl_embed_wrap("<audio controls src=\""+href+"\" "+XOWS_ATTR_NOLOAD+"/>", "media-audio");
+  return xows_tpl_embed_wrap(href, 
+              "<audio controls src=\""+href+"\" NOLOADER/>", 
+              "EMBD-SND");
 }
 
 /**
  * Function to create HTML embeded Youtube movie from url.
  * 
- * @param   {string}  href    Youtube movie URL
- * @param   {string}  match   Matched substring in the source URL
+ * @param {string}  href    Youtube movie URL
+ * @param {string}  match   Matched substring in the source URL
  * 
  * @return  {string} Replacement HTML sample.
  */
@@ -474,55 +445,72 @@ function xows_tpl_embed_youtube(href, match)
 {
   let ref = href.match(/(v=|embed\/|youtu\.be\/)(.+)/)[2];
   ref = ref.replace(/t=/,"start="); //< replace the potential t= by start=
-  const emb = "<iframe src=\"https://www.youtube.com/embed/"+ref+"\"/>";
-  return xows_tpl_embed_wrap(emb, "media-youtube");
+  return xows_tpl_embed_wrap(href, 
+              "<iframe src=\"https://www.youtube.com/embed/"+ref+"\"/>", 
+              "EMBD-STR", "YouTube");
 }
 
 /**
  * Function to create HTML embeded Dailymotion movie from url.
  * 
- * @param   {string}  href    Dailymotion movie URL
- * @param   {string}  match   Matched substring in the source URL
+ * @param {string}  href    Dailymotion movie URL
+ * @param {string}  match   Matched substring in the source URL
  * 
  * @return  {string} Replacement HTML sample.
  */
 function xows_tpl_embed_dailymo(href, match) 
 {
   const ref = href.match(/(video|dai\.ly)\/([\w\d]+)/)[2];
-  const emb = "<iframe src=\"https://www.dailymotion.com/embed/video/"+ref+"\"/>";
-  return xows_tpl_embed_wrap(emb, "media-dailymo");
+  return xows_tpl_embed_wrap(href, 
+              "<iframe src=\"https://www.dailymotion.com/embed/video/"+ref+"\"/>", 
+              "EMBD-STR", "Dailymotion");
 }
 
 /**
  * Function to create HTML embeded Dailymotion movie from url.
  * 
- * @param   {string}  href    Dailymotion movie URL
- * @param   {string}  match   Matched substring in the source URL
+ * @param {string}  href    Dailymotion movie URL
+ * @param {string}  match   Matched substring in the source URL
  * 
  * @return  {string} Replacement HTML sample.
  */
 function xows_tpl_embed_vimeo(href, match) 
 {
   const ref = href.match(/\/([\d]+)/)[1];
-  const emb = "<iframe src=\"https://player.vimeo.com/video/"+ref+"\"></iframe>";
-  return xows_tpl_embed_wrap(emb, "media-vimeo");
+  return xows_tpl_embed_wrap(href, 
+              "<iframe src=\"https://player.vimeo.com/video/"+ref+"\"></iframe>", 
+              "EMBD-STR", "Vimeo");
+}
+
+/**
+ * Function to create HTML embeded Odysee movie from url.
+ * 
+ * @param {string}  href    Odysee movie URL
+ * @param {string}  match   Matched substring in the source URL
+ * 
+ * @return  {string} Replacement HTML sample.
+ */
+function xows_tpl_embed_odysee(href, match)
+{
+  const ref = href.match(/.com\/(.*)/)[1];
+  return xows_tpl_embed_wrap(href, 
+              "<iframe src=\"https://odysee.com/$/embed/"+ref+"\"></iframe>", 
+              "EMBD-STR", "Odysee");
 }
 
 /**
  * Function to create HTML embeded file of unknown type to be
  * downloaded.
  * 
- * @param   {string}  href    Dailymotion movie URL
- * @param   {string}  match   Matched substring in the source URL
+ * @param {string}  href    Dailymotion movie URL
+ * @param {string}  match   Matched substring in the source URL
  * 
  * @return  {string} Replacement HTML sample.
  */
-function xows_tpl_embed_dwnl(href, match) 
+function xows_tpl_embed_upld(href, match) 
 {
   const file = decodeURI(href.match(/(.+\/)*(.+\..+)/)[2]);
-  //console.warn("tpl_embed_dwnl: " + file);
-  //return "<a class=\"download\" href=\""+href+"\" target=\"_blank\">"+file+"</a>";
-  return xows_tpl_embed_wrap("<a class=\"download\" href=\""+href+"\" target=\"_blank\">"+file+"</a>", "embd-vimeo");
+  return xows_tpl_embed_wrap(href, "<a class=\"dnld-btn\" href=\""+href+"\" target=\"_blank\"></a>", "EMBD-DNL", file);
 }
 
 /**
@@ -551,13 +539,19 @@ let xows_tpl_embed_sites = {
   "www.dailymotion.com"   : xows_tpl_embed_dailymo,
   "dai.ly"                : xows_tpl_embed_dailymo,
   "vimeo.com"             : xows_tpl_embed_vimeo
+  //"odysee.com"            : xows_tpl_embed_odysee /* not properly implemented */
 };
 
 /**
+ * Per service URL embeding function correspondance map.
+ */
+let xows_tpl_embed_uplds = { };
+  
+/**
  * Add or modify an embedding site/plateform with its parsing function.
  * 
- * @param   {string}  match  Domain name to match in the parsed URL.
- * @param   {object}  parse  Function to create embd media from URL.
+ * @param {string}  match  Domain name to match in the parsed URL.
+ * @param {object}  parse  Function to create embd media from URL.
  */
 function xows_tpl_embed_add_site(match, parse)
 {
@@ -567,8 +561,8 @@ function xows_tpl_embed_add_site(match, parse)
 /**
  * Add or modify an embedding site/plateform with its parsing function.
  * 
- * @param   {string}  match  File extension to match in the parsed URL.
- * @param   {object}  parse  Function to create embd media from URL.
+ * @param {string}  match  File extension to match in the parsed URL.
+ * @param {object}  parse  Function to create embd media from URL.
  */
 function xows_tpl_embed_add_file(match, parse)
 {
@@ -578,19 +572,19 @@ function xows_tpl_embed_add_file(match, parse)
 /**
  * Add an embedding site for file download.
  * 
- * @param   {string}  match  Domain name to match in the parsed URL.
+ * @param {string}  match  Domain name to match in the parsed URL.
  */
-function xows_tpl_embed_add_dwnl(match)
+function xows_tpl_embed_add_upld(match)
 {
-  xows_tpl_embed_sites[match] = xows_tpl_embed_dwnl;
+  xows_tpl_embed_uplds[match] = xows_tpl_embed_upld;
 }
 
 /**
  * Replacement function to substitute emojis shortcode by enhanced HTML  
  * sample with proper escaped emoji unicode.
  * 
- * @param   {string}  match   Regex full match string.
- * @param   {string}  code    Extracted emoji short code.
+ * @param {string}  match   Regex full match string.
+ * @param {string}  code    Extracted emoji short code.
  *  
  * @return  {string} Replacement HTML sample.
  */
@@ -604,8 +598,8 @@ function xows_tpl_replace_emoj_sc(match, code)
  * Replacement function to substitute emojis codepoint by enhanced HTML  
  * sample with proper escaped emoji unicode.
  * 
- * @param   {string}  match   Regex full match string.
- * @param   {string}  code    Extracted emoji short code.
+ * @param {string}  match   Regex full match string.
+ * @param {string}  code    Extracted emoji short code.
  *  
  * @return  {string} Replacement HTML sample.
  */
@@ -618,10 +612,10 @@ function xows_tpl_replace_emoj_cp(match, code)
  * Replacement function to substitute ASCII emoticons by 
  * enhanced HTML with proper escaped emoji unicode.
  * 
- * @param   {string}  match   Regex full match string.
- * @param   {string}  space   Preceding space or null.
- * @param   {string}  eyes    Emoticon eyes (including tears).
- * @param   {string}  mouth   Emoticon mouth.
+ * @param {string}  match   Regex full match string.
+ * @param {string}  space   Preceding space or null.
+ * @param {string}  eyes    Emoticon eyes (including tears).
+ * @param {string}  mouth   Emoticon mouth.
  *  
  * @return  {string} Replacement HTML sample.
  */
@@ -639,7 +633,7 @@ let xows_tpl_format_urls = null;
 /**
  * Replacement function to substitute URL by properly formated link.
  * 
- * @param   {string}  href   Regex full match string (URL).
+ * @param {string}  href   Regex full match string (URL).
  *  
  * @return  {string} Replacement HTML sample.
  */
@@ -647,6 +641,16 @@ function xows_tpl_replace_url(href)
 {
   // Add found URL to stack
   if(xows_tpl_format_urls) xows_tpl_format_urls.push(href);
+  
+  // Check whether URL is any of upload/internal service URL
+  const match = href.match(/\/\/(.*?[\w\d-_]+\.\w+)\//);
+  if(match) {
+    if(xows_tpl_embed_uplds[match[1].toLowerCase()]) { //< always compare with lowercase
+      return ""; //< Delete the written URL
+    }
+  }
+  
+  // Return link to URL
   return "<a href=\""+href+"\" title=\""+href+"\" target=\"_blank\">"+href+"</a>";
 }
 
@@ -654,8 +658,8 @@ function xows_tpl_replace_url(href)
  * Parses the given text (message body) to search known patterns such as 
  * emoticons and URLs to properly format them as HTML.
  * 
- * @param   {string}    body   Original text to parse.
- * @param   {string[]}  urls   Optional array that receive found URLs.
+ * @param {string}    body   Original text to parse.
+ * @param {string[]}  urls   Optional array that receive found URLs.
  *  
  * @return  {string} Enhanced body with HTML inclusions
  */
@@ -683,7 +687,7 @@ function xows_tpl_format_body(body, urls)
 /**
  * Created embeded medias from the given URL list.
  * 
- * @param   {string[]}  urls   List of URLs to created embeded medias.
+ * @param {string[]}  urls   List of URLs to created embeded medias.
  *  
  * @return  {string}    Embeded medias HTML elements.
  */
@@ -705,10 +709,13 @@ function xows_tpl_format_embed(urls)
 
     if(!embd) {
       // Check whether we found a known and supported plateform/site
-      match = href.match(/\/\/(.*?[\w\d-_]+\.\w+)\//);
+      match = href.match(/\/\/(.*?[\w\d\-_]+\.\w+)\//);
       if(match) {
         k = match[1].toLowerCase(); //< always compare with lowercase
+        // check for externam plateforms
         if(xows_tpl_embed_sites[k]) embd = xows_tpl_embed_sites[k](href,k);
+        // check for internal services (HTTP-Upload)
+        if(xows_tpl_embed_uplds[k]) embd = xows_tpl_embed_uplds[k](href,k);
       }
     }
     
@@ -727,7 +734,7 @@ let xows_tpl_avat_cls_db = {};
  * Create a new CSS class with data-url as background-image style to 
  * be used as avatar.
  * 
- * @param   {string}  hash    Avatar data hash (class name)
+ * @param {string}  hash    Avatar data hash (class name)
  */
 function xows_tpl_spawn_avat_cls(hash)
 {
@@ -752,32 +759,32 @@ function xows_tpl_spawn_avat_cls(hash)
  * Build and returns a new instance of roster contact <li> object from
  * template be added in the document cont_list <ul>
  * 
- * @param   {string}  jid     Contact JID
- * @param   {string}  name    Contact display name
- * @param   {string}  avat    Contact avatar hash
- * @param   {number}  subs    Contact subscription
- * @param   {number}  [show]  Optional Contact Show level
- * @param   {string}  [stat]  Optional Contact Status
+ * @param {string}  jid     Contact JID
+ * @param {string}  name    Contact display name
+ * @param {string}  avat    Contact avatar hash
+ * @param {number}  subs    Contact subscription
+ * @param {number}  [show]  Optional Contact Show level
+ * @param {string}  [stat]  Optional Contact Status
  *  
  * @return  {object} Contact <li> HTML Elements
  */
 function xows_tpl_spawn_rost_cont(jid, name, avat, subs, show, stat)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model[XOWS_CLS_ROST_CONT].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["ROST-CONT"].firstChild.cloneNode(true);
   
   // Set content to proper elements
   inst.setAttribute("id", jid);
   inst.setAttribute("title", name+" ("+jid+")");
   inst.querySelector("H3").innerHTML = name;
   inst.querySelector("P").innerHTML = stat?stat:"";
-  const show_dv = inst.querySelector("."+XOWS_CLS_PEER_SHOW);
-  const subs_bt = inst.querySelector("."+XOWS_CLS_PEER_SUBS);
+  const show_dv = inst.querySelector(".PEER-SHOW");
+  const subs_bt = inst.querySelector(".PEER-SUBS");
   const avat_fi = inst.querySelector("FIGURE");
   if(subs < XOWS_SUBS_TO) {
-    inst.classList.add(XOWS_CLS_PEER_DENY);
-    show_dv.classList.add(XOWS_CLS_HIDDEN);
-    subs_bt.classList.remove(XOWS_CLS_HIDDEN);
+    inst.classList.add("PEER-DENY");
+    show_dv.classList.add("HIDDEN");
+    subs_bt.classList.remove("HIDDEN");
   } else {
     show_dv.setAttribute("show",(show!==null)?show:-1);
     // Set proper class for avatar
@@ -791,12 +798,12 @@ function xows_tpl_spawn_rost_cont(jid, name, avat, subs, show, stat)
 /**
  * Update the given instance of roster contact <li> object.
  * 
- * @param   {object}  li      Contact <li> element to update.
- * @param   {string}  name    Contact display name
- * @param   {string}  avat    Contact avatar image URL
- * @param   {number}  subs    Contact subscription
- * @param   {number}  [show]  Optional Contact Show level
- * @param   {string}  [stat]  Optional Contact Status
+ * @param {object}  li      Contact <li> element to update.
+ * @param {string}  name    Contact display name
+ * @param {string}  avat    Contact avatar image URL
+ * @param {number}  subs    Contact subscription
+ * @param {number}  [show]  Optional Contact Show level
+ * @param {string}  [stat]  Optional Contact Status
  */
 function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
 {
@@ -806,18 +813,18 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
   li.setAttribute("title", name+" ("+jid+")");
   li.querySelector("H3").innerHTML = name;
   li.querySelector("P").innerHTML = stat?stat:"";
-  const show_dv = li.querySelector("."+XOWS_CLS_PEER_SHOW);
-  const subs_bt = li.querySelector("."+XOWS_CLS_PEER_SUBS);
+  const show_dv = li.querySelector(".PEER-SHOW");
+  const subs_bt = li.querySelector(".PEER-SUBS");
   const avat_fi = li.querySelector("FIGURE");
   if(subs < XOWS_SUBS_TO) {
-    li.classList.add(XOWS_CLS_PEER_DENY);
-    show_dv.classList.add(XOWS_CLS_HIDDEN);
-    subs_bt.classList.remove(XOWS_CLS_HIDDEN);
+    li.classList.add("PEER-DENY");
+    show_dv.classList.add("HIDDEN");
+    subs_bt.classList.remove("HIDDEN");
   } else {
-    li.classList.remove(XOWS_CLS_PEER_DENY);
-    show_dv.classList.remove(XOWS_CLS_HIDDEN);
+    li.classList.remove("PEER-DENY");
+    show_dv.classList.remove("HIDDEN");
     show_dv.setAttribute("show",(show!==null)?show:-1);
-    subs_bt.classList.add(XOWS_CLS_HIDDEN);
+    subs_bt.classList.add("HIDDEN");
     // Set proper class for avatar
     xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class 
     avat_fi.className = "h-"+avat;
@@ -828,19 +835,19 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
  * Build and returns a new instance of room contact (occupant) <li> 
  * object from template be added in the document occu_list <ul>
  * 
- * @param   {string}  jid       Occupant JID
- * @param   {string}  nick      Occupant Nickname
- * @param   {string}  avat      Occupant avatar image URL
- * @param   {string}  [lock]    Occupant real bare JID if available
- * @param   {number}  [show]    Optional Contact Show level
- * @param   {string}  [stat]    Optional Contact Status
+ * @param {string}  jid       Occupant JID
+ * @param {string}  nick      Occupant Nickname
+ * @param {string}  avat      Occupant avatar image URL
+ * @param {string}  [lock]    Occupant real bare JID if available
+ * @param {number}  [show]    Optional Contact Show level
+ * @param {string}  [stat]    Optional Contact Status
  *  
  * @return  {object} Contact <li> HTML Elements
  */
 function xows_tpl_spawn_room_occu(jid, nick, avat, lock, show, stat)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model[XOWS_CLS_ROOM_OCCU].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["ROOM-OCCU"].firstChild.cloneNode(true);
   
   // Set content to proper elements
   inst.setAttribute("id", jid);
@@ -848,9 +855,9 @@ function xows_tpl_spawn_room_occu(jid, nick, avat, lock, show, stat)
   inst.setAttribute("title", nick+" ("+lock+")");
   inst.querySelector("H3").innerHTML = nick;
   inst.querySelector("P").innerHTML = stat?stat:"";
-  inst.querySelector("."+XOWS_CLS_PEER_SHOW).setAttribute("show",(show!==null)?show:-1);
+  inst.querySelector(".PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
   // Occupant JID (lock) may be null, undefined or empty string
-  inst.querySelector("."+XOWS_CLS_OCCU_SUBS).disabled = (lock) ? (lock.length === 0) : true;
+  inst.querySelector(".OCCU-SUBS").disabled = (lock) ? (lock.length === 0) : true;
   // Set proper class for avatar
   xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class 
   inst.querySelector("FIGURE").className = "h-"+avat;
@@ -861,12 +868,12 @@ function xows_tpl_spawn_room_occu(jid, nick, avat, lock, show, stat)
 /**
  * Update the given instance of room occupant <li> object.
  * 
- * @param   {string}  li        Contact <li> element to update.
- * @param   {string}  nick      Occupant Nickname
- * @param   {string}  avat      Occupant avatar image URL
- * @param   {string}  [lock]    Occupant real full JID if available
- * @param   {number}  [show]    Optional Contact Show level
- * @param   {string}  [stat]    Optional Contact Status
+ * @param {string}  li        Contact <li> element to update.
+ * @param {string}  nick      Occupant Nickname
+ * @param {string}  avat      Occupant avatar image URL
+ * @param {string}  [lock]    Occupant real full JID if available
+ * @param {number}  [show]    Optional Contact Show level
+ * @param {string}  [stat]    Optional Contact Status
  */
 function xows_tpl_update_room_occu(li, nick, avat, lock, show, stat)
 {
@@ -875,9 +882,9 @@ function xows_tpl_update_room_occu(li, nick, avat, lock, show, stat)
   li.setAttribute("title", nick+" ("+lock+")");
   li.querySelector("H3").innerHTML = nick;
   li.querySelector("P").innerHTML = stat?stat:"";
-  li.querySelector("."+XOWS_CLS_PEER_SHOW).setAttribute("show",(show!==null)?show:-1);
+  li.querySelector(".PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
   // Occupant JID (lock) may be null, undefined or empty string
-  li.querySelector("."+XOWS_CLS_OCCU_SUBS).disabled = (lock) ? (lock.length === 0) : true;
+  li.querySelector(".OCCU-SUBS").disabled = (lock) ? (lock.length === 0) : true;
   // Set proper class for avatar
   xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class 
   li.querySelector("FIGURE").className = "h-"+avat;
@@ -887,17 +894,17 @@ function xows_tpl_update_room_occu(li, nick, avat, lock, show, stat)
  * Build and returns a new instance of roster Room <li> object from
  * template be added in the document room_list <ul>
  * 
- * @param   {string}  jid    Charoom JID
- * @param   {string}  name   Charoom display name
- * @param   {string}  desc   Charoom description
- * @param   {string}  lock   Charoom is password protected
+ * @param {string}  jid    Charoom JID
+ * @param {string}  name   Charoom display name
+ * @param {string}  desc   Charoom description
+ * @param {string}  lock   Charoom is password protected
  *  
  * @return  {object} Contact <li> HTML Elements
  */
 function xows_tpl_spawn_rost_room(jid, name, desc, lock)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model[XOWS_CLS_ROST_ROOM].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["ROST-ROOM"].firstChild.cloneNode(true);
   
   // Set content to proper elements
   inst.setAttribute("id", jid);
@@ -905,7 +912,7 @@ function xows_tpl_spawn_rost_room(jid, name, desc, lock)
   inst.querySelector("H3").innerHTML = name;
   inst.querySelector("P").innerHTML = desc;
   const avat_dv = inst.querySelector("FIGURE");
-  if(lock) avat_dv.classList.add(XOWS_CLS_ROOM_LOCK);
+  if(lock) avat_dv.classList.add("ROOM-LOCK");
 
   return inst;
 }
@@ -913,10 +920,10 @@ function xows_tpl_spawn_rost_room(jid, name, desc, lock)
 /**
  * Update the given instance of roster Room <li> object.
  * 
- * @param   {object}  li     Room <li> element to update.
- * @param   {string}  name   Room display name
- * @param   {string}  desc   Room description
- * @param   {string}  lock   Room is password protected
+ * @param {object}  li     Room <li> element to update.
+ * @param {string}  name   Room display name
+ * @param {string}  desc   Room description
+ * @param {string}  lock   Room is password protected
  */
 function xows_tpl_update_rost_room(li, name, desc, lock)
 {
@@ -929,9 +936,9 @@ function xows_tpl_update_rost_room(li, name, desc, lock)
   li.querySelector("P").innerHTML = desc;
   const avat_dv = li.querySelector("FIGURE");
   if(lock) {
-    avat_dv.classList.add(XOWS_CLS_ROOM_LOCK);
+    avat_dv.classList.add("ROOM-LOCK");
   } else {
-    avat_dv.classList.remove(XOWS_CLS_ROOM_LOCK);
+    avat_dv.classList.remove("ROOM-LOCK");
   }
 }
 
@@ -939,15 +946,15 @@ function xows_tpl_update_rost_room(li, name, desc, lock)
  * Build and returns a new instance of room contact (occupant) <li> 
  * object from template be added in the document occu_list <ul>
  * 
- * @param   {string}  bare      Subscribe sender JID bare
- * @param   {string}  [nick]    Subscribe sender preferend nick (if available)
+ * @param {string}  bare      Subscribe sender JID bare
+ * @param {string}  [nick]    Subscribe sender preferend nick (if available)
  *  
  * @return  {object} Contact <li> HTML Elements
  */
 function xows_tpl_spawn_rost_subs(bare, nick)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model[XOWS_CLS_ROST_SUBS].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["ROST-SUBS"].firstChild.cloneNode(true);
   
   // Set content to proper elements
   inst.setAttribute("id", bare);
@@ -962,13 +969,13 @@ function xows_tpl_spawn_rost_subs(bare, nick)
  * Build and returns a new instance of history full message <li> object 
  * from template be added in the document history list <ul>
  * 
- * @param   {string}    id        Message ID.
- * @param   {string}    from      Sender JID.
- * @param   {string}    time      Message timestamp.
- * @param   {string}    body      Message content.
- * @param   {boolean}   sent      Marks message as sent by client.
- * @param   {boolean}   recp      Marks message as receipt received.
- * @param   {object}   [sndr]     Message sender Peer object or null.
+ * @param {string}    id        Message ID.
+ * @param {string}    from      Sender JID.
+ * @param {string}    time      Message timestamp.
+ * @param {string}    body      Message content.
+ * @param {boolean}   sent      Marks message as sent by client.
+ * @param {boolean}   recp      Marks message as receipt received.
+ * @param {object}   [sndr]     Message sender Peer object or null.
  *  
  * @return  {object} History message <li> HTML Elements
  */
@@ -976,14 +983,14 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
 {
   // Select message model, either full with name and avar or 
   // simple aggregate.
-  const model = sndr ? XOWS_CLS_MESG_FULL : XOWS_CLS_MESG_AGGR;
+  const model = sndr ? "MESG-FULL" : "MESG-AGGR";
   
   // Clone DOM tree from template
   const inst = xows_tpl_model[model].firstChild.cloneNode(true);
   
   // Set proper value to message elements
-  inst.classList.add(sent ? XOWS_CLS_MESG_SENT : XOWS_CLS_MESG_RECV);
-  if(recp) inst.classList.add(XOWS_CLS_MESG_RECP);
+  inst.classList.add(sent ? "MESG-SENT" : "MESG-RECV");
+  if(recp) inst.classList.add("MESG-RECP");
   inst.setAttribute("id", id); 
   inst.setAttribute("from", from);
   inst.setAttribute("time", time);
@@ -997,12 +1004,15 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
   
   if(sndr) {
     // Add time text
-    inst.querySelector("."+XOWS_CLS_MESG_DATE).innerHTML = xows_l10n_date(time);
+    inst.querySelector(".MESG-DATE").innerHTML = xows_l10n_date(time);
     // Add author name
-    inst.querySelector("."+XOWS_CLS_MESG_FROM).innerHTML = sndr.name;
+    inst.querySelector(".MESG-FROM").innerHTML = sndr.name;
     // Set proper class for avatar
     xows_tpl_spawn_avat_cls(sndr.avat); //< Add avatar CSS class 
     inst.querySelector("FIGURE").className = "h-"+sndr.avat;
+  } else {
+    // Add hour
+    inst.querySelector(".MESG-HOUR").innerHTML = xows_l10n_houre(time);
   }
   
   // Return final tree

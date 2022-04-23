@@ -48,9 +48,9 @@ const xows_cach_avat_db = {};
 /**
  * Save avatar data-URL to localStorage and live DB.
  * 
- * @param   {string}    data    Image data-URL to save.
- * @param   {string}   [hash]   Optional precomputed hash to use as key.
- * @param   {boolean}  [temp]   Avoid saving data in localStorage.
+ * @param {string}    data    Image data-URL to save.
+ * @param {string}   [hash]   Optional precomputed hash to use as key.
+ * @param {boolean}  [temp]   Avoid saving data in localStorage.
  * 
  * @return  {string}    Avatar data SHA-1 hash used as key.
  */
@@ -69,7 +69,7 @@ function xows_cach_avat_save(data, hash, temp)
 /**
  * Check whether avatar hash exists in localStorage or live DB.
  * 
- * @param   {string}    hash    Avatar data hash to search.
+ * @param {string}    hash    Avatar data hash to search.
  * 
  * @return  {boolean}   True if data exists, false otherwise.
  */
@@ -86,7 +86,7 @@ function xows_cach_avat_has(hash)
 /**
  * Load avatar data-URL corresponding to the given hash.
  * 
- * @param   {string}    hash   Avatar data hash to search.
+ * @param {string}    hash   Avatar data hash to search.
  * 
  * @return  {string}    Avatar data-URL
  */
@@ -114,10 +114,10 @@ const xows_cach_peer_db = {};
 /**
  * Save User, Room or Occupant data to localStorage and live DB.
  * 
- * @param   {string}    from      User, Room or Occupant JID/Address.
- * @param   {string}    name      Nickname or displayed name.
- * @param   {string}    avat      Associated avatar hash.
- * @param   {string}    note      Status or description.
+ * @param {string}    from      User, Room or Occupant JID/Address.
+ * @param {string}    name      Nickname or displayed name.
+ * @param {string}    avat      Associated avatar hash.
+ * @param {string}    note      Status or description.
  */
 function xows_cach_peer_save(from, name, avat, desc)
 {
@@ -152,7 +152,7 @@ function xows_cach_peer_save(from, name, avat, desc)
 /**
  * Check whether peer JID exists in localStorage or live DB.
  * 
- * @param   {string}  from    User, Room or Occupant JID/Address to search.
+ * @param {string}  from    User, Room or Occupant JID/Address to search.
  * 
  * @return  {string}  True if cached data exists, false otherwise.
  */
@@ -170,7 +170,7 @@ function xows_cach_peer_has(from)
  * Retreive User, Room or Occupant data stored in localStorage 
  * or live DB.
  * 
- * @param   {string}    from    User, Room or Occupant JID/Address to search.
+ * @param {string}    from    User, Room or Occupant JID/Address to search.
  * 
  * @return  {object}    Peer data or null if not found.
  */
@@ -204,8 +204,8 @@ const xows_cach_caps_db = {};
 /**
  * Save entity capabilities (features).
  * 
- * @param   {string}    node        Entity caps node (url).
- * @param   {string[]}  feat        Entity caps feature list.
+ * @param {string}    node        Entity caps node (url).
+ * @param {string[]}  feat        Entity caps feature list.
  */
 function xows_cach_caps_save(node, feat)
 {
@@ -217,7 +217,7 @@ function xows_cach_caps_save(node, feat)
 /**
  * Check whether entity capabilities (features) is available.
  * 
- * @param   {string}    node        Entity caps node (url) to check.
+ * @param {string}    node        Entity caps node (url) to check.
  * 
  * @return  {boolean}  True if entity was found, false otherwise.
  */
@@ -234,7 +234,7 @@ function xows_cach_caps_has(node)
 /**
  * Retreive entity capabilities (features).
  * 
- * @param   {string}    node        Entity caps node (url).
+ * @param {string}    node        Entity caps node (url).
  * 
  * @return  {string[]}  Entity caps feature list.
  */

@@ -1,89 +1,81 @@
 <header>
   <h1>${'Chatoom configuration'}</h1>
-  <span id="room_jid"></span>
+  <span id="room_bare"></span>
 </header>
 
-<div id="room_edit" class="hidden">
+<fieldset>
+  <h2>${'Room title'}</h2>
+  <input id="room_titl" placeholder="${'title'}" type="text"></input>
+</fieldset>
+<fieldset>
+  <h2>${'Room description'}</h2>
+  <input id="room_desc" placeholder="${'description'}" type="text"></input>
+</fieldset>
+<section>
+  <h2>${'Access &amp; moderation'}</h2>
   <fieldset>
-    <h2>${'Room subject'}</h2>
-    <input id="room_subj" placeholder="${'subject'}" type="text"></input>
+    <label for="room_pers">${'Persistent Room'}</label>
+    <label class="switch"><input id="room_pers" type="checkbox" checked><span></span></label>
+    <p>${'In contrary to a temporary Room, a persistent Room is not destroyed if the last occupant exits'}</p>
   </fieldset>
-</div>
+  <fieldset>
+    <label for="room_publ">${'Public Room'}</label>
+    <label class="switch"><input id="room_publ" type="checkbox" checked><span></span></label>
+    <p>${'A public Room can be found by any user through normal means such as searching and service discovery'}</p>
+  </fieldset>
+<!--
+<fieldset>
+  <input id="room_priv" type="checkbox"/></input>  
+  <label for="room_pass">${'Password:'}</label>
+  <input id="room_pass" placeholder="${'password'}" type="text" disabled></input>
+</fieldset>
+-->
+  <fieldset>
+    <label for="room_mbon">${'Allowed to members only'}</label>
+    <label class="switch"><input id="room_mbon" type="checkbox" checked><span></span></label>
+    <p>${'A user cannot enter without being on the Room's member list'}</p>
+  </fieldset>
+  <fieldset>
+    <label for="room_modo">${'Moderated Room'}</label>
+    <label class="switch"><input id="room_modo" type="checkbox" checked><span></span></label>
+    <p>${'Only those with "voice" are allowed to send messages to all occupants'}</p>
+  </fieldset>
+  <fieldset>
+    <label>${'Occupants anonymity'}</label>
+    <select id="room_anon">
+      <option value="moderators">${'Semi-Anonymous'}</option>
+      <option value="anyone">${'Non-Anonymous'}</option>
+    </select>
+    <p>${'In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address'}</p>
+  </fieldset>
+</section>
 
-<div id="room_conf" class="hidden">
+<section>
+  <h2>${'Other options'}</h2>
   <fieldset>
-    <h2>${'Room title'}</h2>
-    <input id="room_titl" placeholder="${'title'}" type="text"></input>
+    <label for="room_hmax">${'History max length'}</label>
+    <div class="spinnb">
+      <button class="spin-sub" onclick="this.parentNode.querySelector('input').stepDown()"></button>
+      <input id="room_hmax" type="number" min="0" max="60" step="5"/>
+      <button class="spin-add" onclick="this.parentNode.querySelector('input').stepUp()"></button>
+    </div>
+    <p>${'This is the maximum count of messages to store in the message history'}</p>
   </fieldset>
   <fieldset>
-    <h2>${'Room description'}</h2>
-    <input id="room_desc" placeholder="${'description'}" type="text"></input>
+    <label for="room_hdef">${'History default length'}</label>
+    <div class="spinnb">
+      <button class="spin-sub" onclick="this.parentNode.querySelector('input').stepDown()"></button>
+      <input id="room_hdef" type="number" min="0" max="60" step="5"/>
+      <button class="spin-add" onclick="this.parentNode.querySelector('input').stepUp()"></button>
+    </div>
+    <p>${'This is the default count of history messages to deliver to user when enters the Room'}</p>
   </fieldset>
-  <section>
-    <h2>${'Access &amp; moderation'}</h2>
-    <fieldset>
-      <label for="room_pers">${'Persistent Room'}</label>
-      <label class="switch"><input id="room_pers" type="checkbox" checked><span></span></label>
-      <p>${'In contrary to a temporary Room, a persistent Room is not destroyed if the last occupant exits'}</p>
-    </fieldset>
-    <fieldset>
-      <label for="room_publ">${'Public Room'}</label>
-      <label class="switch"><input id="room_publ" type="checkbox" checked><span></span></label>
-      <p>${'A public Room can be found by any user through normal means such as searching and service discovery'}</p>
-    </fieldset>
-  <!--
   <fieldset>
-    <input id="room_priv" type="checkbox"/></input>  
-    <label for="room_pass">${'Password:'}</label>
-    <input id="room_pass" placeholder="${'password'}" type="text" disabled></input>
+    <label class="switch"><input id="room_arch" type="checkbox" checked><span></span></label>
+    <label for="room_arch">${'Enable messages archiving'}</label>
+    <p>${'Stores messages in persistent way using Message Archive Management'}</p>
   </fieldset>
-  -->
-    <fieldset>
-      <label for="room_mbon">${'Allowed to members only'}</label>
-      <label class="switch"><input id="room_mbon" type="checkbox" checked><span></span></label>
-      <p>${'A user cannot enter without being on the Room's member list'}</p>
-    </fieldset>
-    <fieldset>
-      <label for="room_modo">${'Moderated Room'}</label>
-      <label class="switch"><input id="room_modo" type="checkbox" checked><span></span></label>
-      <p>${'Only those with "voice" are allowed to send messages to all occupants'}</p>
-    </fieldset>
-    <fieldset>
-      <label>${'Occupants anonymity'}</label>
-      <select id="room_anon">
-        <option value="moderators">${'Semi-Anonymous'}</option>
-        <option value="anyone">${'Non-Anonymous'}</option>
-      </select>
-      <p>${'In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address'}</p>
-    </fieldset>
-  </section>
-  
-  <section>
-    <h2>${'Other options'}</h2>
-    <fieldset>
-      <label for="room_hmax">${'History max length'}</label>
-      <div class="spinnb">
-        <button class="spin-sub" onclick="this.parentNode.querySelector('input').stepDown()"></button>
-        <input id="room_hmax" type="number" min="0" max="60" step="5"/>
-        <button class="spin-add" onclick="this.parentNode.querySelector('input').stepUp()"></button>
-      </div>
-      <p>${'This is the maximum count of messages to store in the message history'}</p>
-    </fieldset>
-    <fieldset>
-      <label for="room_hdef">${'History default length'}</label>
-      <div class="spinnb">
-        <button class="spin-sub" onclick="this.parentNode.querySelector('input').stepDown()"></button>
-        <input id="room_hdef" type="number" min="0" max="60" step="5"/>
-        <button class="spin-add" onclick="this.parentNode.querySelector('input').stepUp()"></button>
-      </div>
-      <p>${'This is the default count of history messages to deliver to user when enters the Room'}</p>
-    </fieldset>
-    <fieldset>
-      <label class="switch"><input id="room_arch" type="checkbox" checked><span></span></label>
-      <label for="room_arch">${'Enable messages archiving'}</label>
-      <p>${'Stores messages in persistent way using Message Archive Management'}</p>
-    </fieldset>
-  </section>
-</div>
+</section>
+
 
 

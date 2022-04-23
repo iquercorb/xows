@@ -147,6 +147,44 @@ const xows_xmp_chat_mask_map = {
 };
 
 /**
+ * List of Room role values.
+ */
+const XOWS_ROLE_NONE = 0;
+const XOWS_ROLE_VIST = 1;
+const XOWS_ROLE_PART = 2;
+const XOWS_ROLE_MODO = 3;
+
+/**
+ * Correspondance map array for Room role string to level.
+ */ 
+const xows_xmp_role_level_map = {
+  "none"          : 0,
+  "visitor"       : 1,
+  "participant"   : 2,
+  "moderator"     : 3 
+};
+
+/**
+ * List of Room affiliation values.
+ */
+const XOWS_AFFI_OUTC = -1;
+const XOWS_AFFI_NONE = 0;
+const XOWS_AFFI_MEMB = 1;
+const XOWS_AFFI_ADMN = 2;
+const XOWS_AFFI_OWNR = 3;
+
+/**
+ * Correspondance map array for Room affiliation string to level.
+ */ 
+const xows_xmp_affi_level_map = {
+  "outcast"       : -1,
+  "none"          : 0,
+  "member"        : 1,
+  "admin"         : 2,
+  "owner"         : 3 
+};
+
+/**
  * Correspondance map array for chatstate value to string.
  */ 
 const xows_xmp_chat_name_map = ["gone","active","inactive","paused","composing"];
@@ -227,7 +265,7 @@ let xows_xmp_auth_register = false;
  * server is available/valid, then store it to use it for all further
  * queries related to this XEP.
  * 
- * @param   {string}  xmlns   Specific xmlns to use for this XEP.
+ * @param {string}  xmlns   Specific xmlns to use for this XEP.
  * 
  * @return  {boolean} Ture if the supplied xmlns is supported and 
  *                    accepted for the specified XEP, false otherwise.
@@ -284,7 +322,7 @@ function xows_xmp_use_xep(xmlns)
  * If no xmlns version was previously set, the function returns null, 
  * indicating the XEP is not available for the current session.
  * 
- * @param   {string}  xmlns   Specific xmlns prefix
+ * @param {string}  xmlns   Specific xmlns prefix
  * 
  * @return  {string} specific xmlns with proper version suffix or null
  */
@@ -373,7 +411,7 @@ function xows_xmp_get_caps_ver()
 /**
  * Function to parse a standard jabber:x:data form
  * 
- * @param   {object}    x       <x> Stanza element to parse
+ * @param {object}    x       <x> Stanza element to parse
  * 
  * @return  {object[]}  Array of parsed field to complete.
  */
@@ -402,7 +440,7 @@ function xows_xmp_xdata_parse(x)
  * Given array must contain one or more objects with properly filled
  * "var" and "value" values.
  * 
- * @param   {object[]}  field    Object's array to turn as <field> elements.
+ * @param {object[]}  field    Object's array to turn as <field> elements.
  * 
  * @return  {object}    <x> XML node with <field> to submit.
  */
@@ -511,12 +549,12 @@ let xows_xmp_fw_onclose = function() {};
  * error      : Received error.
  * close      : Session close.
  * 
- * @param   {string}    type      Callback slot.
- * @param   {function}  callback  Callback function to set.
+ * @param {string}    type      Callback slot.
+ * @param {function}  callback  Callback function to set.
  */
 function xows_xmp_set_callback(type, callback)
 {
-  if(!xows_is_func(callback))
+  if(!xows_isfunc(callback))
     return;
     
   switch(type.toLowerCase()) {
@@ -543,9 +581,9 @@ function xows_xmp_set_callback(type, callback)
  * an stanza with the same id as the initial query is received with
  * the received stanza as unique parameter.
  *  
- * @param   {object}    stanza      Stanza XML Element object.
- * @param   {function}  [onresult]  Callback for received query result.
- * @param   {function}  [onparse]  Callback for parsed result forwarding.
+ * @param {object}    stanza      Stanza XML Element object.
+ * @param {function}  [onresult]  Callback for received query result.
+ * @param {function}  [onparse]  Callback for parsed result forwarding.
  */
 function xows_xmp_send(stanza, onresult, onparse) 
 {
@@ -570,7 +608,7 @@ function xows_xmp_send(stanza, onresult, onparse)
   }
   
   // If callaback is supplied, add request to stack
-  if(xows_is_func(onresult)) 
+  if(xows_isfunc(onresult)) 
     xows_xmp_iq_stk.push({"id":id,"onresult":onresult,"onparse":onparse});
 
   // Send serialized data to socket
@@ -581,7 +619,7 @@ function xows_xmp_send(stanza, onresult, onparse)
  * Parse the given error <iq> and returns the parsed error type
  * and hint text.
  * 
- * @param   {object}  stanza   Received <iq> stanza.
+ * @param {object}  stanza   Received <iq> stanza.
  * 
  * @return  {string}  Parsed error type and text as combined string.
  */
@@ -608,8 +646,8 @@ function xows_xmp_error_str(stanza)
  * Function to parse an iq stanza in a generial way. This parse 
  * function may be used by serveral other functions.
  * 
- * @param   {object}    stanza    Received iq stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received iq stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_iq_parse(stanza, onparse)
 {
@@ -633,7 +671,7 @@ function xows_xmp_iq_parse(stanza, onparse)
   }
   
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse(stanza.getAttribute("from"), type, err_type, err_code, err_name, err_text);
 }
 
@@ -645,7 +683,7 @@ function xows_xmp_iq_parse(stanza, onparse)
  * is received without error this mean the XMPP session is successfully
  * open, so, the session ready callback is called.
  * 
- * @param   {object}    stanza    Received query response stanza.
+ * @param {object}    stanza    Received query response stanza.
  */
 function xows_xmp_session_parse(stanza)
 {
@@ -685,7 +723,7 @@ function xows_xmp_session_query()
  * If resource is successfully bound, it checks whether stream session
  * feature is available (required or not) and send a session query.
  * 
- * @param   {object}    stanza    Received query response stanza.
+ * @param {object}    stanza    Received query response stanza.
  */
 function xows_xmp_bind_parse(stanza)
 {
@@ -731,8 +769,8 @@ function xows_xmp_bind_query()
 /**
  * Send query to enable or disable carbons (XEP-0280).
  * 
- * @param   {boolean}   enable   Boolean to query enable or disable
- * @param   {function}  onparse  Callback to forward parse result.
+ * @param {boolean}   enable   Boolean to query enable or disable
+ * @param {function}  onparse  Callback to forward parse result.
  */
 function xows_xmp_carbons_query(enable, onparse) 
 {
@@ -758,8 +796,8 @@ function xows_xmp_carbons_query(enable, onparse)
 /**
  * Parse result of disco#info query.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_discoinfo_parse(stanza, onparse)
 {
@@ -795,16 +833,16 @@ function xows_xmp_discoinfo_parse(stanza, onparse)
   const form = x ? xows_xmp_xdata_parse(x) : null;
   
   // Forward result to client
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse( stanza.getAttribute("from"), iden, feat, form, query.getAttribute("node"));
 }
 
 /**
  * Send a disco#info query.
  * 
- * @param   {string}    to        Target JID or URL.
- * @param   {string}    node      Query node attribute or null to ignore
- * @param   {function}  onparse   Callback to forward parse result
+ * @param {string}    to        Target JID or URL.
+ * @param {string}    node      Query node attribute or null to ignore
+ * @param {function}  onparse   Callback to forward parse result
  */
 function xows_xmp_discoinfo_query(to, node, onparse)
 {
@@ -819,8 +857,8 @@ function xows_xmp_discoinfo_query(to, node, onparse)
 /**
  * Parse result of disco#items query.
  * 
- * @param   {object}    stanza    Received stanza corresponding to query.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received stanza corresponding to query.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_discoitems_parse(stanza, onparse)
 {
@@ -838,15 +876,15 @@ function xows_xmp_discoitems_parse(stanza, onparse)
   }
   
   // Forward result to client
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse( stanza.getAttribute("from"), item);
 }
 
 /**
  * Send a disco#items query.
  * 
- * @param   {string}    to        Entity JID, name or URL.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    to        Entity JID, name or URL.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_discoitems_query(to, onparse)
 {
@@ -861,8 +899,8 @@ function xows_xmp_discoitems_query(to, onparse)
 /**
  * Function to parse result of get roster query.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_roster_get_parse(stanza, onparse) 
 {
@@ -882,14 +920,14 @@ function xows_xmp_roster_get_parse(stanza, onparse)
   }
 
   // Forward result to client
-  if(xows_is_func(onparse))
+  if(xows_isfunc(onparse))
     onparse(item);
 }
 
 /**
  * Send query to get roster content to the server.
  * 
- * @param   {function}  onparse   Callback to receive parse result.
+ * @param {function}  onparse   Callback to receive parse result.
  */
 function xows_xmp_roster_get_query(onparse)
 {
@@ -903,10 +941,10 @@ function xows_xmp_roster_get_query(onparse)
 /**
  * Send query to add or remove item to/from roster.
  * 
- * @param   {string}    jid       Contact or Room JID to add.
- * @param   {string}    name      Item Display name or null to remove item.
- * @param   {string}    group     Group name where to add contact or null to ignore.
- * @param   {function}  onparse   Callback to receive parse result.
+ * @param {string}    jid       Contact or Room JID to add.
+ * @param {string}    name      Item Display name or null to remove item.
+ * @param {string}    group     Group name where to add contact or null to ignore.
+ * @param {function}  onparse   Callback to receive parse result.
  */
 function xows_xmp_roster_set_query(jid, name, group, onparse)
 {
@@ -934,8 +972,8 @@ function xows_xmp_roster_set_query(jid, name, group, onparse)
 /**
  * Function to parse result of MUC rooom config form.
  * 
- * @param   {string}    to        Room JID to get configuration from.
- * @param   {function}  onparse   Callback to receive parse result.
+ * @param {string}    to        Room JID to get configuration from.
+ * @param {function}  onparse   Callback to receive parse result.
  */
 function xows_xmp_muc_cfg_get_parse(stanza, onparse)
 {
@@ -945,7 +983,7 @@ function xows_xmp_muc_cfg_get_parse(stanza, onparse)
   } 
   
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse(  stanza.getAttribute("from"),
               xows_xmp_xdata_parse(stanza.querySelector("x")));
 }
@@ -953,8 +991,8 @@ function xows_xmp_muc_cfg_get_parse(stanza, onparse)
 /**
  * Send query to get MUC room config form.
  * 
- * @param   {string}    to        Room JID to get configuration from.
- * @param   {function}  onparse   Callback to receive parse result.
+ * @param {string}    to        Room JID to get configuration from.
+ * @param {function}  onparse   Callback to receive parse result.
  */
 function xows_xmp_muc_cfg_get_guery(to, onparse)
 {
@@ -970,8 +1008,8 @@ function xows_xmp_muc_cfg_get_guery(to, onparse)
 /**
  * Send query to cancel MUC form process.
  * 
- * @param   {string}    to        Room JID to get configuration from.
- * @param   {function}  onparse   Callback to receive parse result.
+ * @param {string}    to        Room JID to get configuration from.
+ * @param {function}  onparse   Callback to receive parse result.
  */
 function xows_xmp_muc_cfg_set_cancel(to, onparse)
 {
@@ -979,8 +1017,8 @@ function xows_xmp_muc_cfg_set_cancel(to, onparse)
   
   // Create and launch the query
   const iq = xows_xml_node("iq",{"to":to,"type":"set"},
-              xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER}),
-                xows_xml_node("x",{"xmlns":XOWS_NS_XDATA,"type":"cancel"}));
+              xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},
+                xows_xml_node("x",{"xmlns":XOWS_NS_XDATA,"type":"cancel"})));
               
   // We use generical iq parse function to get potential error message
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
@@ -989,9 +1027,9 @@ function xows_xmp_muc_cfg_set_cancel(to, onparse)
 /**
  * Send query to submit MUC room config form.
  * 
- * @param   {string}    to        Room JID to get configuration from.
- * @param   {object[]}  form      Filled form array to submit.
- * @param   {function}  onparse   Callback to receive parse result.
+ * @param {string}    to        Room JID to get configuration from.
+ * @param {object[]}  form      Filled form array to submit.
+ * @param {function}  onparse   Callback to receive parse result.
  */
 function xows_xmp_muc_cfg_set_query(to, form, onparse)
 {
@@ -1009,12 +1047,89 @@ function xows_xmp_muc_cfg_set_query(to, form, onparse)
 }
 
 /**
+ * Send query to set MUC occupant role.
+ * 
+ * @param {string}    to        Room JID to assign Occupant role.
+ * @param {string}    nick      Occupant nickname in Room.
+ * @param {string}    role      Role to assign.
+ * @param {string}   [reason]   Optional reason string.
+ * @param {function}  onparse   Callback to receive parse result.
+ */
+function xows_xmp_muc_role_query(to, nick, role, reason, onparse)
+{
+  xows_log(2,"xmp_muc_role_set_query","query set MUC role",to);
+  
+  const r = reason ? xows_xml_node("reason",null,reason) : null;
+  
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"set"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},
+                xows_xml_node("item",{"nick":nick,"role":role},r)));
+              
+  // We use generical iq parse function to get potential error message
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
+ * Send query to set MUC occupant affiliation.
+ * 
+ * @param {string}    to        Room JID to assign Occupant affilation.
+ * @param {string}    jid       Occupant JID (the real one).
+ * @param {string}    affi      Affiliation to assign.
+ * @param {string}   [reason]   Optional reason string.
+ * @param {function}  onparse   Callback to receive parse result.
+ */
+function xows_xmp_muc_affi_query(to, jid, affi, reason, onparse)
+{
+  xows_log(2,"xmp_muc_role_set_query","query set MUC role",to);
+  
+  const r = reason ? xows_xml_node("reason",null,reason) : null;
+  
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"set"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},
+                xows_xml_node("item",{"affiliation":affi,"jid":nick},r)));
+              
+  // We use generical iq parse function to get potential error message
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
+ * Send query to to destroy MUC room.
+ * 
+ * @param {string}    to        Room JID to be destroyed.
+ * @param {string}   [alt]      Optional JID of alternate Room to join.
+ * @param {string}   [passwd]   Optional password for alternate Room.
+ * @param {string}   [reason]   Optional reason string.
+ * @param {function}  onparse   Callback to receive parse result.
+ */
+function xows_xmp_muc_destroy_query(to, alt, passwd, reason, onparse)
+{
+  xows_log(2,"xmp_muc_destroy_query","query destroy MUC room",to);
+  
+  // Base destroy node
+  const destroy = xows_xml_node("destroy",null,null);
+  
+  // set optional elements
+  if(alt) destroy.setAttribute("jid", alt);
+  if(passwd) xows_xml_parent(destroy,xows_xml_node("password",null,passwd));
+  if(reason) xows_xml_parent(destroy,xows_xml_node("reason",null,reason));
+  
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"set"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},destroy));
+              
+  // We use generical iq parse function to get potential error message
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
  * Generic function to publish to account PEP Node.
  * 
- * @param   {string}    node      PEP node (xmlns).
- * @param   {object}    publish   <publish> child node to add.
- * @param   {string}    access    Pubsub Access model to define.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    node      PEP node (xmlns).
+ * @param {object}    publish   <publish> child node to add.
+ * @param {string}    access    Pubsub Access model to define.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_pubsub_publish(node, publish, access, onparse)
 {
@@ -1042,11 +1157,11 @@ function xows_xmp_pubsub_publish(node, publish, access, onparse)
 /**
  * Send query to publish bookmark.
  * 
- * @param   {string}    jid       Bookmark Room JID.
- * @param   {string}    name      Bookmark display name.
- * @param   {boolean}   auto      Room autojoin flag.
- * @param   {string}    nick      Room prefered nick.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    jid       Bookmark Room JID.
+ * @param {string}    name      Bookmark display name.
+ * @param {boolean}   auto      Room autojoin flag.
+ * @param {string}    nick      Room prefered nick.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_bookmark_publish(jid, name, auto, nick, onparse)
 {
@@ -1068,9 +1183,9 @@ function xows_xmp_bookmark_publish(jid, name, auto, nick, onparse)
 /**
  * Send query to publish vcard-4.
  * 
- * @param   {object}    vcard     vCard4 data to set.
- * @param   {string}    access    Pubsub Access model to define.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    vcard     vCard4 data to set.
+ * @param {string}    access    Pubsub Access model to define.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_vcard4_publish(vcard, access, onparse)
 {
@@ -1086,8 +1201,8 @@ function xows_xmp_vcard4_publish(vcard, access, onparse)
 /**
  * Function to parse result of get vcard-4 query.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_vcard4_get_parse(stanza, onparse) 
 {
@@ -1099,15 +1214,15 @@ function xows_xmp_vcard4_get_parse(stanza, onparse)
   }
 
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse( stanza.getAttribute("from"), vcard);
 }
 
 /**
  * Send query to get vcard-4.
  * 
- * @param   {string}    to        Contact JID get vcard.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    to        Contact JID get vcard.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_vcard4_get_query(to, onparse)
 {
@@ -1123,8 +1238,8 @@ function xows_xmp_vcard4_get_query(to, onparse)
 /**
  * Send query to publish vcard-temp.
  * 
- * @param   {object}    vcard     vCard data to set.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    vcard     vCard data to set.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_vcardt_set_query(vcard, onparse)
 {
@@ -1139,8 +1254,8 @@ function xows_xmp_vcardt_set_query(vcard, onparse)
 /**
  * Function to parse result of get vcard-temp query.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_vcardt_get_parse(stanza, onparse)
 {
@@ -1149,15 +1264,15 @@ function xows_xmp_vcardt_get_parse(stanza, onparse)
     return;
   }
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse(stanza.getAttribute("from"), stanza.querySelector("vCard"));
 }
 
 /**
  * Send query to retrieve vcard-temp.
  * 
- * @param   {object}    to        Contact JID or null to get own.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    to        Contact JID or null to get own.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_vcardt_get_query(to, onparse)
 {
@@ -1177,10 +1292,10 @@ function xows_xmp_vcardt_get_query(to, onparse)
 /**
  * Publish XEP-0084 User Avatar data.
  * 
- * @param   {string}    hash      Base-64 encoded SAH-1 hash of data
- * @param   {string}    data      Base-64 encoded Data to publish
- * @param   {string}    access    Pubsub Access model to define.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    hash      Base-64 encoded SAH-1 hash of data
+ * @param {string}    data      Base-64 encoded Data to publish
+ * @param {string}    access    Pubsub Access model to define.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_avat_data_publish(hash, data, access, onparse)
 {
@@ -1198,13 +1313,13 @@ function xows_xmp_avat_data_publish(hash, data, access, onparse)
 /**
  * Publish XEP-0084 User Avatar metadata.
  * 
- * @param   {string}    hash      Base-64 encoded SAH-1 hash of data
- * @param   {number}    type      Image type (expected image/png)
- * @param   {number}    bytes     Image data size in bytes
- * @param   {number}    width     Image width in pixel
- * @param   {number}    height    Image width in pixel
- * @param   {string}    access    Pubsub Access model to define.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    hash      Base-64 encoded SAH-1 hash of data
+ * @param {number}    type      Image type (expected image/png)
+ * @param {number}    bytes     Image data size in bytes
+ * @param {number}    width     Image width in pixel
+ * @param {number}    height    Image width in pixel
+ * @param {string}    access    Pubsub Access model to define.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, onparse)
 {
@@ -1225,8 +1340,8 @@ function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, on
 /**
  * Function to handle result of Query XEP-0084 User Avatar data.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_avat_data_get_parse(stanza, onparse)
 {
@@ -1245,16 +1360,16 @@ function xows_xmp_avat_data_get_parse(stanza, onparse)
   }
   
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse(stanza.getAttribute("from"), id, data);
 }
 
 /**
  * Query XEP-0084 User Avatar data.
  * 
- * @param   {number}    to        Target bare JID
- * @param   {string}    hash      Data Id to get (SAH-1 data hash)
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {number}    to        Target bare JID
+ * @param {string}    hash      Data Id to get (SAH-1 data hash)
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_avat_data_get_query(to, hash, onparse)
 {
@@ -1272,8 +1387,8 @@ function xows_xmp_avat_data_get_query(to, hash, onparse)
 /**
  * Function to handle result of Query XEP-0084 User Avatar data.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_avat_meta_get_parse(stanza, onparse)
 {
@@ -1283,15 +1398,15 @@ function xows_xmp_avat_meta_get_parse(stanza, onparse)
   }
   
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse(stanza.getAttribute("from"), stanza.querySelector("metadata"));
 }
 
 /**
  * Query XEP-0084 User Avatar metadata.
  * 
- * @param   {number}    to        Target bare JID
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {number}    to        Target bare JID
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_avat_meta_get_query(to, onparse)
 {
@@ -1308,8 +1423,8 @@ function xows_xmp_avat_meta_get_query(to, onparse)
 /**
  * Publish XEP-0172 User Nickname.
  * 
- * @param   {string}    nick      Nickname to publish
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    nick      Nickname to publish
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_nick_publish(nick, onparse)
 {
@@ -1327,8 +1442,8 @@ function xows_xmp_nick_publish(nick, onparse)
 /**
  * Function to handle result of Query XEP-0172 User Nickname.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_nick_get_parse(stanza, onparse)
 {
@@ -1338,15 +1453,15 @@ function xows_xmp_nick_get_parse(stanza, onparse)
   }
   
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse(stanza.getAttribute("from"), stanza.querySelector("nick"));
 }
 
 /**
  * Query XEP-0172 User Nickname.
  * 
- * @param   {number}    to        Target bare JID
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {number}    to        Target bare JID
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_nick_get_query(to, onparse)
 {
@@ -1364,8 +1479,8 @@ function xows_xmp_nick_get_query(to, onparse)
 /**
  * Function to parse result of register form query.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_register_get_parse(stanza, onparse) 
 {
@@ -1388,15 +1503,15 @@ function xows_xmp_register_get_parse(stanza, onparse)
   const form = x ? xows_xmp_xdata_parse(x) : null;
   
   // Forward parse result
-  if(xows_is_func(onparse)) 
+  if(xows_isfunc(onparse)) 
     onparse(stanza.getAttribute("from"), regd, user, pass, mail, form);
 }
 
 /**
  * Send a register fields query to the specified destination.
  * 
- * @param   {string}    to        Peer or service JID.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    to        Peer or service JID.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_register_get_query(to, onparse)
 {
@@ -1414,12 +1529,12 @@ function xows_xmp_register_get_query(to, onparse)
 /**
  * Send a register form query to the specified destination.
  * 
- * @param   {string}    to        Peer or service JID or null.
- * @param   {string}    user      Content for <user> or null to ignore.
- * @param   {string}    pass      Content for <pass> or null to ignore.
- * @param   {string}    mail      Content for <mail> or null to ignore.
- * @param   {object[]}  form      Fulfilled x-data form null to ignore.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    to        Peer or service JID or null.
+ * @param {string}    user      Content for <user> or null to ignore.
+ * @param {string}    pass      Content for <pass> or null to ignore.
+ * @param {string}    mail      Content for <mail> or null to ignore.
+ * @param {object[]}  form      Fulfilled x-data form null to ignore.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_register_set_query(to, user, pass, mail, form, onparse)
 {
@@ -1452,8 +1567,8 @@ const xows_xmp_mam_query_param = {};
  * Archive result parsing function called when archive query result 
  * is received.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_mam_parse(stanza, onparse)
 {
@@ -1489,7 +1604,7 @@ function xows_xmp_mam_parse(stanza, onparse)
     } else {
       xows_log(2,"xmp_mam_parse","No result received");
       // Forward parse result
-      if(xows_is_func(onparse)) 
+      if(xows_isfunc(onparse)) 
         onparse(from, _with, [], count, complete);
       return;
     }
@@ -1527,7 +1642,7 @@ function xows_xmp_mam_parse(stanza, onparse)
     xows_log(2,"xmp_mam_parse","results collected","("+result.length+"/"+count+") '"+first+"'=>'"+last+"'");
 
     // Forward parse result
-    if(xows_is_func(onparse)) 
+    if(xows_isfunc(onparse)) 
       onparse(from, _with, result, count, complete);
   }
   
@@ -1539,13 +1654,13 @@ function xows_xmp_mam_parse(stanza, onparse)
  * Send query for archived messages matching the supplied filters
  * and the specified result set page.
  * 
- * @param   {number}    to        Query destination, or Null for default.
- * @param   {number}    max       Maximum count of result pages to get.
- * @param   {object}    _with     With JID filter.
- * @param   {number}    start     Start time filter.
- * @param   {number}    end       End time filter.
- * @param   {string}    before    Result page Id to get messages before.
- * @param   {function}  onparse   Callback to receive parse result.
+ * @param {number}    to        Query destination, or Null for default.
+ * @param {number}    max       Maximum count of result pages to get.
+ * @param {object}    _with     With JID filter.
+ * @param {number}    start     Start time filter.
+ * @param {number}    end       End time filter.
+ * @param {string}    before    Result page Id to get messages before.
+ * @param {function}  onparse   Callback to receive parse result.
  */
 function xows_xmp_mam_query(to, max, _with, start, end, before, onparse)
 {
@@ -1595,8 +1710,8 @@ function xows_xmp_mam_query(to, max, _with, start, end, before, onparse)
  * Http Upload result parsing function called when Http Upload query 
  * result is received.
  * 
- * @param   {object}    stanza    Received query response stanza.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {object}    stanza    Received query response stanza.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_upload_parse(stanza, onparse)
 {
@@ -1604,7 +1719,7 @@ function xows_xmp_upload_parse(stanza, onparse)
     const err_msg = xows_xmp_error_str(stanza);
     xows_log(1,"xmp_upload_parse","HTTP-Upload query error",err_msg);
     // Forward parse result
-    if(xows_is_func(onparse)) 
+    if(xows_isfunc(onparse)) 
       onparse(null, null, null, err_msg);
     return;
   }
@@ -1628,7 +1743,7 @@ function xows_xmp_upload_parse(stanza, onparse)
     xows_log(2,"xmp_upload_parse","accepted HTTP-Upload slot",put_url);
 
     // Forward parse result
-    if(xows_is_func(onparse)) 
+    if(xows_isfunc(onparse)) 
       onparse(put_url, headers, get_url);
   }
 }
@@ -1637,11 +1752,11 @@ function xows_xmp_upload_parse(stanza, onparse)
  * Send a query to request a slot for file upload via 
  * HTTP Upload service
  * 
- * @param   {string}    url       Http-Upload service URL.
- * @param   {string}    filename  Upload filename.
- * @param   {number}    size      Upload size in bytes.
- * @param   {string}    type      Optional upload file MIM type.
- * @param   {function}  onparse   Callback to forward parse result.
+ * @param {string}    url       Http-Upload service URL.
+ * @param {string}    filename  Upload filename.
+ * @param {number}    size      Upload size in bytes.
+ * @param {string}    type      Optional upload file MIM type.
+ * @param {function}  onparse   Callback to forward parse result.
  */
 function xows_xmp_upload_query(url, filename, size, type, onparse)
 {
@@ -1671,7 +1786,7 @@ let xows_xmp_auth_sasl_mechanisms = null;
 /**
  * Function to start SASL auth process.
  * 
- * @param   {string[]}  mechanisms  Array of SASL available mechanisms.
+ * @param {string[]}  mechanisms  Array of SASL available mechanisms.
  */
 function xows_xmp_auth_sasl_request(mechanisms)
 {
@@ -1707,12 +1822,12 @@ function xows_xmp_auth_sasl_request(mechanisms)
  * This function is part of the account registration scenario, called
  * once the server responded to registration form query.
  * 
- * @param   {string}        from          Sender JID.
- * @param   {boolean}       registered    Indicate <registered> child in response.
- * @param   {string}        user          <user> child content or null if not present.
- * @param   {string}        pass          <pass> child content or null if not present.
- * @param   {string}        email         <email> child content or null if not present.
- * @param   {object[]}      form          Parsed x-data form to fulfill.
+ * @param {string}        from          Sender JID.
+ * @param {boolean}       registered    Indicate <registered> child in response.
+ * @param {string}        user          <user> child content or null if not present.
+ * @param {string}        pass          <pass> child content or null if not present.
+ * @param {string}        email         <email> child content or null if not present.
+ * @param {object[]}      form          Parsed x-data form to fulfill.
  */
 function xows_xmp_auth_register_get_parse(from, registered, user, pass, email, form)
 {
@@ -1741,12 +1856,12 @@ function xows_xmp_auth_register_get_parse(from, registered, user, pass, email, f
  * This function is part of the account registration scenario, called
  * once the server responded to registration form query.
  * 
- * @param   {string}    from      Query Sender JID
- * @param   {string}    type      Query Response type.
- * @param   {string}    er_type   Error type if available.
- * @param   {string}    er_code   Error code if available.
- * @param   {string}    er_name   Error code if available.
- * @param   {string}    er_text   Error text if available.
+ * @param {string}    from      Query Sender JID
+ * @param {string}    type      Query Response type.
+ * @param {string}    er_type   Error type if available.
+ * @param {string}    er_code   Error code if available.
+ * @param {string}    er_name   Error code if available.
+ * @param {string}    er_text   Error text if available.
  */
 function xows_xmp_auth_register_set_parse(from, type, er_type, er_code, er_name, er_text)
 {
@@ -1785,7 +1900,7 @@ function xows_xmp_auth_register_set_parse(from, type, er_type, er_code, er_name,
 /**
  * Function to send response to <iq> ping query
  * 
- * @param   {object}  stanza   Received <iq> stanza.
+ * @param {object}  stanza   Received <iq> stanza.
  */
 function xows_xmp_resp_ping(stanza)
 {
@@ -1800,7 +1915,7 @@ function xows_xmp_resp_ping(stanza)
 /**
  *  Function to send response to <iq> time query
  * 
- * @param   {object}  stanza   Received <iq> stanza.
+ * @param {object}  stanza   Received <iq> stanza.
  */
 function xows_xmp_resp_time(stanza)
 {
@@ -1829,7 +1944,7 @@ function xows_xmp_resp_time(stanza)
 /**
  *  Function to send response to <iq> version query
  * 
- * @param   {object}  stanza   Received <iq> stanza.
+ * @param {object}  stanza   Received <iq> stanza.
  */
 function xows_xmp_resp_version(stanza)
 {
@@ -1849,7 +1964,7 @@ function xows_xmp_resp_version(stanza)
 /**
  * Function to send response to <iq> disco#info query
  * 
- * @param   {object}  stanza  Received <iq> stanza.
+ * @param {object}  stanza  Received <iq> stanza.
  */
 function xows_xmp_resp_discoinfo(stanza)
 {
@@ -1871,7 +1986,7 @@ function xows_xmp_resp_discoinfo(stanza)
 /**
  * Function to proceed an received <open> stanza.
  * 
- * @param   {object}  stanza  Received <open> stanza
+ * @param {object}  stanza  Received <open> stanza
  */
 function xows_xmp_recv_open(stanza)
 {
@@ -1890,7 +2005,7 @@ function xows_xmp_recv_open(stanza)
 /**
  * Function to proceed an received <close> stanza.
  * 
- * @param   {object}  stanza  Received <close> stanza
+ * @param {object}  stanza  Received <close> stanza
  */
 function xows_xmp_recv_close(stanza)
 {
@@ -1912,7 +2027,7 @@ function xows_xmp_recv_close(stanza)
 /**
  * Function to proceed an received <stream:error> stanza.
  * 
- * @param   {object}  stanza  Received <stream:error> stanza
+ * @param {object}  stanza  Received <stream:error> stanza
  */
 function xows_xmp_recv_streamerror(stanza)
 {
@@ -1929,7 +2044,7 @@ function xows_xmp_recv_streamerror(stanza)
 /**
  * Function to proceed an received <stream:features> stanza.
  * 
- * @param   {object}  stanza  Received <stream:features> stanza
+ * @param {object}  stanza  Received <stream:features> stanza
  */
 function xows_xmp_recv_streamfeatures(stanza)
 {
@@ -2013,7 +2128,7 @@ function xows_xmp_recv_streamfeatures(stanza)
 /**
  * Function to proceed an received <challenge> stanza (SASL auth).
  * 
- * @param   {object}  stanza  Received <challenge> stanza
+ * @param {object}  stanza  Received <challenge> stanza
  */
 function xows_xmp_recv_challenge(stanza)
 {
@@ -2037,7 +2152,7 @@ function xows_xmp_recv_challenge(stanza)
 /**
  * Function to proceed an received <failure> stanza (SASL auth).
  * 
- * @param   {object}  stanza  Received <failure> stanza
+ * @param {object}  stanza  Received <failure> stanza
  */
 function xows_xmp_recv_failure(stanza)
 {
@@ -2077,7 +2192,7 @@ function xows_xmp_recv_failure(stanza)
 /**
  * Function to proceed an received <success> stanza (SASL auth).
  * 
- * @param   {object}  stanza    Received <success> stanza
+ * @param {object}  stanza    Received <success> stanza
  */
 function xows_xmp_recv_success(stanza)
 {
@@ -2108,7 +2223,7 @@ function xows_xmp_recv_success(stanza)
 /**
  * Function to proceed an received roster push <iq> stanza.
  * 
- * @param   {object}  stanza  Received <iq> stanza
+ * @param {object}  stanza  Received <iq> stanza
  */
 function xows_xmp_recv_roster_push(stanza)
 {
@@ -2137,7 +2252,7 @@ function xows_xmp_recv_roster_push(stanza)
 /**
  * Function to proceed an received <presence> stanza.
  * 
- * @param   {object}  stanza  Received <presence> stanza
+ * @param {object}  stanza  Received <presence> stanza
  */
 function xows_xmp_recv_presence(stanza)
 {
@@ -2202,12 +2317,12 @@ function xows_xmp_recv_presence(stanza)
       // Check whether we received a MUC presence protocole
       if(xmlns === XOWS_NS_MUCUSER) {
         const item = child.querySelector("item"); //< should be an <item>
-        muc = { "affiliation" : item.getAttribute("affiliation"),
-                "role"        : item.getAttribute("role"),
-                "jid"         : item.getAttribute("jid"),
-                "nickname"    : item.getAttribute("nickname"),
-                "code"        : []};
-        const status = child.getElementsByTagName("status"); //< may be an <item>
+        muc = { "affi" : xows_xmp_affi_level_map[item.getAttribute("affiliation")],
+                "role" : xows_xmp_role_level_map[item.getAttribute("role")],
+                "full" : item.getAttribute("jid"),
+                "nick" : item.getAttribute("nickname"),
+                "code" : []};
+        const status = child.querySelectorAll("status"); //< search for <status>
         let j = status.length;
         while(j--) muc.code.push(parseInt(status[j].getAttribute("code")));
       }
@@ -2220,7 +2335,7 @@ function xows_xmp_recv_presence(stanza)
   
   // Check whether this a presence from MUC
   if(muc !== undefined) {
-    xows_log(2,"xmp_recv_presence","received MUC occupant",from);
+    xows_log(2,"xmp_recv_presence","received MUC presence",from);
     xows_xmp_fw_onoccupant(from, show, stat, muc, phot);
     return true;
   }
@@ -2234,7 +2349,7 @@ function xows_xmp_recv_presence(stanza)
 /**
  * Parse recevied forwarded archived message from MAM query.
  * 
- * @param   {string}  result    <result> element of received message
+ * @param {string}  result    <result> element of received message
  */
 function xows_xmp_recv_mam_result(result)
 {
@@ -2294,8 +2409,8 @@ function xows_xmp_recv_mam_result(result)
 /**
  * Parse recevied forwarded Pubsub event message.
  * 
- * @param   {string}  from      Message Sender
- * @param   {string}  event     <event> element of received message
+ * @param {string}  from      Message Sender
+ * @param {string}  event     <event> element of received message
  */
 function xows_xmp_recv_pubsub(from, event)
 {
@@ -2321,7 +2436,7 @@ function xows_xmp_recv_pubsub(from, event)
 /**
  * Parse received <message> stanza.
  * 
- * @param   {object}  stanza  Received <message> stanza
+ * @param {object}  stanza  Received <message> stanza
  */
 function xows_xmp_recv_message(stanza)
 {
@@ -2421,7 +2536,7 @@ function xows_xmp_recv_message(stanza)
 /**
  * Function to proceed an received <iq> stanza.
  * 
- * @param   {object}  stanza  Received <iq> stanza
+ * @param {object}  stanza  Received <iq> stanza
  */
 function xows_xmp_recv_iq(stanza)
 {
@@ -2461,7 +2576,7 @@ function xows_xmp_recv_iq(stanza)
     
     // If the id exists in the stack, call the proper callback
     if(xows_xmp_iq_stk[i].id === id) {
-      if(xows_is_func(xows_xmp_iq_stk[i].onresult)) {
+      if(xows_isfunc(xows_xmp_iq_stk[i].onresult)) {
         return xows_xmp_iq_stk[i].onresult(stanza, xows_xmp_iq_stk[i].onparse);
       } else {
         xows_log(1,"xmp_recv_iq","invalid onresult callback for query",id);
@@ -2478,13 +2593,13 @@ function xows_xmp_recv_iq(stanza)
  * Send common <presence> stanza to server or MUC room to update 
  * client availability and/or join or exit MUC room.
  * 
- * @param   {string}  to        Destination JID (can be null).
- * @param   {string}  type      Presence type attribute (can be null).
- * @param   {number}  level     Availability level 0 to 4 (can be null).
- * @param   {string}  status    Status string tu set.
- * @param   {string}  [photo]   Optionnal photo data hash to send.
- * @param   {boolean} [muc]     Append MUC xmlns child to stanza.
- * @param   {string}  [nick]    Optional nickname for subscribe request.
+ * @param {string}  to        Destination JID (can be null).
+ * @param {string}  type      Presence type attribute (can be null).
+ * @param {number}  level     Availability level 0 to 4 (can be null).
+ * @param {string}  status    Status string tu set.
+ * @param {string}  [photo]   Optionnal photo data hash to send.
+ * @param {boolean} [muc]     Append MUC xmlns child to stanza.
+ * @param {string}  [nick]    Optional nickname for subscribe request.
  */
 function xows_xmp_send_presence(to, type, level, status, photo, muc, nick)
 {
@@ -2535,8 +2650,8 @@ function xows_xmp_send_presence(to, type, level, status, photo, muc, nick)
  * Send receipt for the specified message ID at the specified 
  * destination.
  * 
- * @param   {string}  to    Destnation JID
- * @param   {string}  id    Message ID to send receipt about
+ * @param {string}  to    Destnation JID
+ * @param {string}  id    Message ID to send receipt about
  */
 function xows_xmp_send_receipt(to, id)
 {
@@ -2549,9 +2664,9 @@ function xows_xmp_send_receipt(to, id)
 /**
  * Send a message with chat state notification (XEP-0085).
  * 
- * @param   {string}  to      JID of the recipient.
- * @param   {string}  type    Message type to set.
- * @param   {number}  chat    Chat state to set.
+ * @param {string}  to      JID of the recipient.
+ * @param {string}  type    Message type to set.
+ * @param {number}  chat    Chat state to set.
  */
 function xows_xmp_send_chatstate(to, type, chat) 
 {
@@ -2566,10 +2681,10 @@ function xows_xmp_send_chatstate(to, type, chat)
 /**
  * Send a message with textual content.
  * 
- * @param   {string}    type    Message type.
- * @param   {string}    to      JID of the recipient.
- * @param   {string}    body    Message content.
- * @param   {boolean}   recp    Request message receipt.
+ * @param {string}    type    Message type.
+ * @param {string}    to      JID of the recipient.
+ * @param {string}    body    Message content.
+ * @param {boolean}   recp    Request message receipt.
  * 
  * @return  {string}  Sent message ID.
  */
@@ -2596,9 +2711,9 @@ function xows_xmp_send_message(type, to, body, recp)
 /**
  * Send a subject to MUC room.
  * 
- * @param   {string}    id      Message ID or null for auto.
- * @param   {string}    to      JID of the recipient.
- * @param   {string}    subj    Subject content.
+ * @param {string}    id      Message ID or null for auto.
+ * @param {string}    to      JID of the recipient.
+ * @param {string}    subj    Subject content.
  * 
  * @return  {string}  Sent message ID.
  */
@@ -2675,7 +2790,7 @@ function xows_xmp_sck_onclose(code, mesg)
  * Handle socket received message event. This parse the raw data as XML 
  * then forward it to the proper function.
  * 
- * @param   {string}  data   Received raw data string.
+ * @param {string}  data   Received raw data string.
  */
 function xows_xmp_sck_onrecv(data) 
 { 
@@ -2705,10 +2820,10 @@ function xows_xmp_sck_onrecv(data)
 /**
  * Open a new XMPP client session to the specified WebSocket URL.
  * 
- * @param   {string}    url       URL to WebSocket service
- * @param   {string}    jid       Authentication JID (user@domain)
- * @param   {string}    password  Authentication password
- * @param   {boolean}   register  If true proceed to register new account.
+ * @param {string}    url       URL to WebSocket service
+ * @param {string}    jid       Authentication JID (user@domain)
+ * @param {string}    password  Authentication password
+ * @param {boolean}   register  If true proceed to register new account.
  */
 function xows_xmp_connect(url, jid, password, register)
 {

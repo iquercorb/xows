@@ -54,7 +54,7 @@ const xows_doc_frag_db = {};
  * Variable to hold scroll position of the last loading checkup to 
  * prevent useless flood while scrolling.
  */
-let xows_doc_loader_scroll = 99999; 
+let xows_doc_loader_scroll = {"top":99999,"off":0}; 
 
 /**
  * Current target of the lazy loader, this is the element with 
@@ -73,9 +73,19 @@ let xows_doc_loader_attrib = "";
 const xows_doc_loader_stack = [];
 
 /**
+ * Global reference to document's Selection object
+ */
+const xows_doc_sel = document.getSelection();
+
+/**
+ * Global reference to temporary selection Range object
+ */
+const xows_doc_rng = document.createRange();
+
+/**
  * Create local reference of the specified DOM object
  * 
- * @param   {string}  id  Element id to cache
+ * @param {string}  id  Element id to cache
  */
 function xows_doc_cache(id)
 {
@@ -85,11 +95,11 @@ function xows_doc_cache(id)
 /**
  * Add an event listener to the specified object with proper options
  * 
- * @param   {object}    element   Element to add event listener to.
- * @param   {string}    event     Event type to listen.
- * @param   {function}  callback  Callback function for event listener
- * @param   {boolean}   [passive] Optional force enable or disable passive.
- * @param   {boolean}   [capture] Optional force enable or disable capture mode.
+ * @param {object}    element   Element to add event listener to.
+ * @param {string}    event     Event type to listen.
+ * @param {function}  callback  Callback function for event listener
+ * @param {boolean}   [passive] Optional force enable or disable passive.
+ * @param {boolean}   [capture] Optional force enable or disable capture mode.
  */
 function xows_doc_listener_add(element, event, callback, passive = true, capture = false)
 {
@@ -99,11 +109,11 @@ function xows_doc_listener_add(element, event, callback, passive = true, capture
 /**
  * Remove an event listener from the specified object
  * 
- * @param   {object}    element  Element to add event listener to.
- * @param   {string}    event    Event type to listen.
- * @param   {function}  callback Callback function for event listener.
- * @param   {boolean}   [passive] Optional force enable or disable passive.
- * @param   {boolean}   [capture] Optional force enable or disable capture mode.
+ * @param {object}    element  Element to add event listener to.
+ * @param {string}    event    Event type to listen.
+ * @param {function}  callback Callback function for event listener.
+ * @param {boolean}   [passive] Optional force enable or disable passive.
+ * @param {boolean}   [capture] Optional force enable or disable capture mode.
  */
 function xows_doc_listener_rem(element, event, callback, passive = true, capture = false)
 {
@@ -114,11 +124,11 @@ function xows_doc_listener_rem(element, event, callback, passive = true, capture
  * Add an event listener to selected children nodes of the specified 
  * object with proper options.
  * 
- * @param   {object}    element   Element to add event listener to.
- * @param   {string}    select    CSS selectors string to select children.
- * @param   {string}    event     Event type to listen.
- * @param   {function}  callback  Callback function for event listener.
- * @param   {boolean}   [passive] Optional force enable or disable passive.
+ * @param {object}    element   Element to add event listener to.
+ * @param {string}    select    CSS selectors string to select children.
+ * @param {string}    event     Event type to listen.
+ * @param {function}  callback  Callback function for event listener.
+ * @param {boolean}   [passive] Optional force enable or disable passive.
  */
 function xows_doc_listener_add_select(element, select, event, callback, passive = true)
 {
@@ -132,11 +142,11 @@ function xows_doc_listener_add_select(element, select, event, callback, passive 
  * Remove an event listener from selected children of the specified  
  * object with proper options.
  * 
- * @param   {object}    element   Element to add event listener to.
- * @param   {string}    select    CSS selectors string to select children.
- * @param   {string}    event     Event type to listen.
- * @param   {function}  callback  Callback function for event listener.
- * @param   {boolean}   [passive] Optional force enable or disable passive.
+ * @param {object}    element   Element to add event listener to.
+ * @param {string}    select    CSS selectors string to select children.
+ * @param {string}    event     Event type to listen.
+ * @param {function}  callback  Callback function for event listener.
+ * @param {boolean}   [passive] Optional force enable or disable passive.
  */
 function xows_doc_listener_rem_select(element, select, event, callback, passive = true)
 {
@@ -149,8 +159,8 @@ function xows_doc_listener_rem_select(element, select, event, callback, passive 
 /**
  * Chechk whether element has class in its class list.
  * 
- * @param   {string}  id        Cached element id. 
- * @param   {string}  clsname   Class name.
+ * @param {string}  id        Cached element id. 
+ * @param {string}  clsname   Class name.
  */
 function xows_doc_cls_has(id, clsname)
 {
@@ -160,8 +170,8 @@ function xows_doc_cls_has(id, clsname)
 /**
  * Toggle the specified class in element class list.
  * 
- * @param   {string}  id        Cached element id. 
- * @param   {string}  clsname   Class name.
+ * @param {string}  id        Cached element id. 
+ * @param {string}  clsname   Class name.
  */
 function xows_doc_cls_tog(id, clsname)
 {
@@ -171,8 +181,8 @@ function xows_doc_cls_tog(id, clsname)
 /**
  * Add the specified class to element class list.
  * 
- * @param   {string}  id        Cached element id. 
- * @param   {string}  clsname   Class name.
+ * @param {string}  id        Cached element id. 
+ * @param {string}  clsname   Class name.
  */
 function xows_doc_cls_add(id, clsname)
 {
@@ -182,8 +192,8 @@ function xows_doc_cls_add(id, clsname)
 /**
  * Remove the specified class to element class list.
  * 
- * @param   {string}  id        Cached element id. 
- * @param   {string}  clsname   Class name.
+ * @param {string}  id        Cached element id. 
+ * @param {string}  clsname   Class name.
  */
 function xows_doc_cls_rem(id, clsname)
 {
@@ -193,9 +203,9 @@ function xows_doc_cls_rem(id, clsname)
 /**
  * Add or remove the specified class to/from element class list.
  * 
- * @param   {string}  id        Cached element id. 
- * @param   {string}  clsname   Class name.
- * @param   {boolean} add       Boolean to add or remove class.
+ * @param {string}  id        Cached element id. 
+ * @param {string}  clsname   Class name.
+ * @param {boolean} add       Boolean to add or remove class.
  */
 function xows_doc_cls_set(id, clsname, add)
 {
@@ -206,53 +216,53 @@ function xows_doc_cls_set(id, clsname, add)
 /**
  * Show the specified item, either element object or id.
  * 
- * @param   {string}  id        Cached element id.  
+ * @param {string}  id        Cached element id.  
  */
 function xows_doc_show(id)
 {
-  xows_doc[id].classList.remove(XOWS_CLS_HIDDEN);
+  xows_doc[id].classList.remove("HIDDEN");
 }
 
 /**
  * Hide the specified item, either element object or id.
  * 
- * @param   {string}  id        Cached element id.  
+ * @param {string}  id        Cached element id.  
  */
 function xows_doc_hide(id)
 {
-  xows_doc[id].classList.add(XOWS_CLS_HIDDEN);
+  xows_doc[id].classList.add("HIDDEN");
 }
 
 /**
  * Show or hide the specified item, either element object or id.
  * 
- * @param   {string}  id        Cached element id.  
- * @param   {boolean} hidden    Boolean to show or hide.
+ * @param {string}  id        Cached element id.  
+ * @param {boolean} hidden    Boolean to show or hide.
  */
 function xows_doc_hidden_set(id, hidden)
 {
-  hidden  ? xows_doc[id].classList.add(XOWS_CLS_HIDDEN) 
-        : xows_doc[id].classList.remove(XOWS_CLS_HIDDEN);
+  hidden  ? xows_doc[id].classList.add("HIDDEN") 
+        : xows_doc[id].classList.remove("HIDDEN");
 }
 
 /**
  * Check whether the specified item, either element object or id is
  * hidden (has the .hidden class).
  * 
- * @param   {string}  id        Cached element id.  
+ * @param {string}  id        Cached element id.  
  *   
  * @return  {boolean}   True if element is visible, false otherwise.
  */
 function xows_doc_hidden(id)
 {
-  return xows_doc[id].classList.contains(XOWS_CLS_HIDDEN);
+  return xows_doc[id].classList.contains("HIDDEN");
 }
 
 /**
  * Backup specified element content to an offscreen document fragment. 
  * 
- * @param   {string}  name      Bakcup name.
- * @param   {string}  id        Cached element id to backup.
+ * @param {string}  name      Bakcup name.
+ * @param {string}  id        Cached element id to backup.
  */
 function xows_doc_frag_backup(name, id)
 {
@@ -269,9 +279,9 @@ function xows_doc_frag_backup(name, id)
 /**
  * Copy offscreen fragment from another one or current DOM element.
  * 
- * @param   {string}  dst     Destination fragment name.
- * @param   {string}  src     Source fragment name or null to copy from DOM.
- * @param   {string}  id      Cached element id to copy.
+ * @param {string}  dst     Destination fragment name.
+ * @param {string}  src     Source fragment name or null to copy from DOM.
+ * @param {string}  id      Cached element id to copy.
  */
 function xows_doc_frag_copy(dst, src, id)
 {
@@ -317,8 +327,8 @@ function xows_doc_frag_copy(dst, src, id)
 /**
  * Restore specified element content from offscreen document fragment. 
  * 
- * @param   {string}  name      Fragment name.
- * @param   {string}  id        Cached element id to restore.
+ * @param {string}  name      Fragment name.
+ * @param {string}  id        Cached element id to restore.
  */
 function xows_doc_frag_restore(name, id)
 {
@@ -338,8 +348,8 @@ function xows_doc_frag_restore(name, id)
 /**
  * Get backed document fragment element.
  * 
- * @param   {string}  name      Bakcup name.
- * @param   {string}  id        Cached element id to get.
+ * @param {string}  name      Bakcup name.
+ * @param {string}  id        Cached element id to get.
  */
 function xows_doc_frag(name, id)
 {
@@ -349,8 +359,8 @@ function xows_doc_frag(name, id)
 /**
  * Get element within backed document fragment element.
  * 
- * @param   {string}  name      Bakcup name.
- * @param   {string}  id        Id of element to retreive.
+ * @param {string}  name      Bakcup name.
+ * @param {string}  id        Id of element to retreive.
  */
 function xows_doc_frag_element(name, id)
 {
@@ -367,8 +377,8 @@ function xows_doc_frag_element(name, id)
 /**
  * Get child with the specified id in the given parent.
  * 
- * @param   {object}    parent  Parent object to search child.
- * @param   {boolean}   id      Child id to search for.
+ * @param {object}    parent  Parent object to search child.
+ * @param {boolean}   id      Child id to search for.
  * 
  * @return  {object}  Found object or null if not found.  
  */
@@ -384,13 +394,52 @@ function xows_doc_get_child(parent, id)
 }
 
 /**
+ * Set edition caret either before or after the specified node.
+ * 
+ * @param {object}    node    Reference node to position caret.
+ * @param {object}    before  Place caret before of node.
+ */
+function xows_doc_caret_around(node, before = false)
+{
+  xows_doc_sel.removeAllRanges();
+  xows_doc_rng.setStartBefore(node);
+  xows_doc_rng.setEndAfter(node);
+  xows_doc_rng.collapse(before);
+  xows_doc_sel.addRange(xows_doc_rng);
+}
+
+/**
+ * Set edition caret in the specified node.
+ * 
+ * @param {object}    node    Node to position caret in.
+ * @param {boolean}   start   Place caret at beginning of content.
+ */
+function xows_doc_caret_at(node, start = false)
+{
+  xows_doc_sel.removeAllRanges();
+  xows_doc_rng.selectNodeContents(node);
+  xows_doc_rng.collapse(start);
+  xows_doc_sel.addRange(xows_doc_rng);
+}
+
+/**
+ * Get current document selection range
+ * 
+ * @param {number}  index     The zero-based index of the range to return.
+ */
+function xows_doc_sel_rng(index) 
+{
+  return xows_doc_sel.getRangeAt(index);
+}
+
+/**
  * Initializes document manager and browser interactions. 
  * 
  * This function cache the static document elements for fast access and 
  * setup the nécessary listeners and the callbacks for user and client 
  * interactions.
  * 
- * @param   {object}    onready   Callback function to be called once 
+ * @param {object}    onready   Callback function to be called once 
  *                                templates successfully loaded.
  */
 function xows_doc_init(onready)
@@ -401,38 +450,36 @@ function xows_doc_init(onready)
   while(i--) xows_doc_cache(element[i].id);
 
   // Main Page "scr_main" event listeners
-  //xows_doc_listener_add(xows_doc.main_hndl,   "click",    xows_gui_main_hnd_ev_clic);
-  //xows_doc_listener_add(xows_doc.main_hndr,   "click",    xows_gui_main_hnd_ev_clic);
+  xows_doc_listener_add(xows_doc.main_tabs,   "click",    xows_gui_rost_widen); //< capture mode
+  xows_doc_listener_add(xows_doc.main_hndr,   "click",    xows_gui_main_open);
+  xows_doc_listener_add(xows_doc.main_hndl,   "click",    xows_gui_main_open);
   
-  xows_doc_listener_add(xows_doc.main_tabs,   "click",    xows_gui_panel_ev_clic,true,true); //< capture mode
-  xows_doc_listener_add(xows_doc.main_colr,   "click",    xows_gui_panel_ev_clic,true,true); //< capture mode
-  xows_doc_listener_add(xows_doc.main_coll,   "click",    xows_gui_panel_ev_clic,true,true); //< capture mode
-  
-  xows_doc_listener_add(xows_doc.rost_tabs,   "click",    xows_gui_rost_tabs_ev_clic);
-  xows_doc_listener_add(xows_doc.cont_ul,     "click",    xows_gui_rost_ul_ev_clic);
-  xows_doc_listener_add(xows_doc.subs_ul,     "click",    xows_gui_subs_ul_ev_clic);
+  xows_doc_listener_add(xows_doc.rost_tabs,   "click",    xows_gui_rost_tabs_onclick);
+  xows_doc_listener_add(xows_doc.cont_list,   "click",    xows_gui_rost_list_onclick);
+  xows_doc_listener_add(xows_doc.room_list,   "click",    xows_gui_rost_list_onclick);
   xows_doc_listener_add(xows_doc.cont_add,    "click",    xows_gui_page_cont_open);
-  xows_doc_listener_add(xows_doc.room_ul,     "click",    xows_gui_rost_ul_ev_clic);
-  xows_doc_listener_add(xows_doc.room_add,    "click",    xows_gui_room_add_ev_clic);
+  xows_doc_listener_add(xows_doc.room_add,    "click",    xows_gui_room_add_onclick);
   xows_doc_listener_add(xows_doc.room_upd,    "click",    xows_gui_room_list_reload);
-  xows_doc_listener_add(xows_doc.occu_list,   "click",    xows_gui_evt_click_occu_list);
+  xows_doc_listener_add(xows_doc.occu_list,   "click",    xows_gui_occu_list_onclick);
   xows_doc_listener_add(xows_doc.menu_show,   "click",    xows_gui_menu_show_onclick);
   xows_doc_listener_add(xows_doc.drop_show,   "click",    xows_gui_menu_show_onclick);
   xows_doc_listener_add(xows_doc.menu_user,   "click",    xows_gui_page_user_open);
-  xows_doc_listener_add(xows_doc.user_stat,   "keypress", xows_gui_evt_keyp_user_stat);
-  xows_doc_listener_add(xows_doc.send_edit,   "keydown",  xows_gui_evt_keyud_send_edit,false); //< need preventDefault()
-  xows_doc_listener_add(xows_doc.send_edit,   "keyup",    xows_gui_evt_keyud_send_edit);
-  xows_doc_listener_add(xows_doc.send_edit,   "input",    xows_gui_evt_input_send_edit);
-  xows_doc_listener_add(xows_doc.chat_main,   "scroll",   xows_gui_evt_scroll_chat_main);
-  xows_doc_listener_add(xows_doc.chat_main,   "click",    xows_gui_evt_click_chat_main);
+  xows_doc_listener_add(xows_doc.user_stat,   "keypress", xows_gui_user_stat_onkeyp);
+  xows_doc_listener_add(xows_doc.user_stat,   "blur",     xows_gui_user_stat_onblur);
+  xows_doc_listener_add(xows_doc.send_edit,   "keydown",  xows_gui_send_edit_onkeyp, false); //< need preventDefault()
+  xows_doc_listener_add(xows_doc.send_edit,   "keyup",    xows_gui_send_edit_onkeyp);
+  xows_doc_listener_add(xows_doc.send_edit,   "input",    xows_gui_send_edit_oninput);
+  xows_doc_listener_add(xows_doc.send_edit,   "click",    xows_gui_send_edit_onclick);
+  xows_doc_listener_add(xows_doc.chat_main,   "scroll",   xows_gui_chat_main_onscroll);
+  xows_doc_listener_add(xows_doc.chat_main,   "click",    xows_gui_chat_main_onclick);
   xows_doc_listener_add(xows_doc.chat_file,   "change",   xows_gui_chat_file_onchange);
-  xows_doc_listener_add(xows_doc.chat_upld,   "click",    xows_gui_evt_click_chat_upld);
+  xows_doc_listener_add(xows_doc.chat_upld,   "click",    xows_gui_chat_upld_onclick);
   xows_doc_listener_add(xows_doc.menu_emoj,   "click",    xows_gui_menu_emoj_onclick);
-  //xows_doc_listener_add(xows_doc.drop_emoj,   "click",    xows_gui_menu_emoj_onclick);
-  xows_doc_listener_add(xows_doc.menu_room,   "click",    xows_gui_evt_click_room_menu);
-  xows_doc_listener_add(xows_doc.drop_room,   "click",    xows_gui_evt_click_room_menu);
-  xows_doc_listener_add(xows_doc.chat_noti,   "click",    xows_gui_evt_click_chat_noti);
-  xows_doc_listener_add(xows_doc.chat_mute,   "click",    xows_gui_evt_click_chat_noti);
+  xows_doc_listener_add(xows_doc.chat_meta,   "keypress", xows_gui_chat_meta_onkeyp);
+  xows_doc_listener_add(xows_doc.chat_meta,   "blur",     xows_gui_chat_meta_onblur);
+  xows_doc_listener_add(xows_doc.chat_noti,   "click",    xows_gui_chat_noti_onclick);
+  xows_doc_listener_add(xows_doc.chat_conf,   "click",    xows_gui_chat_conf_onclick);
+  xows_doc_listener_add(xows_doc.chat_occu,   "click",    xows_gui_chat_occu_onclick);
 
   // Page screen "scr_page" event listener
   xows_doc_listener_add(xows_doc.scr_page,    "keyup",    xows_doc_page_onkeyu);
@@ -458,15 +505,15 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc.mbox_valid,  "click",    xows_doc_mbox_onvalid);
   
   // Set event listener to handle user presence and GUI focus
-  xows_doc_listener_add(document,   "visibilitychange",   xows_gui_wnd_ev_focus);
-  xows_doc_listener_add(window,     "focus",              xows_gui_wnd_ev_focus);
-  xows_doc_listener_add(window,     "blur",               xows_gui_wnd_ev_focus);
+  xows_doc_listener_add(document,   "visibilitychange",   xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window,     "focus",              xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window,     "blur",               xows_gui_wnd_onfocus);
 
   // Set event listener to handle page quit or reload
-  xows_doc_listener_add(window,     "beforeunload",       xows_gui_wnd_ev_unload);
+  xows_doc_listener_add(window,     "beforeunload",       xows_gui_wnd_onunload);
   
   // Set event listener to hook browser "nav back"
-  xows_doc_listener_add(window,     "popstate",           xows_gui_nav_ev_popstate);
+  xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
   
   // Load the notification sound
   xows_gui_notify_sound = new Audio("/" + xows_options.root + "/sounds/notify.mp3?456");
@@ -478,7 +525,7 @@ function xows_doc_init(onready)
   xows_log(2,"gui_start","document ready");
 
   // Finaly call onready callback
-  if(xows_is_func(onready)) onready();
+  if(xows_isfunc(onready)) onready();
 }
 
 /**
@@ -487,7 +534,7 @@ function xows_doc_init(onready)
 function xows_doc_loader_clear()
 {
   xows_doc_loader_stack.length = 0;
-  xows_doc_loader_scroll = 99999;
+  xows_doc_loader_scroll.top = 99999;
   xows_log(2,"doc_loader_clear","loader stack cleared");
 }
 
@@ -498,8 +545,8 @@ function xows_doc_loader_clear()
  * the monitored elements in the stack are currently visible and should 
  * start loading.
  * 
- * @param   {object}  client  Scrolling element with content to be monitored.
- * @param   {string}  attrib  Placeholder attribute containing media URL.
+ * @param {object}  client  Scrolling element with content to be monitored.
+ * @param {string}  attrib  Placeholder attribute containing media URL.
  */
 function xows_doc_loader_setup(client, attrib)
 {
@@ -525,13 +572,13 @@ function xows_doc_loader_setup(client, attrib)
   }
   
   // Reset scroll to "infinite" to ve sure we make a first check
-  xows_doc_loader_scroll = 99999;
+  xows_doc_loader_scroll.top = 99999;
 }
 
 /**
  * Add the specified element to the lazy-loading stack.
  * 
- * @param   {object}  target  Element to check for load monitoring.
+ * @param {object}  target  Element to check for load monitoring.
  */
 function xows_doc_loader_monitor(target)
 {
@@ -543,28 +590,41 @@ function xows_doc_loader_monitor(target)
   }
 }
 
+/**
+ * Lazy Loader on-load callback function for loaded medias
+ * 
+ * @param {object}  media   Media object that finished to load.
+ */
 function xows_doc_loader_onload(media)
 {
   // Remove the spin loader and show the media (normal height)
-  media.parentNode.classList.remove(XOWS_CLS_EMBD_LOAD);
-  media.classList.remove(XOWS_CLS_FLATTEN);
+  media.parentNode.classList.remove("LOADING"); //< container
+  media.classList.remove("FLATTEN"); //< media
+  
+  // Adjust scroll position to compensate content new height
+  xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.off;
 }
 
 /**
- * Function to test media placeholder against current viewport to 
- * start loading source.
+ * Lazy Loader check function. 
+ * 
+ * this function test embeded media containers against current viewport
+ * to start loading source.
+ * 
+ * @param {boolean}   force   Force check.
  */
-function xows_doc_loader_check(event)
+function xows_doc_loader_check(force)
 {
   if(!xows_doc_loader_stack.length)
     return;
     
   // We perform check only if scroll changed enough to justify it
-  if(Math.abs(xows_doc_loader_client.scrollTop - xows_doc_loader_scroll) < 120) 
+  if(!force && Math.abs(xows_doc_loader_client.scrollTop - xows_doc_loader_scroll.top) < 120) 
     return;
 
-  // Keep last check scroll
-  xows_doc_loader_scroll = xows_doc_loader_client.scrollTop;
+  // Keep scroll parameters
+  xows_doc_loader_scroll.top = xows_doc_loader_client.scrollTop;
+  xows_doc_loader_scroll.off = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.top;
   
   // Used variables
   const view_bound = xows_doc_loader_client.getBoundingClientRect();
@@ -582,28 +642,22 @@ function xows_doc_loader_check(event)
     // window client (the visible part)
     if(media_bound.bottom > view_bound.top && media_bound.top <= view_bound.bottom) {
       
-      // The XOWS_ATTR_NOLOAD attribute, non-standard HTML attribute, is 
+      // The NOLOADER attribute, non-standard HTML attribute, is 
       // used to indiate the media should not be hidden during 
       // loading. This is typically used for GIF images, assumed as 
       // animated, to let them starting playing without waiting full 
       // loading (which can take long).
-      if(!media.hasAttribute(XOWS_ATTR_NOLOAD)) {
+      if(!media.hasAttribute("NOLOADER")) {
         
         // We virtually hide the media by setting its height to 0 using
         // the flatten class, then we add a spin loader to its 
         // parent, which is usualy the placeholder
-        media.classList.add(XOWS_CLS_FLATTEN);
-        media.parentNode.classList.add(XOWS_CLS_EMBD_LOAD);
+        media.classList.add("FLATTEN"); //< media
+        media.parentNode.classList.add("LOADING"); //< container
 
-        // Define an onload function to handle the end of loading
-        media.onload = function() {
-          // Remove the spin loader and show the media (normal height)
-          //this.parentNode.classList.remove(XOWS_CLS_EMBD_LOAD);
-          //this.classList.remove(XOWS_CLS_FLATTEN);
-          //xows_doc_loader_onload(this);
-          setTimeout(xows_doc_loader_onload, 1000, this);
-        };
-      }
+        // Define an onload function to handle loading end
+        media.onload = function(){xows_doc_loader_onload(this);};
+      } 
       
       // Set the src from data_src to start load data
       media.src = media.getAttribute(xows_doc_loader_attrib);
@@ -626,12 +680,12 @@ function xows_doc_loader_check(event)
  */
 function xows_doc_blink(id, duration)
 {
-  if(xows_doc_cls_has(id, XOWS_CLS_BLINK)) {
+  if(xows_doc_cls_has(id, "BLINK")) {
     // remove blink animation class and clean stuff
-    xows_doc_cls_rem(id, XOWS_CLS_BLINK); 
+    xows_doc_cls_rem(id, "BLINK"); 
   } else {
     // add blink animation class and start timeout
-    xows_doc_cls_add(id, XOWS_CLS_BLINK); 
+    xows_doc_cls_add(id, "BLINK"); 
     setTimeout(xows_doc_blink,duration,id);
   }
 }
@@ -649,7 +703,7 @@ let xows_doc_mbox_cb_onvalid = null;
 /**
  * Dialog Page Abort (click on Abort button) callback. 
  * 
- * @param   {object}  event   Event data.
+ * @param {object}  event   Event data.
  */
 function xows_doc_mbox_onabort(event)
 {
@@ -662,7 +716,7 @@ function xows_doc_mbox_onabort(event)
 /**
  * Dialog Page Valid (click on valid button) callback. 
  * 
- * @param   {object}  event   Event data.
+ * @param {object}  event   Event data.
  */
 function xows_doc_mbox_onvalid(event)
 {
@@ -699,10 +753,10 @@ function xows_doc_mbox_open(code, text, onvalid, valid, onabort, abort, modal)
   let cls;
   
   switch(code)  {
-  case 0: cls = "text-err"; break; //< XOWS_SIG_ERR - error text
-  case 1: cls = "text-wrn"; break; //< XOWS_SIG_WRN - warning text
-  case 2: cls = "text-scs"; break; //< XOWS_SIG_LOG - success text
-  case 4: cls = "text-ask"; break; //< question
+  case 0: cls = "TEXT-ERR"; break; //< XOWS_SIG_ERR - error text
+  case 1: cls = "TEXT-WRN"; break; //< XOWS_SIG_WRN - warning text
+  case 2: cls = "TEXT-SCS"; break; //< XOWS_SIG_LOG - success text
+  case 4: cls = "TEXT-ASK"; break; //< question
   }
   
   xows_doc.mbox_text.classList = cls;
@@ -798,7 +852,7 @@ let xows_doc_page_cb_onclick = null;
 /**
  * Dialog Page Close (click on close button) callback. 
  * 
- * @param   {object}  event   Event data.
+ * @param {object}  event   Event data.
  */
 function xows_doc_page_oninput(event)
 {
@@ -808,7 +862,7 @@ function xows_doc_page_oninput(event)
 /**
  * Dialog Page Close (click on close button) callback. 
  * 
- * @param   {object}  event   Event data.
+ * @param {object}  event   Event data.
  */
 function xows_doc_page_onclick(event)
 {
@@ -818,7 +872,7 @@ function xows_doc_page_onclick(event)
 /**
  * Dialog Page Close (click on close button) callback. 
  * 
- * @param   {object}  event   Event data.
+ * @param {object}  event   Event data.
  */
 function xows_doc_page_onclose(event)
 {
@@ -829,7 +883,7 @@ function xows_doc_page_onclose(event)
 /**
  * Dialog Page Close.
  * 
- * @param   {soft}    Soft close, prepare for new page to open only.
+ * @param {soft}    Soft close, prepare for new page to open only.
  */
 function xows_doc_page_close(soft = false)
 {
@@ -877,11 +931,11 @@ function xows_doc_page_close(soft = false)
 /**
  * Dialog Page Open.
  * 
- * @param   {string}    id        Page ID to open.
- * @param   {boolean}  [close]    Optional force display or hide close button.
- * @param   {function} [onclose]  Optional callback function for page close.
- * @param   {function} [oninput]  Optional callback function for input events.
- * @param   {function} [onclick]  Optional callback function for click events.
+ * @param {string}    id        Page ID to open.
+ * @param {boolean}  [close]    Optional force display or hide close button.
+ * @param {function} [onclose]  Optional callback function for page close.
+ * @param {function} [oninput]  Optional callback function for input events.
+ * @param {function} [onclick]  Optional callback function for click events.
  */
 function xows_doc_page_open(id, close, onclose, oninput, onclick) 
 {
@@ -929,9 +983,9 @@ function xows_doc_page_open(id, close, onclose, oninput, onclick)
 }
 
 /**
- * Message Box Dialog callback for keyup events.
+ * Dialog Page on-keyup callback function.
  * 
- * @param   {object}  event   Event object associated with trigger
+ * @param {object}  event   Event object associated with trigger
  */
 function xows_doc_page_onkeyu(event)
 {
@@ -945,6 +999,18 @@ function xows_doc_page_onkeyu(event)
      if(submit) submit.click();
    }
   }
+}
+
+/**
+ * Check whether given page is the currently openned one.
+ * 
+ * @param   {string}  page  Page ID to check.
+ * 
+ * @return  {boolean} True if page is openned, false otherwise.
+ */
+function xows_doc_page_opened(page)
+{
+  return (xows_doc_page_id == page);
 }
 
 /**
@@ -971,8 +1037,8 @@ function xows_doc_menu_close()
  * This function toggle the specified menu and show the invisible menu 
  * screen to gather click event outside menu.
  * 
- * @param   {object}  btn       Menu button object.
- * @param   {string}  drop      Menu drop object Id.
+ * @param {object}  btn       Menu button object.
+ * @param {string}  drop      Menu drop object Id.
  */
 function xows_doc_menu_toggle(btn, drop)
 {
@@ -999,7 +1065,7 @@ function xows_doc_view_close()
     xows_doc_hide("over_view");
     
     // remove 'dark' filter and hide 'void' screen
-    xows_doc_cls_rem("scr_void", "void-dark");
+    xows_doc_cls_rem("scr_void", "VOID-DARK");
     xows_doc_hide("scr_void");
   }
 }
@@ -1007,7 +1073,7 @@ function xows_doc_view_close()
 /**
  * Media Viewer screen open.
  * 
- * @param   {object}   media    DOM element that throwed event.
+ * @param {object}   media    DOM element that throwed event.
  */
 function xows_doc_view_open(media)
 {
@@ -1022,7 +1088,7 @@ function xows_doc_view_open(media)
     xows_doc_show("over_view");
     
     // show the 'void' screen with dark filter
-    xows_doc_cls_add("scr_void", "void-dark");
+    xows_doc_cls_add("scr_void", "VOID-DARK");
     xows_doc_show("scr_void");
   }
 }
@@ -1034,7 +1100,7 @@ function xows_doc_view_open(media)
  * This function is called when user click on the 'void screen', meaning
  * outside an opened menu or dialog.
  * 
- * @param   {object}  event   Event object associated with trigger
+ * @param {object}  event   Event object associated with trigger
  */
 function xows_doc_void_onclick(event)
 {

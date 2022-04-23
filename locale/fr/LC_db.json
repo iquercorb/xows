@@ -143,23 +143,44 @@
   "Disconnect":
   "Se déconnecter",
   
-  "New messages":
-  "Nouveaux messsages",
+  "Change Room topic":
+  "Changer le sujet du Salon",
+  
+  "Room configuration":
+  "Configuration du Salon",
+  
+  "Enable notifications":
+  "Activer les notifications",
+  
+  "Disable notifications":
+  "Désactiver les notifications",
+  
+  "Room occupants list":
+  "Liste des occupants du Salon",
+  
+  "New unread messages":
+  "Nouveaux messages non lus",
   
   "Upload a file":
   "Envoyer un fichier",
   
+  "Send a message":
+  "Envoyer un message",
+  
   "Add an emoji":
   "Ajouter un emoji",
 
+  "Occupants":
+  "Occupants",
+  
   "Moderators":
   "Modérateurs",
   
   "Participants":
   "Participants",
   
-  "Add this contact":
-  "Ajouter ce contact",
+  "Add this Contact":
+  "Ajouter ce Contact",
   
   "Room name":
   "Nom du Salon",

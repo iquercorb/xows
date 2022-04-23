@@ -61,13 +61,13 @@ let xows_l10n_fw_onready = function() {};
  * Load the specified locale data to be used for translations. If
  * the specified locale is unavailable, the default one is used.
  * 
- * @param   {string}  locale    Local to select.
- * @param   {string}  onready   Callback to call once operateion succeed.
+ * @param {string}  locale    Local to select.
+ * @param {string}  onready   Callback to call once operateion succeed.
  */
 function xows_l10n_select(locale, onready) 
 {
   // Set callback function
-  if(xows_is_func(onready)) 
+  if(xows_isfunc(onready)) 
     xows_l10n_fw_onready = onready;
   
   // We first load the available locale/lang list
@@ -118,13 +118,13 @@ function xows_l10n_select(locale, onready)
 /**
  * Launch the download of the specified language DB json file.
  * 
- * @param   {string}  locale    Language DB subfolder to load.
- * @param   {string}  onready   Callback to call once operateion succeed.
+ * @param {string}  locale    Language DB subfolder to load.
+ * @param {string}  onready   Callback to call once operateion succeed.
  */
 function xows_l10n_db_load(locale, onready) 
 {
   // Set callback function
-  if(xows_is_func(onready)) 
+  if(xows_isfunc(onready)) 
     xows_l10n_fw_onready = onready;
   
   // build download path URL
@@ -165,7 +165,7 @@ function xows_l10n_db_load(locale, onready)
  * Get the specified translated text corresponding to the current 
  * selected locale. 
  * 
- * @param   {string}  msgid  Template text to get translation.
+ * @param {string}  msgid  Template text to get translation.
  * 
  * @return  {string}  The translated text or the value of msgid 
  *                    if translation is not available.
@@ -194,7 +194,7 @@ function xows_l10n_parseFunc(c, match)
  * The function search for specific pattern to identify template texts 
  * to substitute by corresponding translated text.
  * 
- * @param   {string}  text    Text to be translated.
+ * @param {string}  text    Text to be translated.
  */
 function xows_l10n_parse(text)
 {
@@ -204,7 +204,7 @@ function xows_l10n_parse(text)
 /**
  * Check whether the specified locale is available.
  * 
- * @param   {string}  locale    Locale ID string.
+ * @param {string}  locale    Locale ID string.
  * 
  * @return  {boolean} True if locale is available, false otherwise.
  */
@@ -216,7 +216,7 @@ function xows_l10n_hasLocale(locale)
 /**
  * Create the properly formated date string from the supplied timestamp.
  * 
- * @param   {string}  stamp   Standard formated timestamp.
+ * @param {string}  stamp   Standard formated timestamp.
  * 
  * @return  {string} Human readable and localized date and time string.
  */
@@ -241,7 +241,7 @@ function xows_l10n_date(stamp)
 /**
  * Create the properly formated houre string from the supplied timestamp.
  * 
- * @param   {string}  stamp   Standard formated timestamp.
+ * @param {string}  stamp   Standard formated timestamp.
  * 
  * @return  {string} Simple houre string extrated from fulle timestamp.
  */
