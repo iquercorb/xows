@@ -858,7 +858,7 @@ button:disabled {
   margin: -7px 0 0 0;
   height: 30px;
   padding: 0 10px;
-  color: var(--ctrl-base);
+  color: var(--ctrl-text);
   background-color: var(--ctrl-base);
   border-style: solid;
   border-color: var(--ctrl-base);
