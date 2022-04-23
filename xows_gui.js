@@ -1153,26 +1153,27 @@ function xows_gui_rost_list_onclick(event)
  */
 function xows_gui_unread_add(peer, id)
 {
-  let n, tab;
-  // Select proper values depending peer type
-  if(peer.type === XOWS_PEER_ROOM) {
-    tab = xows_doc.room_unrd;
-  } else {
-    tab = xows_doc.cont_unrd;
-  }
+  // Select proper element depending peer type
+  const bt_spot = (peer.type === XOWS_PEER_ROOM) ? 
+                              xows_doc.room_unrd : 
+                              xows_doc.cont_unrd;
+  
   // Add the unread for the roster tab
-  n = tab.firstChild ? parseInt(tab.innerHTML) : 0;
-  tab.innerHTML = n + 1;
-  tab.classList.remove("HIDDEN"); //< show
+  let n = parseInt(bt_spot.innerText) || 0;
+  bt_spot.innerText = n + 1;
+  bt_spot.classList.remove("HIDDEN"); //< show
+  
   // Get the corresponding peer <li> (room or contact) in roster 
   const li = document.getElementById(peer.bare);
   if(li) {
+    
     // Inside the <li> search for the unread <div>
-    const dv = li.querySelector(".UNRD-SPOT");
+    const li_spot = li.querySelector(".UNRD-SPOT");
+    
     // Increase the current unread count
-    n = dv.firstChild ? parseInt(dv.innerHTML) : 0;
-    dv.innerHTML = n + 1;
-    dv.classList.remove("HIDDEN"); //< show
+    n = parseInt(li_spot.innerText) || 0;
+    li_spot.innerText = n + 1;
+    li_spot.classList.remove("HIDDEN"); //< show
   }
 }
 
@@ -1184,29 +1185,31 @@ function xows_gui_unread_add(peer, id)
  */
 function xows_gui_unread_reset(peer)
 {
-  let n, tab;
-  // Select proper values depending peer type
-  if(peer.type === XOWS_PEER_ROOM) {
-    tab = xows_doc.room_unrd;
-  } else {
-    tab = xows_doc.cont_unrd;
-  }
+  // Select proper element depending peer type
+  const bt_spot = (peer.type === XOWS_PEER_ROOM) ? 
+                              xows_doc.room_unrd : 
+                              xows_doc.cont_unrd;
+  
   // Store current tab total unread
-  n = tab.firstChild ? parseInt(tab.innerHTML) : 0;
+  //let n = bt_spot.firstChild ? parseInt(bt_spot.innerText) : 0;
+  let n = parseInt(bt_spot.innerText) || 0;
+  
   // Get the corresponding peer <li> (room or contact) in roster 
   const li = document.getElementById(peer.bare);
   if(li) {
     // Inside the <li> search for the unread <div>
-    const dv = li.querySelector(".UNRD-SPOT");
+    const li_spot = li.querySelector(".UNRD-SPOT");
+    
     // Subtract the element unread from tab total
-    n -= dv.firstChild ? parseInt(dv.innerHTML) : 0;
+    n -= parseInt(li_spot.innerText) || 0;
     // Reset the unready div properties
-    dv.innerHTML = "";
-    dv.classList.add("HIDDEN"); //< hide
+    li_spot.innerText = "";
+    li_spot.classList.add("HIDDEN"); //< hide
   }
+  
   // Update the tab unread count, or disable it if suitable
-  tab.innerHTML = (n > 0) ? n : "";
-  if(n <= 0) tab.classList.add("HIDDEN"); //< hide
+  bt_spot.innerText = (n > 0) ? n : "";
+  if(n <= 0) bt_spot.classList.add("HIDDEN"); //< hide
 }
 
 /* -------------------------------------------------------------------

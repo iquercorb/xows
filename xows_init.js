@@ -73,11 +73,6 @@ function xows_init_login_user()
   
   // Open login screen
   xows_gui_page_auth_open();
-  
-  //xows_doc_show("scr_page");
-  //xows_doc_show("room_conf");
-  ////xows_doc_show("room_edit");
-  //xows_doc_show("page_room");
 }
 
 /**
