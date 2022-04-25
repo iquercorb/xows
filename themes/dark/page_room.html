@@ -16,7 +16,7 @@
   <fieldset>
     <label for="room_pers">${'Persistent Room'}</label>
     <label class="switch"><input id="room_pers" type="checkbox" checked><span></span></label>
-    <p>${'In contrary to a temporary Room, a persistent Room is not destroyed if the last occupant exits'}</p>
+    <p>${'Rooms are automatically deleted when they are empty, unless this option is enabled'}</p>
   </fieldset>
   <fieldset>
     <label for="room_publ">${'Public Room'}</label>
@@ -33,12 +33,12 @@
   <fieldset>
     <label for="room_mbon">${'Allowed to members only'}</label>
     <label class="switch"><input id="room_mbon" type="checkbox" checked><span></span></label>
-    <p>${'A user cannot enter without being on the Room's member list'}</p>
+    <p>${'Enable this to only allow access for Room owners, admins and members'}</p>
   </fieldset>
   <fieldset>
     <label for="room_modo">${'Moderated Room'}</label>
     <label class="switch"><input id="room_modo" type="checkbox" checked><span></span></label>
-    <p>${'Only those with "voice" are allowed to send messages to all occupants'}</p>
+    <p>${'In moderated Rooms occupants must be given permission to speak by a Room moderator'}</p>
   </fieldset>
   <fieldset>
     <label>${'Occupants anonymity'}</label>
@@ -59,7 +59,7 @@
       <input id="room_hmax" type="number" min="0" max="60" step="5"/>
       <button class="spin-add" onclick="this.parentNode.querySelector('input').stepUp()"></button>
     </div>
-    <p>${'This is the maximum count of messages to store in the message history'}</p>
+    <p>${'Specify the maximum number of previous messages that should be sent to users when they join the Room'}</p>
   </fieldset>
   <fieldset>
     <label for="room_hdef">${'History default length'}</label>
@@ -68,7 +68,7 @@
       <input id="room_hdef" type="number" min="0" max="60" step="5"/>
       <button class="spin-add" onclick="this.parentNode.querySelector('input').stepUp()"></button>
     </div>
-    <p>${'This is the default count of history messages to deliver to user when enters the Room'}</p>
+    <p>${'Specify the number of previous messages sent to new users when they join the Room'}</p>
   </fieldset>
   <fieldset>
     <label class="switch"><input id="room_arch" type="checkbox" checked><span></span></label>
