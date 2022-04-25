@@ -97,10 +97,16 @@
   
   "Contacts":
   "",
-  
+
   "Add a contact":
   "",
   
+  "Pending requests":
+  "",
+  
+  "Authorized":
+  "",
+    
   "Resend authorization request":
   "",
   
@@ -110,13 +116,22 @@
   "Awaiting authorization":
   "",
   
-  "Chat rooms":
+  "Chatrooms":
   "",
   
-  "Join a chat room":
+  "Join a chatroom":
   "",
   
-  "Query public chat rooms list":
+  "Query public chatrooms list":
+  "",
+  
+  "Bookmarks":
+  "",
+  
+  "Public rooms":
+  "",
+  
+  "Private rooms":
   "",
   
   "Edit user profile":
@@ -182,7 +197,10 @@
   "Add this Contact":
   "",
   
-  "Room name":
+  "Room identifier":
+  "",
+  
+  "Identifier":
   "",
   
   "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
@@ -293,7 +311,7 @@
   "Persistent Room":
   "",
   
-  "In contrary to a temporary Room, a persistent Room is not destroyed if the last occupant exits":
+  "Rooms are automatically deleted when they are empty, unless this option is enabled":
   "",
 
   "Public Room":
@@ -308,13 +326,13 @@
   "Allowed to members only":
   "",
   
-  "A user cannot enter without being on the Room's member list":
+  "Enable this to only allow access for Room owners, admins and members":
   "",
 
   "Moderated Room":
   "",
   
-  "Only those with \"voice\" are allowed to send messages to all occupants":
+  "In moderated Rooms occupants must be given permission to speak by a Room moderator":
   "",
   
   "Occupants anonymity":
@@ -332,13 +350,13 @@
   "History max length":
   "",
   
-  "This is the maximum count of messages to store in the message history":
+  "Specify the maximum number of previous messages that should be sent to users when they join the Room":
   "",
   
   "History default length":
   "",
   
-  "This is the default count of history messages to deliver to user when enters the Room":
+  "Specify the number of previous messages sent to new users when they join the Room":
   "",
 
   "Enable messages archiving":

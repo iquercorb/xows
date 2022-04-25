@@ -101,6 +101,12 @@
   "Add a contact":
   "Ajouter un contact",
   
+  "Pending requests":
+  "Requêtes en attente",
+  
+  "Authorized":
+  "Autorisés",
+  
   "Resend authorization request":
   "Renvoyer une demande d'autorisation",
   
@@ -110,14 +116,23 @@
   "Awaiting authorization":
   "En attente d'autorisation",
   
-  "Chat rooms":
+  "Chatrooms":
   "Salons",
   
-  "Join a chat room":
+  "Join a chatroom":
   "Rejoindre un salon",
-   
-  "Query public chat rooms list":
+  
+  "Query public chatrooms list":
   "Interroger la liste des salons publics",
+  
+  "Bookmarks":
+  "Favoris",
+  
+  "Public rooms":
+  "Salons publics",
+  
+  "Private rooms":
+  "Salons privés",
   
   "Edit user profile":
   "Modifier le profil utilisateur",
@@ -182,8 +197,11 @@
   "Add this Contact":
   "Ajouter ce Contact",
   
-  "Room name":
-  "Nom du Salon",
+  "Room identifier":
+  "Identifiant du Salon",
+  
+  "Identifier":
+  "Identifiant",
   
   "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
   "Si le Salon spécifié n'existe pas et si le serveur ne limite pas la création des Salons, un nouveau Salon sera créé avec vous en tant que propriétaire.",
@@ -290,14 +308,14 @@
   "Persistent Room":
   "Salon persistant",
   
-  "In contrary to a temporary Room, a persistent Room is not destroyed if the last occupant exits":
-  "Contrairement à une pièce temporaire, une pièce persistante n'est pas détruite si le dernier occupant en sort",
+  "Rooms are automatically deleted when they are empty, unless this option is enabled":
+  "Les Salons sont automatiquement supprimés lorsqu'ils sont vides, sauf si cette option est activée",
 
   "Public Room":
   "Salon publique",
   
   "A public Room can be found by any user through normal means such as searching and service discovery":
-  "Une salle publique peut être trouvée par n'importe quel utilisateur par des moyens normaux tels que la recherche et la découverte de services",
+  "Un Salon public peut être trouvé par n'importe quel utilisateur par des moyens normaux tels que la recherche et la découverte de services",
 
   "Room password":
   "Mot de passe de Salon",
@@ -305,20 +323,20 @@
   "Allowed to members only":
   "Autorisé aux membres uniquement",
   
-  "A user cannot enter without being on the Room's member list":
-  "Un utilisateur ne peut pas entrer sans être sur la liste des membres de la salle",
+  "Enable this to only allow access for Room owners, admins and members":
+  "Activez cette option pour n'autoriser l'accès qu'aux propriétaires, administrateurs et membres du Salon",
   
   "Moderated Room":
   "Salon modéré",
 
-  "Only those with \"voice\" are allowed to send messages to all occupants":
-  "Seuls ceux qui ont la \"voix\" sont autorisés à envoyer des messages à tous les occupants",
+  "In moderated Rooms occupants must be given permission to speak by a Room moderator":
+  "Dans les Salons modérés, les occupants doivent être autorisés à parler par un modérateur de Salon",
 
   "Occupants anonymity":
   "Anonymat des occupants",
   
   "In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address":
-  "Dans une salle non anonyme, l'adresse des occupants est exposée aux autres, sinon seuls les modérateurs peuvent voir l'adresse des occupants",
+  "Dans un Salon non-anonyme, l'adresse des occupants est exposée aux autres, sinon seuls les modérateurs peuvent voir l'adresse des occupants",
 
   "Semi-Anonymous":
   "Semi-Anonyme",
@@ -329,14 +347,14 @@
   "History max length":
   "Taille maximum de l'historique",
   
-  "This is the maximum count of messages to store in the message history":
-  "Il s'agit du nombre maximal de messages à stocker dans l'historique des messages",
+  "Specify the maximum number of previous messages that should be sent to users when they join the Room":
+  "Spécifiez le nombre maximum de précédents messages qui doivent être envoyés aux utilisateurs lorsqu'ils rejoignent le Salon",
   
   "History default length":
   "Taille par default de l'historique",
   
-  "This is the default count of history messages to deliver to user when enters the Room":
-  "Il s'agit du nombre par défaut de messages d'historique à remettre à l'utilisateur lorsqu'il entre dans la salle",
+  "Specify the number of previous messages sent to new users when they join the Room":
+  "Spécifie le nombre de précédents messages envoyés aux nouveaux utilisateurs lorsqu'ils rejoignent le Salon",
   
   "Enable messages archiving":
   "Activer l'archivage des messages",

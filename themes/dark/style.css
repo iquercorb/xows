@@ -1,7 +1,7 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
+
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +13,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -82,7 +82,7 @@
   /* Loading Spinning Ring */
   --load-tail:        rgba(115, 115, 128, 0.1);
   --load-dimm:        rgba(115, 115, 128, 0.3);
-  --load-start:        rgba(115, 115, 128, 0.5);
+  --load-start:       rgba(115, 115, 128, 0.5);
   
   /* Presence 'show level' colors */
   --show-off:         #858585;  /* Offline */
@@ -394,9 +394,9 @@ button:disabled {
   display: block;
   position: absolute;
   top: 2px; right: 2px;
-  width: 20px; height: 20px;
-  font-size: 10px;
-  line-height: 12px;
+  width: 19px; height: 19px;
+  font-size: 9px;
+  line-height: 13px;
   text-align: center;
   border-radius: 50%;
   font-weight: bold;
@@ -1122,14 +1122,23 @@ figure {
   background-color: var(--link-base);
   transition: height 100ms;
 }
+.rost-tabs button:disabled {
+  background-color: transparent !important;
+}
 .rost-tabs button:hover::before {
   height: 10px;
+}
+.rost-tabs button:disabled::before {
+  height: 0;
 }
 .tab-cont {
   background-image: url("images/contacts.svg");
 }
 .tab-room {
   background-image: url("images/rooms.svg");
+}
+.tab-book {
+  background-image: url("images/bookmark.svg");
 }
 #cont_unrd.UNRD-SPOT,
 #room_unrd.UNRD-SPOT {
@@ -1258,6 +1267,29 @@ figure {
 /* ------------------------------------------------------------------ */
 /* Main Page - List common elements */
 /* ------------------------------------------------------------------ */
+.row-main ul h4 {
+  text-align: left;
+  text-transform: uppercase;
+  display: block;
+  font-size: 0.75em;
+  margin: 0 0 5px 0;
+  padding: 0;
+  color: var(--text-tone3);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: default;
+}
+.row-main ul h4::before {
+  display: block;
+  float:left;
+  text-align: center;
+  content: "\25CF";
+  font-style: normal;
+  width: 32px;
+  padding: 0;
+  margin: 0 7px 0 9px;
+}
+/*
 .list-title {
   text-align: left;
   text-transform: uppercase;
@@ -1279,7 +1311,7 @@ figure {
   width: 32px;
   padding: 0;
   margin: 0 7px 0 5px;
-}
+}*/
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Roster Head */
 /* ------------------------------------------------------------------ */
@@ -1307,17 +1339,56 @@ figure {
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Roster load spinner */
 /* ------------------------------------------------------------------ */
+.user-rost ul {
+  list-style: none;
+  text-align: left;
+  margin: 0;
+  padding: 10px 0 0 0;
+}
 .user-rost .LOADING::after {
   width: 24px; height: 24px;
   margin-top: 9px;
   border-width: 2px;
 }
 /* ------------------------------------------------------------------ */
+/* Main Page - Left Col - Main frame - Contact List */
+/* ------------------------------------------------------------------ */
+.cont-list {
+  width: 100%; height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+.peer-add {
+  background-image: url("images/contadd.svg");
+}
+/* ------------------------------------------------------------------ */
+/* Main Page - Left Col - Main frame - Room List */
+/* ------------------------------------------------------------------ */
+.room-list {
+  width: 100%; height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+.room-add {
+  background-image: url("images/roomadd.svg");
+}
+.room-upd {
+  background-image: url("images/refresh.svg");
+}
+/* ------------------------------------------------------------------ */
+/* Main Page - Left Col - Main frame - Room List */
+/* ------------------------------------------------------------------ */
+.book-list {
+  width: 100%; height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+/* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Roster Avatar */
 /* ------------------------------------------------------------------ */
 figure {
-  position:relative;
-  width:32px; height:32px;
+  position: relative;
+  width: 32px; height: 32px;
   margin: 0 7px 0 5px;
   flex: none;
 }
@@ -1330,39 +1401,7 @@ figure {
   }
 }
 /* ------------------------------------------------------------------ */
-/* Main Page - Left Col - Contact <li> element */
-/* ------------------------------------------------------------------ */
-.ROST-CONT {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  height: 40px;
-  border-radius: 6px;
-  overflow: hidden;
-  cursor: pointer !important;
-  margin-left: -4px;
-}.ROST-CONT:hover {
-  background-color: var(--base-tone4);
-}.ROST-CONT.SELECTED  {
-  cursor: default !important;
-}.ROST-CONT.SELECTED:hover {
-  background-color: inherit;
-  border-color: transparent;
-}
-.ROST-CONT::before {
-  display: block;
-  content: "";
-  width: 8px; height: 0;
-  background-color: var(--link-base);
-  border-radius: 10px;
-  transition: height ease 50ms;
-}.ROST-CONT:hover::before  {
-  height: 12px;
-}.ROST-CONT.SELECTED:before {
-  height: 35px;
-}
-/* ------------------------------------------------------------------ */
-/* Main Page - Left Col - User & Contact avatar and informations */
+/* Main Page - Roster & Occupant List "Peer" <li> object */
 /* ------------------------------------------------------------------ */
 .PEER-DENY figure {
   background-color: inherit;
@@ -1383,11 +1422,9 @@ figure {
   color: var(--text-error);
 }
 .ROST-CONT .UNRD-SPOT,
-.ROST-ROOM .UNRD-SPOT {
+.ROST-ROOM .UNRD-SPOT,
+.ROST-BOOK .UNRD-SPOT {
   top: -4px; left: -5px;
-  width: 19px; height: 19px;
-  font-size: 10px;
-  line-height: 13px;
   border: 3px solid var(--base-tone3);
 }
 .PEER-SHOW {
@@ -1468,21 +1505,36 @@ div[show="4"]  { background-color: var(--show-chat); }
   background-image: url("images/delete.svg");
 }
 /* ------------------------------------------------------------------ */
-/* Main Page - Left Col - Main frame - Contact List */
+/* Main Page - Left Col - Contact <li> element */
 /* ------------------------------------------------------------------ */
-.cont-list {
-  width: 100%; height: 100%;
-  overflow-x: hidden;
-  overflow-y: scroll;
+.ROST-CONT {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer !important;
+  margin-left: -4px;
+}.ROST-CONT:hover {
+  background-color: var(--base-tone4);
+}.ROST-CONT.SELECTED  {
+  cursor: default !important;
+}.ROST-CONT.SELECTED:hover {
+  background-color: inherit;
+  border-color: transparent;
 }
-.cont-list ul {
-  text-align: left;
-  list-style: none;
-  margin: 0;
-  padding: 5px 0 0 0;
-}
-.peer-add {
-  background-image: url("images/contadd.svg");
+.ROST-CONT::before {
+  display: block;
+  content: "";
+  width: 8px; height: 0;
+  background-color: var(--link-base);
+  border-radius: 10px;
+  transition: height ease 50ms;
+}.ROST-CONT:hover::before  {
+  height: 12px;
+}.ROST-CONT.SELECTED:before {
+  height: 35px;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Subscribe Request <li> element */
@@ -1509,9 +1561,6 @@ div[show="4"]  { background-color: var(--show-chat); }
 }.ROST-SUBS:hover::before  {
   height: 12px;
 }
-/* ------------------------------------------------------------------ */
-/* Main Page - Left Col - Subscription request icons & infos */
-/* ------------------------------------------------------------------ */
 .ROST-SUBS figure {
   background-color: var(--text-tone3);
   background-image: url("images/subsavat.svg");
@@ -1523,13 +1572,9 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .subs-allo {
   background-image: url("images/allow.svg");
-}.subs-allo:hover {
-
 }
 .subs-deny {
   background-image: url("images/deny.svg");
-}.subs-deny:hover {
-
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Room <li> element & Selected */
@@ -1563,38 +1608,51 @@ div[show="4"]  { background-color: var(--show-chat); }
 }.ROST-ROOM.SELECTED:before {
   height: 35px;
 }
-/* ------------------------------------------------------------------ */
-/* Main Page - Left Col - Room avatar and informations */
-/* ------------------------------------------------------------------ */
 .ROST-ROOM figure {
   background-color: transparent;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 16px;
+  background-size: 22px;
   background-image: url("images/sharp.svg");
 }
 /* ------------------------------------------------------------------ */
-/* Main Page - Left Col - Main frame - Room List */
+/* Main Page - Left Col - Room <li> element & Selected */
 /* ------------------------------------------------------------------ */
-.room-list {
-  width: 100%; height: 100%;
-  overflow-x: hidden;
-  overflow-y: scroll;
+.ROST-BOOK {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%; height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer !important;
+  margin-left: -4px;
+}.ROST-BOOK:hover {
+  background-color: var(--base-tone4);
+}.ROST-BOOK.SELECTED {
+  cursor: default !important;
+}.ROST-BOOK.SELECTED:hover {
+  background-color: inherit;
+  border-color: transparent;
 }
-.room-list .list-title::before {
-  margin: 0 7px 0 8px;
+.ROST-BOOK::before {
+  display: block;
+  content: "";
+  width: 8px; height: 0;
+  background-color: var(--link-base);
+  border-radius: 10px;
+  transition: height ease 50ms;
+}.ROST-BOOK:hover::before  {
+  height: 12px;
+}.ROST-BOOK.SELECTED:before {
+  height: 35px;
 }
-.room-list ul {
-  list-style: none;
-  text-align: left;
-  margin: 0;
-  padding: 10px 0 0 0;
-}
-.room-add {
-  background-image: url("images/roomadd.svg");
-}
-.room-upd {
-  background-image: url("images/refresh.svg");
+.ROST-BOOK figure {
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  background-image: url("images/bookmark.svg");
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control panel */
@@ -1717,6 +1775,9 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .CHAT-MUTE {
   background-image: url("images/notify_off.svg");
+}
+.chat-book {
+  background-image: url("images/bookmark.svg");
 }
 .chat-conf {
   background-image: url("images/gear.svg");
@@ -2274,7 +2335,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   align-items: center;
   width: 100%; height: 42px;
   /*margin-left: -4px;*/
-  padding-left: 2px;
+  padding-left: 5px;
   overflow: hidden;
 }
 .OCCU-SUBS {

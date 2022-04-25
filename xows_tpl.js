@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,6 @@
  * 
  * @licend
  */
- 
 /* ------------------------------------------------------------------
  * 
  *                      DOM Templates API Module
@@ -749,7 +747,7 @@ function xows_tpl_spawn_avat_cls(hash)
       // Add new style sheet with class
       const style = document.createElement('style');
       style.type = 'text/css';
-      style.innerHTML = cls;
+      style.innerText = cls;
       document.head.appendChild(style);
     }
   }
@@ -759,7 +757,7 @@ function xows_tpl_spawn_avat_cls(hash)
  * Build and returns a new instance of roster contact <li> object from
  * template be added in the document cont_list <ul>
  * 
- * @param {string}  jid     Contact JID
+ * @param {string}  bare    Contact JID
  * @param {string}  name    Contact display name
  * @param {string}  avat    Contact avatar hash
  * @param {number}  subs    Contact subscription
@@ -768,16 +766,15 @@ function xows_tpl_spawn_avat_cls(hash)
  *  
  * @return  {object} Contact <li> HTML Elements
  */
-function xows_tpl_spawn_rost_cont(jid, name, avat, subs, show, stat)
+function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["ROST-CONT"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.setAttribute("id", jid);
-  inst.setAttribute("title", name+" ("+jid+")");
-  inst.querySelector("H3").innerHTML = name;
-  inst.querySelector("P").innerHTML = stat?stat:"";
+  inst.title = bare;
+  inst.querySelector("H3").innerText = name;
+  inst.querySelector("P").innerText = stat?stat:"";
   const show_dv = inst.querySelector(".PEER-SHOW");
   const subs_bt = inst.querySelector(".PEER-SUBS");
   const avat_fi = inst.querySelector("FIGURE");
@@ -807,12 +804,9 @@ function xows_tpl_spawn_rost_cont(jid, name, avat, subs, show, stat)
  */
 function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
 {
-  const jid = li.getAttribute("id");
-
   // Update content
-  li.setAttribute("title", name+" ("+jid+")");
-  li.querySelector("H3").innerHTML = name;
-  li.querySelector("P").innerHTML = stat?stat:"";
+  li.querySelector("H3").innerText = name;
+  li.querySelector("P").innerText = stat?stat:"";
   const show_dv = li.querySelector(".PEER-SHOW");
   const subs_bt = li.querySelector(".PEER-SUBS");
   const avat_fi = li.querySelector("FIGURE");
@@ -835,29 +829,28 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
  * Build and returns a new instance of room contact (occupant) <li> 
  * object from template be added in the document occu_list <ul>
  * 
- * @param {string}  jid       Occupant JID
+ * @param {string}  ojid      Occupant JID
  * @param {string}  nick      Occupant Nickname
  * @param {string}  avat      Occupant avatar image URL
- * @param {string}  [lock]    Occupant real bare JID if available
- * @param {number}  [show]    Optional Contact Show level
- * @param {string}  [stat]    Optional Contact Status
+ * @param {string} [full]     Occupant real full JID if available
+ * @param {number} [show]     Optional Contact Show level
+ * @param {string} [stat]     Optional Contact Status
  *  
  * @return  {object} Contact <li> HTML Elements
  */
-function xows_tpl_spawn_room_occu(jid, nick, avat, lock, show, stat)
+function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["ROOM-OCCU"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.setAttribute("id", jid);
-  inst.setAttribute("jid", lock);
-  inst.setAttribute("title", nick+" ("+lock+")");
-  inst.querySelector("H3").innerHTML = nick;
-  inst.querySelector("P").innerHTML = stat?stat:"";
+  inst.title = ojid;
+  if(full) inst.setAttribute("jid", full);
+  inst.querySelector("H3").innerText = nick;
+  inst.querySelector("P").innerText = stat?stat:"";
   inst.querySelector(".PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
   // Occupant JID (lock) may be null, undefined or empty string
-  inst.querySelector(".OCCU-SUBS").disabled = (lock) ? (lock.length === 0) : true;
+  inst.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
   // Set proper class for avatar
   xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class 
   inst.querySelector("FIGURE").className = "h-"+avat;
@@ -871,20 +864,19 @@ function xows_tpl_spawn_room_occu(jid, nick, avat, lock, show, stat)
  * @param {string}  li        Contact <li> element to update.
  * @param {string}  nick      Occupant Nickname
  * @param {string}  avat      Occupant avatar image URL
- * @param {string}  [lock]    Occupant real full JID if available
- * @param {number}  [show]    Optional Contact Show level
- * @param {string}  [stat]    Optional Contact Status
+ * @param {string} [full]     Occupant real full JID if available
+ * @param {number} [show]     Optional Contact Show level
+ * @param {string} [stat]     Optional Contact Status
  */
-function xows_tpl_update_room_occu(li, nick, avat, lock, show, stat)
+function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
 {
   // Update content
-  li.setAttribute("jid", lock);
-  li.setAttribute("title", nick+" ("+lock+")");
-  li.querySelector("H3").innerHTML = nick;
-  li.querySelector("P").innerHTML = stat?stat:"";
+  li.setAttribute("jid", full);
+  li.querySelector("H3").innerText = nick;
+  li.querySelector("P").innerText = stat?stat:"";
   li.querySelector(".PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
   // Occupant JID (lock) may be null, undefined or empty string
-  li.querySelector(".OCCU-SUBS").disabled = (lock) ? (lock.length === 0) : true;
+  li.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
   // Set proper class for avatar
   xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class 
   li.querySelector("FIGURE").className = "h-"+avat;
@@ -894,25 +886,24 @@ function xows_tpl_update_room_occu(li, nick, avat, lock, show, stat)
  * Build and returns a new instance of roster Room <li> object from
  * template be added in the document room_list <ul>
  * 
- * @param {string}  jid    Charoom JID
+ * @param {string}  bare   Charoom JID
  * @param {string}  name   Charoom display name
  * @param {string}  desc   Charoom description
  * @param {string}  lock   Charoom is password protected
  *  
  * @return  {object} Contact <li> HTML Elements
  */
-function xows_tpl_spawn_rost_room(jid, name, desc, lock)
+function xows_tpl_spawn_rost_room(bare, name, desc, lock)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["ROST-ROOM"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.setAttribute("id", jid);
-  inst.setAttribute("title", name+" ("+jid+")");
-  inst.querySelector("H3").innerHTML = name;
-  inst.querySelector("P").innerHTML = desc;
-  const avat_dv = inst.querySelector("FIGURE");
-  if(lock) avat_dv.classList.add("ROOM-LOCK");
+  inst.title = bare;
+  inst.querySelector("H3").innerText = name;
+  inst.querySelector("P").innerText = desc;
+  //const avat_dv = inst.querySelector("FIGURE");
+  //if(lock) avat_dv.classList.add("ROOM-LOCK");
 
   return inst;
 }
@@ -927,19 +918,16 @@ function xows_tpl_spawn_rost_room(jid, name, desc, lock)
  */
 function xows_tpl_update_rost_room(li, name, desc, lock)
 {
-  // Set content to proper elements
-  const jid = li.getAttribute("id");
-  
   // Update content
-  li.setAttribute("title", name+" ("+jid+")");
-  li.querySelector("H3").innerHTML = name;
-  li.querySelector("P").innerHTML = desc;
-  const avat_dv = li.querySelector("FIGURE");
-  if(lock) {
-    avat_dv.classList.add("ROOM-LOCK");
-  } else {
-    avat_dv.classList.remove("ROOM-LOCK");
-  }
+  li.querySelector("H3").innerText = name;
+  li.querySelector("P").innerText = desc;
+
+  //const avat_dv = li.querySelector("FIGURE");
+  //if(lock) {
+  //  avat_dv.classList.add("ROOM-LOCK");
+  //} else {
+  //  avat_dv.classList.remove("ROOM-LOCK");
+  //}
 }
 
 /**
@@ -957,10 +945,9 @@ function xows_tpl_spawn_rost_subs(bare, nick)
   const inst = xows_tpl_model["ROST-SUBS"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.setAttribute("id", bare);
+  inst.title = bare;
   if(nick) inst.setAttribute("name", nick);
-  inst.setAttribute("title", bare+" ("+nick+")");
-  inst.querySelector("H3").innerHTML = nick ? nick : bare;
+  inst.querySelector("H3").innerText = nick ? nick : bare;
 
   return inst;
 }
@@ -1004,15 +991,15 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
   
   if(sndr) {
     // Add time text
-    inst.querySelector(".MESG-DATE").innerHTML = xows_l10n_date(time);
+    inst.querySelector(".MESG-DATE").innerText = xows_l10n_date(time);
     // Add author name
-    inst.querySelector(".MESG-FROM").innerHTML = sndr.name;
+    inst.querySelector(".MESG-FROM").innerText = sndr.name;
     // Set proper class for avatar
     xows_tpl_spawn_avat_cls(sndr.avat); //< Add avatar CSS class 
     inst.querySelector("FIGURE").className = "h-"+sndr.avat;
   } else {
     // Add hour
-    inst.querySelector(".MESG-HOUR").innerHTML = xows_l10n_houre(time);
+    inst.querySelector(".MESG-HOUR").innerText = xows_l10n_houre(time);
   }
   
   // Return final tree

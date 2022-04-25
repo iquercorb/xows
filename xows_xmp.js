@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,6 @@
  * 
  * @licend
  */
- 
 /* ------------------------------------------------------------------
  * 
  *                          XMPP API Layer
@@ -60,7 +58,7 @@ const XOWS_NS_AVATAR_DATA  = "urn:xmpp:avatar:data";
 const XOWS_NS_AVATAR_META  = "urn:xmpp:avatar:metadata";
 const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
 const XOWS_NS_HTTPUPLOAD   = "urn:xmpp:http:upload";
-const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1";
+const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1"; //< XEP-0402
 const XOWS_NS_IETF_FRAMING = "urn:ietf:params:xml:ns:xmpp-framing";
 const XOWS_NS_IETF_SASL    = "urn:ietf:params:xml:ns:xmpp-sasl";
 const XOWS_NS_IETF_BIND    = "urn:ietf:params:xml:ns:xmpp-bind";

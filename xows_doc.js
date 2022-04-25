@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,6 @@
  * 
  * @licend
  */
- 
 /* ------------------------------------------------------------------
  * 
  *                     DOM Managment API Module
@@ -375,6 +373,24 @@ function xows_doc_frag_element(name, id)
 }
 
 /**
+ * Query selector within backed document fragment element.
+ * 
+ * @param {string}  name      Bakcup name.
+ * @param {string}  select    CSS selector to query.
+ */
+function xows_doc_frag_selector(name, select)
+{
+  let element;
+  
+  for(const frag in xows_doc_frag_db[name]) {
+    element = xows_doc_frag_db[name][frag].querySelector(select);
+    if(element) return element;
+  }
+  
+  return null;
+}
+
+/**
  * Get child with the specified id in the given parent.
  * 
  * @param {object}    parent  Parent object to search child.
@@ -432,6 +448,19 @@ function xows_doc_sel_rng(index)
   return xows_doc_sel.getRangeAt(index);
 }
 
+
+/**
+ * Remove all <li> elements of the specified DOM object.
+ * 
+ * @param {string}  id        Cached element id.  
+ */
+function xows_doc_list_clean(id)
+{
+  const child = xows_doc[id].querySelectorAll("LI");
+  let i = child.length;
+  while(i--) child[i].parentNode.removeChild(child[i]);
+}
+
 /**
  * Initializes document manager and browser interactions. 
  * 
@@ -480,6 +509,7 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc.chat_noti,   "click",    xows_gui_chat_noti_onclick);
   xows_doc_listener_add(xows_doc.chat_conf,   "click",    xows_gui_chat_conf_onclick);
   xows_doc_listener_add(xows_doc.chat_occu,   "click",    xows_gui_chat_occu_onclick);
+  xows_doc_listener_add(xows_doc.chat_book,   "click",    xows_gui_chat_book_onclick);
 
   // Page screen "scr_page" event listener
   xows_doc_listener_add(xows_doc.scr_page,    "keyup",    xows_doc_page_onkeyu);
@@ -727,13 +757,21 @@ function xows_doc_mbox_onvalid(event)
 }
 
 /**
+ * Message box style codes definition.
+ */
+const XOWS_MBOX_ERR = -1; //< same as XOWS_SIG_ERR
+const XOWS_MBOX_WRN = 0;  //< same as XOWS_SIG_WRN
+const XOWS_MBOX_SCS = 1;
+const XOWS_MBOX_ASK = 2;
+
+/**
  * Message Box Dialog open.
  * 
  * If any of the "onvalid" or "onabort" parameters is not-null, the 
  * Message Box turn in "modal mode", forcing user to interact with 
  * the dialog before continue.
  * 
- * @param {number}    code      Status code, either error (0), warning (1), success (2) or notice (>2).
+ * @param {number}    style     Message box style or null for default.
  * @param {string}    text      Message to display.
  * @param {function} [onvalid]  Optional callback function for valid/save.
  * @param {string}   [valid]    Optional valid button text or null to hide.
@@ -741,7 +779,7 @@ function xows_doc_mbox_onvalid(event)
  * @param {string}   [abort]    Optional abort button text or null to hide.
  * @param {boolean}  [modal]    Optional open in 'modal' dialog mode.
  */
-function xows_doc_mbox_open(code, text, onvalid, valid, onabort, abort, modal)
+function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
 {
   // Checks for already opened Message Box 
   if(xows_doc_mbox_modal()) {
@@ -752,11 +790,11 @@ function xows_doc_mbox_open(code, text, onvalid, valid, onabort, abort, modal)
   
   let cls;
   
-  switch(code)  {
-  case 0: cls = "TEXT-ERR"; break; //< XOWS_SIG_ERR - error text
-  case 1: cls = "TEXT-WRN"; break; //< XOWS_SIG_WRN - warning text
-  case 2: cls = "TEXT-SCS"; break; //< XOWS_SIG_LOG - success text
-  case 4: cls = "TEXT-ASK"; break; //< question
+  switch(style)  {
+  case XOWS_MBOX_ERR: cls = "TEXT-ERR"; break; //< same as XOWS_SIG_ERR
+  case XOWS_MBOX_WRN: cls = "TEXT-WRN"; break; //< same as XOWS_SIG_WRN
+  case XOWS_MBOX_SCS: cls = "TEXT-SCS"; break;
+  case XOWS_MBOX_ASK: cls = "TEXT-ASK"; break;
   }
   
   xows_doc.mbox_text.classList = cls;
@@ -787,7 +825,7 @@ function xows_doc_mbox_open(code, text, onvalid, valid, onabort, abort, modal)
 function xows_doc_mbox_open_for_save(onvalid, onabort)
 {
   if(xows_doc_hidden("over_mbox"))
-    xows_doc_mbox_open(3, "It remains unsaved changes",
+    xows_doc_mbox_open(null, "It remains unsaved changes",
                           onvalid, "Save changes", 
                           onabort, "Reset");
 }

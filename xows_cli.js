@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,6 @@
  * 
  * @licend
  */
- 
 /* ------------------------------------------------------------------
  * 
  *                         Client API Module
@@ -140,6 +138,11 @@ let xows_cli_fw_onsubsrem = function() {};
 let xows_cli_fw_onroompush = function() {};
 
 /**
+ * Callback function for Room removed.
+ */
+let xows_cli_fw_onroomrem = function() {};
+
+/**
  * Callback function for Room Occupant added or refreshed.
  */
 let xows_cli_fw_onoccupush = function() {};
@@ -215,14 +218,14 @@ function xows_cli_isself(jid)
 const xows_cli_cont = [];
 
 /**
- * Create a new Contact object
+ * Create a new Contact Peer object
  * 
- * @param {string}    bare    JID (user@service.domain).
- * @param {string}    name    Displayed name.
- * @param {string}    subs    Current subscription.
- * @param {string}    avat    Avatar hash string.
+ * @param   {string}    bare    JID (user@service.domain).
+ * @param   {string}    name    Displayed name.
+ * @param   {string}    subs    Current subscription.
+ * @param   {string}    avat    Avatar hash string.
  * 
- * @param {string}  xmlns   XMLNS corresponding to service.
+ * @return  {object}  New Contact Peer object.
  */
 function xows_cli_cont_new(bare, name, subs, avat)
 {
@@ -274,29 +277,32 @@ function xows_cli_cont_get(jid)
 const xows_cli_room = [];
 
 /**
- * Create a new Room object
+ * Create a new Chatroom Peer object
  * 
  * @param {string}    bare    JID (room@service.domain).
  * @param {string}    name    Displayed name.
  * @param {string}    desc    Description string.
- * @param {boolean}   priv    Password protected.
+ * @param {boolean}   prot    Password protected.
+ * @param {boolean}   publ    Room is public.
  * 
- * @param {string}  xmlns   XMLNS corresponding to service.
+ * @return  {object}  New Chatroom Peer object.
  */
-function xows_cli_room_new(bare, name, desc, priv)
+function xows_cli_room_new(bare, name, desc, prot, publ)
 {
   const room = {
     "bare": bare,           //< bare JID (room@service.domain)
     "name": name,           //< Display name
     "desc": desc,           //< Room description
     "subj": "",             //< Room subject
-    "priv": priv,           //< Room is protected by password
+    "publ": publ,           //< Room is public
+    "prot": prot,           //< Room is protected by password
     "join": null,           //< Room join JID (room@service.domain/nick)
     "role": 0,              //< Self Room Role (Level)
     "affi": 0,              //< Self Room Affiliation (Level)
     "occu": [],             //< Room occupant array
     "noti": true,           //< Notification Enabled/Mute
-    "init": false           //< Newly created Room, need configuration
+    "init": false,          //< Newly created Room, need configuration
+    "book": false           //< Room is Bookmarked
   };
   
   // set Peer type as constant
@@ -329,7 +335,7 @@ function xows_cli_room_get(jid)
 }
 
 /**
- * Create a new room Occupant object
+ * Create a new room Occupant Peer object
  * 
  * @param {string}    room    Room object where to create Occupant.
  * @param {string}    jid     Full JID (room@domaine/nick).
@@ -340,7 +346,7 @@ function xows_cli_room_get(jid)
  * @param {number}    show    Current show level.
  * @param {string}    stat    Current status string.
  * 
- * @param {string}  xmlns   XMLNS corresponding to service.
+ * @return  {object}  New room Occupant Peer object.
  */
 function xows_cli_occu_new(room, jid, affi, role, full, avat, show, stat)
 {
@@ -510,6 +516,7 @@ function xows_cli_peer_update(jid, nick, avat, stat)
  * subspush   : Add or refresh Subscription Request.
  * subsrem    : Remove Subscription Request.
  * roompush   : Add or refresh Roster Room.
+ * roomrem    : Remove Room/Bookmark from Roster. 
  * occupush   : Add or refresh Room Occupant.
  * occurem    : Remove Room Occupant.
  * message    : Common chat messages.
@@ -533,12 +540,13 @@ function xows_cli_set_callback(type, callback)
     
   switch(type.toLowerCase()) {
     case "connect":     xows_cli_fw_onconnect = callback; break;
-    case "selfchange":   xows_cli_fw_onselfchange = callback; break;
+    case "selfchange":  xows_cli_fw_onselfchange = callback; break;
     case "contpush":    xows_cli_fw_oncontpush = callback; break;
     case "contrem":     xows_cli_fw_oncontrem = callback; break;
     case "subspush":    xows_cli_fw_onsubspush = callback; break;
     case "subsrem":     xows_cli_fw_onsubsrem = callback; break;
     case "roompush":    xows_cli_fw_onroompush = callback; break;
+    case "roomrem":     xows_cli_fw_onroomrem = callback; break;
     case "occupush":    xows_cli_fw_onoccupush = callback; break;
     case "occurem":     xows_cli_fw_onoccurem = callback; break;
     case "message":     xows_cli_fw_onmessage = callback; break;
@@ -1323,6 +1331,64 @@ function xows_cli_nick_publish()
 }
 
 /**
+ * Publish new XEP-0172 User Nickname.
+ */
+function xows_cli_book_parse(from, item)
+{
+  let room, bare, name, auto, nick;
+  
+  for(let i = 0, n = item.length; i < n; ++i) {
+    bare = item[i].id;
+    
+    name = item[i].data.getAttribute("name");
+    auto = item[i].data.getAttribute("autojoin");
+    const temp = item[i].data.querySelector("nick");
+    if(temp) nick = xows_xml_get_text(temp);
+    
+    // Check whether Room already exists
+    room = xows_cli_room_get(bare);
+    if(room) {
+      
+      // Checks whether this is a public room, in this case we ignore
+      // the bookmark, Room stay in 'PUBLIC ROOMS' section.
+      if(room.publ) return;
+      
+    } else {
+      
+      // Create new Room object to reflect Bookmark
+      room = xows_cli_room_new(bare, name, "", false, false);
+    }
+    
+    // This room is bookmarked
+    room.book = true;
+    
+    // Auto-join room
+    if(auto) xows_cli_room_join(room);
+    
+    // Query info for Room
+    xows_cli_room_discoinfo(room);
+  }
+}
+
+/**
+ * Publish new XEP-0402 Bookmark.
+ * 
+ * @param {object}  room    Room object to add bookmark.
+ * @param {string} [name]   Optional alternative bookmark name.
+ * @param {string} [auto]   Optional set auto-join to bookmark.
+ * @param {string} [nick]   Optional alternative preferend nickname.
+ */
+function xows_cli_book_publish(room, auto, name, nick)
+{
+  const mrk_name = name ? name : room.name;
+  const mrk_nick = nick ? nick : xows_jid_to_nick(room.join);
+  
+  xows_log(2,"cli_book_publish","add bookmark",mrk_name+" ("+room.bare+")");
+  
+  xows_xmp_bookmark_publish(room.bare, mrk_name, auto, mrk_nick);
+}
+
+/**
  * Proceeds incoming XMPP roster push. 
  * 
  * @param {string}  bare    Contact bare JID.
@@ -1485,13 +1551,13 @@ function xows_cli_xmp_onoccupant(from, show, stat, muc, photo)
   // Get room object, if exists
   let room = xows_cli_room_get(from);
   if(!room) {
-    // create new Room object, this may be a newly joined/created room
+    // create new Room object, this should be a newly joined/created room
     const bare = xows_jid_to_bare(from);
     const name = xows_jid_to_user(bare);
-    room = xows_cli_room_new(bare, name, "", false);
+    room = xows_cli_room_new(bare, name, "", false, false);
     xows_log(2,"cli_xmp_onoccupant","add unexisting Room",name+" ("+bare+")");
-    // Forward created Room
-    xows_cli_fw_onroompush(room);
+    xows_cli_fw_onroompush(room); //< Forward created Room
+    xows_cli_room_discoinfo(room); //< Query info for new room
   }
 
   // Handle special case of room join and creation
@@ -1822,7 +1888,7 @@ function xows_cli_xmp_onpubsub(from, node, item)
     if(item.length) {
       xows_log(2,"cli_xmp_onpubsub","received Bookmarks notification",from);
       // Send vcard to handling function
-      xows_cli_favs_parse(from, item[0].data);
+      xows_cli_book_parse(from, item);
     }
   }
 }
@@ -2009,7 +2075,7 @@ function xows_cli_muc_items_query()
   if(!xows_cli_svc_exist(XOWS_NS_MUC)) {
     xows_log(1,"cli_muc_items_query","service not found",
                 "the server does not provide "+XOWS_NS_MUC+" service");
-    xows_cli_fw_onerror(XOWS_SIG_WRN, "multi-user chat (XEP-0045) service is unavailable");
+    xows_cli_fw_onerror(XOWS_SIG_WRN,"multi-user chat (XEP-0045) service is unavailable");
     return;
   }
 
@@ -2021,15 +2087,15 @@ function xows_cli_muc_items_query()
 /**
  * Handle disco#items query to MUC service for existing public rooms
  * 
- * 
  * @param {string}    from        Query result sender JID.
  * @param {object[]}  item        Array of parsed <item> objects.
  */
 function xows_cli_muc_items_parse(from, item)
 {
-  // Empty the Rooms list
-  xows_cli_room.length = 0;
-    
+  // Remove all Public Rooms from list
+  let i = xows_cli_room.length;
+  while(i--) if(xows_cli_room[i].publ) xows_cli_room.splice(i,1);
+
   if(item.length) {
     // Ensure services stack is empty
     xows_cli_muc_item_info_stack.length = 0;
@@ -2038,10 +2104,10 @@ function xows_cli_muc_items_parse(from, item)
     while(i--) xows_cli_muc_item_info_stack.push(item[i].jid);
     // Then start query info for each services
     xows_xmp_discoinfo_query(xows_cli_muc_item_info_stack.pop(), null, xows_cli_muc_item_info_parse);
-  } else {
-    // Null room mean empty room list
-    xows_cli_fw_onroompush(null);
   }
+  
+  // Forward null object to signal query response
+  xows_cli_fw_onroompush(null);
 }
 
 /**
@@ -2054,7 +2120,7 @@ function xows_cli_muc_items_parse(from, item)
  */
 function xows_cli_muc_item_info_parse(from, iden, feat, form)
 {
-  let i, n, name, subj = "", desc = "", priv = false;
+  let i, n, name, subj = "", desc = "", prot = false, publ = false;
   
   // Retrieve or extract the name for this room
   if(iden.length) {
@@ -2064,7 +2130,9 @@ function xows_cli_muc_item_info_parse(from, iden, feat, form)
   }
   // Check room features
   for(i = 0, n = feat.length; i < n; ++i) {
-    if(feat[i] === "muc_passwordprotected") priv = true;
+    if(feat[i] === "muc_passwordprotected") prot = true;
+    if(feat[i] === "muc_public") publ = true;
+    if(feat[i] === "muc_hidden") publ = false;
   }
   // Get available informations
   if(form) {
@@ -2080,15 +2148,16 @@ function xows_cli_muc_item_info_parse(from, iden, feat, form)
   if(room) {
     room.name = name;
     room.desc = desc;
-    room.priv = priv;
+    room.prot = prot;
+    room.publ = publ;
     xows_log(2,"cli_muc_item_info_parse","refresh Room",name+" ("+from+") :\""+desc+"\"");
   } else {
     // Create new room in local list
-    room = xows_cli_room_new(from, name, desc, priv);
+    room = xows_cli_room_new(from, name, desc, prot, publ);
     xows_log(2,"cli_muc_item_info_parse","adding Room",name+" ("+from+") :\""+desc+"\"");
   }
-  
-  // Forward added Room
+
+  // Forward added/updated Room
   xows_cli_fw_onroompush(room);
   
   // Proceed the next room in stack to get info
@@ -2096,6 +2165,17 @@ function xows_cli_muc_item_info_parse(from, iden, feat, form)
     // Query info for the next service
     xows_xmp_discoinfo_query(xows_cli_muc_item_info_stack.pop(), null, xows_cli_muc_item_info_parse);
   }
+}
+
+/**
+ * Query for MUC room informations.
+ * 
+ * @param {object}    room        Room object to query info.
+ */
+function xows_cli_room_discoinfo(room)
+{
+  // Query info for room
+  xows_xmp_discoinfo_query(room.bare, null, xows_cli_muc_item_info_parse);
 }
 
 /**
@@ -2143,8 +2223,8 @@ function xows_cli_muc_cfg_set_parse(from, type)
       return;
     }
 
-    // Query room info to update data
-    xows_xmp_discoinfo_query(room.bare, null, xows_cli_muc_item_info_parse);
+    // Query Room info
+    xows_cli_room_discoinfo(room);
     
     // Forward submit result
     if(xows_isfunc(xows_cli_muc_cfg_cb))
@@ -2482,36 +2562,33 @@ function xows_cli_subscribe_allow(bare, allow, nick)
  * @param {string}  name   Optional room name to join or create.
  * @param {string}  nick   Optional nickname to join room.
  * @param {string}  pass   Optional password to join room (not implemented yet).
- * 
- * @return  {object}  New joined room object, or null
  */
 function xows_cli_room_join(room, name, nick, pass)
 {
   // Verify the server provide MUC service
   if(!xows_cli_svc_exist(XOWS_NS_MUC)) {
-    xows_log(1,"cli_muc_items_query","service not found",
+    xows_log(1,"cli_room_join","service not found",
                 "the server does not provide "+XOWS_NS_MUC+" service");
     xows_cli_fw_onerror(XOWS_SIG_WRN,"Multi-User Chat (XEP-0045) service is unavailable");
     return;
   }
 
-  let room_bare;
+  let bare;
   
   // Check if we got a room object
   if(room) {
-    // Ignore request if already joined room
-    if(room.join) return;
-    // Get Room JID
-    room_bare = room.bare;
+    if(room.join) return; // already joined room
+    bare = room.bare; //< get room JID
   } else {
-    // Compose Room JID
-    room_bare = name.toLowerCase()+"@"+xows_cli_svc_url[XOWS_NS_MUC];
+    // compose room JID
+    bare = name.toLowerCase()+"@"+xows_cli_svc_url[XOWS_NS_MUC];
   }
   
-  xows_log(2,"cli_muc_room_join","request join",name+" ("+room_bare+")");
+  xows_log(2,"cli_room_join","request join",name+" ("+bare+")");
   
   // Compose destination using Room JID and our nickname
-  const to = room_bare + "/" + (nick ? nick : xows_cli_self.name);
+  const to = bare + "/" + (nick ? nick : xows_cli_self.name);
+  
   // Send initial presence to Room to join
   xows_xmp_send_presence(to, null, xows_cli_self.show, xows_cli_self.stat, xows_cli_self.avat, true);
 }

@@ -12,7 +12,7 @@
           <div id="cont_unrd" class="UNRD-SPOT HIDDEN"></div>
           <div id="subs_unrd" class="UNRD-SPOT HIDDEN"></div>
         </button>
-        <button id="tab_room" class="tab-room" title="${'Chat rooms'}" disabled>
+        <button id="tab_room" class="tab-room" title="${'Chatrooms'}" disabled>
           <div id="room_unrd" class="UNRD-SPOT HIDDEN"></div>
         </button>
       </div>
@@ -30,28 +30,33 @@
         <div id="rost_titl" class="head-info">${'Contacts'}</div>
         <div class="head-meta"></div>
         <div class="head-acts">
-          <button id="room_upd" class="room-upd HIDDEN" title="${'Query public chat rooms list'}"></button>
-          <button id="room_add" class="room-add HIDDEN" title="${'Join a chat room'}"></button>
+          <button id="room_upd" class="room-upd HIDDEN" title="${'Query public chatrooms list'}"></button>
+          <button id="room_add" class="room-add HIDDEN" title="${'Join a chatroom'}"></button>
           <button id="cont_add" class="peer-add" title="${'Add a contact'}"></button>
         </div>
       </div>
       <!-- Main Frame (Roster Lists) -->
-      <div class="row-main user-rost">
+      <div id="user_rost" class="row-main user-rost">
         <div id="cont_list" class="cont-list list-scroll" >
-          <ul id="subs_ul">
+          <ul id="subs_ul" class="HIDDEN">
+            <h4>${'Pending requests'}</h4>
             <li class="ROST-SUBS" name="" is_instance></li>
           </ul>
-          <ul id="cont_ul">
+          <ul id="cont_ul" class="HIDDEN">
+            <h4>${'Authorized'}</h4>
             <li class="ROST-CONT" name="" is_instance></li>
           </ul>
         </div>
         <div id="room_list" class="room-list list-scroll HIDDEN">
-          <h4 class="list-title">${'Favorite rooms'}</h4>
-          <ul id="favs_ul">
+          <ul id="book_ul" class="HIDDEN">
+            <h4>${'Bookmarks'}</h4>
           </ul>
-          <h4 class="list-title">${'Public rooms'}</h4>
-          <ul id="room_ul">
+          <ul id="room_ul" class="HIDDEN">
+            <h4>${'Public rooms'}</h4>
             <li class="ROST-ROOM" name="" is_instance></li>
+          </ul>
+          <ul id="priv_ul" class="HIDDEN">
+            <h4>${'Private rooms'}</h4>
           </ul>
         </div>
       </div>
@@ -94,6 +99,7 @@
         <div id="chat_meta" class="head-meta"></div>
         <div class="head-acts">
           <button id="chat_conf" class="chat-conf" title="${'Room configuration'}"></button>
+          <button id="chat_book" class="chat-book" title="${'Add Room to Bookmarks'}"></button>
           <button id="chat_noti" class="CHAT-NOTI" title="${'Enable notifications'}"></button>
           <button id="chat_occu" class="chat-occu" title="${'Room occupants list'}"></button>
         </div>
@@ -154,21 +160,15 @@
       <div class="row-head room-head">
         <div class="head-info">${'Occupants'}</div>
         <div class="head-meta"></div> 
-        <div class="head-acts">
-          <!--
-          <button id="room_edit" class="room-edit" title="${'Room configuration'}" disabled></button>
-          <button id="room_topc" class="room-topc" title="${'Change Room topic'}" disabled></button>
-          -->
-        </div>
-        
+        <div class="head-acts"></div>
       </div>
       <!-- Main Frame (Room Occupants List) -->
       <div id="occu_list" class="row-main occu-list list-scroll">
-        <h4 class="list-title">${'Moderators'}</h4>
         <ul id="modo_ul">
+          <h4>${'Moderators'}</h4>
         </ul>
-        <h4 class="list-title">${'Participants'}</h4>
         <ul id="memb_ul">
+          <h4>${'Participants'}</h4>
           <div class="ROOM-OCCU" name="" is_instance></div>
         </ul>
       </div>

@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,6 @@
  * 
  * @licend
  */
- 
 /* ------------------------------------------------------------------
  * 
  *                         Main "Public" API
@@ -176,7 +174,6 @@ function xows_init(options)
   
   xows_log(2,"init","xows init start");
   
-  // Start initialization process by the l10n module, wchich will 
-  // loading the desired local data base if available
+  // Start init by the l10n module, other init will follow
   xows_l10n_select(xows_options.locale, xows_init_onl10n);
 }

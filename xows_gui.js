@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,6 @@
  * 
  * @licend
  */
- 
 /* ------------------------------------------------------------------
  * 
  *                         GUI API Interface
@@ -95,6 +93,24 @@ function xows_gui_peer_element(peer, id)
     return xows_doc[id] ? xows_doc[id] : document.getElementById(id);
   } else {
     return xows_doc_frag_element(peer.bare, id);
+  }
+}
+
+/**
+ * Get the DOM or Fragement element associated with the specified peer
+ * either offscreen or in the current document.
+ * 
+ * @param {object}  peer  Peer object to get element.
+ * @param {string}  id    Element ID to get.
+ * 
+ * @return  {object}  Element or null if not found.
+ */
+function xows_gui_peer_selector(peer, select)
+{
+  if(peer === xows_gui_peer) {
+    return document.querySelector(select);
+  } else {
+    return xows_doc_frag_selector(peer.bare, select);
   }
 }
 
@@ -220,6 +236,36 @@ function xows_gui_peer_scroll_seek(peer, offset)
   obj.scrollTop = obj.scrollHeight - offset;
 }
 
+/**
+ * Find roster <li> element corresponding to specified Peer.
+ * 
+ * @param {string}    peer      Peer object to search roster <li>.
+ */
+function xows_gui_find_rost_li(peer)
+{
+  let li;
+  
+  if(li = xows_doc.cont_list.querySelector("LI[title='"+peer.bare+"']")) 
+    return li;
+    
+  if(li = xows_doc.room_list.querySelector("LI[title='"+peer.bare+"']")) 
+    return li;
+    
+  return null;
+}
+
+/**
+ * Find occupant <li> element corresponding to specified Occupant JID.
+ * 
+ * @param {object}    room      Room object.
+ * @param {string}    ojid      Occupant JID to search.
+ */
+function xows_gui_find_occu_li(room, ojid)
+{
+  const ul = (room === xows_gui_peer) ? xows_doc.occu_list : xows_doc_frag(room.bare,"occu_list");
+  return ul.querySelector("LI[title='"+ojid+"']");
+}
+
 /* -------------------------------------------------------------------
  * 
  * Client Interface - Connect / Dsiconnect
@@ -249,6 +295,8 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("subspush", xows_gui_cli_onsubspush);
   xows_cli_set_callback("subsrem", xows_gui_cli_onsubsrem);
   xows_cli_set_callback("roompush", xows_gui_cli_onroompush);
+  xows_cli_set_callback("roomrem", xows_gui_cli_onroomrem);
+  //xows_cli_set_callback("bookpush", xows_gui_cli_onbookpush); /* alternative Bookmarks implementation */
   xows_cli_set_callback("occupush", xows_gui_cli_onoccupush);
   xows_cli_set_callback("occurem", xows_gui_cli_onoccurem);
   xows_cli_set_callback("message", xows_gui_cli_onmessage);
@@ -312,6 +360,7 @@ function xows_gui_cli_onconnect(user)
   // Check whether MUC service is available
   if(xows_cli_svc_exist(XOWS_NS_MUC)) {
     xows_doc.tab_room.disabled = false;
+    //xows_doc.tab_book.disabled = false; /* alternative Bookmarks implementation */
   }
   
   // Set the presence menu for current user
@@ -624,13 +673,15 @@ function xows_gui_reset()
   let i = hide.length;
   while(i--) xows_doc_hide(hide[i]);
   
-  xows_doc.cont_ul.innerHTML = "";
-  xows_doc.room_ul.innerHTML = "";
-  xows_doc.favs_ul.innerHTML = "";
-  xows_doc.hist_ul.innerHTML = "";
-  xows_doc.modo_ul.innerHTML = "";
-  xows_doc.memb_ul.innerHTML = "";
-  xows_doc.hist_beg.innerHTML = "";
+  xows_doc_list_clean("cont_ul");
+  xows_doc_list_clean("book_ul");
+  xows_doc_list_clean("room_ul");
+  
+  xows_doc_list_clean("modo_ul");
+  xows_doc_list_clean("memb_ul");
+  
+  xows_doc.hist_ul.innerText = "";
+  xows_doc.hist_beg.innerText = "";
 
   // Reset roster tabs
   xows_doc_cls_add("tab_cont", "TAB-ENABLED");
@@ -692,7 +743,7 @@ function xows_gui_switch_peer(jid)
     // Remove "selected" class from <li> element
     if(next) {
       if(next.type === prev.type) {
-        document.getElementById(prev.bare).classList.remove("SELECTED");
+        xows_gui_find_rost_li(prev).classList.remove("SELECTED");
       }
     }
   }
@@ -706,7 +757,7 @@ function xows_gui_switch_peer(jid)
   
   if(next) {
     // Add highlight class to new <li> element
-    document.getElementById(next.bare).classList.add("SELECTED");
+    xows_gui_find_rost_li(next).classList.add("SELECTED");
     // Restore contact history from document fragment
     xows_doc_frag_restore(next.bare, "chat_hist");
     // Restore occupant list from document fragment
@@ -830,10 +881,10 @@ function xows_gui_room_privi_update(reset)
   let topic, confg;
   
   // Setup privilieges
-  const affi = xows_gui_peer.affi;
-  const role = xows_gui_peer.role;
-  
-  if(!reset) {
+  if(xows_gui_peer && !reset) {
+    const affi = xows_gui_peer.affi;
+    const role = xows_gui_peer.role;
+    
     topic = (role > XOWS_ROLE_PART);
     confg = (affi > XOWS_AFFI_ADMN);
   }
@@ -882,7 +933,7 @@ function xows_gui_mbox_exit_onvalid()
 function xows_gui_mbox_exit_open()
 {
   // Open new MODAL Message Box with proper message
-  xows_doc_mbox_open(1, "Do you really want to disconnect current session ?",
+  xows_doc_mbox_open(XOWS_MBOX_WRN, "Do you really want to disconnect current session ?",
                         xows_gui_mbox_exit_onvalid, "Yes",
                         xows_gui_mbox_exit_onabort, "No",
                         true);
@@ -930,20 +981,20 @@ function xows_gui_mbox_subs_edit_open(bare, name)
   // Store JID of contact to remove
   xows_gui_mbox_subs_edit.bare = bare;
 
-  let mesg, code;
+  let mesg, style;
   
   // If name is defined, this mean this is for Contact add
   if(name) {
     xows_gui_mbox_subs_edit.name = name;
-    code = 4;
+    style = XOWS_MBOX_ASK;
     mesg = "Add contact and request authorisation ?";
   } else {
-    code = 1;
+    style = XOWS_MBOX_WRN;
     mesg = "Remove contact and revoke authorization ?";
   }
   
   // Open new MODAL Message Box with proper message
-  xows_doc_mbox_open(code, mesg,
+  xows_doc_mbox_open(style, mesg,
                         xows_gui_mbox_subs_edit_onvalid, "OK",
                         xows_gui_mbox_subs_edit_onabort, "Cancel",
                         true);
@@ -993,9 +1044,54 @@ function xows_gui_mbox_subs_auth_open(bare, name)
   xows_gui_mbox_subs_auth.name = name;
     
   // Open new MODAL Message Box with proper message
-  xows_doc_mbox_open(4, "Allow contact subscription ?",
+  xows_doc_mbox_open(XOWS_MBOX_ASK, "Allow contact subscription ?",
                         xows_gui_mbox_subs_auth_onvalid, "Allow",
                         xows_gui_mbox_subs_auth_onabort, "Deny",
+                        true);
+}
+
+/* -------------------------------------------------------------------
+ * Main screen - Message Box - Disconnect confirmation dialog
+ * -------------------------------------------------------------------*/
+
+/**
+ * Object to store Page/Dialog temporary data and parameters
+ */
+let xows_gui_mbox_bookmark_room = null;
+
+/**
+ * Add Bookmark message box on-abort callback function.
+ */
+function xows_gui_mbox_bookmark_onabort()
+{
+  // reset parameters
+  xows_gui_mbox_bookmark_room = null;
+}
+
+/**
+ * Add Bookmark message box on-valid callback function.
+ */
+function xows_gui_mbox_bookmark_onvalid()
+{
+  // add bookmark
+  xows_cli_book_publish(xows_gui_mbox_bookmark_room);
+  xows_gui_mbox_bookmark_room = null;
+}
+
+/**
+ * Add Bookmark message box open.
+ * 
+ * @param {object}  room  Room object to add Bookmark.
+ */
+function xows_gui_mbox_bookmark_open(room)
+{
+  // Store JID and name of contact to allow/deny
+  xows_gui_mbox_bookmark_room = room;
+    
+  // Open new MODAL Message Box with proper message
+  xows_doc_mbox_open(XOWS_MBOX_ASK, "Add Room to bookmarks ?",
+                        xows_gui_mbox_bookmark_onvalid, "Add Bookmark",
+                        xows_gui_mbox_bookmark_onabort, "Cancel",
                         true);
 }
 
@@ -1038,44 +1134,40 @@ function xows_gui_rost_switch(id)
 {
   let list, toggle = false;
   
-  const tab_cont = id === "tab_cont";
   const tab_room = id === "tab_room";
   
-  if(tab_room && xows_doc_cls_has("tab_cont","ENABLED")) {
+  if(tab_room && !xows_doc_cls_has("tab_room","ENABLED")) {
     toggle = true;
-    xows_doc.rost_titl.innerHTML = xows_l10n_get("Chat rooms");
-
-    list = xows_doc.room_ul;
-  }
-    
-  if(tab_cont && xows_doc_cls_has("tab_room","ENABLED")) {
-    toggle = true;
-    xows_doc.rost_titl.innerHTML = xows_l10n_get("Contacts");
-    list = xows_doc.cont_ul;
+    xows_doc.rost_titl.innerText = xows_l10n_get("Chatrooms");
+    list = xows_doc.room_list;
   }
   
+  const tab_cont = id === "tab_cont";
+  
+  if(tab_cont && !xows_doc_cls_has("tab_cont","ENABLED")) {
+    toggle = true;
+    xows_doc.rost_titl.innerText = xows_l10n_get("Contacts");
+    list = xows_doc.cont_list;
+  }
+
   // If nothing changed, return now
   if(!toggle)
     return;
   
   // Toggle enabled tab
   xows_doc_cls_set("tab_cont", "ENABLED", tab_cont);
-  xows_doc_cls_set("tab_room", "ENABLED", tab_room); 
-  
-  // Show / Hide roster lists
   xows_doc_hidden_set("cont_list", !tab_cont);
-  xows_doc_hidden_set("room_list", !tab_room);
-  
-  // Show / Hide actions buttons
   xows_doc_hidden_set("cont_add", !tab_cont);
+  
+  xows_doc_cls_set("tab_room", "ENABLED", tab_room);
+  xows_doc_hidden_set("room_list", !tab_room);
   xows_doc_hidden_set("room_add", !tab_room);
   xows_doc_hidden_set("room_upd", !tab_room);
-
+  
   // Search any SELECTED peer in the list to switch to
-  if(list) {
-    const select = list.querySelector(".SELECTED");
-    xows_gui_switch_peer(select ? select.id : null);
-  }
+  let selected;
+  if(list) selected = list.querySelector(".SELECTED");
+  xows_gui_switch_peer(selected ? selected.title : null);
 }
 
 /**
@@ -1104,35 +1196,34 @@ function xows_gui_rost_list_onclick(event)
   const li = event.target.closest("li");
   
   if(li) {
-    // Checks whether user click on subscription item
-    if(li.className === "ROST-SUBS") {
-      
-      // Open Subscription Allow/Deny dialog
-      xows_gui_mbox_subs_auth_open(li.id, li.name);
-      
-    } else {
-      
-      // Checks whether user clicked on action button
-      if(event.target.tagName === "BUTTON") {
+    
+    // Checks whether user clicked on action button
+    if(event.target.tagName === "BUTTON") {
+      // Select action
+      switch(event.target.name)
+      {
+      case "CONT_ASK": //< Request subscribe permission
+        xows_cli_subscribe_request(li.title);
+        xows_doc_mbox_open(XOWS_MBOX_SCS, "New authorization request was sent");
+        return;
         
-        // Select action
-        switch(event.target.name)
-        {
-        case "subs": //< Request subscribe permission
-            xows_cli_subscribe_request(li.id);
-            xows_doc_mbox_open(2, "New authorization request was sent");
-          return;
-          
-        case "rem": //< Remove contact
-          xows_gui_mbox_subs_edit_open(li.id);
-          return;
-        }
-        
-      } else {
-        
+      case "CONT_REM": //< Remove contact
+        xows_gui_mbox_subs_edit_open(li.title);
+        return;
+      }
+    }
+    
+    switch(li.className)
+    {
+      case "ROST-SUBS": {
+        // Open Subscription Allow/Deny dialog
+        xows_gui_mbox_subs_auth_open(li.title, li.name);
+        return;
+      }
+
+      default: {
         // Select peer
-        xows_gui_switch_peer(li.id);
-        
+        xows_gui_switch_peer(li.title);
         // Close panel in case we are in narrow-screen with wide panel
         xows_gui_panel_close();
       }
@@ -1164,7 +1255,7 @@ function xows_gui_unread_add(peer, id)
   bt_spot.classList.remove("HIDDEN"); //< show
   
   // Get the corresponding peer <li> (room or contact) in roster 
-  const li = document.getElementById(peer.bare);
+  const li = xows_gui_find_rost_li(peer);
   if(li) {
     
     // Inside the <li> search for the unread <div>
@@ -1195,7 +1286,7 @@ function xows_gui_unread_reset(peer)
   let n = parseInt(bt_spot.innerText) || 0;
   
   // Get the corresponding peer <li> (room or contact) in roster 
-  const li = document.getElementById(peer.bare);
+  const li = xows_gui_find_rost_li(peer);
   if(li) {
     // Inside the <li> search for the unread <div>
     const li_spot = li.querySelector(".UNRD-SPOT");
@@ -1225,7 +1316,7 @@ function xows_gui_cont_list_reload()
 {
   xows_gui_switch_peer(null);
   // Empty the list
-  xows_doc.cont_ul.innerHTML = "";
+  xows_doc.cont_ul.innerText = "";
   // Add loading spinner at top of list
   xows_doc_cls_add("cont_list", "LOADING");
   // Query for roster content
@@ -1245,8 +1336,9 @@ function xows_gui_cli_oncontpush(cont)
     xows_doc_cls_rem("cont_list", "LOADING");
     return;
   }
-  
-  const li = document.getElementById(cont.bare);
+
+  // Search for existing contact <li> element
+  const li = xows_doc.cont_ul.querySelector("li[title='"+cont.bare+"'");
   if(li) {
     // Update the existing contact <li> element according template
     xows_tpl_update_rost_cont(li, cont.name, cont.avat, 
@@ -1266,6 +1358,9 @@ function xows_gui_cli_oncontpush(cont)
     // Clone initial empty occupant list
     xows_doc_frag_copy(cont.bare, "empty", "occu_list");
   }
+  
+  // Show or hide list depending content
+  xows_doc_hidden_set("cont_ul", (xows_doc.cont_ul.childNodes.length < 2));
 }
 
 /**
@@ -1275,9 +1370,12 @@ function xows_gui_cli_oncontpush(cont)
  */
 function xows_gui_cli_oncontrem(bare)
 {
-  // Remove the DOM element
-  const li = document.getElementById(bare);
+  // Remove <li> element
+  const li = xows_doc.cont_ul.querySelector("li[title='"+bare+"'");
   if(li) li.parentNode.removeChild(li);
+  
+  // Show or hide list depending content
+  xows_doc_hidden_set("cont_ul", (xows_doc.cont_ul.childNodes.length < 2));
 }
 
 /* -------------------------------------------------------------------
@@ -1298,13 +1396,20 @@ function xows_gui_cli_oncontrem(bare)
 function xows_gui_cli_onsubspush(bare, nick)
 {
   // Ensure subscribe <li> does not already exists
-  let i = xows_doc.subs_ul.childNodes.length;
-  while(i--) if(xows_doc.subs_ul.childNodes[i].id === bare) return;
+  if(xows_doc.subs_ul.querySelector("li[title='"+bare+"'"))
+    return;
+  
   // Create a new subcription <li> element from template
   xows_doc.subs_ul.appendChild(xows_tpl_spawn_rost_subs(bare, nick));
-  // Enable the notification on roster Contact Tab button
+  
+  const n = xows_doc.subs_ul.childNodes.length - 1;
+  
+  // Enable or update notification spot
+  xows_doc.subs_unrd.innerText = n;
   xows_doc_show("subs_unrd");
-  xows_doc.subs_unrd.innerHTML = xows_doc.subs_ul.childNodes.length;
+  
+  // Show or hide list depending content
+  xows_doc_hidden_set("subs_ul", (n < 1));
 }
 
 /**
@@ -1317,23 +1422,22 @@ function xows_gui_cli_onsubspush(bare, nick)
  */
 function xows_gui_cli_onsubsrem(bare)
 {
-  // To ensure we don't remove the Contact <li> we manualy search
-  // in subs_ul children
-  let i = xows_doc.subs_ul.childNodes.length;
-  while(i--) {
-    if(xows_doc.subs_ul.childNodes[i].id === bare) {
-      xows_doc.subs_ul.removeChild(xows_doc.subs_ul.childNodes[i]);
-      break;
-    }
-  }
-  // Update or disable the notification on roster Contact Tab button
-  const n = xows_doc.subs_ul.childNodes.length;
+  // Remove <li> element
+  const li = xows_doc.subs_ul.querySelector("li[title='"+bare+"'");
+  if(li) li.parentNode.removeChild(li);
+
+  const n = xows_doc.subs_ul.childNodes.length - 1;
+  
+  // Update or disable the notification spot
   if(n) {
-    xows_doc.subs_unrd.innerHTML = n;
+    xows_doc.subs_unrd.innerText = n;
   } else {
-    xows_doc.subs_unrd.innerHTML = "";
+    xows_doc.subs_unrd.innerText = "";
     xows_doc_hide("subs_unrd");
   }
+  
+  // Show or hide list depending content
+  xows_doc_hidden_set("subs_ul", (n < 1));
 }
 
 /* -------------------------------------------------------------------
@@ -1347,11 +1451,17 @@ function xows_gui_cli_onsubsrem(bare)
  */
 function xows_gui_room_list_reload()
 {
-  xows_gui_switch_peer(null);
-  // Empty the list
-  xows_doc.room_ul.innerHTML = "";
-  // Add loading spinner at top of list
+  // if current selected room is public, exit
+  if(xows_gui_peer && xows_gui_peer.publ)
+    xows_gui_switch_peer(null);
+  
+  // Empty and hide the Public Room list
+  xows_doc_hide("room_ul");
+  xows_doc_list_clean("room_ul");
+  
+  // Add loading animation to Room list
   xows_doc_cls_add("room_list", "LOADING");
+  
   // Query to get public room list with delay
   setTimeout(xows_cli_muc_items_query, 500);
 }
@@ -1372,28 +1482,40 @@ function xows_gui_room_add_onclick(event)
 /**
  * Function to add or update item of the roster Room list
  * 
- * @param {object}  room    Room object to add or update.
+ * @param {object}  room      Room object to add or update.
  */
 function xows_gui_cli_onroompush(room)
 {
-  // Null room mean empty room list
-  if(room === null) {
-    // Remove the loadding spinner
+  // Check for null object, meaning previous public room query response
+  if(!room) {
+    // disable loading animation
     xows_doc_cls_rem("room_list", "LOADING");
     return;
   }
-  const li = document.getElementById(room.bare);
+  
+  // Select destination and source <ul>
+  let dest_ul;
+  if(room.publ) {
+    dest_ul = xows_doc.room_ul;
+  } else {
+    if(room.book) {
+      dest_ul = xows_doc.book_ul;
+    } else {
+      dest_ul = xows_doc.priv_ul;
+    }
+  }
+  
+  const li = xows_doc.room_list.querySelector("li[title='"+room.bare+"']");
   if(li) {
+    // Move existing <li> to proper destination if needed
+    if(li.parentNode !== dest_ul) dest_ul.appendChild(li);
     // Update room <li> element according template
     xows_tpl_update_rost_room(li, room.name, room.desc, room.lock);
-    // If updated contact is current peer, alos update title bar
+    // If updated room is current peer, also update title bar
     if(room === xows_gui_peer) xows_gui_chat_fram_update();
   } else {
-    // Remove the potential loading spinner
-    xows_doc_cls_rem("room_list", "LOADING");
-    // Append new instance of contact <li> from template to roster <ul>
-    xows_doc.room_ul.appendChild(xows_tpl_spawn_rost_room(room.bare, room.name, room.desc, room.lock));
-    
+    // Append new instance of room <li> from template to roster <ul>
+    dest_ul.appendChild(xows_tpl_spawn_rost_room(room.bare, room.name, room.desc, room.lock));
     // Clone initial empty history to room offscreen history
     xows_doc_frag_copy(room.bare, "empty", "chat_hist");
     // Initial history scroll backup
@@ -1401,6 +1523,23 @@ function xows_gui_cli_onroompush(room)
     // Clone initial empty occupant list for room offscreen occupant list
     xows_doc_frag_copy(room.bare, "empty", "occu_list");
   }
+  
+  // Show or hide lists depending content
+  xows_doc_hidden_set("book_ul", (xows_doc.book_ul.childNodes.length < 2));
+  xows_doc_hidden_set("room_ul", (xows_doc.room_ul.childNodes.length < 2));
+  xows_doc_hidden_set("priv_ul", (xows_doc.priv_ul.childNodes.length < 2));
+}
+
+/**
+ * Function to add or update item of the roster Room list
+ * 
+ * @param {object}  bare      Room JID to remove.
+ */
+function xows_gui_cli_onroomrem(bare)
+{
+  // Remove <li> element
+  const li = xows_doc.room_list.querySelector("li[title='"+bare+"'");
+  if(li) li.parentNode.removeChild(li);
 }
 
 /* -------------------------------------------------------------------
@@ -1427,8 +1566,8 @@ function xows_gui_cli_onselfchange(user)
   xows_doc.user_stat.blur();
   // Change Show Status displays
   xows_doc.user_show.setAttribute("show", user.show);
-  xows_doc.user_name.innerHTML = user.name;
-  xows_doc.user_addr.innerHTML = "("+user.bare+")";
+  xows_doc.user_name.innerText = user.name;
+  xows_doc.user_addr.innerText = "("+user.bare+")";
   
   // Update avatar
   xows_tpl_spawn_avat_cls(user.avat); //< Add avatar CSS class 
@@ -1486,37 +1625,44 @@ function xows_gui_chat_fram_update()
 {
   if(!xows_gui_peer) {
     // Reset to empty chat window
-    xows_doc.chat_titl.innerHTML = "";
-    xows_doc.chat_addr.innerHTML = "";
+    xows_doc.chat_titl.innerText = "";
+    xows_doc.chat_addr.innerText = "";
     xows_doc.chat_meta.title = "";
-    xows_doc.chat_meta.innerHTML = "";
+    xows_doc.chat_meta.innerText = "";
     xows_doc.send_wrap.setAttribute("placeholder", "");
-    xows_doc.chat_stat.innerHTML = "";
+    xows_doc.chat_stat.innerText = "";
     xows_doc_hide("chat_show");
+    xows_doc_hide("chat_occu");
+    xows_doc_hide("chat_book");
+    // Reset room specific controls
+    xows_gui_room_privi_update(true);
     return;
   }
   
   // Update chat title bar
-  xows_doc.chat_titl.innerHTML = xows_gui_peer.name;
+  xows_doc.chat_titl.innerText = xows_gui_peer.name;
   
   if(xows_gui_peer.type === XOWS_PEER_CONT) { //< XOWS_PEER_CONT
     xows_doc_show("chat_show");
     xows_doc_show("chat_addr");
     xows_doc.chat_show.setAttribute("show", xows_gui_peer.show);
-    xows_doc.chat_addr.innerHTML = "("+xows_gui_peer.bare+")";
-    xows_doc.chat_meta.innerHTML = xows_gui_peer.stat?xows_gui_peer.stat:"";
+    xows_doc.chat_addr.innerText = "("+xows_gui_peer.bare+")";
+    xows_doc.chat_meta.innerText = xows_gui_peer.stat?xows_gui_peer.stat:"";
     xows_doc_hide("chat_occu");
+    xows_doc_hide("chat_book");
     // Reset room specific controls
     xows_gui_room_privi_update(true);
   } else {      //< XOWS_PEER_ROOM
     xows_doc_hide("chat_show");
     xows_doc_hide("chat_addr");
-    xows_doc.chat_meta.innerHTML = xows_gui_peer.subj;
+    xows_doc.chat_meta.innerText = xows_gui_peer.subj;
     xows_doc_show("chat_occu");
+    // Cannot bookmark public rooms or already bookmarked
+    xows_doc_hidden_set("chat_book", (xows_gui_peer.book || xows_gui_peer.publ));
     // Enable or disable GUI according Room role/affiliation
     xows_gui_room_privi_update();
   }
-    
+  
   // Hide or show the proper notification button
   if(xows_gui_peer.noti) {
     xows_gui_notify_allow(true);
@@ -1584,6 +1730,20 @@ function xows_gui_chat_occu_onclick(event)
   }
 }
 
+/**
+ * Chat Action Room Bookmark on-click callback function.
+ * 
+ * @param {object}  event   Event object associated with trigger
+ */
+function xows_gui_chat_book_onclick(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+  
+  // Open confirmation dialog
+  if(xows_gui_peer) 
+    xows_gui_mbox_bookmark_open(xows_gui_peer);
+}
+
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - Header - Room Subject
  * -------------------------------------------------------------------*/
@@ -1626,7 +1786,7 @@ function xows_gui_chat_meta_onkeyp(event)
 function xows_gui_cli_onsubject(peer, subj)
 {
   if(peer === xows_gui_peer) 
-    xows_doc.chat_meta.innerHTML = subj ? subj : "";
+    xows_doc.chat_meta.innerText = subj ? subj : "";
 }
 
 /* -------------------------------------------------------------------
@@ -1692,8 +1852,8 @@ function xows_gui_chat_main_onclick(event)
       // we must query last archived messages
       
       // Reset the chat history to initial stat
-      xows_doc.hist_ul.innerHTML = "";
-      xows_doc.hist_beg.innerHTML = "";
+      xows_doc.hist_ul.innerText = "";
+      xows_doc.hist_beg.innerText = "";
       xows_doc_hide("hist_end");
       
       // Query for the last archives, with no delay
@@ -1821,7 +1981,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // count of message and let user ability to query for archives
   if(hist_ul.childNodes.length > XOWS_GUI_HIST_SIZE) {
     hist_ul.removeChild(hist_ul.firstChild);
-    xows_gui_peer_element(peer,"hist_beg").innerHTML = ""; //< Allow query history
+    xows_gui_peer_element(peer,"hist_beg").innerText = ""; //< Allow query history
   }
   
   // If it is an incomming message and client is consulting top of
@@ -1897,7 +2057,7 @@ function xows_gui_mam_query(after, max = 20, delay = 100)
       xows_doc_cls_add("hist_end", "LOADING");
     } else {
       // Check whether we already reached the first archived message
-      if(xows_doc.hist_beg.innerHTML.length)
+      if(xows_doc.hist_beg.innerText.length)
         return;
       if(xows_doc.hist_ul.childNodes.length) 
         end = parseInt(xows_doc.hist_ul.firstChild.getAttribute("time"));
@@ -1959,7 +2119,7 @@ function xows_gui_mam_parse(peer, result, complete)
     } else {
       // Result are newer messages, we delete messages at top of history
       while(crop--) hist_ul.removeChild(hist_ul.firstChild);
-      hist_beg.innerHTML = ""; //< Allow query history
+      hist_beg.innerText = ""; //< Allow query history
     }
   }
   
@@ -2021,7 +2181,7 @@ function xows_gui_mam_parse(peer, result, complete)
     }
     
     if(beg) {
-      hist_beg.innerHTML = xows_l10n_get("Start of history");
+      hist_beg.innerText = xows_l10n_get("Start of history");
     } else {
       hist_end.classList.add("HIDDEN");
     }
@@ -2091,7 +2251,7 @@ function xows_gui_send_edit_onkeyp(event)
           // Add CSS class to show placeholder
           xows_doc_cls_add("send_wrap", "SEND-PHLD");
           
-          edit.innerHTML = ""; //< Empty any residual <br>
+          edit.innerText = ""; //< Empty any residual <br>
         } 
         
         // Reset chatsate to active
@@ -2132,7 +2292,7 @@ function xows_gui_send_edit_oninput(event)
       // Add CSS class to show placeholder
       xows_doc_cls_add("send_wrap", "SEND-PHLD");
       
-      edit.innerHTML = ""; //< Empty any residual <br>
+      edit.innerText = ""; //< Empty any residual <br>
 
       return; //< Return now
     }
@@ -2300,7 +2460,7 @@ function xows_gui_upld_open(file)
   xows_doc.upld_pbar.style.width = "0%";
 
   // Set uploading file name
-  xows_doc.upld_text.innerHTML = file.name;
+  xows_doc.upld_text.innerText = file.name;
   
   console.log(file.name);
 
@@ -2367,7 +2527,7 @@ function xows_gui_writing_clear()
   
   // Hide and clear the typing notification
   xows_doc_hide("chat_stat");
-  xows_doc.chat_stat.innerHTML = "";
+  xows_doc.chat_stat.innerText = "";
 }
 
 /**
@@ -2483,33 +2643,23 @@ function xows_gui_cli_onoccupush(room, occu, code)
     xows_gui_page_join_onjoind(room, null, code.includes(201));
   }
   
-  // Search for existing <li> element, either in the current document or
-  // in an offscreen document fragment
-  const li = xows_gui_peer_element(room, occu.jid);
-              
+  // Search for existing occupant <li> element for this Room
+  const li = xows_gui_find_occu_li(room, occu.jid);
+
   // Update existing or append new <li>
   if(li) {
     
     // Update the existing <li> ellement according template
-    xows_tpl_update_room_occu(li, occu.name, occu.avat, 
-                            occu.full, occu.show, occu.stat);
-                            
+    xows_tpl_update_room_occu(li, occu.name, occu.avat, occu.full, occu.show, occu.stat);
+    
     // Update message history
     xows_gui_hist_avat_upd(room, occu.jid, occu.avat);
     
   } else {
-    
-    // Select the proper role <ul> to put the occupant in
-    let ul_id = (occu.role === XOWS_ROLE_MODO) ? "modo_ul" : "memb_ul";
-    
-    // If occupant is off-screen we get history <div> and <ul> of 
-    // fragment history corresponding to contact
-    const occu_ul = xows_gui_peer_element(room, ul_id);
                     
     // Create and append new <li> element from template
-    const inst = xows_tpl_spawn_room_occu(occu.jid, occu.name, occu.avat, 
-                                        occu.full, occu.show, occu.stat);
-    
+    const inst = xows_tpl_spawn_room_occu(occu.jid, occu.name, occu.avat, occu.full, occu.show, occu.stat);
+                                        
     // Check whether we are this occupant
     if(occu.self) {
       
@@ -2526,6 +2676,13 @@ function xows_gui_cli_onoccupush(room, occu, code)
         inst.querySelector(".OCCU-SUBS").classList.add("HIDDEN");
     }
     
+    // Select the proper role <ul> to put the occupant in
+    let ul_id = (occu.role === XOWS_ROLE_MODO) ? "modo_ul" : "memb_ul";
+    
+    // If occupant is off-screen we get history <div> and <ul> of 
+    // fragment history corresponding to contact
+    const occu_ul = xows_gui_peer_element(room, ul_id);
+    
     // Create and append new <li> element from template
     occu_ul.appendChild(inst);
   }
@@ -2535,25 +2692,28 @@ function xows_gui_cli_onoccupush(room, occu, code)
  * Function to remove item from the room occupant list
  * 
  * @param {object}  room    Room object to remove occupant from.
- * @param {string}  jid     Occupant JID or null for self.
+ * @param {string}  ojid    Occupant JID or null for self.
  */
-function xows_gui_cli_onoccurem(room, jid)
+function xows_gui_cli_onoccurem(room, ojid)
 {  
   if(jid) {
+    
     // Search for existing <li> in document or offscreen fragment
-    const li = xows_gui_peer_element(room, jid);
+    const li = xows_gui_find_occu_li(room, ojid);
+    
     // Remove element from list
     if(li) li.parentNode.removeChild(li);
+    
   } else { // null jid mean occumant is self: we leaved the room
+    
     // Check whether current peer is the room
     if(room === xows_gui_peer) {
       xows_gui_switch_peer(null); //< Unselect peer
-      const li = xows_doc.room_ul.querySelector(".SELECTED");
+      const li = xows_doc.room_list.querySelector(".SELECTED");
       if(li) li.classList.remove("SELECTED");
     }
-  } 
+  }
 }
-
 
 /**
  * Function to handle click on room occupant list
@@ -2564,25 +2724,32 @@ function xows_gui_occu_list_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
   
-  // Check for click on <button> object
-  if(event.target.tagName === "BUTTON") {
+  // get related <li> element where click occurred
+  const li = event.target.closest("li");
+  
+  if(li) {
     
-    const li = event.target.closest("li");
-    
-    if(li) {
-      // get contact address
-      const bare = xows_jid_to_bare(li.getAttribute("jid"));
+    // Checks whether user clicked on action button
+    if(event.target.tagName === "BUTTON") {
       
-      if(xows_isjid(bare)) {
-        
-        // Compose display name from JID
-        const userid = bare.split("@")[0];
-        const name = userid[0].toUpperCase() + userid.slice(1);
-
-        // Open confirmation dialog
-        xows_gui_mbox_subs_edit_open(bare, name);
-        
-      }
+      // Select action
+      switch(event.target.name)
+      {
+        case "OCCU_ADD": { //< Add contact
+          // get contact address
+          const bare = xows_jid_to_bare(li.getAttribute("jid"));
+          // Compose display name from JID
+          const user = bare.split("@")[0];
+          const name = user[0].toUpperCase()+user.slice(1);
+          // Open confirmation dialog
+          xows_gui_mbox_subs_edit_open(bare, name);
+          return;
+        }
+          
+        default: 
+          return;
+          
+      } //< switch
     }
   }
 }
@@ -2641,7 +2808,7 @@ function xows_gui_user_stat_onkeyp(event)
 function xows_gui_page_wait_open(text)
 {
   // Set wait message
-  xows_doc.wait_text.innerHTML = xows_l10n_get(text);
+  xows_doc.wait_text.innerText = xows_l10n_get(text);
   
   // Open wait page
   xows_doc_page_open("page_wait");
@@ -2986,7 +3153,7 @@ function xows_gui_page_cont_onvalid()
 function xows_gui_page_cont_oninput(target)
 {
   if(xows_doc.cont_bare.value.length && xows_isjid(xows_doc.cont_bare.value)) {
-    xows_doc_mbox_open(3, "Add contact and request authorisation",
+    xows_doc_mbox_open(null, "Add contact and request authorisation",
                           xows_gui_page_cont_onvalid, "Submit");
   } else {
     xows_doc_mbox_close();
@@ -3042,7 +3209,7 @@ function xows_gui_page_join_onjoind(room, type, conf)
       xows_doc.join_room.disabled = true;
       
       // Open new Message Box to confirm Room initial config process
-      xows_doc_mbox_open(3, "The Room will be created, do you want to configure it ?",
+      xows_doc_mbox_open(null, "The Room will be created, do you want to configure it ?",
                             xows_gui_page_join_onvalid, "Configure",
                             xows_gui_page_join_onabort, "Join now");
     } else {
@@ -3102,7 +3269,7 @@ function xows_gui_page_join_onabort()
 function xows_gui_page_join_oninput(target)
 {
   if(xows_doc.join_room.value.length) {
-    xows_doc_mbox_open(3, "Join Room (create it if does not exist)",
+    xows_doc_mbox_open(null, "Join Room (create it if does not exist)",
                           xows_gui_page_join_onvalid, "Join");
   } else {
     xows_doc_mbox_close();
@@ -3147,6 +3314,15 @@ function xows_gui_page_join_open()
 const xows_doc_page_room = {};
 
 /**
+ * Room Configuration page query result callback function.
+ */
+function xows_gui_page_room_onresult(room, type)
+{
+  if(type === "result") 
+    xows_doc_page_close();
+}
+
+/**
  * Room Configuration page on-valid callback function.
  */
 function xows_gui_page_room_onvalid()
@@ -3185,7 +3361,7 @@ function xows_gui_page_room_onvalid()
   }
 
   // Submit fulfilled configuration form
-  xows_cli_room_cfg_set(room, form, xows_doc_page_close);
+  xows_cli_room_cfg_set(room, form, xows_gui_page_room_onresult);
 }
 
 /**
@@ -3205,9 +3381,9 @@ function xows_gui_page_room_onabort()
     case "muc#roomconfig_roomdesc":
       xows_doc.room_desc.value = form[i].value; break;
     case "muc#roomconfig_persistentroom":
-      xows_doc.room_pers.checked = form[i].value; break;
+      xows_doc.room_pers.checked = xows_asbool(form[i].value); break;
     case "muc#roomconfig_publicroom":
-      xows_doc.room_publ.checked = form[i].value; break;
+      xows_doc.room_publ.checked = xows_asbool(form[i].value); break;
     //case "muc#roomconfig_roomsecret":
     //  xows_doc.room_priv.checked = form[i].value.length;
     //  xows_doc.room_pass.value = form[i].value; 
@@ -3216,10 +3392,10 @@ function xows_gui_page_room_onabort()
     //  xows_doc.room_invt.checked = form[i].value; 
     //  break;
     case "muc#roomconfig_membersonly":
-      xows_doc.room_mbon.checked = form[i].value; break;
+      xows_doc.room_mbon.checked = xows_asbool(form[i].value); break;
     case "muc#roomconfig_changesubject":
     case "muc#roomconfig_moderatedroom":
-      xows_doc.room_modo.checked = form[i].value; break;
+      xows_doc.room_modo.checked = xows_asbool(form[i].value); break;
     case "muc#roomconfig_whois":
       xows_doc.room_anon.value = form[i].value; break;
     case "muc#roomconfig_historylength":
@@ -3227,7 +3403,7 @@ function xows_gui_page_room_onabort()
     case "muc#roomconfig_defaulthistorymessages":
       xows_doc.room_hdef.value = form[i].value; break;
     case "muc#roomconfig_enablearchiving":
-      xows_doc.room_arch.checked = form[i].value; break;
+      xows_doc.room_arch.checked = xows_asbool(form[i].value); break;
     }
   }
 }
@@ -3252,16 +3428,16 @@ function xows_gui_page_room_oninput(target)
     case "muc#roomconfig_roomdesc":
       form[i].value !== xows_doc.room_desc.value; change = true; break;
     case "muc#roomconfig_persistentroom":
-      parseInt(form[i].value) !== xows_doc.room_pers.checked; change = true; break;
+      xows_asbool(form[i].value) !== xows_doc.room_pers.checked; change = true; break;
     case "muc#roomconfig_publicroom":
-      parseInt(form[i].value) !== xows_doc.room_publ.checked; change = true; break;
+      xows_asbool(form[i].value) !== xows_doc.room_publ.checked; change = true; break;
     //case "muc#roomconfig_roomsecret":
     //  form[i].value = xows_doc.room_priv.checked ? xows_doc.room_pass.value : "";
     //  break;
     case "muc#roomconfig_membersonly":
-      parseInt(form[i].value) !== xows_doc.room_mbon.checked; change = true; break;
+      xows_asbool(form[i].value) !== xows_doc.room_mbon.checked; change = true; break;
     case "muc#roomconfig_moderatedroom":
-      parseInt(form[i].value) !== xows_doc.room_modo.checked; change = true; break;
+      xows_asbool(form[i].value) !== xows_doc.room_modo.checked; change = true; break;
     case "muc#roomconfig_whois":
       form[i].value !== xows_doc.room_anon.value; change = true; break;
     case "muc#roomconfig_historylength":
@@ -3269,7 +3445,7 @@ function xows_gui_page_room_oninput(target)
     case "muc#roomconfig_defaulthistorymessages":
       form[i].value !== xows_doc.room_hdef.value; change = true; break;
     case "muc#roomconfig_enablearchiving":
-      parseInt(form[i].value) !== xows_doc.room_arch.checked; change = true; break;
+      xows_asbool(form[i].value) !== xows_doc.room_arch.checked; change = true; break;
     }
     
     if(change) break;
@@ -3324,7 +3500,7 @@ function xows_gui_page_room_open(room, form)
   xows_doc_page_room.form = form;
   
   // Set the Room ID in the page header frame
-  xows_doc.room_bare.innerHTML = room.bare;
+  xows_doc.room_bare.innerText = room.bare;
   
   // Initialize inputs
   xows_gui_page_room_onabort();

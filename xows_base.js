@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,7 @@
  * 
  * @licend
  */
- 
+
 "use strict";
 
 /* ------------------------------------------------------------------
@@ -50,13 +49,19 @@
  * Global application (client) constants
  */
 const XOWS_APP_NAME = "Xows";
-const XOWS_APP_VERS = "0.9.0";
+const XOWS_APP_VERS = "0.9.1";
 const XOWS_APP_NODE = "https://github.com/sedenion/xows";
+
+/**
+ * Global status signal
+ */
+const XOWS_SIG_ERR = -1;
+const XOWS_SIG_WRN = 0;
 
 /**
  * Xows Logo SVG path
  */
-const XOWS_LOGO_SVG = new Path2D("M8.282 6.527l2.514 3.942c-2.33 1.463-3.431 3.529-4.134 5.785-2.326.221-1.5-4.322-1.659-5.373 0 0-2.945 5.92-.822 7.584 1.518 1.19 4.09 1.651 4.09 1.651l-3.268 4.146c2.224.748 7.17.825 7.17.825l2.837-4.416h2.054l2.837 4.417s4.946-.078 7.17-.826l-3.268-4.146s2.558-.477 4.09-1.651c1.964-1.506-.822-7.584-.822-7.584-.159 1.051.667 5.594-1.66 5.373-.701-2.257-1.803-4.322-4.134-5.785l2.514-3.942c-.98-1.003-2.247-1.753-3.34-1.576l-3.786 4.692h-1.257L11.622 4.95c-1.091-.177-2.358.573-3.34 1.576zm4.104 6.495c.63 1.175 1.797 3.073 1.797 3.073s-1.005.029-1.95.029c-.944 0-1.598-.05-1.598-.754s.322-2.348 1.75-2.348zm7.264 0c1.449 0 1.75 1.644 1.75 2.348 0 .705-.596.754-1.598.754a74.34 74.34 0 01-1.95-.029S19 14.197 19.65 13.022z");
+const XOWS_LOGO_SVG = new Path2D("M159.201 52.324c-19.942.79-41.713 14.61-59.059 32.342h-.008l50.797 79.645c-47.087 29.58-69.341 71.312-83.529 116.906-47.011 4.47-14.317-87.328-17.531-108.576 0 0-75.508 119.611-32.617 153.242 30.69 24.065 82.644 33.38 82.644 33.38l-66.027 83.763c44.933 15.125 144.87 16.685 144.87 16.685l57.33-89.246h40.103l57.33 89.246s99.938-1.56 144.87-16.685l-66.026-83.762s51.953-9.316 82.644-33.381c42.891-33.631-34.617-153.242-34.617-153.242-3.214 21.248 31.48 113.046-15.531 108.576-14.188-45.594-36.443-87.326-83.53-116.906l50.797-79.645h-.008c-17.345-17.733-39.117-31.552-59.058-32.342-2.85-.112-5.66.041-8.416.487l-76.506 94.812h-24l-76.506-94.812a42.195 42.195 0 0 0-8.416-.487zM189.055 223.9c35.389 0 30.326 54.113 30.326 54.113s-20.312.57-39.397.57c-19.093 0-32.304-.99-32.304-15.23 0-14.234 5.985-39.453 41.375-39.453zm134.136 0c35.39 0 41.375 25.219 41.375 39.453 0 14.24-13.211 15.23-32.304 15.23-19.085 0-39.397-.57-39.397-.57s-5.063-54.113 30.326-54.113z");
 
 /**
  * Check whether the the given value matches the specified bitmask.
@@ -70,7 +75,28 @@ function xows_hasbits(value, mask)
 {
   return ((value & mask) === mask);
 }
- 
+
+/**
+ * Parse number value or string to boolean.
+ *  
+ * @param {number|string}  value   Value to parse as boolean.
+ * 
+ * @return  {boolean}   parsed boolean value.
+ */
+function xows_asbool(value)
+{
+  if(value.length) {
+    const number = parseInt(value);
+    if(number !== NaN) {
+      return Boolean(number);
+    } else {
+      return (value.toUpperCase() === "TRUE");
+    }
+  } else {
+    return Boolean(value);
+  }
+}
+
 /**
  * Check whether an object is a valid JavaScript function.
  *  
@@ -97,13 +123,6 @@ function xows_random(seed)
   t ^= t + Math.imul(t ^ t >>> 7, t | 61);
   return ((t ^ t >>> 14) >>> 0) / 4294967296;
 }
-
-/**
- * Global signal or log level
- */
-const XOWS_SIG_ERR = 0;
-const XOWS_SIG_WRN = 1;
-const XOWS_SIG_LOG = 2;
 
 /**
  * Output formated log string to javascript console.
