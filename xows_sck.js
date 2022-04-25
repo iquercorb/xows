@@ -1,7 +1,6 @@
 /*
  * @licstart
  *                    X.O.W.S - XMPP Over WebSocket
- *                        v0.9.0 - (Jan. 2021)
  *                          ____       ____
  *                          \   \     /   /
  *                           \    \_/    /
@@ -13,7 +12,7 @@
  *                         /     /   \     \ 
  *                        /_____/     \_____\
  *         
- *                 Copyright (c) 2020 - 2021 Eric M.
+ *                     Copyright (c) 2022 Eric M.
  * 
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
  * 
@@ -33,7 +32,6 @@
  * 
  * @licend
  */
- 
 /* ------------------------------------------------------------------
  * 
  *                      WebSocket API Layer
