@@ -1392,14 +1392,7 @@ figure {
   margin: 0 7px 0 5px;
   flex: none;
 }
-.COL-WIDE figure {
-  margin-bottom: 0;
-}
-@media (max-width: 824px) {
-  .COLL-WIDE figure {
-    margin-right: 5px;
-  }
-}
+
 /* ------------------------------------------------------------------ */
 /* Main Page - Roster & Occupant List "Peer" <li> object */
 /* ------------------------------------------------------------------ */
