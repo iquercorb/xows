@@ -257,156 +257,167 @@ function xows_doc_hidden(id)
 }
 
 /**
+ * Clone specified element from source to destination 
+ * offscreen slots. 
+ * 
+ * @param {string}  dst       Destination offscreen slot identifier.
+ * @param {string}  src       Source offscreen slot identifier.
+ * @param {string}  element   Root element id.
+ */
+function xows_doc_frag_clone(dst, src, element)
+{
+  // create slot if required
+  if(!xows_doc_frag_db[dst]) 
+    xows_doc_frag_db[dst] = {};
+
+  let s, d;
+  
+  // set source and destination
+  s = xows_doc_frag_db[src][element];
+  d = xows_doc_frag_db[dst][element] = document.createDocumentFragment();
+  
+  // clone source nodes to destination
+  for(let i = 0, n = s.childNodes.length; i < n; ++i)
+    d.appendChild(s.childNodes[i].cloneNode(true));
+}
+
+/**
  * Backup specified element content to an offscreen document fragment. 
  * 
- * @param {string}  name      Bakcup name.
- * @param {string}  id        Cached element id to backup.
+ * @param {string}  slot      Offscreen slot identifier.
+ * @param {string}  element   Root element id.
+ * @param {boolean} clone     Clone nodes.
  */
-function xows_doc_frag_backup(name, id)
+function xows_doc_frag_export(slot, element, clone)
 {
-  if(!xows_doc_frag_db[name]) 
-    xows_doc_frag_db[name] = {};
+  // create slot if required
+  if(!xows_doc_frag_db[slot]) 
+    xows_doc_frag_db[slot] = {};
   
-  // create new empty document fragment
-  xows_doc_frag_db[name][id] = document.createDocumentFragment();
+  let s, d;
+  
+  // set source and destination
+  s = xows_doc[element];
+  d = xows_doc_frag_db[slot][element] = document.createDocumentFragment();
 
-  while(xows_doc[id].childNodes.length) 
-    xows_doc_frag_db[name][id].appendChild(xows_doc[id].firstChild);
+  if(clone) {
+    
+    // clone children from document to fragment
+    for(let i = 0, n = s.childNodes.length; i < n; ++i)
+      d.appendChild(s.childNodes[i].cloneNode(true));
+      
+  } else {
+    
+    // move children from fragment to document
+    while(s.childNodes.length) 
+      d.appendChild(s.firstChild);
+      
+  }
 }
 
 /**
- * Copy offscreen fragment from another one or current DOM element.
+ * Restore specified element from offscreen fragment. 
  * 
- * @param {string}  dst     Destination fragment name.
- * @param {string}  src     Source fragment name or null to copy from DOM.
- * @param {string}  id      Cached element id to copy.
+ * @param {string}  slot      Offscreen slot identifier.
+ * @param {string}  element   Root element id.
+ * @param {boolean} clone     Clone nodes.
  */
-function xows_doc_frag_copy(dst, src, id)
+function xows_doc_frag_import(slot, element, clone)
 {
-  let s, d, e, cache = false;
-  
-  if(src) {
-    // search source in fragment db
-    if(xows_doc_frag_db[src] && xows_doc_frag_db[src][id]) 
-      s = xows_doc_frag_db[src][id];
-  } else {
-    // null source, get current document as source
-    s = xows_doc[id];
-  }
-  
-  if(dst) {
+  if(xows_doc_frag_db[slot]) {
     
-    if(!xows_doc_frag_db[dst]) 
-      xows_doc_frag_db[dst] = {};
+    let s, d, e;
     
-    // create new empty document fragment
-    xows_doc_frag_db[dst][id] = document.createDocumentFragment();
-
-    d = xows_doc_frag_db[dst][id];
+    // set source and destination
+    s = xows_doc_frag_db[slot][element];
+    d = xows_doc[element];
     
-  } else {
+    // empty destination
+    xows_doc[element].innerText = "";
     
-    d = xows_doc[id];
-    
-    d.innerHTML = "";
-    
-    cache = true;
-  }
-  
-  if(s && (d !== s)) {
-    for(let i = 0, n = s.childNodes.length; i < n; ++i) {
-      e = s.childNodes[i].cloneNode(true);
-      d.appendChild(e);
-      if(cache && e.id) xows_doc[e.id] = e; //< replace document cached elements
-    }
-  } 
-}
-
-/**
- * Restore specified element content from offscreen document fragment. 
- * 
- * @param {string}  name      Fragment name.
- * @param {string}  id        Cached element id to restore.
- */
-function xows_doc_frag_restore(name, id)
-{
-  if(xows_doc_frag_db[name]) {
-    
-    xows_doc[id].innerHTML = "";
-  
-    let e;
-    while(xows_doc_frag_db[name][id].childNodes.length) {
-      e = xows_doc_frag_db[name][id].firstChild;
-      xows_doc[id].appendChild(e);
-      if(e.id) xows_doc[e.id] = e; //< replace document cached elements
+    if(clone) {
+      
+      // clone children from fragment to document
+      for(let i = 0, n = s.childNodes.length; i < n; ++i) {
+        e = d.appendChild(s.childNodes[i].cloneNode(true));
+        if(e.id) xows_doc[e.id] = e; //< replace document cached elements
+        
+      }
+      
+    } else {
+      
+      // move children from fragment to document
+      while(s.childNodes.length) {
+        e = d.appendChild(s.firstChild);
+        if(e.id) xows_doc[e.id] = e; //< replace document cached elements
+        
+      }
     }
   }
 }
 
 /**
- * Get backed document fragment element.
+ * Delete specified offscreen document fragment. 
  * 
- * @param {string}  name      Bakcup name.
- * @param {string}  id        Cached element id to get.
+ * @param {string}  slot      Offscreen slot identifier.
  */
-function xows_doc_frag(name, id)
+function xows_doc_frag_delete(slot) 
 {
-  return xows_doc_frag_db[name] ? xows_doc_frag_db[name][id] : null;
+  delete xows_doc_frag_db[slot];
+}
+
+/**
+ * Delete all offscreen document fragment. 
+ */
+function xows_doc_frag_clear() 
+{
+  for(const slot in xows_doc_frag_db)
+    delete xows_doc_frag_db[slot];
+}
+
+/**
+ * Get offscreen slot saved root element.
+ * 
+ * @param {string}  slot      Offscreen slot identifier.
+ * @param {string}  element   Root element id.
+ */
+function xows_doc_frag_element(slot, element)
+{
+  return xows_doc_frag_db[slot] ? xows_doc_frag_db[slot][element] : null;
 }
 
 /**
  * Get element within backed document fragment element.
  * 
- * @param {string}  name      Bakcup name.
- * @param {string}  id        Id of element to retreive.
+ * @param {string}  slot      Offscreen slot identifier.
+ * @param {string}  id        Child element id to search.
  */
-function xows_doc_frag_element(name, id)
+function xows_doc_frag_find(slot, id)
 {
-  let element;
+  if(xows_doc_frag_db[slot] && xows_doc_frag_db[slot][id])
+    return xows_doc_frag_db[slot][id];
   
-  for(const frag in xows_doc_frag_db[name]) {
-    element = xows_doc_frag_db[name][frag].getElementById(id);
-    if(element) return element;
+  let node;
+  
+  for(const element in xows_doc_frag_db[slot]) {
+    if(node = xows_doc_frag_db[slot][element].getElementById(id))
+      return node;
   }
   
   return null;
 }
 
 /**
- * Query selector within backed document fragment element.
+ * Find child element with specified id in offscreen root element.
  * 
- * @param {string}  name      Bakcup name.
- * @param {string}  select    CSS selector to query.
+ * @param {string}  slot      Offscreen slot identifier.
+ * @param {string}  element   Root element id.
+ * @param {string}  id        Child element id to search.
  */
-function xows_doc_frag_selector(name, select)
+function xows_doc_frag_element_find(slot, element, id)
 {
-  let element;
-  
-  for(const frag in xows_doc_frag_db[name]) {
-    element = xows_doc_frag_db[name][frag].querySelector(select);
-    if(element) return element;
-  }
-  
-  return null;
-}
-
-/**
- * Get child with the specified id in the given parent.
- * 
- * @param {object}    parent  Parent object to search child.
- * @param {boolean}   id      Child id to search for.
- * 
- * @return  {object}  Found object or null if not found.  
- */
-function xows_doc_get_child(parent, id)
-{  
-  let i = parent.childNodes.length;
-  
-  while(i--) 
-    if(parent.childNodes[i].id === id) 
-      return parent.childNodes[i];
-      
-  return null;
+  if(xows_doc_frag_db[slot] && xows_doc_frag_db[slot][element]) 
+    return xows_doc_frag_db[slot][element].getElementById(id);
 }
 
 /**
@@ -547,10 +558,6 @@ function xows_doc_init(onready)
   
   // Load the notification sound
   xows_gui_notify_sound = new Audio("/" + xows_options.root + "/sounds/notify.mp3?456");
-  
-  // Clone intial empty document fragment
-  xows_doc_frag_copy("empty", null, "chat_hist");
-  xows_doc_frag_copy("empty", null, "occu_list");
 
   xows_log(2,"gui_start","document ready");
 
@@ -923,7 +930,7 @@ function xows_doc_page_onclose(event)
  * 
  * @param {soft}    Soft close, prepare for new page to open only.
  */
-function xows_doc_page_close(soft = false)
+function xows_doc_page_close(soft)
 {
   if(!xows_doc_page_id) 
     return;
@@ -1063,8 +1070,13 @@ function xows_doc_menu_close()
 {
   // hide the 'void' screen
   xows_doc_hide("scr_void");
-  xows_doc_hide(xows_doc_menu.drop);
-  xows_doc_menu.btn.blur();
+  
+  if(xows_doc_menu.drop) 
+    xows_doc_hide(xows_doc_menu.drop);
+    
+  if(xows_doc_menu.btn)  
+    xows_doc_menu.btn.blur();
+    
   xows_doc_menu.btn = null;
   xows_doc_menu.drop = null;
 }

@@ -79,43 +79,7 @@ let xows_gui_has_focus = true;
 let xows_gui_clean = true;
 
 /**
- * Get the DOM or Fragement element associated with the specified peer
- * either offscreen or in the current document.
- * 
- * @param {object}  peer  Peer object to get element.
- * @param {string}  id    Element ID to get.
- * 
- * @return  {object}  Element or null if not found.
- */
-function xows_gui_peer_element(peer, id)
-{
-  if(peer === xows_gui_peer) {
-    return xows_doc[id] ? xows_doc[id] : document.getElementById(id);
-  } else {
-    return xows_doc_frag_element(peer.bare, id);
-  }
-}
-
-/**
- * Get the DOM or Fragement element associated with the specified peer
- * either offscreen or in the current document.
- * 
- * @param {object}  peer  Peer object to get element.
- * @param {string}  id    Element ID to get.
- * 
- * @return  {object}  Element or null if not found.
- */
-function xows_gui_peer_selector(peer, select)
-{
-  if(peer === xows_gui_peer) {
-    return document.querySelector(select);
-  } else {
-    return xows_doc_frag_selector(peer.bare, select);
-  }
-}
-
-/**
- * Object that stores backed scroll values.
+ * Object that stores saved scroll values.
  */
 const xows_gui_peer_scroll_db = {};
 
@@ -124,9 +88,9 @@ const xows_gui_peer_scroll_db = {};
  * 
  * @param {string}  peer      Peer to save scroll value.
  */
-function xows_gui_peer_scroll_backup(peer)
+function xows_gui_peer_scroll_save(peer)
 {
-  if(!(peer.bare in xows_gui_peer_scroll_db)) 
+  if(!xows_gui_peer_scroll_db[peer.bare]) 
     xows_gui_peer_scroll_db[peer.bare] = {};
     
   xows_gui_peer_scroll_db[peer.bare] = {
@@ -141,7 +105,7 @@ function xows_gui_peer_scroll_backup(peer)
  * 
  * @param {string}  peer      Peer to restore scroll value.
  */
-function xows_gui_peer_scroll_restore(peer)
+function xows_gui_peer_scroll_load(peer)
 {
   if(peer.bare in xows_gui_peer_scroll_db) 
     xows_doc.chat_main.scrollTop = xows_gui_peer_scroll_db[peer.bare].scrollTop;
@@ -237,33 +201,124 @@ function xows_gui_peer_scroll_seek(peer, offset)
 }
 
 /**
- * Find roster <li> element corresponding to specified Peer.
- * 
- * @param {string}    peer      Peer object to search roster <li>.
+ * Constant for initial offscreen slot identifier
  */
-function xows_gui_find_rost_li(peer)
+const XOWS_GUI_FRAG_INIT = "NULL";
+
+/**
+ * Create new Peer offscreen slot using initial DOM elements
+ * 
+ * @param {string}  peer      Peer object to initialize offscreen for.
+ */
+function xows_gui_peer_doc_init(peer)
 {
-  let li;
-  
-  if(li = xows_doc.cont_list.querySelector("LI[title='"+peer.bare+"']")) 
-    return li;
-    
-  if(li = xows_doc.room_list.querySelector("LI[title='"+peer.bare+"']")) 
-    return li;
-    
-  return null;
+  // clone elements from initial offscreen slot
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_hist");
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "occu_list");
+}
+
+/**
+ * Move and store current document Peer elements to offscreen
+ * 
+ * @param {string}  peer      Peer object.
+ */
+function xows_gui_peer_doc_export(peer)
+{
+  // export document elements to offscreen fragment
+  xows_doc_frag_export(peer.bare, "chat_hist");
+  xows_doc_frag_export(peer.bare, "occu_list");
+}
+
+/**
+ * Bring back saved Peer offscreen elements to current document
+ * 
+ * @param {string}  peer      Peer object or null to set initial.
+ */
+function xows_gui_peer_doc_import(peer)
+{
+  if(peer) {
+    // import document elements from offscreen fragment
+    xows_doc_frag_import(peer.bare, "occu_list");
+    xows_doc_frag_import(peer.bare, "chat_hist");
+  } else {
+    // restore (clone) from initial (empty) document elements
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_hist", true);
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "occu_list", true);
+  }
+}
+
+/**
+ * Get Peer related element by id, either in current document or in 
+ * offscreen fragment.
+ * 
+ * @param {object}  peer  Peer object.
+ * @param {string}  id    Element id.
+ * 
+ * @return  {object}  Element or null if not found.
+ */
+function xows_gui_peer_doc(peer, id)
+{
+  return (peer === xows_gui_peer) ? xows_doc[id] : xows_doc_frag_find(peer.bare, id);
+}
+
+/**
+ * Remove roster <li> element corresponding to specified JID.
+ * 
+ * @param {string}      jid    Peer JID to search roster <li>.
+ */
+function xows_gui_rost_li_remove(jid)
+{
+  const li = document.getElementById(jid);
+  if(li) li.parentNode.removeChild(li);
 }
 
 /**
  * Find occupant <li> element corresponding to specified Occupant JID.
  * 
  * @param {object}    room      Room object.
- * @param {string}    ojid      Occupant JID to search.
+ * @param {string}    jid       Occupant JID to search.
  */
-function xows_gui_find_occu_li(room, ojid)
+function xows_gui_peer_occu_li(room, jid)
 {
-  const ul = (room === xows_gui_peer) ? xows_doc.occu_list : xows_doc_frag(room.bare,"occu_list");
-  return ul.querySelector("LI[title='"+ojid+"']");
+  if(room === xows_gui_peer) {
+    return document.getElementById(jid);
+  } else {
+    return xows_doc_frag_element_find(room.bare,"occu_list",jid);
+  }
+}
+
+/**
+ * Find history message <li> element corresponding to specified ID.
+ * 
+ * @param {object}    peer      Peer object.
+ * @param {string}    id        Message id.
+ */
+function xows_gui_peer_mesg_li(peer, id)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id);
+  } else {
+    return xows_doc_frag_element_find(peer.bare,"chat_hist",id);
+  }
+}
+
+/* -------------------------------------------------------------------
+ * 
+ * Main initialization
+ * 
+ * -------------------------------------------------------------------*/
+ 
+/**
+ * Initialize main GUI elements (to be called once)
+ */
+function xows_gui_init()
+{
+  // Create intial offscreen slot from current document
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_hist", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
+  
+  // The DOM is now to its default state
+  xows_gui_clean = true;
 }
 
 /* -------------------------------------------------------------------
@@ -296,7 +351,6 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("subsrem", xows_gui_cli_onsubsrem);
   xows_cli_set_callback("roompush", xows_gui_cli_onroompush);
   xows_cli_set_callback("roomrem", xows_gui_cli_onroomrem);
-  //xows_cli_set_callback("bookpush", xows_gui_cli_onbookpush); /* alternative Bookmarks implementation */
   xows_cli_set_callback("occupush", xows_gui_cli_onoccupush);
   xows_cli_set_callback("occurem", xows_gui_cli_onoccurem);
   xows_cli_set_callback("message", xows_gui_cli_onmessage);
@@ -661,46 +715,55 @@ function xows_gui_reset()
 {
   xows_log(2,"gui_reset","reset DOM states");
   
-  // Clean and reset GUI elements
+  // close any opened page or overlay element
+  xows_doc_page_close(true);
+  xows_doc_menu_close();
+  xows_doc_view_close();
+  xows_doc_mbox_close();
+  
+  // hide all screens
+  xows_doc_hide("scr_page");
+  xows_doc_hide("scr_main");
+  
+  // Reset Peer related elements
   xows_gui_switch_peer(null);
-      
-  // All element to hide
-  const hide = ["scr_main",  "scr_void",  "page_cont", "page_user", 
-                "page_join", "page_room", "page_regi", "page_auth", 
-                "page_wait", "drop_show", "drop_emoj", "chat_fram", 
-                "chat_stat", "hist_end",  "hist_new",  "room_list"];
   
-  let i = hide.length;
-  while(i--) xows_doc_hide(hide[i]);
-  
+  // Reset chat editor
+  xows_doc_cls_add("send_wrap", "SEND-PHLD");
+  xows_doc.send_edit.innerText = "";
+
+  // clean roster lists
+  xows_doc_list_clean("subs_ul");
   xows_doc_list_clean("cont_ul");
   xows_doc_list_clean("book_ul");
   xows_doc_list_clean("room_ul");
+  xows_doc_list_clean("priv_ul");
   
-  xows_doc_list_clean("modo_ul");
-  xows_doc_list_clean("memb_ul");
+  // clean user frame
+  xows_doc.user_show.setAttribute("show",XOWS_SHOW_OFF);
+  xows_doc.user_name.innerText = "";
+  xows_doc.user_addr.innerText = "";
+  xows_doc.user_stat.value = "";
+  xows_doc.user_avat.className = "";
   
-  xows_doc.hist_ul.innerText = "";
-  xows_doc.hist_beg.innerText = "";
-
   // Reset roster tabs
-  xows_doc_cls_add("tab_cont", "TAB-ENABLED");
-  xows_doc_cls_rem("tab_room", "TAB-ENABLED");
-  xows_doc_show("cont_list");
+  xows_gui_rost_switch("tab_cont");
+  xows_doc.room_unrd.innerText = "";
+  xows_doc_hide("room_unrd");
+  xows_doc.cont_unrd.innerText = "";
+  xows_doc_hide("cont_unrd");
   
   // Reset columns setup
-  xows_doc_cls_rem("main_coll", "COL-THIN");
-  xows_doc_cls_rem("main_coll", "COL-WIDE");
-  xows_doc_cls_rem("main_coll", "COL-HIDE");
-  xows_doc_cls_rem("main_colr", "COL-THIN");
-  xows_doc_cls_rem("main_colr", "COL-WIDE");
+  xows_doc_cls_rem("main_wrap", "COLR-WIDE");
+  xows_doc_cls_rem("main_wrap", "COLL-WIDE");
   xows_doc_cls_add("main_colr", "COL-HIDE");
+    
+  // Clear all offscreen elements
+  xows_doc_frag_clear();
   
-  // Delete all peer's offscreen fragment
-  for(const peer in xows_doc_frag_db) {
-    // we keep the "empty" fragment
-    if(peer !== "empty") delete xows_doc_frag_db[peer];
-  }
+  // Create intial offscreen slot from current document
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_hist",true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"occu_list",true);
   
   // The DOM is now to its default state
   xows_gui_clean = true;
@@ -734,16 +797,14 @@ function xows_gui_switch_peer(jid)
   const next = jid ? xows_cli_peer_get(jid) : null;
   
   if(prev) {
-    // Backup current history scroll position
-    xows_gui_peer_scroll_backup(prev);
-    // Backup current contact history in a document fragment
-    xows_doc_frag_backup(prev.bare, "chat_hist");
-    // Backup current occupant list in a document fragment
-    xows_doc_frag_backup(prev.bare, "occu_list");
+    // Save current history scroll position
+    xows_gui_peer_scroll_save(prev);
+    // export document elements to offscreen fragment
+    xows_gui_peer_doc_export(prev);
     // Remove "selected" class from <li> element
     if(next) {
       if(next.type === prev.type) {
-        xows_gui_find_rost_li(prev).classList.remove("SELECTED");
+        document.getElementById(prev.bare).classList.remove("SELECTED");
       }
     }
   }
@@ -757,13 +818,11 @@ function xows_gui_switch_peer(jid)
   
   if(next) {
     // Add highlight class to new <li> element
-    xows_gui_find_rost_li(next).classList.add("SELECTED");
-    // Restore contact history from document fragment
-    xows_doc_frag_restore(next.bare, "chat_hist");
-    // Restore occupant list from document fragment
-    xows_doc_frag_restore(next.bare, "occu_list");
+    document.getElementById(next.bare).classList.add("SELECTED");
+    // Bring back Peer document elements from offscreen
+    xows_gui_peer_doc_import(next);
     // Restore history scroll position
-    xows_gui_peer_scroll_restore(next);
+    xows_gui_peer_scroll_load(next);
     // Open or close right panel
     xows_doc_cls_set("main_colr", "COL-HIDE", (next.type !== XOWS_PEER_ROOM));
     // Set the current contact
@@ -792,9 +851,8 @@ function xows_gui_switch_peer(jid)
       xows_log(2,"gui_switch_peer","unselect peer");
       // Set the current contact
       xows_gui_peer = null;
-      // Copy initial empty element to current document
-      xows_doc_frag_copy(null, "empty", "chat_hist");
-      xows_doc_frag_copy(null, "empty", "occu_list");
+      // Bring back initial document elements from offscreen
+      xows_gui_peer_doc_import(null);
       // Close right panel
       xows_doc_cls_add("main_colr", "COL-HIDE");
       push_nav = true; //< we can push nav
@@ -829,11 +887,17 @@ function xows_gui_main_open()
 {
   // Check for opened dialog
   if(!xows_doc_hidden("scr_page")) {
+    
     // Close any opened page
     xows_doc_page_close(true);
-    
-    // hide page and menu 'screen'
+    // hide page 'screen'
     xows_doc_hide("scr_page");
+    
+    // Close any opened menu
+    xows_doc_menu_close();
+    // Close any opened media view
+    xows_doc_view_close();
+    
     // show main 'screen'
     xows_doc_show("scr_main");
   }
@@ -854,7 +918,7 @@ function xows_gui_main_open()
 function xows_gui_room_privi_update(reset)
 {
   /*
-   * Privilege 	               None      Visitor   Participant  Moderator
+   * Privilege                  None      Visitor   Participant  Moderator
    * ---------------------------------------------------------------------
    * Present in Room                        x           x           x
    * Change Nickname                        x           x           x
@@ -1167,7 +1231,7 @@ function xows_gui_rost_switch(id)
   // Search any SELECTED peer in the list to switch to
   let selected;
   if(list) selected = list.querySelector(".SELECTED");
-  xows_gui_switch_peer(selected ? selected.title : null);
+  xows_gui_switch_peer(selected ? selected.id : null);
 }
 
 /**
@@ -1203,12 +1267,12 @@ function xows_gui_rost_list_onclick(event)
       switch(event.target.name)
       {
       case "CONT_ASK": //< Request subscribe permission
-        xows_cli_subscribe_request(li.title);
+        xows_cli_subscribe_request(li.id);
         xows_doc_mbox_open(XOWS_MBOX_SCS, "New authorization request was sent");
         return;
         
       case "CONT_REM": //< Remove contact
-        xows_gui_mbox_subs_edit_open(li.title);
+        xows_gui_mbox_subs_edit_open(li.id);
         return;
       }
     }
@@ -1217,13 +1281,13 @@ function xows_gui_rost_list_onclick(event)
     {
       case "ROST-SUBS": {
         // Open Subscription Allow/Deny dialog
-        xows_gui_mbox_subs_auth_open(li.title, li.name);
+        xows_gui_mbox_subs_auth_open(li.id, li.name);
         return;
       }
 
       default: {
         // Select peer
-        xows_gui_switch_peer(li.title);
+        xows_gui_switch_peer(li.id);
         // Close panel in case we are in narrow-screen with wide panel
         xows_gui_panel_close();
       }
@@ -1255,7 +1319,7 @@ function xows_gui_unread_add(peer, id)
   bt_spot.classList.remove("HIDDEN"); //< show
   
   // Get the corresponding peer <li> (room or contact) in roster 
-  const li = xows_gui_find_rost_li(peer);
+  const li = document.getElementById(peer.bare);
   if(li) {
     
     // Inside the <li> search for the unread <div>
@@ -1286,7 +1350,7 @@ function xows_gui_unread_reset(peer)
   let n = parseInt(bt_spot.innerText) || 0;
   
   // Get the corresponding peer <li> (room or contact) in roster 
-  const li = xows_gui_find_rost_li(peer);
+  const li = document.getElementById(peer.bare);
   if(li) {
     // Inside the <li> search for the unread <div>
     const li_spot = li.querySelector(".UNRD-SPOT");
@@ -1338,7 +1402,7 @@ function xows_gui_cli_oncontpush(cont)
   }
 
   // Search for existing contact <li> element
-  const li = xows_doc.cont_ul.querySelector("li[title='"+cont.bare+"'");
+  const li = document.getElementById(cont.bare);
   if(li) {
     // Update the existing contact <li> element according template
     xows_tpl_update_rost_cont(li, cont.name, cont.avat, 
@@ -1350,13 +1414,11 @@ function xows_gui_cli_oncontpush(cont)
     xows_doc_cls_rem("cont_ul", "LOADING");
     // Append new instance of contact <li> from template to roster <ul>
     xows_doc.cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat,
-                                                        cont.subs, cont.show, cont.stat));
-    // Clone initial history to contact offscreen history
-    xows_doc_frag_copy(cont.bare, "empty", "chat_hist");
-    // Initial history scroll backup
-    xows_gui_peer_scroll_backup(cont);
-    // Clone initial empty occupant list
-    xows_doc_frag_copy(cont.bare, "empty", "occu_list");
+                                             cont.subs, cont.show, cont.stat));
+                                             
+    // Create new Peer offscreen elements with initial state
+    xows_gui_peer_doc_init(cont);
+    xows_gui_peer_scroll_save(cont); //< Initial history scroll save
   }
   
   // Show or hide list depending content
@@ -1371,8 +1433,19 @@ function xows_gui_cli_oncontpush(cont)
 function xows_gui_cli_oncontrem(bare)
 {
   // Remove <li> element
-  const li = xows_doc.cont_ul.querySelector("li[title='"+bare+"'");
-  if(li) li.parentNode.removeChild(li);
+  const li = document.getElementById(bare);
+  if(li) {
+    
+    // switch peer if required
+    if(xows_gui_peer && xows_gui_peer.bare === bare) 
+      xows_gui_switch_peer(null);
+    
+    // delete <li> element
+    li.parentNode.removeChild(li);
+    
+    // delete document fragment for this peer
+    xows_doc_frag_delete(bare);
+  }
   
   // Show or hide list depending content
   xows_doc_hidden_set("cont_ul", (xows_doc.cont_ul.childNodes.length < 2));
@@ -1396,7 +1469,7 @@ function xows_gui_cli_oncontrem(bare)
 function xows_gui_cli_onsubspush(bare, nick)
 {
   // Ensure subscribe <li> does not already exists
-  if(xows_doc.subs_ul.querySelector("li[title='"+bare+"'"))
+  if(document.getElementById(bare))
     return;
   
   // Create a new subcription <li> element from template
@@ -1423,8 +1496,7 @@ function xows_gui_cli_onsubspush(bare, nick)
 function xows_gui_cli_onsubsrem(bare)
 {
   // Remove <li> element
-  const li = xows_doc.subs_ul.querySelector("li[title='"+bare+"'");
-  if(li) li.parentNode.removeChild(li);
+  xows_gui_rost_li_remove(bare);
 
   const n = xows_doc.subs_ul.childNodes.length - 1;
   
@@ -1494,18 +1566,9 @@ function xows_gui_cli_onroompush(room)
   }
   
   // Select destination and source <ul>
-  let dest_ul;
-  if(room.publ) {
-    dest_ul = xows_doc.room_ul;
-  } else {
-    if(room.book) {
-      dest_ul = xows_doc.book_ul;
-    } else {
-      dest_ul = xows_doc.priv_ul;
-    }
-  }
+  const dest_ul = (room.publ) ? xows_doc.room_ul : (room.book) ? xows_doc.book_ul : xows_doc.priv_ul;
   
-  const li = xows_doc.room_list.querySelector("li[title='"+room.bare+"']");
+  const li = document.getElementById(room.bare);
   if(li) {
     // Move existing <li> to proper destination if needed
     if(li.parentNode !== dest_ul) dest_ul.appendChild(li);
@@ -1516,12 +1579,10 @@ function xows_gui_cli_onroompush(room)
   } else {
     // Append new instance of room <li> from template to roster <ul>
     dest_ul.appendChild(xows_tpl_spawn_rost_room(room.bare, room.name, room.desc, room.lock));
-    // Clone initial empty history to room offscreen history
-    xows_doc_frag_copy(room.bare, "empty", "chat_hist");
-    // Initial history scroll backup
-    xows_gui_peer_scroll_backup(room);
-    // Clone initial empty occupant list for room offscreen occupant list
-    xows_doc_frag_copy(room.bare, "empty", "occu_list");
+    
+    // Create new Peer offscreen elements with initial state
+    xows_gui_peer_doc_init(room);
+    xows_gui_peer_scroll_save(room); //< Initial history scroll save
   }
   
   // Show or hide lists depending content
@@ -1537,9 +1598,25 @@ function xows_gui_cli_onroompush(room)
  */
 function xows_gui_cli_onroomrem(bare)
 {
-  // Remove <li> element
-  const li = xows_doc.room_list.querySelector("li[title='"+bare+"'");
-  if(li) li.parentNode.removeChild(li);
+  // Search <li> element
+  const li = document.getElementById(bare);
+  if(li) {
+    
+    // switch peer if required
+    if(xows_gui_peer.bare === bare) 
+      xows_gui_switch_peer(null);
+    
+    // delete <li> element
+    li.parentNode.removeChild(li);
+    
+    // delete document fragment for this peer
+    xows_doc_frag_delete(bare);
+  }
+  
+  // Show or hide lists depending content
+  xows_doc_hidden_set("book_ul", (xows_doc.book_ul.childNodes.length < 2));
+  xows_doc_hidden_set("room_ul", (xows_doc.room_ul.childNodes.length < 2));
+  xows_doc_hidden_set("priv_ul", (xows_doc.priv_ul.childNodes.length < 2));
 }
 
 /* -------------------------------------------------------------------
@@ -1560,15 +1637,11 @@ function xows_gui_cli_onroomrem(bare)
 function xows_gui_cli_onselfchange(user)
 {
   // Compose status string
-  //xows_doc.user_stat.placeholder = user.stat ? user.stat : xows_l10n_get("No status defined");
-  // Reset the Status input value
   xows_doc.user_stat.value = user.stat ? user.stat : "";
-  xows_doc.user_stat.blur();
   // Change Show Status displays
   xows_doc.user_show.setAttribute("show", user.show);
   xows_doc.user_name.innerText = user.name;
   xows_doc.user_addr.innerText = "("+user.bare+")";
-  
   // Update avatar
   xows_tpl_spawn_avat_cls(user.avat); //< Add avatar CSS class 
   xows_doc.user_avat.className = "h-"+user.avat;
@@ -1912,17 +1985,15 @@ function xows_gui_hist_avat_upd(peer, from, hash)
 
   // If incoming message is off-screen we get history <div> and <ul> of 
   // fragment history corresponding to contact
-  const hist_ul = xows_gui_peer_element(peer,"hist_ul");
+  const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
   
   const cls = "h-"+hash;
   
-  let figure, li, i = hist_ul.childNodes.length;
+  const mesg = hist_ul.querySelectorAll("LI[from='"+from+"']");
+  let figure, i = mesg.length;
   while(i--) {
-    li = hist_ul.childNodes[i];
-    if(li.getAttribute("from") === from) {
-      figure = li.querySelector("FIGURE");
-      if(figure) figure.className = cls;
-    }
+    if(figure = mesg[i].querySelector("FIGURE"))
+      figure.className = cls;
   }
 }
 
@@ -1956,16 +2027,16 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // must not be appended, we will show it by querying archives
   if(!sent && !hist_end.classList.contains("HIDDEN")) {
     // Show the "new messages" warning
-    xows_gui_peer_element(peer,"hist_new").classList.remove("HIDDEN");
+    xows_gui_peer_doc(peer,"hist_new").classList.remove("HIDDEN");
     // Do not append any message, return now
     return;
   }
   
   // Required elements, offscreen or from document
-  const hist_ul = xows_gui_peer_element(peer,"hist_ul");
+  const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
   
   // If message with id alread exists, return now to prevent double
-  if(xows_doc_get_child(hist_ul, id))
+  if(xows_gui_peer_mesg_li(peer, id))
     return;
 
   // get scroll bottom relative position before message insertion
@@ -1981,14 +2052,14 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // count of message and let user ability to query for archives
   if(hist_ul.childNodes.length > XOWS_GUI_HIST_SIZE) {
     hist_ul.removeChild(hist_ul.firstChild);
-    xows_gui_peer_element(peer,"hist_beg").innerText = ""; //< Allow query history
+    xows_gui_peer_doc(peer,"hist_beg").innerText = ""; //< Allow query history
   }
   
   // If it is an incomming message and client is consulting top of
   // history, we don't scroll at bottom but display a warning message
   if(!sent && (scrl_bot > 100)) {
     // Show the "new messages" warning
-    xows_gui_peer_element(peer,"hist_new").classList.remove("HIDDEN"); //< show
+    xows_gui_peer_doc(peer,"hist_new").classList.remove("HIDDEN"); //< show
   } else {
     // scroll history down
     xows_gui_peer_scroll_down(peer);
@@ -2011,7 +2082,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
 function xows_gui_cli_onreceipt(peer, id)
 {
   // Check whether message is from or to current chat contact
-  const li = xows_gui_peer_element(peer,id);
+  const li = xows_gui_peer_mesg_li(peer, id);
   if(li) {
     li.classList.add("MESG-RECP");
   } else {
@@ -2086,9 +2157,11 @@ function xows_gui_mam_parse(peer, result, complete)
   const offscreen = (peer !== xows_gui_peer);
   
   // Get elements we need to interact with
-  const hist_ul = xows_gui_peer_element(peer,"hist_ul");
-  const hist_beg = xows_gui_peer_element(peer,"hist_beg");
-  const hist_end = xows_gui_peer_element(peer,"hist_end");
+  const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
+  const hist_beg = xows_gui_peer_doc(peer,"hist_beg");
+  const hist_end = xows_gui_peer_doc(peer,"hist_end");
+  
+  console.log(hist_ul);
   
   // Disable all spin loader
   hist_beg.classList.remove("LOADING"); //< Allow query history
@@ -2134,7 +2207,7 @@ function xows_gui_mam_parse(peer, result, complete)
   for(let i = 0, n = result.length; i < n; ++i) {
     
     // If message with id alread exists, skip to prevent double
-    if(xows_doc_get_child(hist_ul, result[i].id))
+    if(xows_gui_peer_mesg_li(peer, result[i].id))
       continue;
 
     // Create new message
@@ -2644,9 +2717,7 @@ function xows_gui_cli_onoccupush(room, occu, code)
   }
   
   // Search for existing occupant <li> element for this Room
-  const li = xows_gui_find_occu_li(room, occu.jid);
-
-  // Update existing or append new <li>
+  const li = xows_gui_peer_occu_li(room, occu.jid);
   if(li) {
     
     // Update the existing <li> ellement according template
@@ -2662,10 +2733,8 @@ function xows_gui_cli_onoccupush(room, occu, code)
                                         
     // Check whether we are this occupant
     if(occu.self) {
-      
       // Hide the "Add Contact" button for self
       inst.querySelector(".OCCU-SUBS").classList.add("HIDDEN");
-      
       // Show or hide GUI elements according privileges
       xows_gui_room_privi_update();
     }
@@ -2677,11 +2746,7 @@ function xows_gui_cli_onoccupush(room, occu, code)
     }
     
     // Select the proper role <ul> to put the occupant in
-    let ul_id = (occu.role === XOWS_ROLE_MODO) ? "modo_ul" : "memb_ul";
-    
-    // If occupant is off-screen we get history <div> and <ul> of 
-    // fragment history corresponding to contact
-    const occu_ul = xows_gui_peer_element(room, ul_id);
+    const occu_ul = xows_gui_peer_doc(room,(occu.role===XOWS_ROLE_MODO)?"modo_ul":"memb_ul");
     
     // Create and append new <li> element from template
     occu_ul.appendChild(inst);
@@ -2692,16 +2757,14 @@ function xows_gui_cli_onoccupush(room, occu, code)
  * Function to remove item from the room occupant list
  * 
  * @param {object}  room    Room object to remove occupant from.
- * @param {string}  ojid    Occupant JID or null for self.
+ * @param {string}  jid     Occupant JID or null for self.
  */
-function xows_gui_cli_onoccurem(room, ojid)
+function xows_gui_cli_onoccurem(room, jid)
 {  
   if(jid) {
     
-    // Search for existing <li> in document or offscreen fragment
-    const li = xows_gui_find_occu_li(room, ojid);
-    
-    // Remove element from list
+    // Search and remove <li> in document or offscreen fragment
+    const li = xows_gui_peer_occu_li(room, jid);
     if(li) li.parentNode.removeChild(li);
     
   } else { // null jid mean occumant is self: we leaved the room

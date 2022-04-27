@@ -772,7 +772,8 @@ function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
   const inst = xows_tpl_model["ROST-CONT"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.title = bare;
+  inst.id = bare;
+  inst.title = name+" ("+bare+")";
   inst.querySelector("H3").innerText = name;
   inst.querySelector("P").innerText = stat?stat:"";
   const show_dv = inst.querySelector(".PEER-SHOW");
@@ -805,6 +806,7 @@ function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
 function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
 {
   // Update content
+  li.title = name+" ("+li.id+")";
   li.querySelector("H3").innerText = name;
   li.querySelector("P").innerText = stat?stat:"";
   const show_dv = li.querySelector(".PEER-SHOW");
@@ -844,7 +846,8 @@ function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
   const inst = xows_tpl_model["ROOM-OCCU"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.title = ojid;
+  inst.id = ojid;
+  inst.title = nick+" ("+ojid+")";
   if(full) inst.setAttribute("jid", full);
   inst.querySelector("H3").innerText = nick;
   inst.querySelector("P").innerText = stat?stat:"";
@@ -871,6 +874,7 @@ function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
 function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
 {
   // Update content
+  li.title = nick+" ("+li.id+")";
   li.setAttribute("jid", full);
   li.querySelector("H3").innerText = nick;
   li.querySelector("P").innerText = stat?stat:"";
@@ -899,7 +903,8 @@ function xows_tpl_spawn_rost_room(bare, name, desc, lock)
   const inst = xows_tpl_model["ROST-ROOM"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.title = bare;
+  inst.id = bare;
+  inst.title = name+" ("+bare+")";
   inst.querySelector("H3").innerText = name;
   inst.querySelector("P").innerText = desc;
   //const avat_dv = inst.querySelector("FIGURE");
@@ -919,6 +924,7 @@ function xows_tpl_spawn_rost_room(bare, name, desc, lock)
 function xows_tpl_update_rost_room(li, name, desc, lock)
 {
   // Update content
+  li.title = name+" ("+li.id+")";
   li.querySelector("H3").innerText = name;
   li.querySelector("P").innerText = desc;
 
@@ -945,7 +951,8 @@ function xows_tpl_spawn_rost_subs(bare, nick)
   const inst = xows_tpl_model["ROST-SUBS"].firstChild.cloneNode(true);
   
   // Set content to proper elements
-  inst.title = bare;
+  inst.id = bare;
+  inst.title = nick+" ("+bare+")";
   if(nick) inst.setAttribute("name", nick);
   inst.querySelector("H3").innerText = nick ? nick : bare;
 

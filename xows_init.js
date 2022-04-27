@@ -108,6 +108,9 @@ function xows_init_login_auto(cred)
  */
 function xows_init_ondoc()
 {
+  // Initialize GUI
+  xows_gui_init();
+  
   // Check whether credentials are available for auto-login
   if(window.PasswordCredential) {
     
