@@ -133,22 +133,24 @@
       </div>
       <!-- Froot Frame (Chat Input Panel) -->
       <div class="row-foot chat-foot">
-        <div class="chat-panl">
-          <button id="chat_upld" class="chat-upld" title="${'Upload a file'}">
-            <input id="chat_file" class="chat-file" type="file"></input>
-          </button>
-          <div id="send_wrap" class="send-wrap SEND-PHLD" placeholder="${'Send a message'}">
-            <div id="send_edit" class="send-edit" contenteditable spellcheck></div>
+        <aside>
+          <div id="drop_emoj" class="drop-emoj HIDDEN" has_template></div>
+          <input id="chat_file" class="chat-file" type="file"></input>
+        </aside>
+        <div id="chat_panl" class="chat-panl">
+          <div class="chat-edit">
+            <button id="edit_upld" class="edit-upld" title="${'Upload a file'}"></button>
+            <div id="edit_mesg" class="edit-mesg PLACEHOLD" placeholder="${'Send a message'}" contenteditable spellcheck></div>
+            <button id="edit_emoj" class="edit-emoj" title="${'Add an emoji'}"> </button>
           </div>
-          <button id="menu_emoj" class="chat-emoj" title="${'Add an emoji'}">
-            <div id="drop_emoj" class="drop-emoj HIDDEN" has_template></div>
-          </button>
+          <div class="chat-info">
+            <div id="chat_stat" class="chat-stat HIDDEN"></div>
+          </div>
         </div>
-        <footer>
-          <div id="chat_stat" class="chat-stat HIDDEN"></div>
-        </footer> 
       </div>
+      
     </div>
+    
   </div>
   <!-- Right Collumn (Room Roster) -->
   <div id="main_colr" class="col-side COL-HIDE">

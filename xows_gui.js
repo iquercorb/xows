@@ -407,7 +407,7 @@ function xows_gui_cli_onconnect(user)
   xows_doc_loader_setup(xows_doc.chat_main, "lazy_src");
   // Check whether file Upload is available
   if(xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
-    xows_doc.chat_upld.disabled = false;
+    xows_doc.edit_upld.disabled = false;
     // Add embeded download matching http upload service domain
     xows_tpl_embed_add_upld(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD]);
   }
@@ -729,8 +729,8 @@ function xows_gui_reset()
   xows_gui_switch_peer(null);
   
   // Reset chat editor
-  xows_doc_cls_add("send_wrap", "SEND-PHLD");
-  xows_doc.send_edit.innerText = "";
+  xows_doc_cls_add("edit_mesg", "PLACEHOLD");
+  xows_doc.edit_mesg.innerText = "";
 
   // clean roster lists
   xows_doc_list_clean("subs_ul");
@@ -1702,7 +1702,7 @@ function xows_gui_chat_fram_update()
     xows_doc.chat_addr.innerText = "";
     xows_doc.chat_meta.title = "";
     xows_doc.chat_meta.innerText = "";
-    xows_doc.send_wrap.setAttribute("placeholder", "");
+    xows_doc.edit_mesg.setAttribute("placeholder", "");
     xows_doc.chat_stat.innerText = "";
     xows_doc_hide("chat_show");
     xows_doc_hide("chat_occu");
@@ -1744,7 +1744,7 @@ function xows_gui_chat_fram_update()
   }
 
   // Change the input placeholder text
-  xows_doc.send_wrap.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+xows_gui_peer.name+" ...");
+  xows_doc.edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+xows_gui_peer.name+" ...");
 }
 
  /* -------------------------------------------------------------------
@@ -2283,19 +2283,19 @@ function xows_gui_mam_parse(peer, result, complete)
 /**
  * Chat Editor table to store current pressed (down) key
  */
-const xows_gui_send_edit_keyd = new Array(256);
+const xows_gui_edit_mesg_keyd = new Array(256);
 
 /**
  * Chat Editor on-keydown / on-keyup callback function.
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_send_edit_onkeyp(event)
+function xows_gui_edit_mesg_onkeyp(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
   
   // Enable key down according received event
-  xows_gui_send_edit_keyd[event.keyCode] = (event.type === "keydown");
+  xows_gui_edit_mesg_keyd[event.keyCode] = (event.type === "keydown");
 
   // Check for key down event
   if(event.type === "keydown") {
@@ -2305,7 +2305,7 @@ function xows_gui_send_edit_onkeyp(event)
   
       // Check whether shift key is press, meaning escaping to
       // add new line in input instead of send message.
-      if(xows_gui_send_edit_keyd[16])
+      if(xows_gui_edit_mesg_keyd[16])
         return;
     
       // Prevent browser to append the new-line in the text-area
@@ -2314,7 +2314,7 @@ function xows_gui_send_edit_onkeyp(event)
       // Send message
       if(xows_gui_peer) {
         
-        const edit = xows_doc.send_edit;
+        const edit = xows_doc.edit_mesg;
         
         if(edit.innerText.length) {
           
@@ -2322,7 +2322,7 @@ function xows_gui_send_edit_onkeyp(event)
           xows_cli_send_message(xows_gui_peer, edit.innerText);
           
           // Add CSS class to show placeholder
-          xows_doc_cls_add("send_wrap", "SEND-PHLD");
+          xows_doc_cls_add("edit_mesg", "PLACEHOLD");
           
           edit.innerText = ""; //< Empty any residual <br>
         } 
@@ -2343,19 +2343,19 @@ function xows_gui_send_edit_onkeyp(event)
 /**
  * Chat Editor reference to last selection Range object.
  */
-let xows_gui_send_edit_rng = null;
+let xows_gui_edit_mesg_rng = null;
 
 /**
  * Chat Editor on-input callback function
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_send_edit_oninput(event)
+function xows_gui_edit_mesg_oninput(event)
 {
   // Store selection range
-  xows_gui_send_edit_rng = xows_doc_sel_rng(0);
+  xows_gui_edit_mesg_rng = xows_doc_sel_rng(0);
   
-  const edit = xows_doc.send_edit;
+  const edit = xows_doc.edit_mesg;
   
   // Check inner text content to show placeholder
   if(edit.innerText.length < 2) {
@@ -2363,7 +2363,7 @@ function xows_gui_send_edit_oninput(event)
     if(edit.innerText.trim().length === 0) {
       
       // Add CSS class to show placeholder
-      xows_doc_cls_add("send_wrap", "SEND-PHLD");
+      xows_doc_cls_add("edit_mesg", "PLACEHOLD");
       
       edit.innerText = ""; //< Empty any residual <br>
 
@@ -2372,7 +2372,7 @@ function xows_gui_send_edit_oninput(event)
   }
 
   // Hide the placeholder text
-  xows_doc_cls_rem("send_wrap", "SEND-PHLD");
+  xows_doc_cls_rem("edit_mesg", "PLACEHOLD");
 }
 
 /**
@@ -2380,7 +2380,7 @@ function xows_gui_send_edit_oninput(event)
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_send_edit_onclick(event)
+function xows_gui_edit_mesg_onclick(event)
 {
   // Get selection range
   const rng = xows_doc_sel_rng(0);
@@ -2397,7 +2397,7 @@ function xows_gui_send_edit_onclick(event)
   }
   
   // Store selection
-  xows_gui_send_edit_rng = rng;
+  xows_gui_edit_mesg_rng = rng;
 }
 
 /**
@@ -2406,10 +2406,10 @@ function xows_gui_send_edit_onclick(event)
  * @param {string}  text      Text to insert.
  * @param {string} [tagname]  Optional wrapper node tagname.
  */
-function xows_gui_send_edit_insert(text, tagname)
+function xows_gui_edit_mesg_insert(text, tagname)
 {
   // Get the last saved selection range (caret position)
-  const rng = xows_gui_send_edit_rng;
+  const rng = xows_gui_edit_mesg_rng;
   
   // Delete content of selection if any
   if(!rng.collapsed) 
@@ -2429,16 +2429,16 @@ function xows_gui_send_edit_insert(text, tagname)
   rng.insertNode(node);
     
   // Hide the placeholder text
-  xows_doc_cls_rem("send_wrap", "SEND-PHLD");
+  xows_doc_cls_rem("edit_mesg", "PLACEHOLD");
   
   // Focus on input
-  xows_doc.send_edit.focus();
+  xows_doc.edit_mesg.focus();
     
   // Move caret after the created node
   xows_doc_caret_around(node);
   
   // Store selection
-  xows_gui_send_edit_rng = xows_doc_sel_rng(0);
+  xows_gui_edit_mesg_rng = xows_doc_sel_rng(0);
 }
 
 /* -------------------------------------------------------------------
@@ -2449,7 +2449,7 @@ function xows_gui_send_edit_insert(text, tagname)
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_menu_emoj_onclick(event)
+function xows_gui_edit_emoj_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
   
@@ -2457,10 +2457,10 @@ function xows_gui_menu_emoj_onclick(event)
   const li = event.target.closest("LI");
   
   // Check whether we got click from drop or button
-  if(li) xows_gui_send_edit_insert(li.childNodes[0].nodeValue, "emoj"); //< Insert selected Emoji
+  if(li) xows_gui_edit_mesg_insert(li.childNodes[0].nodeValue, "emoj"); //< Insert selected Emoji
   
   // Toggle menu drop and focus button
-  xows_doc_menu_toggle(xows_doc.menu_emoj, "drop_emoj");
+  xows_doc_menu_toggle(xows_doc.edit_emoj, "drop_emoj");
 }
 
 /* -------------------------------------------------------------------
@@ -2567,7 +2567,7 @@ function xows_gui_chat_file_onchange(event)
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_chat_upld_onclick(event)
+function xows_gui_edit_upld_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 

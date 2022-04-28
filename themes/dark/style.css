@@ -2101,23 +2101,22 @@ div[show="4"]  { background-color: var(--show-chat); }
   height: auto;
   min-height: 80px;
 }
-.chat-foot footer {
-  margin: 0 10px 0 10px;
-  height: 36px;
-  display: flex;
-  align-items: center;
+.chat-foot aside {
+  position: absolute;
+  width: 100%; height: 0;
+  padding: 0 15px;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Chat Controls & Inputs */
 /* ------------------------------------------------------------------ */
-.chat-panl {
+.chat-edit {
   display: flex;
   padding: 5px;
   margin: 8px 12px 0 12px;
   border-radius: 5px;
   background-color: var(--base-tone5);
 }
-.chat-panl button {
+.chat-edit button {
   flex: none;
   width: 20px; height: 20px;
   border: 0;
@@ -2131,32 +2130,25 @@ div[show="4"]  { background-color: var(--show-chat); }
   background-repeat: no-repeat;
   opacity: .7;
 }
-.chat-panl button:hover {
+.chat-edit button:hover {
   opacity: 1;
 }
-.chat-panl button:disabled,
-.chat-panl button[disabled] {
+.chat-edit button:disabled,
+.chat-edit button[disabled] {
   opacity: .2 !important;
   cursor:default;
 }
-.send-wrap {
-  flex: auto;
-  position: relative;
-  margin: 7px 5px 0 5px;
-  font-size: 0.9em;
-  color: var(--text-tone3);
-  overflow: hidden;
-}
-.SEND-PHLD::before {
-  position: absolute;
+.PLACEHOLD::before {
   content: attr(placeholder);
+  color: var(--text-tone3);
   font-style: italic;
   pointer-events: none;
 }
-.send-edit {
+.edit-mesg {
   vertical-align: bottom;
   color: var(--text-tone1);
   width: 100%;
+  margin: 5px;
   border: 0;
   outline: 0;
   overflow-y: auto;
@@ -2170,7 +2162,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Upload Button & Input */
 /* ------------------------------------------------------------------ */
-.chat-upld {
+.edit-upld {
   background-image: url("images/upload.svg");
 }
 .chat-file {
@@ -2179,10 +2171,10 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Emoji Button & Drop */
 /* ------------------------------------------------------------------ */
-.chat-emoj {
+.edit-emoj {
   background-image: url("images/emoji.svg");
 }
-.chat-emoj:focus {
+.edit-emoj:focus {
   opacity: 1;
 }
 .drop-emoj {
@@ -2191,7 +2183,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   text-align: left;
   position:relative;
   float: right;
-  right: -10px; bottom: 320px;
+  /*! right: 15px; */ bottom: 305px;
   width: 420px; height: 305px;
   border: 10px solid var(--base-tone3);
   border-right: 0;
@@ -2241,10 +2233,21 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Composing notifier */
 /* ------------------------------------------------------------------ */
+.chat-info {
+  margin: 0 10px 0 10px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
 .chat-stat {
+  flex: auto;
+  display: inline-block;
   font-size: 0.85em;
   color: var(--text-tone2);
+  width: 0; /* DO NOT TOUCH THIS */
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .chat-stat::before {
   display: inline-block;
@@ -2287,11 +2290,12 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 @media (max-width: 824px) {
   .chat-stat {
-    font-size: 0.65em;
+    font-size: 0.75em;
   }
   .chat-stat::before {
-    font-size: 0.7em;
-    width: 30px;
+    font-size: 1em;
+    margin: 0 0 3px 5px;
+    width: 28px;
   }
 }
 /* ------------------------------------------------------------------ */
