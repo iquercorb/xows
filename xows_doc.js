@@ -500,27 +500,35 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc.cont_add,    "click",    xows_gui_page_cont_open);
   xows_doc_listener_add(xows_doc.room_add,    "click",    xows_gui_room_add_onclick);
   xows_doc_listener_add(xows_doc.room_upd,    "click",    xows_gui_room_list_reload);
-  xows_doc_listener_add(xows_doc.occu_list,   "click",    xows_gui_occu_list_onclick);
+  
   xows_doc_listener_add(xows_doc.menu_show,   "click",    xows_gui_menu_show_onclick);
   xows_doc_listener_add(xows_doc.drop_show,   "click",    xows_gui_menu_show_onclick);
   xows_doc_listener_add(xows_doc.menu_user,   "click",    xows_gui_page_user_open);
   xows_doc_listener_add(xows_doc.user_stat,   "keypress", xows_gui_user_stat_onkeyp);
   xows_doc_listener_add(xows_doc.user_stat,   "blur",     xows_gui_user_stat_onblur);
-  xows_doc_listener_add(xows_doc.edit_mesg,   "keydown",  xows_gui_edit_mesg_onkeyp, false); //< need preventDefault()
-  xows_doc_listener_add(xows_doc.edit_mesg,   "keyup",    xows_gui_edit_mesg_onkeyp);
-  xows_doc_listener_add(xows_doc.edit_mesg,   "input",    xows_gui_edit_mesg_oninput);
-  xows_doc_listener_add(xows_doc.edit_mesg,   "click",    xows_gui_edit_mesg_onclick);
-  xows_doc_listener_add(xows_doc.chat_main,   "scroll",   xows_gui_chat_main_onscroll);
-  xows_doc_listener_add(xows_doc.chat_main,   "click",    xows_gui_chat_main_onclick);
-  xows_doc_listener_add(xows_doc.chat_file,   "change",   xows_gui_chat_file_onchange);
-  xows_doc_listener_add(xows_doc.edit_upld,   "click",    xows_gui_edit_upld_onclick);
-  xows_doc_listener_add(xows_doc.edit_emoj,   "click",    xows_gui_edit_emoj_onclick);
+  
+  // Chat header
   xows_doc_listener_add(xows_doc.chat_meta,   "keypress", xows_gui_chat_meta_onkeyp);
   xows_doc_listener_add(xows_doc.chat_meta,   "blur",     xows_gui_chat_meta_onblur);
   xows_doc_listener_add(xows_doc.chat_noti,   "click",    xows_gui_chat_noti_onclick);
   xows_doc_listener_add(xows_doc.chat_conf,   "click",    xows_gui_chat_conf_onclick);
   xows_doc_listener_add(xows_doc.chat_occu,   "click",    xows_gui_chat_occu_onclick);
   xows_doc_listener_add(xows_doc.chat_book,   "click",    xows_gui_chat_book_onclick);
+  
+  // Chat main
+  xows_doc_listener_add(xows_doc.chat_main,   "scroll",   xows_gui_chat_main_onscroll);
+  xows_doc_listener_add(xows_doc.chat_main,   "click",    xows_gui_chat_main_onclick);
+  
+  // Chat foot
+  xows_doc_listener_add(xows_doc.chat_file,   "change",   xows_gui_chat_file_onchange);
+  xows_doc_listener_add(xows_doc.drop_emoj,   "click",    xows_gui_drop_emoj_onclick);
+  xows_doc_listener_add(xows_doc.chat_panl,   "keydown",  xows_gui_chat_panl_onkeyp, false); //< need preventDefault()
+  xows_doc_listener_add(xows_doc.chat_panl,   "keyup",    xows_gui_chat_panl_onkeyp);
+  xows_doc_listener_add(xows_doc.chat_panl,   "input",    xows_gui_chat_panl_oninput);
+  xows_doc_listener_add(xows_doc.chat_panl,   "click",    xows_gui_chat_panl_onclick);
+  
+  xows_doc_listener_add(xows_doc.occu_list,   "click",    xows_gui_occu_list_onclick);
+
 
   // Page screen "scr_page" event listener
   xows_doc_listener_add(xows_doc.scr_page,    "keyup",    xows_doc_page_onkeyu);

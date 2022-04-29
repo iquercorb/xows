@@ -230,19 +230,21 @@ const xows_cli_cont = [];
 function xows_cli_cont_new(bare, name, subs, avat)
 {
   const cont = {
-    "bare": bare,               //< bare JID (user@domain)
     "lock": bare,               //< Current locked (user@domain/ressource)
-    "name": name ? name : bare, //< Display name
+    "name": name?name:bare,     //< Display name
     "subs": subs,               //< Subscription mask
-    "ress": {},                 //< Resource list
     "avat": avat,               //< Avatar hash string.
     "show": -1,                 //< Displayed presence show level
     "stat": "",                 //< Displayed presence status string
-    "noti": true                //< Notification Enabled/Mute
+    "noti": true,               //< Notification Enabled/Mute
+    "chat": 0                   //< Chatstate level
   };
   
-  // set Peer type as constant
-  Object.defineProperty(cont,"type",{value:XOWS_PEER_CONT,writable:false});
+  // set Constant properties
+  xows_def_readonly(cont,"type",XOWS_PEER_CONT);  //< Peer type
+  xows_def_readonly(cont,"bare",bare);            //< bare JID (user@domain)
+  xows_def_readonly(cont,"ress",{});              //< Resource list
+  
   Object.seal(cont); //< prevet structure modification
   
   xows_cli_cont.push(cont);
@@ -290,7 +292,6 @@ const xows_cli_room = [];
 function xows_cli_room_new(bare, name, desc, prot, publ)
 {
   const room = {
-    "bare": bare,           //< bare JID (room@service.domain)
     "name": name,           //< Display name
     "desc": desc,           //< Room description
     "subj": "",             //< Room subject
@@ -302,11 +303,14 @@ function xows_cli_room_new(bare, name, desc, prot, publ)
     "occu": [],             //< Room occupant array
     "noti": true,           //< Notification Enabled/Mute
     "init": false,          //< Newly created Room, need configuration
-    "book": false           //< Room is Bookmarked
+    "book": false,          //< Room is Bookmarked
+    "writ": []              //< Chatstate writting occupants list
   };
   
-  // set Peer type as constant
-  Object.defineProperty(room,"type",{value:XOWS_PEER_ROOM,writable:false});
+  // set Constant properties
+  xows_def_readonly(room,"type",XOWS_PEER_ROOM);  //< Peer type
+  xows_def_readonly(room,"bare",bare);            //< bare JID (room@service.domain)
+  
   Object.seal(room); //< prevet structure modification
   
   xows_cli_room.push(room);
@@ -350,21 +354,28 @@ function xows_cli_room_get(jid)
  */
 function xows_cli_occu_new(room, jid, affi, role, full, avat, show, stat)
 {
+  const name = xows_jid_to_nick(jid);
+  const bare = full?xows_jid_to_bare(full):null;
+  const self = full?xows_cli_isself(full):false;
+  
   const occu = {
-    "jid" : jid,                              //< Occupant full JID (room@domaine/nick)
-    "name": xows_jid_to_nick(jid),            //< Nickname
-    "affi": affi,                             //< Room affiliation
-    "role": role,                             //< Room role
-    "full": full,                             //< Real full JID (user@domain/ressource)
-    "bare": full?xows_jid_to_bare(full):null, //< Real bare JID (user@domain)
-    "avat": avat,                             //< Avatar hash string.
-    "show": show,                             //< Presence show level
-    "stat": stat,                             //< Presence status string
-    "self": full?xows_cli_isself(full):false  //< This occupant is the current client
+    "name": name,             //< Nickname
+    "affi": affi,             //< Room affiliation
+    "role": role,             //< Room role
+    "full": full,             //< Real full JID (user@domain/ressource)
+    "bare": bare,             //< Real bare JID (user@domain)
+    "avat": avat,             //< Avatar hash string.
+    "show": show,             //< Presence show level
+    "stat": stat,             //< Presence status string
+    "chat": 0                 //< Chatstate level
   };
   
-  // set Peer type as constant
-  Object.defineProperty(occu,"type",{value:XOWS_PEER_OCCU,writable:false});
+  // set Constant properties
+  xows_def_readonly(occu,"type",XOWS_PEER_OCCU);  //< Peer type
+  xows_def_readonly(occu,"room",room);            //< Occupant Room reference
+  xows_def_readonly(occu,"jid",jid);              //< Occupant JID (room@domaine/nick)
+  xows_def_readonly(occu,"self",self);            //< This occupant is the current client
+  
   Object.seal(occu); //< prevet structure modification
   
   room.occu.push(occu);
@@ -1728,15 +1739,29 @@ function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
     return;
   }
   
-  // Update "locked" ressourceas as recommended in XEP-0296
+  // Update Contact, Peer and Room according received  chatstat
   if(peer.type === XOWS_PEER_CONT) {
-    peer.lock = from; 
+    peer.lock = from;  //< Update "locked" ressourceas as recommended in XEP-0296
     peer.chat = chat;
+  } else {
+    // search room occupant (must exists)
+    const occu = xows_cli_occu_get(peer, from);
+    if(occu) {
+      occu.chat = chat;
+      // add or remove Occupant to/from Room "writing list"
+      if(chat > XOWS_CHAT_PAUS) { //< Writing
+        if(!peer.writ.includes(occu))
+          peer.writ.push(occu);
+      } else {                    //< Paused, Inactive, etc...
+        const i = peer.writ.indexOf(occu);
+        if(i >= 0) peer.writ.splice(i, 1);
+      }
+    }
   }
 
   xows_log(2,"cli_xmp_onchatstate","chat state",from+" "+chat);
   
-  // Forward received Chat State
+  // Forward changed Chat State
   xows_cli_fw_onchatstate(peer, from, chat); 
 }
 

@@ -109,6 +109,18 @@ function xows_isfunc(obj) {
 }
 
 /**
+ * Define readonly object property.
+ *  
+ * @param   {object}    obj       Object to define property to.
+ * @param   {string}    prop      Property name to define.
+ * @param   {*}         value     Property value to set.
+ */
+function xows_def_readonly(obj, prop, value) 
+{
+  Object.defineProperty(obj,prop,{"value":value,"writable":false});
+}
+
+/**
  * Pseudo-random, seed based, number generation using the
  * Mulberry32 PRNG algorithm.
  * 

@@ -214,7 +214,12 @@ function xows_gui_peer_doc_init(peer)
 {
   // clone elements from initial offscreen slot
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_hist");
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_panl");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "occu_list");
+  
+  // set chat editor placeholder
+  const edit_mesg = xows_doc_frag_element_find(peer.bare,"chat_panl","edit_mesg");
+  edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
 }
 
 /**
@@ -226,6 +231,7 @@ function xows_gui_peer_doc_export(peer)
 {
   // export document elements to offscreen fragment
   xows_doc_frag_export(peer.bare, "chat_hist");
+  xows_doc_frag_export(peer.bare, "chat_panl");
   xows_doc_frag_export(peer.bare, "occu_list");
 }
 
@@ -239,10 +245,12 @@ function xows_gui_peer_doc_import(peer)
   if(peer) {
     // import document elements from offscreen fragment
     xows_doc_frag_import(peer.bare, "occu_list");
+    xows_doc_frag_import(peer.bare, "chat_panl");
     xows_doc_frag_import(peer.bare, "chat_hist");
   } else {
     // restore (clone) from initial (empty) document elements
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_hist", true);
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_panl", true);
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "occu_list", true);
   }
 }
@@ -315,6 +323,7 @@ function xows_gui_init()
 {
   // Create intial offscreen slot from current document
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_hist", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_panl", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
   
   // The DOM is now to its default state
@@ -812,7 +821,7 @@ function xows_gui_switch_peer(jid)
   // If next contact is valid, show the chat <div>
   (next === null) ? xows_doc_hide("chat_fram") 
                   : xows_doc_show("chat_fram");
-  
+
   // flag to push navigation history
   let push_nav = false;
   
@@ -860,7 +869,7 @@ function xows_gui_switch_peer(jid)
   }
   
   // Reset the typing notification and stack
-  xows_gui_writing_clear();
+  //xows_gui_writing_clear();
   
   // Update chat controls and title bar
   xows_gui_chat_fram_update();
@@ -1702,7 +1711,6 @@ function xows_gui_chat_fram_update()
     xows_doc.chat_addr.innerText = "";
     xows_doc.chat_meta.title = "";
     xows_doc.chat_meta.innerText = "";
-    xows_doc.edit_mesg.setAttribute("placeholder", "");
     xows_doc.chat_stat.innerText = "";
     xows_doc_hide("chat_show");
     xows_doc_hide("chat_occu");
@@ -1742,9 +1750,6 @@ function xows_gui_chat_fram_update()
   } else {
     xows_gui_notify_allow(false);
   }
-
-  // Change the input placeholder text
-  xows_doc.edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+xows_gui_peer.name+" ...");
 }
 
  /* -------------------------------------------------------------------
@@ -2286,11 +2291,11 @@ function xows_gui_mam_parse(peer, result, complete)
 const xows_gui_edit_mesg_keyd = new Array(256);
 
 /**
- * Chat Editor on-keydown / on-keyup callback function.
+ * Chat Panel on-keydown / on-keyup callback function.
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_edit_mesg_onkeyp(event)
+function xows_gui_chat_panl_onkeyp(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
   
@@ -2314,17 +2319,16 @@ function xows_gui_edit_mesg_onkeyp(event)
       // Send message
       if(xows_gui_peer) {
         
-        const edit = xows_doc.edit_mesg;
+        const edit_mesg = document.getElementById("edit_mesg");
         
-        if(edit.innerText.length) {
+        if(edit_mesg.innerText.length) {
           
           // Send message
-          xows_cli_send_message(xows_gui_peer, edit.innerText);
+          xows_cli_send_message(xows_gui_peer, edit_mesg.innerText);
           
           // Add CSS class to show placeholder
-          xows_doc_cls_add("edit_mesg", "PLACEHOLD");
-          
-          edit.innerText = ""; //< Empty any residual <br>
+          edit_mesg.classList.add("PLACEHOLD");
+          edit_mesg.innerText = ""; //< Empty any residual <br>
         } 
         
         // Reset chatsate to active
@@ -2346,58 +2350,76 @@ function xows_gui_edit_mesg_onkeyp(event)
 let xows_gui_edit_mesg_rng = null;
 
 /**
- * Chat Editor on-input callback function
+ * Chat Panel on-input callback function
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_edit_mesg_oninput(event)
+function xows_gui_chat_panl_oninput(event)
 {
   // Store selection range
   xows_gui_edit_mesg_rng = xows_doc_sel_rng(0);
   
-  const edit = xows_doc.edit_mesg;
+  const edit_mesg = document.getElementById("edit_mesg");
   
   // Check inner text content to show placeholder
-  if(edit.innerText.length < 2) {
+  if(edit_mesg.innerText.length < 2) {
     
-    if(edit.innerText.trim().length === 0) {
+    if(edit_mesg.innerText.trim().length === 0) {
       
       // Add CSS class to show placeholder
-      xows_doc_cls_add("edit_mesg", "PLACEHOLD");
-      
-      edit.innerText = ""; //< Empty any residual <br>
+      edit_mesg.classList.add("PLACEHOLD");
+      edit_mesg.innerText = ""; //< Empty any residual <br>
 
       return; //< Return now
     }
   }
 
   // Hide the placeholder text
-  xows_doc_cls_rem("edit_mesg", "PLACEHOLD");
+  edit_mesg.classList.remove("PLACEHOLD");
 }
 
 /**
- * Chat Editor on-click callback function.
+ * Chat Panel on-click callback function.
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_edit_mesg_onclick(event)
+function xows_gui_chat_panl_onclick(event)
 {
-  // Get selection range
-  const rng = xows_doc_sel_rng(0);
+  xows_cli_activity_wakeup(); //< Wakeup presence
   
-  if(rng.collapsed) {
+  switch(event.target.id) 
+  {
+    case "edit_mesg": {
+      // Get selection range
+      const rng = xows_doc_sel_rng(0);
+      if(rng.collapsed) {
+        const txt = rng.endContainer;
+        // Checks whether current selection is within <emoj> node
+        if(txt.parentNode.tagName === "EMOJ") {
+          // Move caret before or after the <emoj> node
+          xows_doc_caret_around(txt.parentNode, !rng.endOffset);
+          return; //< return now
+        }
+      }
+      // Store selection
+      xows_gui_edit_mesg_rng = rng;
+      break;
+    }
     
-    const txt = rng.endContainer;
-    // Checks whether current selection is within <emoj> node
-    if(txt.parentNode.tagName === "EMOJ") {
-      // Move caret before or after the <emoj> node
-      xows_doc_caret_around(txt.parentNode, !rng.endOffset);
-      return; //< return now
+    case "edit_upld": {
+      // Reset file input
+      xows_doc.chat_file.value = "";
+      // Open the file selector (emulate click)
+      xows_doc.chat_file.click();
+      break;
+    }
+    
+    case "edit_emoj": {
+      // Toggle menu drop and focus button
+      xows_doc_menu_toggle(xows_doc.edit_emoj, "drop_emoj");
+      break;
     }
   }
-  
-  // Store selection
-  xows_gui_edit_mesg_rng = rng;
 }
 
 /**
@@ -2408,11 +2430,19 @@ function xows_gui_edit_mesg_onclick(event)
  */
 function xows_gui_edit_mesg_insert(text, tagname)
 {
+  const edit_mesg = document.getElementById("edit_mesg");
+ 
+  // set default carret position if none saved
+  if(!xows_gui_edit_mesg_rng) {
+    xows_doc_caret_at(edit_mesg, true);
+    xows_gui_edit_mesg_rng = xows_doc_sel_rng(0);
+  }
+
   // Get the last saved selection range (caret position)
   const rng = xows_gui_edit_mesg_rng;
   
   // Delete content of selection if any
-  if(!rng.collapsed) 
+  if(rng && !rng.collapsed) 
     rng.deleteContents();
   
   // Create node to insert
@@ -2427,12 +2457,13 @@ function xows_gui_edit_mesg_insert(text, tagname)
   
   // Insert node within selected range
   rng.insertNode(node);
+
     
   // Hide the placeholder text
-  xows_doc_cls_rem("edit_mesg", "PLACEHOLD");
+  edit_mesg.classList.remove("PLACEHOLD");
   
   // Focus on input
-  xows_doc.edit_mesg.focus();
+  edit_mesg.focus();
     
   // Move caret after the created node
   xows_doc_caret_around(node);
@@ -2442,14 +2473,14 @@ function xows_gui_edit_mesg_insert(text, tagname)
 }
 
 /* -------------------------------------------------------------------
- * Main screen - Chat Frame - Foot Panel - Emoji Insertion
+ * Main screen - Chat Frame - Foot Panel - Emoji Menu Drop
  * -------------------------------------------------------------------*/
 /**
  * Chat Emoji menu button/drop on-click callback
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_edit_emoj_onclick(event)
+function xows_gui_drop_emoj_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
   
@@ -2458,9 +2489,6 @@ function xows_gui_edit_emoj_onclick(event)
   
   // Check whether we got click from drop or button
   if(li) xows_gui_edit_mesg_insert(li.childNodes[0].nodeValue, "emoj"); //< Insert selected Emoji
-  
-  // Toggle menu drop and focus button
-  xows_doc_menu_toggle(xows_doc.edit_emoj, "drop_emoj");
 }
 
 /* -------------------------------------------------------------------
@@ -2562,22 +2590,6 @@ function xows_gui_chat_file_onchange(event)
     xows_gui_upld_open(file);
 }
 
-/**
- * Function to handle chat file button click by user
- * 
- * @param {object}  event   Event object associated with trigger
- */
-function xows_gui_edit_upld_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  // Reset file input
-  xows_doc.chat_file.value = "";
-
-  // Open the file selector (emulate click)
-  xows_doc.chat_file.click();
-}
-
 /* -------------------------------------------------------------------
  * 
  * Main screen - Chat Frame - Foot Panel - Peer Writing notify
@@ -2591,86 +2603,95 @@ const xows_gui_writing_lst = [];
 
 /**
  * Clear the currently writing stack and notification message.
+ * 
+ * @param {object}  peer     Related Peer object (Room or Contact).
  */
-function xows_gui_writing_clear()
+function xows_gui_writing_clear(peer)
 {
+  // get Peer chatstat object
+  const chat_stat = xows_gui_peer_doc(peer, "chat_stat");
+  
   // Empty the typing stack
+  /*
   if(xows_gui_writing_lst.length !== 0)
     xows_gui_writing_lst.length = 0;
+  */
   
   // Hide and clear the typing notification
-  xows_doc_hide("chat_stat");
-  xows_doc.chat_stat.innerText = "";
+  chat_stat.innerText = "";
+  chat_stat.classList.add("HIDDEN");
 }
 
 /**
  * Add or remove currently writing people to stack and 
  * compose the proper notification message.
  * 
+ * @param {object}  peer     Related Peer object (Room or Contact).
  * @param {string}  from     Wrinting full JID.
  * @param {boolean} writing  Is currently writing value.
  */
-function xows_gui_writing_set(from, writing)
+function xows_gui_writing_set(peer, from, writing)
 {
-  // Simply get list reference
-  const list = xows_gui_writing_lst;
+  // get Peer chatstat object
+  const chat_stat = xows_gui_peer_doc(peer, "chat_stat");
   
-  // Get JID position in stack or -1
-  const i = list.indexOf(from);
-  
-  if(writing) {
-    // Add peer (contact or room occupant) to stack
-    if(i < 0) list.push(from);
-  } else {
-    // Remove Peer (contact or room occupant) from stack
-    if(i >= 0) list.splice(i,1);
-  }
-  
-  const n = list.length;
-  
-  if(n > 0) {
-    if(xows_gui_peer) {
-      // Show the notification
-      xows_doc_show("chat_stat");
-      // Compose the notification string
-      if(xows_gui_peer.type === XOWS_PEER_CONT) {
-        // The easy part, peer is a single Contact
-        xows_doc.chat_stat.innerHTML = "<b>"+xows_gui_peer.name+"</b> " + 
-                                      xows_l10n_get("is currently writing");                            
-      } else {
-        // The hard part, peer is a chat room, we may have
-        // several people typing the same time
-        let str = "";
-        if(n > 1) {
-          // We display tow names maximum with the count of other 
-          // typing people if needed
-          const l = (n > 2) ? 2 : n - 1;
-          // Add the first, or tow first name(s).
-          for(let i = 0; i < l; ++i) {
-            str += "<b>"+xows_jid_to_nick(list[i])+"</b>";
-            if(i < (l-1)) str += ", ";
-          }
-          // Now append the last part
-          str += " "+xows_l10n_get("and")+" <b>";
-          // We add either the last name or the remaining count
-          const r = (n - l);
-          if(r > 1) {
-            str += r + " " + xows_l10n_get("other(s)")+"</b> ";
-          } else {
-            str += xows_jid_to_nick(list[n-1])+"</b> ";
-          }
-          xows_doc.chat_stat.innerHTML = str + xows_l10n_get("are currently writing");
-        } else {
-          // The easy part, peer is alone
-          xows_doc.chat_stat.innerHTML = "<b>"+xows_jid_to_nick(list[0])+"</b> " + 
-                                        xows_l10n_get("is currently writing");
-        }
-      }
+  if(peer.type === XOWS_PEER_CONT) {
+    
+    // If Contact stopped writing, empty chatstate
+    if(peer.chat < XOWS_CHAT_COMP) {
+      chat_stat.innerText = "";
+      chat_stat.classList.add("HIDDEN");
+      return;
     }
+    
+    // Wet writing string
+    xows_doc.chat_stat.innerHTML = "<b>"+peer.name+"</b> "+xows_l10n_get("is currently writing");        
+    
   } else {
-    // Clear the typing notification
-    xows_gui_writing_clear();
+    
+    // Count of writting occupants
+    const n = peer.writ.length;
+    
+    // If no Occupant is writing, empty chatsate
+    if(n < 1) {
+      chat_stat.innerText = "";
+      chat_stat.classList.add("HIDDEN");
+      return;
+    }
+    
+    let str = "";
+    
+    // Compose writing mention depending number of writing occupants
+    if(n > 1) {
+      // We display tow names maximum with the count of other 
+      // typing people if needed
+      const l = (n > 2) ? 2 : n - 1;
+      // Add the first, or tow first name(s).
+      for(let i = 0; i < l; ++i) {
+        str += "<b>"+peer.writ[i].name+"</b>";
+        if(i < (l-1)) str += ", ";
+      }
+      
+      // Now append the last part
+      str += " "+xows_l10n_get("and")+" <b>";
+      
+      // We add either the last name or the remaining count
+      const r = (n - l);
+      if(r > 1) {
+        str += r+" "+xows_l10n_get("other(s)")+"</b> ";
+      } else {
+        str += peer.writ[n-1].name+"</b> ";
+      }
+      
+      xows_doc.chat_stat.innerHTML = str + xows_l10n_get("are currently writing");
+      
+    } else {
+      xows_doc.chat_stat.innerHTML = "<b>"+peer.writ[0].name+"</b> "+xows_l10n_get("is currently writing");
+    }
   }
+  
+  // Show the writing mention
+  chat_stat.classList.remove("HIDDEN");
 }
 
 /**
@@ -2683,15 +2704,19 @@ function xows_gui_writing_set(from, writing)
  */
 function xows_gui_cli_onchatstate(peer, from, chat)
 {
+  xows_gui_writing_set(peer);
+  
+  /*
   // Check whether incoming composing is the currently selected contact
   if(peer === xows_gui_peer) {
     // Check whether this is composing or another
     if(chat > XOWS_CHAT_PAUS) {
-      xows_gui_writing_set(from , true);
+      xows_gui_writing_set(peer, from, true);
     } else {
-      xows_gui_writing_set(from , false);
+      xows_gui_writing_set(peer, from, false);
     }
   }
+  */
 }
 
 /* -------------------------------------------------------------------

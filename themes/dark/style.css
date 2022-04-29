@@ -123,7 +123,7 @@ a:active {
 emoj {
   display: inline;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
-  font-size: 1.4em;
+  font-size: 1.3em;
   padding: 0 2px;
   vertical-align: top;
 }
@@ -2111,7 +2111,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* ------------------------------------------------------------------ */
 .chat-edit {
   display: flex;
-  padding: 5px;
+  padding: 10px;
   margin: 8px 12px 0 12px;
   border-radius: 5px;
   background-color: var(--base-tone5);
@@ -2121,7 +2121,6 @@ div[show="4"]  { background-color: var(--show-chat); }
   width: 20px; height: 20px;
   border: 0;
   padding: 0;
-  margin: 5px;
   cursor: pointer;
   vertical-align: middle;
   background-color: transparent;
@@ -2145,18 +2144,19 @@ div[show="4"]  { background-color: var(--show-chat); }
   pointer-events: none;
 }
 .edit-mesg {
-  vertical-align: bottom;
+  font-size: 0.9em;
   color: var(--text-tone1);
   width: 100%;
-  margin: 5px;
+  margin: 0 10px;
   border: 0;
   outline: 0;
   overflow-y: auto;
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
+  align-self: center;
 }
 @media (max-width: 824px) {
-  .send-wrap {
-    font-size: 0.75em;
+  .edit-mesg {
+    font-size: 0.8em;
   }
 } 
 /* ------------------------------------------------------------------ */
