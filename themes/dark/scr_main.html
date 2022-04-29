@@ -90,7 +90,7 @@
   <div id="main_colc" class="col-cntr">
     <div id="chat_fram" class="col-frame HIDDEN">
       <!-- Head Frame (Chat Title bar) -->
-      <div class="row-head chat-head">
+      <div id="chat_head" class="row-head chat-head">
         <div class="head-info">
           <div id="chat_titl" class="chat-titl"></div>
           <div id="chat_addr" class="chat-addr"></div>
@@ -98,10 +98,10 @@
         </div>
         <div id="chat_meta" class="head-meta"></div>
         <div class="head-acts">
-          <button id="chat_conf" class="chat-conf" title="${'Room configuration'}"></button>
-          <button id="chat_book" class="chat-book" title="${'Add Room to Bookmarks'}"></button>
+          <button id="chat_conf" class="chat-conf HIDDEN" title="${'Room configuration'}"></button>
+          <button id="chat_book" class="chat-book HIDDEN" title="${'Add Room to Bookmarks'}"></button>
           <button id="chat_noti" class="CHAT-NOTI" title="${'Enable notifications'}"></button>
-          <button id="chat_occu" class="chat-occu" title="${'Room occupants list'}"></button>
+          <button id="chat_occu" class="chat-occu HIDDEN" title="${'Room occupants list'}"></button>
         </div>
       </div>
       <!-- Main Frame (Chat Messages history) -->

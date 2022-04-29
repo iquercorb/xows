@@ -213,10 +213,38 @@ const XOWS_GUI_FRAG_INIT = "NULL";
 function xows_gui_peer_doc_init(peer)
 {
   // clone elements from initial offscreen slot
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_head");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_hist");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_panl");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "occu_list");
   
+  const is_room = (peer.type === XOWS_PEER_ROOM);
+  
+   // set chat title bar informations
+  const chat_show = xows_doc_frag_element_find(peer.bare,"chat_head","chat_show");
+  const chat_addr = xows_doc_frag_element_find(peer.bare,"chat_head","chat_addr");
+  const chat_meta = xows_doc_frag_element_find(peer.bare,"chat_head","chat_meta");
+  const chat_book = xows_doc_frag_element_find(peer.bare,"chat_head","chat_book");
+
+  xows_doc_frag_element_find(peer.bare,"chat_head","chat_titl").innerText = peer.name;
+
+  chat_show.classList.toggle("HIDDEN",is_room);
+  chat_addr.classList.toggle("HIDDEN",is_room);
+  xows_doc_frag_element_find(peer.bare,"chat_head","chat_occu").classList.toggle("HIDDEN",!is_room);
+
+  if(is_room) {                               //< XOWS_PEER_ROOM
+    chat_meta.innerText = peer.subj;
+    // Cannot bookmark public rooms or already bookmarked
+    chat_book.classList.toggle("HIDDEN", (peer.book || peer.publ));
+  } else {                                    //< XOWS_PEER_CONT
+    chat_meta.innerText = peer.stat ? peer.stat : "";
+    chat_show.setAttribute("show", peer.show);
+    chat_addr.innerText = "("+peer.bare+")";
+    chat_book.classList.add("HIDDEN");
+  }
+  
+  
+
   // set chat editor placeholder
   const edit_mesg = xows_doc_frag_element_find(peer.bare,"chat_panl","edit_mesg");
   edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
@@ -230,6 +258,7 @@ function xows_gui_peer_doc_init(peer)
 function xows_gui_peer_doc_export(peer)
 {
   // export document elements to offscreen fragment
+  xows_doc_frag_export(peer.bare, "chat_head");
   xows_doc_frag_export(peer.bare, "chat_hist");
   xows_doc_frag_export(peer.bare, "chat_panl");
   xows_doc_frag_export(peer.bare, "occu_list");
@@ -247,8 +276,10 @@ function xows_gui_peer_doc_import(peer)
     xows_doc_frag_import(peer.bare, "occu_list");
     xows_doc_frag_import(peer.bare, "chat_panl");
     xows_doc_frag_import(peer.bare, "chat_hist");
+    xows_doc_frag_import(peer.bare, "chat_head");
   } else {
     // restore (clone) from initial (empty) document elements
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_head", true);
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_hist", true);
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_panl", true);
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "occu_list", true);
@@ -266,7 +297,8 @@ function xows_gui_peer_doc_import(peer)
  */
 function xows_gui_peer_doc(peer, id)
 {
-  return (peer === xows_gui_peer) ? xows_doc[id] : xows_doc_frag_find(peer.bare, id);
+  return (peer === xows_gui_peer) ? document.getElementById(id) : 
+                                    xows_doc_frag_find(peer.bare,id);
 }
 
 /**
@@ -322,6 +354,7 @@ function xows_gui_peer_mesg_li(peer, id)
 function xows_gui_init()
 {
   // Create intial offscreen slot from current document
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_head", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_hist", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_panl", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
@@ -611,23 +644,23 @@ let xows_gui_notify_await = null;
 /**
  * Enable or disable notifications for current Peer
  * 
- * @param {boolean}   allow   Allow or mute notification
+ * @param   {object}    peer    Peer object.
+ * @param   {boolean}   allow   Allow or mute notification.
  */
-function xows_gui_notify_allow(allow)
+function xows_gui_notify_allow(peer, allow)
 {
-  if(!xows_gui_peer)
-    return;
-    
+  const chat_noti = xows_gui_peer_doc(peer,"chat_noti");
+  
   // Set notification for this Peer
-  xows_gui_peer.noti = allow;
+  peer.noti = allow;
   
   // Change chat action button title
   if(allow) {
-    xows_doc.chat_noti.title = xows_l10n_get("Disable notifications");
+    chat_noti.title = xows_l10n_get("Disable notifications");
     // Set user permission
     xows_gui_notify_permi = "granted";
   } else {
-    xows_doc.chat_noti.title = xows_l10n_get("Enable notifications");
+    chat_noti.title = xows_l10n_get("Enable notifications");
     // Reset user permission
     xows_gui_notify_permi = 0;
   }
@@ -771,7 +804,9 @@ function xows_gui_reset()
   xows_doc_frag_clear();
   
   // Create intial offscreen slot from current document
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_head",true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_hist",true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_panl",true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"occu_list",true);
   
   // The DOM is now to its default state
@@ -836,9 +871,10 @@ function xows_gui_switch_peer(jid)
     xows_doc_cls_set("main_colr", "COL-HIDE", (next.type !== XOWS_PEER_ROOM));
     // Set the current contact
     xows_gui_peer = next;
-    // Join the room if required
-    if(next.type === XOWS_PEER_ROOM) 
+    if(next.type === XOWS_PEER_ROOM) {
+      // Join the room if required
       if(!next.join) xows_cli_room_join(next);
+    }
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
     // Reset the lazy loader and force update
@@ -867,13 +903,7 @@ function xows_gui_switch_peer(jid)
       push_nav = true; //< we can push nav
     }
   }
-  
-  // Reset the typing notification and stack
-  //xows_gui_writing_clear();
-  
-  // Update chat controls and title bar
-  xows_gui_chat_fram_update();
-  
+
   // push navigation history
   if(push_nav) 
     xows_gui_nav_push("switch_peer", xows_gui_switch_peer, jid);
@@ -922,9 +952,9 @@ function xows_gui_main_open()
 /**
  * Enable or disable UI elements according Room role and affiliation
  * 
- * @param {boolean}   reset   Reset to default (non-Room peer)
+ * @param   {object}    room    Room object.
  */
-function xows_gui_room_privi_update(reset)
+function xows_gui_room_privi_update(room)
 {
   /*
    * Privilege                  None      Visitor   Participant  Moderator
@@ -950,27 +980,20 @@ function xows_gui_room_privi_update(reset)
    * Change Room Configuration                                      x
    * Destroy Room                                                   x
    */
- 
-  let topic, confg;
-  
+
   // Setup privilieges
-  if(xows_gui_peer && !reset) {
-    const affi = xows_gui_peer.affi;
-    const role = xows_gui_peer.role;
-    
-    topic = (role > XOWS_ROLE_PART);
-    confg = (affi > XOWS_AFFI_ADMN);
-  }
-  
-  // Room configuration button
-  xows_doc_hidden_set("chat_conf", !confg);
+  const topic = (room.role > XOWS_ROLE_PART);
   
   // Room topic edition
-  xows_doc_cls_set("chat_meta", "ENABLED", topic);
-  xows_doc.chat_meta.setAttribute("contenteditable", topic);
-  xows_doc.chat_meta.title = topic ? xows_l10n_get("Change Room topic") : "";
+  const chat_meta = xows_gui_peer_doc(room,"chat_meta");
+  chat_meta.classList.toggle("ENABLED", topic);
+  chat_meta.setAttribute("contenteditable", topic);
+  chat_meta.title = topic ? xows_l10n_get("Change Room topic") : "";
+  
+  // Room configuration button
+  let chat_conf = xows_gui_peer_doc(room,"chat_conf");
+  chat_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
 }
-
 
 /* -------------------------------------------------------------------
  * 
@@ -1414,10 +1437,9 @@ function xows_gui_cli_oncontpush(cont)
   const li = document.getElementById(cont.bare);
   if(li) {
     // Update the existing contact <li> element according template
-    xows_tpl_update_rost_cont(li, cont.name, cont.avat, 
-                                cont.subs, cont.show, cont.stat);
-    // If updated contact is current peer, alos update title bar
-    if(cont === xows_gui_peer) xows_gui_chat_fram_update();
+    xows_tpl_update_rost_cont(li, cont.name, cont.avat, cont.subs, cont.show, cont.stat);
+    // Update chat title bar
+    xows_gui_chat_head_update(cont);
   } else {
     // Remove the potential loading spinner
     xows_doc_cls_rem("cont_ul", "LOADING");
@@ -1583,8 +1605,8 @@ function xows_gui_cli_onroompush(room)
     if(li.parentNode !== dest_ul) dest_ul.appendChild(li);
     // Update room <li> element according template
     xows_tpl_update_rost_room(li, room.name, room.desc, room.lock);
-    // If updated room is current peer, also update title bar
-    if(room === xows_gui_peer) xows_gui_chat_fram_update();
+    // Update chat title bar
+    xows_gui_chat_head_update(room);
   } else {
     // Append new instance of room <li> from template to roster <ul>
     dest_ul.appendChild(xows_tpl_spawn_rost_room(room.bare, room.name, room.desc, room.lock));
@@ -1700,56 +1722,36 @@ function xows_gui_menu_show_onclick(event)
  * -------------------------------------------------------------------*/
  
 /**
- * Chat Frame components (actions buttons and texts) update according
- * current selected Peer.
+ * Chat header bar informations update.
+ * 
+ * @param   {object}    peer    Peer object, either Contact or Room.
  */
-function xows_gui_chat_fram_update()
+function xows_gui_chat_head_update(peer)
 {
-  if(!xows_gui_peer) {
-    // Reset to empty chat window
-    xows_doc.chat_titl.innerText = "";
-    xows_doc.chat_addr.innerText = "";
-    xows_doc.chat_meta.title = "";
-    xows_doc.chat_meta.innerText = "";
-    xows_doc.chat_stat.innerText = "";
-    xows_doc_hide("chat_show");
-    xows_doc_hide("chat_occu");
-    xows_doc_hide("chat_book");
-    // Reset room specific controls
-    xows_gui_room_privi_update(true);
-    return;
-  }
-  
   // Update chat title bar
-  xows_doc.chat_titl.innerText = xows_gui_peer.name;
+  xows_gui_peer_doc(peer,"chat_titl").innerText = peer.name;
   
-  if(xows_gui_peer.type === XOWS_PEER_CONT) { //< XOWS_PEER_CONT
-    xows_doc_show("chat_show");
-    xows_doc_show("chat_addr");
-    xows_doc.chat_show.setAttribute("show", xows_gui_peer.show);
-    xows_doc.chat_addr.innerText = "("+xows_gui_peer.bare+")";
-    xows_doc.chat_meta.innerText = xows_gui_peer.stat?xows_gui_peer.stat:"";
-    xows_doc_hide("chat_occu");
-    xows_doc_hide("chat_book");
-    // Reset room specific controls
-    xows_gui_room_privi_update(true);
-  } else {      //< XOWS_PEER_ROOM
-    xows_doc_hide("chat_show");
-    xows_doc_hide("chat_addr");
-    xows_doc.chat_meta.innerText = xows_gui_peer.subj;
-    xows_doc_show("chat_occu");
-    // Cannot bookmark public rooms or already bookmarked
-    xows_doc_hidden_set("chat_book", (xows_gui_peer.book || xows_gui_peer.publ));
-    // Enable or disable GUI according Room role/affiliation
-    xows_gui_room_privi_update();
+  const chat_meta = xows_gui_peer_doc(peer,"chat_meta");
+  
+  if(peer.type === XOWS_PEER_CONT) {  //< XOWS_PEER_CONT
+    chat_meta.innerText = peer.stat;
+    xows_gui_peer_doc(peer,"chat_show").setAttribute("show",peer.show);
+  } else {                            //< XOWS_PEER_ROOM
+    chat_meta.innerText = peer.subj;
+    xows_gui_peer_doc(peer,"chat_book").classList.toggle("HIDDEN",(peer.book || peer.publ));
+    // Update privileges related elements
+    xows_gui_room_privi_update(peer);
   }
   
   // Hide or show the proper notification button
-  if(xows_gui_peer.noti) {
-    xows_gui_notify_allow(true);
-  } else {
-    xows_gui_notify_allow(false);
-  }
+  const chat_noti = xows_gui_peer_doc(peer,"chat_noti");
+  
+  chat_noti.title = chat_noti ? xows_l10n_get("Disable notifications") : 
+                                xows_l10n_get("Enable notifications");
+  
+  // Toggle chat action button class
+  chat_noti.classList.toggle("CHAT-MUTE", chat_noti);
+  chat_noti.classList.toggle("CHAT-NOTI", !chat_noti);
 }
 
  /* -------------------------------------------------------------------
@@ -1760,66 +1762,50 @@ function xows_gui_chat_fram_update()
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - Header - Actions Buttons
  * -------------------------------------------------------------------*/
+
 /**
- * Chat Action Notify/Mute on-click callback function.
+ * Chat Header on-click callback function.
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_chat_noti_onclick(event)
+function xows_gui_chat_head_onclick(event)
 {
-  if(xows_doc_cls_has("chat_noti", "CHAT-MUTE")) {
-    // Disable notifications
-    xows_gui_notify_allow(false);
-  } else {
-    // Request user permission for notifications
-    xows_gui_notify_query();
+  xows_cli_activity_wakeup(); //< Wakeup presence
+  
+  switch(event.target.id) 
+  {
+    case "chat_book": {
+      // Open confirmation dialog
+      if(xows_gui_peer) xows_gui_mbox_bookmark_open(xows_gui_peer);
+      break;
+    }
+    case "chat_noti": {
+      if(event.target.classList.contains("CHAT-MUTE")) {
+        // Disable notifications
+        xows_gui_notify_allow(false);
+      } else {
+        // Request user permission for notifications
+        xows_gui_notify_query();
+      }
+      break;
+    }
+    case "chat_conf": {
+      // Query for Room configuration, will open Room config page
+      xows_cli_room_cfg_get(xows_gui_peer, xows_gui_page_room_open);
+      break;
+    }
+    case "chat_occu": {
+      // Checks whether we are in narrow-screen mode
+      if(window.matchMedia("(max-width: 799px)").matches) {
+        // Widen right panel
+        xows_doc_cls_add("main_wrap", "COLR-WIDE");
+      } else {
+        // Toggle hide right pannel
+        xows_doc_cls_tog("main_colr", "COL-HIDE");
+      }
+      break;
+    }
   }
-}
-
-/**
- * Chat Action Room Config on-click callback function.
- * 
- * @param {object}  event   Event object associated with trigger
- */
-function xows_gui_chat_conf_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-  
-  // Query for Room configuration, will open Room config page
-  xows_cli_room_cfg_get(xows_gui_peer, xows_gui_page_room_open);
-}
-
-/**
- * Chat Action Room Occupants on-click callback function.
- * 
- * @param {object}  event   Event object associated with trigger
- */
-function xows_gui_chat_occu_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-  
-  // Checks whether we are in narrow-screen mode
-  if(window.matchMedia("(max-width: 799px)").matches) {
-    // Widen right panel
-    xows_doc_cls_add("main_wrap", "COLR-WIDE");
-  } else {
-    // Toggle hide right pannel
-    xows_doc_cls_tog("main_colr", "COL-HIDE");
-  }
-}
-
-/**
- * Chat Action Room Bookmark on-click callback function.
- * 
- * @param {object}  event   Event object associated with trigger
- */
-function xows_gui_chat_book_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-  
-  // Open confirmation dialog
-  if(xows_gui_peer) 
-    xows_gui_mbox_bookmark_open(xows_gui_peer);
 }
 
 /* -------------------------------------------------------------------
@@ -1827,16 +1813,16 @@ function xows_gui_chat_book_onclick(event)
  * -------------------------------------------------------------------*/
  
 /**
- * Chat Meta (Room Topic) on-blur callback function.
+ * Chat Meta (Room Topic) on-focus(out) callback function.
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_chat_meta_onblur(event)
+function xows_gui_chat_head_onfocus(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
   
   // Get content
-  const subj = xows_doc.chat_meta.innerText;
+  const subj = document.getElementById("chat_meta").innerText;
   
   // If changed, inform of the new room topic
   if(subj != xows_gui_peer.subj) 
@@ -1848,11 +1834,13 @@ function xows_gui_chat_meta_onblur(event)
  * 
  * @param {object}  event   Event object associated with trigger
  */
-function xows_gui_chat_meta_onkeyp(event)
+function xows_gui_chat_head_onkeyp(event)
 {
+  xows_cli_activity_wakeup(); //< Wakeup presence
+  
   if(event.keyCode === 13)  //< Return key 
     // Unfocus input, this will throw blur event
-    xows_doc.chat_meta.blur();
+    document.getElementById("chat_meta").blur();
 }
 
 /**
@@ -1863,8 +1851,8 @@ function xows_gui_chat_meta_onkeyp(event)
  */
 function xows_gui_cli_onsubject(peer, subj)
 {
-  if(peer === xows_gui_peer) 
-    xows_doc.chat_meta.innerText = subj ? subj : "";
+  if(peer === xows_gui_peer)
+    xows_gui_peer_doc(peer,"chat_meta").innerText = subj?subj:"";
 }
 
 /* -------------------------------------------------------------------
@@ -2165,8 +2153,6 @@ function xows_gui_mam_parse(peer, result, complete)
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
   const hist_beg = xows_gui_peer_doc(peer,"hist_beg");
   const hist_end = xows_gui_peer_doc(peer,"hist_end");
-  
-  console.log(hist_ul);
   
   // Disable all spin loader
   hist_beg.classList.remove("LOADING"); //< Allow query history
@@ -2595,45 +2581,21 @@ function xows_gui_chat_file_onchange(event)
  * Main screen - Chat Frame - Foot Panel - Peer Writing notify
  * 
  * -------------------------------------------------------------------*/
- 
-/**
- * Stack for currently wrinting Contact or Room Occupant
- */
-const xows_gui_writing_lst = [];
 
 /**
- * Clear the currently writing stack and notification message.
+ * Handle the received composing state from other contacts to display
+ * it in the chat window.
  * 
- * @param {object}  peer     Related Peer object (Room or Contact).
+ * @param {object}    peer  Sender peer object.
+ * @param {string}    from  Sender full JID.
+ * @param {number}    chat  Chat state value.
  */
-function xows_gui_writing_clear(peer)
+function xows_gui_cli_onchatstate(peer, from, chat)
 {
-  // get Peer chatstat object
-  const chat_stat = xows_gui_peer_doc(peer, "chat_stat");
+  xows_log(1,"gui_cli_onchatstate",peer.name,chat);
   
-  // Empty the typing stack
-  /*
-  if(xows_gui_writing_lst.length !== 0)
-    xows_gui_writing_lst.length = 0;
-  */
-  
-  // Hide and clear the typing notification
-  chat_stat.innerText = "";
-  chat_stat.classList.add("HIDDEN");
-}
-
-/**
- * Add or remove currently writing people to stack and 
- * compose the proper notification message.
- * 
- * @param {object}  peer     Related Peer object (Room or Contact).
- * @param {string}  from     Wrinting full JID.
- * @param {boolean} writing  Is currently writing value.
- */
-function xows_gui_writing_set(peer, from, writing)
-{
   // get Peer chatstat object
-  const chat_stat = xows_gui_peer_doc(peer, "chat_stat");
+  const chat_stat = xows_gui_peer_doc(peer,"chat_stat");
   
   if(peer.type === XOWS_PEER_CONT) {
     
@@ -2645,10 +2607,12 @@ function xows_gui_writing_set(peer, from, writing)
     }
     
     // Wet writing string
-    xows_doc.chat_stat.innerHTML = "<b>"+peer.name+"</b> "+xows_l10n_get("is currently writing");        
+    chat_stat.innerHTML = "<b>"+peer.name+"</b> "+xows_l10n_get("is currently writing");        
+    
+    xows_log(1,"gui_cli_onchatstate",peer.name,chat);
     
   } else {
-    
+
     // Count of writting occupants
     const n = peer.writ.length;
     
@@ -2659,10 +2623,11 @@ function xows_gui_writing_set(peer, from, writing)
       return;
     }
     
-    let str = "";
-    
     // Compose writing mention depending number of writing occupants
     if(n > 1) {
+      
+      let str = "";
+      
       // We display tow names maximum with the count of other 
       // typing people if needed
       const l = (n > 2) ? 2 : n - 1;
@@ -2683,40 +2648,18 @@ function xows_gui_writing_set(peer, from, writing)
         str += peer.writ[n-1].name+"</b> ";
       }
       
-      xows_doc.chat_stat.innerHTML = str + xows_l10n_get("are currently writing");
+      chat_stat.innerHTML = str + xows_l10n_get("are currently writing");
       
     } else {
-      xows_doc.chat_stat.innerHTML = "<b>"+peer.writ[0].name+"</b> "+xows_l10n_get("is currently writing");
+      
+      xows_log(1,"gui_cli_onchatstate",peer.name,peer.writ[0].name);
+      
+      chat_stat.innerHTML = "<b>"+peer.writ[0].name+"</b> "+xows_l10n_get("is currently writing");
     }
   }
   
   // Show the writing mention
   chat_stat.classList.remove("HIDDEN");
-}
-
-/**
- * Handle the received composing state from other contacts to display
- * it in the chat window.
- * 
- * @param {object}    peer  Sender peer object.
- * @param {string}    from  Sender full JID.
- * @param {number}    chat  Chat state value.
- */
-function xows_gui_cli_onchatstate(peer, from, chat)
-{
-  xows_gui_writing_set(peer);
-  
-  /*
-  // Check whether incoming composing is the currently selected contact
-  if(peer === xows_gui_peer) {
-    // Check whether this is composing or another
-    if(chat > XOWS_CHAT_PAUS) {
-      xows_gui_writing_set(peer, from, true);
-    } else {
-      xows_gui_writing_set(peer, from, false);
-    }
-  }
-  */
 }
 
 /* -------------------------------------------------------------------
@@ -2736,9 +2679,14 @@ function xows_gui_cli_onoccupush(room, occu, code)
 {
   // checks whether we have a special status code with this occupant
   if(code && code.includes(110)) { //< Self presence update
-
     // Code 201 mean initial room config
     xows_gui_page_join_onjoind(room, null, code.includes(201));
+  }
+
+  // Check whether we are this occupant
+  if(occu.self) {
+    // Show or hide GUI elements according privileges
+    xows_gui_room_privi_update(room);
   }
   
   // Search for existing occupant <li> element for this Room
@@ -2755,20 +2703,10 @@ function xows_gui_cli_onoccupush(room, occu, code)
                     
     // Create and append new <li> element from template
     const inst = xows_tpl_spawn_room_occu(occu.jid, occu.name, occu.avat, occu.full, occu.show, occu.stat);
-                                        
-    // Check whether we are this occupant
-    if(occu.self) {
-      // Hide the "Add Contact" button for self
-      inst.querySelector(".OCCU-SUBS").classList.add("HIDDEN");
-      // Show or hide GUI elements according privileges
-      xows_gui_room_privi_update();
-    }
     
-    // Hide "Add Contact" button for Contacts already in roster
-    if(occu.full) {
-      if(xows_cli_cont_get(occu.full))
-        inst.querySelector(".OCCU-SUBS").classList.add("HIDDEN");
-    }
+    // Hide the "Add Contact" button depending context
+    const show_subs = (!occu.self && (occu.full && !xows_cli_cont_get(occu.full)));
+    inst.querySelector(".OCCU-SUBS").classList.toggle("HIDDEN", !show_subs);
     
     // Select the proper role <ul> to put the occupant in
     const occu_ul = xows_gui_peer_doc(room,(occu.role===XOWS_ROLE_MODO)?"modo_ul":"memb_ul");

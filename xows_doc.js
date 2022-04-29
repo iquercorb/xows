@@ -508,12 +508,9 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc.user_stat,   "blur",     xows_gui_user_stat_onblur);
   
   // Chat header
-  xows_doc_listener_add(xows_doc.chat_meta,   "keypress", xows_gui_chat_meta_onkeyp);
-  xows_doc_listener_add(xows_doc.chat_meta,   "blur",     xows_gui_chat_meta_onblur);
-  xows_doc_listener_add(xows_doc.chat_noti,   "click",    xows_gui_chat_noti_onclick);
-  xows_doc_listener_add(xows_doc.chat_conf,   "click",    xows_gui_chat_conf_onclick);
-  xows_doc_listener_add(xows_doc.chat_occu,   "click",    xows_gui_chat_occu_onclick);
-  xows_doc_listener_add(xows_doc.chat_book,   "click",    xows_gui_chat_book_onclick);
+  xows_doc_listener_add(xows_doc.chat_head,   "keypress", xows_gui_chat_head_onkeyp);
+  xows_doc_listener_add(xows_doc.chat_head,   "focusout", xows_gui_chat_head_onfocus);
+  xows_doc_listener_add(xows_doc.chat_head,   "click",    xows_gui_chat_head_onclick);
   
   // Chat main
   xows_doc_listener_add(xows_doc.chat_main,   "scroll",   xows_gui_chat_main_onscroll);
