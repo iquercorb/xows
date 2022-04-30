@@ -115,15 +115,16 @@ const xows_cach_peer_db = {};
  * @param {string}    from      User, Room or Occupant JID/Address.
  * @param {string}    name      Nickname or displayed name.
  * @param {string}    avat      Associated avatar hash.
- * @param {string}    note      Status or description.
+ * @param {string}    desc      Status or description.
+ * @param {boolean}   noti      Enable push notification.
  */
-function xows_cach_peer_save(from, name, avat, desc)
+function xows_cach_peer_save(from, name, avat, desc, noti)
 {
   let cach = null;
 
-  if(name && avat && desc) {
+  if(name && avat && desc && (noti !== null)) {
     // All data supplied, we replace all data
-    cach = {"name":name,"avat":avat,"desc":desc};
+    cach = {"name":name,"avat":avat,"desc":desc,"noti":noti};
   } else {
     // If partial data update, we first extract existing data 
     // if any and update available data
@@ -137,8 +138,9 @@ function xows_cach_peer_save(from, name, avat, desc)
       if(name) cach.name = name;
       if(avat) cach.avat = avat;
       if(desc) cach.desc = desc;
+      if(noti!== null) cach.noti = noti;
     } else {
-      cach = {"name":name,"avat":avat,"desc":desc};
+      cach = {"name":name,"avat":avat,"desc":desc,"noti":noti};
     }
   }
 
@@ -238,8 +240,8 @@ function xows_cach_caps_has(node)
  */
 function xows_cach_caps_get(node)
 {
-  if(node in xows_cli_cache_caps_db) 
-    return xows_cli_cache_caps_db[node];
+  if(node in xows_cach_caps_db) 
+    return xows_cach_caps_db[node];
   
   // Try in localStorage (and load to live DB)
   if(node in localStorage) {
