@@ -175,7 +175,7 @@ function xows_xml_node(name, attr, child)
 function xows_xml_edit(parent, name, child)
 {
   // search for alrady existing node
-  node = parent.querySelector(name);
+  let node = parent.querySelector(name);
 
   if(node) {
     // Remove all children and parent the given one

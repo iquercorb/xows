@@ -1999,10 +1999,10 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // Send browser notification popup
   if(!xows_gui_has_focus && !sent && peer.noti) 
     xows_gui_notify_push(sndr, body);
-  
+
   // Check whether end of history is croped, in this cas the new message
   // must not be appended, we will show it by querying archives
-  if(!sent && !hist_end.classList.contains("HIDDEN")) {
+  if(!sent && !xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
     // Show the "new messages" warning
     xows_gui_peer_doc(peer,"hist_new").classList.remove("HIDDEN");
     // Do not append any message, return now
@@ -3368,7 +3368,6 @@ function xows_gui_page_room_onvalid()
  */
 function xows_gui_page_room_onabort()
 {
-  const room = xows_doc_page_room.room;
   const form = xows_doc_page_room.form;
   
   // Setup page inputs according received config from
@@ -3423,28 +3422,28 @@ function xows_gui_page_room_oninput(target)
     switch(form[i]["var"])
     {
     case "muc#roomconfig_roomname":
-      form[i].value !== xows_doc.room_titl.value; change = true; break;
+      if(form[i].value !== xows_doc.room_titl.value) change = true; break;
     case "muc#roomconfig_roomdesc":
-      form[i].value !== xows_doc.room_desc.value; change = true; break;
+      if(form[i].value !== xows_doc.room_desc.value) change = true; break;
     case "muc#roomconfig_persistentroom":
-      xows_asbool(form[i].value) !== xows_doc.room_pers.checked; change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc.room_pers.checked) change = true; break;
     case "muc#roomconfig_publicroom":
-      xows_asbool(form[i].value) !== xows_doc.room_publ.checked; change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc.room_publ.checked) change = true; break;
     //case "muc#roomconfig_roomsecret":
     //  form[i].value = xows_doc.room_priv.checked ? xows_doc.room_pass.value : "";
     //  break;
     case "muc#roomconfig_membersonly":
-      xows_asbool(form[i].value) !== xows_doc.room_mbon.checked; change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc.room_mbon.checked) change = true; break;
     case "muc#roomconfig_moderatedroom":
-      xows_asbool(form[i].value) !== xows_doc.room_modo.checked; change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc.room_modo.checked) change = true; break;
     case "muc#roomconfig_whois":
-      form[i].value !== xows_doc.room_anon.value; change = true; break;
+      if(form[i].value !== xows_doc.room_anon.value) change = true; break;
     case "muc#roomconfig_historylength":
-      form[i].value !== xows_doc.room_hmax.value; change = true; break;
+      if(form[i].value !== xows_doc.room_hmax.value) change = true; break;
     case "muc#roomconfig_defaulthistorymessages":
-      form[i].value !== xows_doc.room_hdef.value; change = true; break;
+      if(form[i].value !== xows_doc.room_hdef.value) change = true; break;
     case "muc#roomconfig_enablearchiving":
-      xows_asbool(form[i].value) !== xows_doc.room_arch.checked; change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc.room_arch.checked) change = true; break;
     }
     
     if(change) break;

@@ -1086,7 +1086,7 @@ function xows_xmp_muc_affi_query(to, jid, affi, reason, onparse)
   // Create and launch the query
   const iq = xows_xml_node("iq",{"to":to,"type":"set"},
               xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},
-                xows_xml_node("item",{"affiliation":affi,"jid":nick},r)));
+                xows_xml_node("item",{"affiliation":affi,"jid":jid},r)));
               
   // We use generical iq parse function to get potential error message
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);

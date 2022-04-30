@@ -987,8 +987,6 @@ function xows_gen_avatar(size, image, name, font)
   // Create offscreen canvas
   const cv = document.createElement("canvas");
   const ct = cv.getContext("2d");
-
-  const half = (size * 0.5);
   
   if(image) {
     

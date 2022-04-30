@@ -207,8 +207,7 @@ function xows_doc_cls_rem(id, clsname)
  */
 function xows_doc_cls_set(id, clsname, add)
 {
-  add ? xows_doc[id].classList.add(clsname) 
-      : xows_doc[id].classList.remove(clsname);
+  xows_doc[id].classList.toggle(clsname, add);
 }
 
 /**
@@ -239,8 +238,7 @@ function xows_doc_hide(id)
  */
 function xows_doc_hidden_set(id, hidden)
 {
-  hidden  ? xows_doc[id].classList.add("HIDDEN") 
-        : xows_doc[id].classList.remove("HIDDEN");
+  xows_doc[id].classList.toggle("HIDDEN", hidden);
 }
 
 /**
@@ -326,7 +324,7 @@ function xows_doc_frag_import(slot, element, clone)
 {
   if(xows_doc_frag_db[slot]) {
     
-    let s, d, e;
+    let s, d;
     
     // set source and destination
     s = xows_doc_frag_db[slot][element];
