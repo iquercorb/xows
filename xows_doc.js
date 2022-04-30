@@ -339,18 +339,14 @@ function xows_doc_frag_import(slot, element, clone)
       
       // clone children from fragment to document
       for(let i = 0, n = s.childNodes.length; i < n; ++i) {
-        e = d.appendChild(s.childNodes[i].cloneNode(true));
-        if(e.id) xows_doc[e.id] = e; //< replace document cached elements
-        
+        d.appendChild(s.childNodes[i].cloneNode(true));
       }
       
     } else {
       
       // move children from fragment to document
       while(s.childNodes.length) {
-        e = d.appendChild(s.firstChild);
-        if(e.id) xows_doc[e.id] = e; //< replace document cached elements
-        
+        d.appendChild(s.firstChild);
       }
     }
   }
