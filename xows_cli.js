@@ -471,7 +471,7 @@ function xows_cli_peer_update(jid, nick, avat, stat)
     xows_log(2,"cli_peer_update","received own profile data");
     
     // Add peer data to cache
-    xows_cach_peer_save(xows_cli_self.bare, nick, avat, stat);
+    xows_cach_peer_save(xows_cli_self.bare, nick, avat, stat, null);
     
     if(nick) xows_cli_self.name = nick;
     if(avat) xows_cli_self.avat = avat;
@@ -497,7 +497,7 @@ function xows_cli_peer_update(jid, nick, avat, stat)
     
     // We do not cache occupant unless available avatar data
     if(avat || peer.type === XOWS_PEER_CONT)
-      xows_cach_peer_save(jid, nick, avat, stat);
+      xows_cach_peer_save(jid, nick, avat, stat, null);
     
     if(peer.type === XOWS_PEER_CONT) {
       if(nick) peer.name = nick;
@@ -1539,7 +1539,7 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
   }
   
   // Save current peer status to local storage
-  xows_cach_peer_save(cont.bare, null, null, cont.stat);
+  xows_cach_peer_save(cont.bare, null, null, cont.stat, null);
   
   // Forward updated Contact
   xows_cli_fw_oncontpush(cont);
@@ -1660,7 +1660,7 @@ function xows_cli_xmp_onoccupant(from, show, stat, muc, photo)
   }
   
   // Cache Occupant as peer
-  xows_cach_peer_save(from, occu.name, occu.avat, null);
+  xows_cach_peer_save(from, occu.name, occu.avat, null, null);
   
   // Forward added or updated Room Occupant
   xows_cli_fw_onoccupush(room, occu, muc.code);
@@ -2762,7 +2762,7 @@ function xows_cli_change_status(stat)
   xows_cli_self.stat = stat;
   
   // Save current status to local storage
-  xows_cach_peer_save(xows_cli_self.bare, null, null, stat);
+  xows_cach_peer_save(xows_cli_self.bare, null, null, stat, null);
   
   // Send presence only if there will be no wakeup
   if(xows_cli_self.show === xows_cli_chosen_show) {

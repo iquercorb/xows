@@ -242,12 +242,13 @@ function xows_gui_peer_doc_init(peer)
     chat_addr.innerText = "("+peer.bare+")";
     chat_book.classList.add("HIDDEN");
   }
-  
-  
 
   // set chat editor placeholder
   const edit_mesg = xows_doc_frag_element_find(peer.bare,"chat_panl","edit_mesg");
   edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
+  
+  // set notification button
+  xows_gui_chat_noti_update(peer);
 }
 
 /**
@@ -632,43 +633,9 @@ function xows_gui_wnd_onunload(event)
  * -------------------------------------------------------------------*/
 
 /**
- * Store browser Notification authorization
- */
-let xows_gui_notify_permi = 0;
-
-/**
  * Store awaiting notification untile permission
  */
 let xows_gui_notify_await = null;
-
-/**
- * Enable or disable notifications for current Peer
- * 
- * @param   {object}    peer    Peer object.
- * @param   {boolean}   allow   Allow or mute notification.
- */
-function xows_gui_notify_allow(peer, allow)
-{
-  const chat_noti = xows_gui_peer_doc(peer,"chat_noti");
-  
-  // Set notification for this Peer
-  peer.noti = allow;
-  
-  // Change chat action button title
-  if(allow) {
-    chat_noti.title = xows_l10n_get("Disable notifications");
-    // Set user permission
-    xows_gui_notify_permi = "granted";
-  } else {
-    chat_noti.title = xows_l10n_get("Enable notifications");
-    // Reset user permission
-    xows_gui_notify_permi = 0;
-  }
-  
-  // Toggle chat action button class
-  xows_doc_cls_set("chat_noti", "CHAT-MUTE", allow);
-  xows_doc_cls_set("chat_noti", "CHAT-NOTI", !allow);
-}
 
 /**
  * Handle received notification permission from user
@@ -677,20 +644,18 @@ function xows_gui_notify_allow(peer, allow)
  */
 function xows_gui_notify_query_handle(permit)
 {
-  if(!xows_gui_peer)
-    return;
-  
-  // Store user permission reponse
-  xows_gui_notify_permi = permit;
-  
+  // update notify button for all opened peers
+  let peer;
+  for(const bare in xows_doc_frag_db) {
+    peer = xows_cli_peer_get(bare);
+    if(peer) xows_gui_chat_noti_update(peer); //< update notify button
+  }
+
   // If user allowed notifications, then enable
   if(permit === "granted") {
-    
-    xows_gui_notify_allow(true);
-    
     // Send an reset awaiting notification
     if(xows_gui_notify_await) {
-      xows_gui_notify_push(xows_gui_notify_await.title, xows_gui_notify_await.body, xows_gui_notify_await.avat);
+      xows_gui_notify_push(xows_gui_notify_await.peer, xows_gui_notify_await.body);
       xows_gui_notify_await = null;
     }
   }
@@ -701,25 +666,34 @@ function xows_gui_notify_query_handle(permit)
  */
 function xows_gui_notify_query()
 {
-  if(!xows_gui_peer)
-    return;
-  
-  // Reset notification permission
-  xows_gui_notify_permi = 0;
   // Request permission to user
-  Notification.requestPermission().then(xows_gui_notify_query_handle);
+  if(Notification.permission !== "granted") 
+    Notification.requestPermission().then(xows_gui_notify_query_handle);
+}
+
+/**
+ * Test current notification permission status
+ * 
+ * @param   {string}    status  Permission status string to test.
+ * 
+ * @return  {boolean}   True if permission status matches, false otherwise.
+ */
+function xows_gui_notify_permi(status)
+{
+  return (Notification.permission === status);
 }
   
 /**
  * Pop a new browser Notification
  * 
- * @param {string}  title   Notification title (peer name)
- * @param {string}  body    Notification body (message body)
- * @param {string}  avat    Optional Avatar hash
+ * @param {object}  peer    Peer object.
+ * @param {string}  body    Notification body (message body).
  */
-function xows_gui_notify_push(title, body, avat)
+function xows_gui_notify_push(peer, body)
 {
-  switch(xows_gui_notify_permi)
+  xows_log(1,"gui_notify_push", peer.name, Notification.permission);
+
+  switch(Notification.permission)
   {
   case "denied":
     return;
@@ -727,9 +701,9 @@ function xows_gui_notify_push(title, body, avat)
   case "granted":
     {
       // Retrieve the cached, actual or temporary, avatar dataUrl
-      const icon = xows_cach_avat_get(avat);
+      const icon = xows_cach_avat_get(peer.avat);
       // Push new notification
-      const notif = new Notification(title,{"body":body,"icon":(icon?icon:("/"+xows_options.root+"/icon.svg"))});
+      const notif = new Notification(peer.name,{"body":body,"icon":(icon?icon:("/"+xows_options.root+"/icon.svg"))});
       // Sound is slower than light...
       xows_gui_notify_sound.play();
     }
@@ -737,7 +711,7 @@ function xows_gui_notify_push(title, body, avat)
     
   default:
     // Hold pending notification to be sent after permission
-    xows_gui_notify_await = {"title":title,"body":body,"avat":avat};
+    xows_gui_notify_await = {"peer":peer,"body":body};
     // Request user permission for notifications
     xows_gui_notify_query();
     break;
@@ -946,53 +920,6 @@ function xows_gui_main_open()
 
   // Add navigation history
   xows_gui_nav_push("main_open", xows_gui_main_open);
-}
-
-
-/**
- * Enable or disable UI elements according Room role and affiliation
- * 
- * @param   {object}    room    Room object.
- */
-function xows_gui_room_privi_update(room)
-{
-  /*
-   * Privilege                  None      Visitor   Participant  Moderator
-   * ---------------------------------------------------------------------
-   * Present in Room                        x           x           x
-   * Change Nickname                        x           x           x
-   * Send Private Messages                  x           x           x
-   * Invite Other Users                     x           x           x
-   * Send Messages to All                   +           x           x
-   * Modify Subject                                     x           x
-   * Kick                                                           x
-   * Grant Voice                                                    x
-   * Revoke Voice                                                   x 
-   * 
-   * 
-   * Privilege                Outcast   None    Member    Admin   Owner
-   * ---------------------------------------------------------------------
-   * Ban Members                                            x       x
-   * Edit Member List                                       x       x
-   * Assign / Remove Moderator Role                         !       !
-   * Edit Admin List                                                x
-   * Edit Owner List                                                x
-   * Change Room Configuration                                      x
-   * Destroy Room                                                   x
-   */
-
-  // Setup privilieges
-  const topic = (room.role > XOWS_ROLE_PART);
-  
-  // Room topic edition
-  const chat_meta = xows_gui_peer_doc(room,"chat_meta");
-  chat_meta.classList.toggle("ENABLED", topic);
-  chat_meta.setAttribute("contenteditable", topic);
-  chat_meta.title = topic ? xows_l10n_get("Change Room topic") : "";
-  
-  // Room configuration button
-  let chat_conf = xows_gui_peer_doc(room,"chat_conf");
-  chat_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
 }
 
 /* -------------------------------------------------------------------
@@ -1720,7 +1647,73 @@ function xows_gui_menu_show_onclick(event)
  * Main Screen - Chat Frame
  * 
  * -------------------------------------------------------------------*/
- 
+
+/**
+ * Enable or disable UI elements according Room role and affiliation
+ * 
+ * @param   {object}    room    Room object.
+ */
+function xows_gui_chat_conf_update(room)
+{
+  /*
+   * Privilege                  None      Visitor   Participant  Moderator
+   * ---------------------------------------------------------------------
+   * Present in Room                        x           x           x
+   * Change Nickname                        x           x           x
+   * Send Private Messages                  x           x           x
+   * Invite Other Users                     x           x           x
+   * Send Messages to All                   +           x           x
+   * Modify Subject                                     x           x
+   * Kick                                                           x
+   * Grant Voice                                                    x
+   * Revoke Voice                                                   x 
+   * 
+   * 
+   * Privilege                Outcast   None    Member    Admin   Owner
+   * ---------------------------------------------------------------------
+   * Ban Members                                            x       x
+   * Edit Member List                                       x       x
+   * Assign / Remove Moderator Role                         !       !
+   * Edit Admin List                                                x
+   * Edit Owner List                                                x
+   * Change Room Configuration                                      x
+   * Destroy Room                                                   x
+   */
+
+  // Setup privilieges
+  const topic = (room.role > XOWS_ROLE_PART);
+  
+  // Room topic edition
+  const chat_meta = xows_gui_peer_doc(room,"chat_meta");
+  chat_meta.classList.toggle("ENABLED", topic);
+  chat_meta.setAttribute("contenteditable", topic);
+  chat_meta.title = topic ? xows_l10n_get("Change Room topic") : "";
+  
+  // Room configuration button
+  let chat_conf = xows_gui_peer_doc(room,"chat_conf");
+  chat_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
+}
+
+/**
+ * Set chat notification elements according notification permission
+ * 
+ * @param   {object}    peer    Peer object.
+ */
+function xows_gui_chat_noti_update(peer)
+{
+  const chat_noti = xows_gui_peer_doc(peer,"chat_noti");
+  
+  const notify = (peer.noti && xows_gui_notify_permi("granted"));
+
+  // Set notification mute or enable
+  chat_noti.title = notify ? xows_l10n_get("Disable notifications") : 
+                            xows_l10n_get("Enable notifications");
+
+  // Toggle chat action button class
+  chat_noti.classList.toggle("CHAT-MUTE", notify);
+  chat_noti.classList.toggle("CHAT-NOTI", !notify);
+}
+
 /**
  * Chat header bar informations update.
  * 
@@ -1739,19 +1732,7 @@ function xows_gui_chat_head_update(peer)
   } else {                            //< XOWS_PEER_ROOM
     chat_meta.innerText = peer.subj;
     xows_gui_peer_doc(peer,"chat_book").classList.toggle("HIDDEN",(peer.book || peer.publ));
-    // Update privileges related elements
-    xows_gui_room_privi_update(peer);
   }
-  
-  // Hide or show the proper notification button
-  const chat_noti = xows_gui_peer_doc(peer,"chat_noti");
-  
-  chat_noti.title = chat_noti ? xows_l10n_get("Disable notifications") : 
-                                xows_l10n_get("Enable notifications");
-  
-  // Toggle chat action button class
-  chat_noti.classList.toggle("CHAT-MUTE", chat_noti);
-  chat_noti.classList.toggle("CHAT-NOTI", !chat_noti);
 }
 
  /* -------------------------------------------------------------------
@@ -1780,12 +1761,15 @@ function xows_gui_chat_head_onclick(event)
       break;
     }
     case "chat_noti": {
-      if(event.target.classList.contains("CHAT-MUTE")) {
-        // Disable notifications
-        xows_gui_notify_allow(false);
+      // Set notification for this Peer
+      xows_gui_peer.noti = event.target.classList.contains("CHAT-NOTI");
+      // Save parameter in localstorage
+      xows_cach_peer_save(xows_gui_peer.bare, null, null, null, xows_gui_peer.noti);
+      // Check for browser notification permission
+      if(xows_gui_notify_permi("granted")) {
+        xows_gui_chat_noti_update(xows_gui_peer); //< update notify button
       } else {
-        // Request user permission for notifications
-        xows_gui_notify_query();
+        xows_gui_notify_query(); //< request permission
       }
       break;
     }
@@ -2014,7 +1998,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   
   // Send browser notification popup
   if(!xows_gui_has_focus && !sent && peer.noti) 
-    xows_gui_notify_push(sndr.name, body, sndr.avat);
+    xows_gui_notify_push(sndr, body);
   
   // Check whether end of history is croped, in this cas the new message
   // must not be appended, we will show it by querying archives
@@ -2592,8 +2576,6 @@ function xows_gui_chat_file_onchange(event)
  */
 function xows_gui_cli_onchatstate(peer, from, chat)
 {
-  xows_log(1,"gui_cli_onchatstate",peer.name,chat);
-  
   // get Peer chatstat object
   const chat_stat = xows_gui_peer_doc(peer,"chat_stat");
   
@@ -2608,9 +2590,7 @@ function xows_gui_cli_onchatstate(peer, from, chat)
     
     // Wet writing string
     chat_stat.innerHTML = "<b>"+peer.name+"</b> "+xows_l10n_get("is currently writing");        
-    
-    xows_log(1,"gui_cli_onchatstate",peer.name,chat);
-    
+
   } else {
 
     // Count of writting occupants
@@ -2651,9 +2631,6 @@ function xows_gui_cli_onchatstate(peer, from, chat)
       chat_stat.innerHTML = str + xows_l10n_get("are currently writing");
       
     } else {
-      
-      xows_log(1,"gui_cli_onchatstate",peer.name,peer.writ[0].name);
-      
       chat_stat.innerHTML = "<b>"+peer.writ[0].name+"</b> "+xows_l10n_get("is currently writing");
     }
   }
@@ -2681,14 +2658,10 @@ function xows_gui_cli_onoccupush(room, occu, code)
   if(code && code.includes(110)) { //< Self presence update
     // Code 201 mean initial room config
     xows_gui_page_join_onjoind(room, null, code.includes(201));
+    // Update privileges related GUI elements
+    xows_gui_chat_conf_update(room);
   }
 
-  // Check whether we are this occupant
-  if(occu.self) {
-    // Show or hide GUI elements according privileges
-    xows_gui_room_privi_update(room);
-  }
-  
   // Search for existing occupant <li> element for this Room
   const li = xows_gui_peer_occu_li(room, occu.jid);
   if(li) {
