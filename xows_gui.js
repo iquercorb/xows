@@ -92,11 +92,13 @@ function xows_gui_peer_scroll_save(peer)
 {
   if(!xows_gui_peer_scroll_db[peer.bare]) 
     xows_gui_peer_scroll_db[peer.bare] = {};
-    
+  
+  const chat_main = xows_doc("chat_main");
+  
   xows_gui_peer_scroll_db[peer.bare] = {
-    "scrollTop"  : xows_doc.chat_main.scrollTop,
-    "scrollHeight"  : xows_doc.chat_main.scrollHeight,
-    "clientHeight"  : xows_doc.chat_main.clientHeight
+    "scrollTop"     : chat_main.scrollTop,
+    "scrollHeight"  : chat_main.scrollHeight,
+    "clientHeight"  : chat_main.clientHeight
   };
 }
 
@@ -108,7 +110,7 @@ function xows_gui_peer_scroll_save(peer)
 function xows_gui_peer_scroll_load(peer)
 {
   if(peer.bare in xows_gui_peer_scroll_db) 
-    xows_doc.chat_main.scrollTop = xows_gui_peer_scroll_db[peer.bare].scrollTop;
+    xows_doc("chat_main").scrollTop = xows_gui_peer_scroll_db[peer.bare].scrollTop;
 }
 
 /**
@@ -124,7 +126,7 @@ function xows_gui_peer_scroll_top(peer)
 {
   return (peer !== xows_gui_peer) ? 
           xows_gui_peer_scroll_db[peer.bare].scrollTop :
-          xows_doc.chat_main.scrollTop;
+          xows_doc("chat_main").scrollTop;
 }
 
 /**
@@ -140,7 +142,7 @@ function xows_gui_peer_scroll_bot(peer)
 {
   const obj = (peer !== xows_gui_peer) ?
             xows_gui_peer_scroll_db[peer.bare] :
-            xows_doc.chat_main;
+            xows_doc("chat_main");
   
   return ((obj.scrollHeight - obj.scrollTop) - obj.clientHeight);
 }
@@ -156,9 +158,8 @@ function xows_gui_peer_scroll_bot(peer)
  */
 function xows_gui_peer_scroll_off(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?
-            xows_gui_peer_scroll_db[peer.bare] :
-            xows_doc.chat_main;
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+                                          xows_doc("chat_main");
             
   return (obj.scrollHeight - obj.scrollTop);  
 }
@@ -174,9 +175,8 @@ function xows_gui_peer_scroll_off(peer)
  */
 function xows_gui_peer_scroll_down(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?
-            xows_gui_peer_scroll_db[peer.bare] :
-            xows_doc.chat_main;
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+                                          xows_doc("chat_main");
 
   obj.scrollTop = obj.scrollHeight;
 }
@@ -193,9 +193,8 @@ function xows_gui_peer_scroll_down(peer)
  */
 function xows_gui_peer_scroll_seek(peer, offset)
 {
-  const obj = (peer !== xows_gui_peer) ?
-            xows_gui_peer_scroll_db[peer.bare] :
-            xows_doc.chat_main;
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+                                          xows_doc("chat_main");
 
   obj.scrollTop = obj.scrollHeight - offset;
 }
@@ -298,8 +297,11 @@ function xows_gui_peer_doc_import(peer)
  */
 function xows_gui_peer_doc(peer, id)
 {
-  return (peer === xows_gui_peer) ? document.getElementById(id) : 
-                                    xows_doc_frag_find(peer.bare,id);
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id);
+  } else {
+    return xows_doc_frag_find(peer.bare,id);
+  }
 }
 
 /**
@@ -447,17 +449,17 @@ function xows_gui_cli_onconnect(user)
   // Reset the Roster and Chat window
   xows_gui_peer = null;
   // Setup the lazy loader
-  xows_doc_loader_setup(xows_doc.chat_main, "lazy_src");
+  xows_doc_loader_setup(xows_doc("chat_main"), "lazy_src");
   // Check whether file Upload is available
   if(xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
-    xows_doc.edit_upld.disabled = false;
+    xows_doc("edit_upld").disabled = false;
     // Add embeded download matching http upload service domain
     xows_tpl_embed_add_upld(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD]);
   }
   // Check whether MUC service is available
   if(xows_cli_svc_exist(XOWS_NS_MUC)) {
-    xows_doc.tab_room.disabled = false;
-    //xows_doc.tab_book.disabled = false; /* alternative Bookmarks implementation */
+    xows_doc("tab_room").disabled = false;
+    //xows_doc("tab_book").disabled = false; /* alternative Bookmarks implementation */
   }
   
   // Set the presence menu for current user
@@ -746,7 +748,7 @@ function xows_gui_reset()
   
   // Reset chat editor
   xows_doc_cls_add("edit_mesg", "PLACEHOLD");
-  xows_doc.edit_mesg.innerText = "";
+  xows_doc("edit_mesg").innerText = "";
 
   // clean roster lists
   xows_doc_list_clean("subs_ul");
@@ -756,17 +758,17 @@ function xows_gui_reset()
   xows_doc_list_clean("priv_ul");
   
   // clean user frame
-  xows_doc.user_show.setAttribute("show",XOWS_SHOW_OFF);
-  xows_doc.user_name.innerText = "";
-  xows_doc.user_addr.innerText = "";
-  xows_doc.user_stat.value = "";
-  xows_doc.user_avat.className = "";
+  xows_doc("user_show").setAttribute("show",XOWS_SHOW_OFF);
+  xows_doc("user_name").innerText = "";
+  xows_doc("user_addr").innerText = "";
+  xows_doc("user_stat").value = "";
+  xows_doc("user_avat").className = "";
   
   // Reset roster tabs
   xows_gui_rost_switch("tab_cont");
-  xows_doc.room_unrd.innerText = "";
+  xows_doc("room_unrd").innerText = "";
   xows_doc_hide("room_unrd");
-  xows_doc.cont_unrd.innerText = "";
+  xows_doc("cont_unrd").innerText = "";
   xows_doc_hide("cont_unrd");
   
   // Reset columns setup
@@ -845,18 +847,17 @@ function xows_gui_switch_peer(jid)
     xows_doc_cls_set("main_colr", "COL-HIDE", (next.type !== XOWS_PEER_ROOM));
     // Set the current contact
     xows_gui_peer = next;
-    if(next.type === XOWS_PEER_ROOM) {
-      // Join the room if required
+    // Join the room if required
+    if(next.type === XOWS_PEER_ROOM) 
       if(!next.join) xows_cli_room_join(next);
-    }
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
     // Reset the lazy loader and force update
     xows_doc_loader_clear();
-    xows_doc_loader_monitor(xows_doc.chat_main);
+    xows_doc_loader_monitor(xows_doc("chat_main"));
     xows_doc_loader_check(true);
     // Check whether we should query some archived messages for this contact
-    if(xows_doc.hist_ul.childNodes.length < 40) 
+    if(xows_doc("hist_ul").childNodes.length < 40) 
       xows_gui_mam_query(false, 40, 0);
     // If scroll is almost bottom, force it to bottom, because the 
     // browser seem to add some offset dans I don't want to spend houres
@@ -1161,16 +1162,16 @@ function xows_gui_rost_switch(id)
   
   if(tab_room && !xows_doc_cls_has("tab_room","ENABLED")) {
     toggle = true;
-    xows_doc.rost_titl.innerText = xows_l10n_get("Chatrooms");
-    list = xows_doc.room_list;
+    xows_doc("rost_titl").innerText = xows_l10n_get("Chatrooms");
+    list = xows_doc("room_list");
   }
   
   const tab_cont = id === "tab_cont";
   
   if(tab_cont && !xows_doc_cls_has("tab_cont","ENABLED")) {
     toggle = true;
-    xows_doc.rost_titl.innerText = xows_l10n_get("Contacts");
-    list = xows_doc.cont_list;
+    xows_doc("rost_titl").innerText = xows_l10n_get("Contacts");
+    list = xows_doc("cont_list");
   }
 
   // If nothing changed, return now
@@ -1268,9 +1269,7 @@ function xows_gui_rost_list_onclick(event)
 function xows_gui_unread_add(peer, id)
 {
   // Select proper element depending peer type
-  const bt_spot = (peer.type === XOWS_PEER_ROOM) ? 
-                              xows_doc.room_unrd : 
-                              xows_doc.cont_unrd;
+  const bt_spot = (peer.type === XOWS_PEER_ROOM)?xows_doc("room_unrd"):xows_doc("cont_unrd");
   
   // Add the unread for the roster tab
   let n = parseInt(bt_spot.innerText) || 0;
@@ -1300,9 +1299,7 @@ function xows_gui_unread_add(peer, id)
 function xows_gui_unread_reset(peer)
 {
   // Select proper element depending peer type
-  const bt_spot = (peer.type === XOWS_PEER_ROOM) ? 
-                              xows_doc.room_unrd : 
-                              xows_doc.cont_unrd;
+  const bt_spot = (peer.type === XOWS_PEER_ROOM)?xows_doc("room_unrd"):xows_doc("cont_unrd");
   
   // Store current tab total unread
   //let n = bt_spot.firstChild ? parseInt(bt_spot.innerText) : 0;
@@ -1339,7 +1336,7 @@ function xows_gui_cont_list_reload()
 {
   xows_gui_switch_peer(null);
   // Empty the list
-  xows_doc.cont_ul.innerText = "";
+  xows_doc("cont_ul").innerText = "";
   // Add loading spinner at top of list
   xows_doc_cls_add("cont_list", "LOADING");
   // Query for roster content
@@ -1360,6 +1357,8 @@ function xows_gui_cli_oncontpush(cont)
     return;
   }
 
+  const cont_ul = xows_doc("cont_ul");
+
   // Search for existing contact <li> element
   const li = document.getElementById(cont.bare);
   if(li) {
@@ -1369,9 +1368,9 @@ function xows_gui_cli_oncontpush(cont)
     xows_gui_chat_head_update(cont);
   } else {
     // Remove the potential loading spinner
-    xows_doc_cls_rem("cont_ul", "LOADING");
+    cont_ul.classList.remove("LOADING");
     // Append new instance of contact <li> from template to roster <ul>
-    xows_doc.cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat,
+    cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat,
                                              cont.subs, cont.show, cont.stat));
                                              
     // Create new Peer offscreen elements with initial state
@@ -1380,7 +1379,7 @@ function xows_gui_cli_oncontpush(cont)
   }
   
   // Show or hide list depending content
-  xows_doc_hidden_set("cont_ul", (xows_doc.cont_ul.childNodes.length < 2));
+  cont_ul.classList.toggle("HIDDEN",(cont_ul.childNodes.length<2));
 }
 
 /**
@@ -1390,6 +1389,8 @@ function xows_gui_cli_oncontpush(cont)
  */
 function xows_gui_cli_oncontrem(bare)
 {
+  const cont_ul = xows_doc("cont_ul");
+  
   // Remove <li> element
   const li = document.getElementById(bare);
   if(li) {
@@ -1406,7 +1407,7 @@ function xows_gui_cli_oncontrem(bare)
   }
   
   // Show or hide list depending content
-  xows_doc_hidden_set("cont_ul", (xows_doc.cont_ul.childNodes.length < 2));
+  cont_ul.classList.toggle("HIDDEN",(cont_ul.childNodes.length<2));
 }
 
 /* -------------------------------------------------------------------
@@ -1429,18 +1430,21 @@ function xows_gui_cli_onsubspush(bare, nick)
   // Ensure subscribe <li> does not already exists
   if(document.getElementById(bare))
     return;
+ 
+  const subs_ul = xows_doc("subs_ul");
+  const subs_unrd = xows_doc("subs_unrd");
   
   // Create a new subcription <li> element from template
-  xows_doc.subs_ul.appendChild(xows_tpl_spawn_rost_subs(bare, nick));
+  subs_ul.appendChild(xows_tpl_spawn_rost_subs(bare, nick));
   
-  const n = xows_doc.subs_ul.childNodes.length - 1;
+  const n = subs_ul.childNodes.length - 1;
   
   // Enable or update notification spot
-  xows_doc.subs_unrd.innerText = n;
-  xows_doc_show("subs_unrd");
+  subs_unrd.innerText = n;
+  subs_unrd.classList.remove("HIDDEN");
   
   // Show or hide list depending content
-  xows_doc_hidden_set("subs_ul", (n < 1));
+  subs_ul.classList.toggle("HIDDEN", (n < 1));
 }
 
 /**
@@ -1455,19 +1459,22 @@ function xows_gui_cli_onsubsrem(bare)
 {
   // Remove <li> element
   xows_gui_rost_li_remove(bare);
-
-  const n = xows_doc.subs_ul.childNodes.length - 1;
+  
+  const subs_ul = xows_doc("subs_ul");
+  const subs_unrd = xows_doc("subs_unrd");
+  
+  const n = subs_ul.childNodes.length - 1;
   
   // Update or disable the notification spot
   if(n) {
-    xows_doc.subs_unrd.innerText = n;
+    subs_unrd.innerText = n;
   } else {
-    xows_doc.subs_unrd.innerText = "";
-    xows_doc_hide("subs_unrd");
+    subs_unrd.innerText = "";
+    subs_unrd.classList.remove("HIDDEN");
   }
   
   // Show or hide list depending content
-  xows_doc_hidden_set("subs_ul", (n < 1));
+  subs_ul.classList.toggle("HIDDEN", (n < 1));
 }
 
 /* -------------------------------------------------------------------
@@ -1524,7 +1531,7 @@ function xows_gui_cli_onroompush(room)
   }
   
   // Select destination and source <ul>
-  const dest_ul = (room.publ) ? xows_doc.room_ul : (room.book) ? xows_doc.book_ul : xows_doc.priv_ul;
+  const dest_ul = (room.publ) ? xows_doc("room_ul") : (room.book) ? xows_doc("book_ul") : xows_doc("priv_ul");
   
   const li = document.getElementById(room.bare);
   if(li) {
@@ -1544,9 +1551,9 @@ function xows_gui_cli_onroompush(room)
   }
   
   // Show or hide lists depending content
-  xows_doc_hidden_set("book_ul", (xows_doc.book_ul.childNodes.length < 2));
-  xows_doc_hidden_set("room_ul", (xows_doc.room_ul.childNodes.length < 2));
-  xows_doc_hidden_set("priv_ul", (xows_doc.priv_ul.childNodes.length < 2));
+  xows_doc_hidden_set("book_ul", (xows_doc("book_ul").childNodes.length < 2));
+  xows_doc_hidden_set("room_ul", (xows_doc("room_ul").childNodes.length < 2));
+  xows_doc_hidden_set("priv_ul", (xows_doc("priv_ul").childNodes.length < 2));
 }
 
 /**
@@ -1572,9 +1579,9 @@ function xows_gui_cli_onroomrem(bare)
   }
   
   // Show or hide lists depending content
-  xows_doc_hidden_set("book_ul", (xows_doc.book_ul.childNodes.length < 2));
-  xows_doc_hidden_set("room_ul", (xows_doc.room_ul.childNodes.length < 2));
-  xows_doc_hidden_set("priv_ul", (xows_doc.priv_ul.childNodes.length < 2));
+  xows_doc_hidden_set("book_ul", (xows_doc("book_ul").childNodes.length < 2));
+  xows_doc_hidden_set("room_ul", (xows_doc("room_ul").childNodes.length < 2));
+  xows_doc_hidden_set("priv_ul", (xows_doc("priv_ul").childNodes.length < 2));
 }
 
 /* -------------------------------------------------------------------
@@ -1595,14 +1602,14 @@ function xows_gui_cli_onroomrem(bare)
 function xows_gui_cli_onselfchange(user)
 {
   // Compose status string
-  xows_doc.user_stat.value = user.stat ? user.stat : "";
+  xows_doc("user_stat").value = user.stat ? user.stat : "";
   // Change Show Status displays
-  xows_doc.user_show.setAttribute("show", user.show);
-  xows_doc.user_name.innerText = user.name;
-  xows_doc.user_addr.innerText = "("+user.bare+")";
+  xows_doc("user_show").setAttribute("show", user.show);
+  xows_doc("user_name").innerText = user.name;
+  xows_doc("user_addr").innerText = "("+user.bare+")";
   // Update avatar
   xows_tpl_spawn_avat_cls(user.avat); //< Add avatar CSS class 
-  xows_doc.user_avat.className = "h-"+user.avat;
+  xows_doc("user_avat").className = "h-"+user.avat;
 }
 
 /**
@@ -1622,8 +1629,8 @@ function xows_gui_menu_show_onclick(event)
       xows_cli_change_presence(show);
     } else {
       // Reset login page
-      xows_doc.auth_user.value = "";
-      xows_doc.auth_pass.value = "";
+      xows_doc("auth_user").value = "";
+      xows_doc("auth_pass").value = "";
       
       // Disable credentials (request again for login)
       if(navigator.credentials) 
@@ -1637,7 +1644,7 @@ function xows_gui_menu_show_onclick(event)
   }
   
   // Toggle menu drop and focus button
-  xows_doc_menu_toggle(xows_doc.menu_show, "drop_show");
+  xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show");
   
   xows_cli_activity_wakeup(); //< Wakeup presence
 }
@@ -1856,21 +1863,21 @@ function xows_gui_cli_onsubject(peer, subj)
 function xows_gui_chat_main_onscroll(event)
 { 
   // Shortcut to chat history <div>
-  const dv = xows_doc.chat_main;
+  const chat_main = xows_doc("chat_main");
   
   // Switch from full to empty chat frame can generate a scroll equal 
   // to 0, the following condition prevent unwanted query triggering.
-  if(dv.scrollHeight === dv.clientHeight) 
+  if(chat_main.scrollHeight === chat_main.clientHeight) 
     return;
 
   // Check whether the scroll is a top of frame
-  if(dv.scrollTop < 20) {
+  if(chat_main.scrollTop < 20) {
     // Query archive for current chat contact
     xows_gui_mam_query(false);
   }
   
   // Check whether the scroll is at bottom of frame
-  if(((dv.scrollHeight - dv.scrollTop) - dv.clientHeight) < 20) {
+  if(((chat_main.scrollHeight - chat_main.scrollTop) - chat_main.clientHeight) < 20) {
     // Hide the "new messages" warning if displayed
     xows_doc_hide("hist_new");
     // Check whether we have cropped history
@@ -1895,15 +1902,15 @@ function xows_gui_chat_main_onclick(event)
     if(xows_doc_hidden("hist_end")) {
       
       // Scroll chat history to bottom
-      xows_doc.chat_main.scrollTop = xows_doc.chat_main.scrollHeight;
+      xows_doc("chat_main").scrollTop = xows_doc("chat_main").scrollHeight;
       
     } else {
       // Last message is beyond the current history "window", 
       // we must query last archived messages
       
       // Reset the chat history to initial stat
-      xows_doc.hist_ul.innerText = "";
-      xows_doc.hist_beg.innerText = "";
+      xows_doc("hist_ul").innerText = "";
+      xows_doc("hist_beg").innerText = "";
       xows_doc_hide("hist_end");
       
       // Query for the last archives, with no delay
@@ -2092,31 +2099,40 @@ function xows_gui_mam_query(after, max = 20, delay = 100)
 {
   if(!xows_gui_mam_query_to) { //< One poll at a time...
     
+    const hist_end = xows_doc("hist_end");
+    const hist_ul = xows_doc("hist_ul");
+    const hist_beg = xows_doc("hist_beg");
+    
     let start, end;
+    
     // Get start or end time depending after parameter, we get time
     // always 25 MS after or before to prevent received the last or
     // first message already in history.
     if(after) {
+      
       // Check whether we already got the latest message
-      if(xows_doc_hidden("hist_end"))
+      if(hist_end.classList.contains("HIDDEN"))
         return;
-      if(xows_doc.hist_ul.childNodes.length) 
-        start = parseInt(xows_doc.hist_ul.lastChild.getAttribute("time"));
-      xows_doc_cls_add("hist_end", "LOADING");
+        
+      if(hist_ul.childNodes.length) 
+        start = parseInt(hist_ul.lastChild.getAttribute("time"));
+        
+      hist_end.classList.add("LOADING");
+      
     } else {
+      
       // Check whether we already reached the first archived message
-      if(xows_doc.hist_beg.innerText.length)
+      if(hist_beg.innerText.length)
         return;
-      if(xows_doc.hist_ul.childNodes.length) 
-        end = parseInt(xows_doc.hist_ul.firstChild.getAttribute("time"));
-      xows_doc_cls_add("hist_beg", "LOADING");
+        
+      if(hist_ul.childNodes.length) 
+        end = parseInt(hist_ul.firstChild.getAttribute("time"));
+        
+      hist_beg.classList.add("LOADING");
     }
     // To prevent flood and increase ergonomy the archive query is
     // temporised with a fake loading time.
-    xows_gui_mam_query_to = setTimeout(xows_cli_mam_query,
-                                            delay, xows_gui_peer, 
-                                            max, start, end, 
-                                            xows_gui_mam_parse);
+    xows_gui_mam_query_to = setTimeout(xows_cli_mam_query, delay, xows_gui_peer, max, start, end, xows_gui_mam_parse);
   }
 }
 
@@ -2377,16 +2393,17 @@ function xows_gui_chat_panl_onclick(event)
     }
     
     case "edit_upld": {
+      const chat_file = xows_doc("chat_file");
       // Reset file input
-      xows_doc.chat_file.value = "";
+      chat_file.value = "";
       // Open the file selector (emulate click)
-      xows_doc.chat_file.click();
+      chat_file.click();
       break;
     }
     
     case "edit_emoj": {
       // Toggle menu drop and focus button
-      xows_doc_menu_toggle(xows_doc.edit_emoj, "drop_emoj");
+      xows_doc_menu_toggle(xows_doc("edit_emoj"), "drop_emoj");
       break;
     }
   }
@@ -2473,7 +2490,7 @@ function xows_gui_drop_emoj_onclick(event)
 function xows_gui_upld_onprogress(percent) 
 {
   // Update progress bar
-  xows_doc.upld_pbar.style.width = percent + "%";
+  xows_doc("upld_pbar").style.width = percent + "%";
 }
 
 /**
@@ -2485,7 +2502,7 @@ function xows_gui_upld_onerror(mesg)
 {
   // Set the upload dialog message
   xows_doc_cls_add("upld_text","TEXT-ERR");
-  xows_doc.upld_text.innerHTML = "<b>"+xows_l10n_get("Error")+"</b> : "+mesg;
+  xows_doc("upld_text").innerHTML = "<b>"+xows_l10n_get("Error")+"</b> : "+mesg;
 }
 
 /**
@@ -2526,12 +2543,14 @@ function xows_gui_upld_onclose()
  */
 function xows_gui_upld_open(file)
 {
+  const upld_text = xows_doc("upld_text");
+  
   // Reset elements to initial state
-  xows_doc.upld_text.classList = "";
-  xows_doc.upld_pbar.style.width = "0%";
+  upld_text.classList = "";
+  xows_doc("upld_pbar").style.width = "0%";
 
   // Set uploading file name
-  xows_doc.upld_text.innerText = file.name;
+  upld_text.innerText = file.name;
   
   console.log(file.name);
 
@@ -2553,7 +2572,7 @@ function xows_gui_upld_open(file)
  */
 function xows_gui_chat_file_onchange(event)
 {
-  const file = xows_doc.chat_file.files[0];
+  const file = xows_doc("chat_file").files[0];
   
   // Check whether any peer is selected and file object is valid
   if(xows_gui_peer.bare && file) 
@@ -2708,7 +2727,7 @@ function xows_gui_cli_onoccurem(room, jid)
     // Check whether current peer is the room
     if(room === xows_gui_peer) {
       xows_gui_switch_peer(null); //< Unselect peer
-      const li = xows_doc.room_list.querySelector(".SELECTED");
+      const li = xows_doc("room_list").querySelector(".SELECTED");
       if(li) li.classList.remove("SELECTED");
     }
   }
@@ -2769,7 +2788,7 @@ function xows_gui_user_stat_onblur(event)
   xows_cli_activity_wakeup(); //< Wakeup presence
   
   // Get and reset value
-  const stat = xows_doc.user_stat.value;
+  const stat = xows_doc("user_stat").value;
   
   // If changed, inform of the new status
   if(stat != xows_cli_self.stat) 
@@ -2785,7 +2804,7 @@ function xows_gui_user_stat_onkeyp(event)
 {
   if(event.keyCode === 13)  //< Return key 
     // Unfocus input, this will throw blur event
-    xows_doc.user_stat.blur();
+    xows_doc("user_stat").blur();
 }
 
 /* -------------------------------------------------------------------
@@ -2807,7 +2826,7 @@ function xows_gui_user_stat_onkeyp(event)
 function xows_gui_page_wait_open(text)
 {
   // Set wait message
-  xows_doc.wait_text.innerText = xows_l10n_get(text);
+  xows_doc("wait_text").innerText = xows_l10n_get(text);
   
   // Open wait page
   xows_doc_page_open("page_wait");
@@ -2828,10 +2847,10 @@ function xows_gui_page_auth_oninput(target)
 {
   let disable = true;
   
-  if(xows_doc.auth_user.value.length && xows_doc.auth_pass.value.length)
+  if(xows_doc("auth_user").value.length && xows_doc("auth_pass").value.length)
     disable = false;
   
-  xows_doc.auth_cnct.disabled = disable;
+  xows_doc("auth_cnct").disabled = disable;
 }
 
 /**
@@ -2843,19 +2862,19 @@ function xows_gui_page_auth_onclick(target)
 {
   if(target.id === "auth_cnct") { //< Submit button
     
-    if(!xows_doc.auth_cnct.disabled) {
+    if(!xows_doc("auth_cnct").disabled) {
       
       // Display wait screen
       xows_gui_page_wait_open("Connecting...");
       
       // Get login parameters from DOM
       xows_gui_auth = {};
-      xows_gui_auth.user = xows_doc.auth_user.value.toLowerCase();
-      xows_gui_auth.pass = xows_doc.auth_pass.value;
-      xows_gui_auth.cred = xows_doc.auth_cred.checked;
+      xows_gui_auth.user = xows_doc("auth_user").value.toLowerCase();
+      xows_gui_auth.pass = xows_doc("auth_pass").value;
+      xows_gui_auth.cred = xows_doc("auth_cred").checked;
       
       // erase password from intput
-      xows_doc.auth_pass.value = "";
+      xows_doc("auth_pass").value = "";
       
       // Try connection
       xows_gui_connect(false);
@@ -2874,11 +2893,11 @@ function xows_gui_page_auth_onclick(target)
 function xows_gui_page_auth_open()
 {  
   // Reset inputs
-  xows_doc.auth_user.value = "";
-  xows_doc.auth_pass.value = "";
+  xows_doc("auth_user").value = "";
+  xows_doc("auth_pass").value = "";
   
   // Disable connect button
-  xows_doc.auth_cnct.disabled = true;
+  xows_doc("auth_cnct").disabled = true;
   
   // Open dialog page
   xows_doc_page_open("page_auth",false,null,xows_gui_page_auth_oninput,
@@ -2903,11 +2922,11 @@ function xows_gui_page_regi_oninput(target)
 {
   let disable = true;
 
-  if(xows_doc.regi_user.value.length && xows_doc.regi_pass.value.length)
+  if(xows_doc("regi_user").value.length && xows_doc("regi_pass").value.length)
     if(xows_doc_cls_has("regi_capt", "CAPTCHA-CHECKED")) 
       disable = false;
   
-  xows_doc.regi_subm.disabled = disable;
+  xows_doc("regi_subm").disabled = disable;
 }
 
 /**
@@ -2930,18 +2949,18 @@ function xows_gui_page_regi_onclick(target)
   
   if(target.id === "regi_subm") { //< Submit button
     
-    if(!xows_doc.regi_subm.disabled) {
+    if(!xows_doc("regi_subm").disabled) {
       
       // Display wait screen
       xows_gui_page_wait_open("Please wait...");
       
       // Get login parameters from DOM
       xows_gui_auth = {};
-      xows_gui_auth.user = xows_doc.regi_user.value.toLowerCase();
-      xows_gui_auth.pass = xows_doc.regi_pass.value;
+      xows_gui_auth.user = xows_doc("regi_user").value.toLowerCase();
+      xows_gui_auth.pass = xows_doc("regi_pass").value;
       
       // erase password from intput
-      xows_doc.regi_pass.value = "";
+      xows_doc("regi_pass").value = "";
       
       // Try register
       xows_gui_connect(true);
@@ -2960,11 +2979,11 @@ function xows_gui_page_regi_onclick(target)
 function xows_gui_page_regi_open()
 {
   // Reset inputs
-  xows_doc.regi_user.value = "";
-  xows_doc.regi_pass.value = "";
+  xows_doc("regi_user").value = "";
+  xows_doc("regi_pass").value = "";
   
   // Disable submit button
-  xows_doc.regi_subm.disabled = true;
+  xows_doc("regi_subm").disabled = true;
   
   // uncheck captcha
   xows_doc_cls_rem("regi_capt", "CAPTCHA-CHECKED"); 
@@ -2988,15 +3007,15 @@ function xows_gui_page_regi_open()
 function xows_gui_page_user_onabort()
 {
   // Reset inputs values
-  //xows_doc.card_addr.value = xows_cli_self.bare;
-  xows_doc.card_name.value = xows_cli_self.name;
+  //xows_doc("card_addr").value = xows_cli_self.bare;
+  xows_doc("card_name").value = xows_cli_self.name;
 
   // Get temps or cached avatar
   const data = xows_cach_avat_get(xows_cli_self.avat);
-  xows_doc.card_avat.style.backgroundImage = "url(\""+data+"\")";
-  xows_doc.card_avat.data = data; //< had-oc property
+  xows_doc("card_avat").style.backgroundImage = "url(\""+data+"\")";
+  xows_doc("card_avat").data = data; //< had-oc property
   
-  xows_doc.card_open.checked = true;
+  xows_doc("card_open").checked = true;
 }
 
 /**
@@ -3005,9 +3024,9 @@ function xows_gui_page_user_onabort()
 function xows_gui_page_user_onvalid()
 {
   // Update user profile
-  xows_cli_change_profile(  xows_doc.card_name.value, 
-                            xows_doc.card_avat.data, 
-                            xows_doc.card_open.checked);
+  xows_cli_change_profile(  xows_doc("card_name").value, 
+                            xows_doc("card_avat").data, 
+                            xows_doc("card_open").checked);
 }
 
 /**
@@ -3022,9 +3041,9 @@ function xows_gui_page_user_oninput(target)
   switch(target.id) 
   {
   case "card_open": //< Checkbox for Data in open access
-    changed = !xows_doc.card_open.checked; break;
+    changed = !xows_doc("card_open").checked; break;
   case "card_name": //< Nickname input text field
-    changed = (xows_doc.card_name.value != xows_cli_self.name);
+    changed = (xows_doc("card_name").value != xows_cli_self.name);
   }
   
   // Open Message Box dialog
@@ -3042,23 +3061,24 @@ function xows_gui_page_user_onclick(target)
   if(target.id === "card_avch") { //< Change avatar
     
     // Emulate click on file input
-    xows_doc.card_file.click(); 
+    xows_doc("card_file").click(); 
     
     return; 
   }
     
   if(target.id === "card_avrm") { //< Remove avatar
   
+    const card_avat = xows_doc("card_avat");
+    
     // set null avatar data
-    xows_doc.card_avat.data = null;
+    card_avat.data = null;
     
     // Generate default temp avatar
     const hash = xows_cli_avat_temp(xows_cli_self.bare);
-    xows_doc.card_avat.style.backgroundImage = "url(\""+xows_cach_avat_get(hash)+"\")";
+    card_avat.style.backgroundImage = "url(\""+xows_cach_avat_get(hash)+"\")";
   
     // Open Message box dialog
-    xows_doc_mbox_open_for_save(  xows_gui_page_user_onvalid,
-                                  xows_gui_page_user_onabort);
+    xows_doc_mbox_open_for_save(xows_gui_page_user_onvalid, xows_gui_page_user_onabort);
   }
 }
 
@@ -3069,7 +3089,9 @@ function xows_gui_page_user_onclick(target)
  */
 function xows_gui_page_user_ev_file(event)
 {
-  if(xows_doc.card_file.files[0]) {
+  const card_file = xows_doc("card_file");
+  
+  if(card_file.files[0]) {
     // Create file reader to read image data
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -3079,17 +3101,17 @@ function xows_gui_page_user_ev_file(event)
       image.onload = function(e) {
         // Set avatar data on background
         const url = xows_gen_avatar(XOWS_AVAT_SIZE, this);
-        xows_doc.card_avat.data = url;
-        xows_doc.card_avat.style.backgroundImage = "url(\""+url+"\")";
+        const card_avat = xows_doc("card_avat");
+        card_avat.data = url;
+        card_avat.style.backgroundImage = "url(\""+url+"\")";
         // Open Message Box dialog
-        xows_doc_mbox_open_for_save(  xows_gui_page_user_onvalid,
-                                      xows_gui_page_user_onabort);
+        xows_doc_mbox_open_for_save(xows_gui_page_user_onvalid, xows_gui_page_user_onabort);
       };
       // Start image loading (should be quick)
       image.src = e.target.result;
     };
     // Launch file reading
-    reader.readAsDataURL(xows_doc.card_file.files[0]);
+    reader.readAsDataURL(card_file.files[0]);
   }
 }
 
@@ -3099,7 +3121,7 @@ function xows_gui_page_user_ev_file(event)
 function xows_gui_page_user_onclose()
 {
   // remove "change" event listener to file input
-  xows_doc_listener_rem(xows_doc.card_file,"change",xows_gui_page_user_ev_file);
+  xows_doc_listener_rem(xows_doc("card_file"),"change",xows_gui_page_user_ev_file);
 }
 
 /**
@@ -3116,7 +3138,7 @@ function xows_gui_page_user_open()
                                         xows_gui_page_user_onclick);
                                            
   // add "change" event listener to file input
-  xows_doc_listener_add(xows_doc.card_file,"change",xows_gui_page_user_ev_file);
+  xows_doc_listener_add(xows_doc("card_file"),"change",xows_gui_page_user_ev_file);
   
   // Add navigation history
   xows_gui_nav_push("user_open", xows_gui_page_user_open);
@@ -3134,7 +3156,7 @@ function xows_gui_page_user_open()
 function xows_gui_page_cont_onvalid()
 {
   // Get parameters from DOM
-  let bare = xows_doc.cont_bare.value;
+  let bare = xows_doc("cont_bare").value;
   
   // Compose display name from JID
   const userid = bare.split("@")[0];
@@ -3151,7 +3173,9 @@ function xows_gui_page_cont_onvalid()
  */
 function xows_gui_page_cont_oninput(target)
 {
-  if(xows_doc.cont_bare.value.length && xows_isjid(xows_doc.cont_bare.value)) {
+  const cont_bare = xows_doc("cont_bare");
+  
+  if(cont_bare.value.length && xows_isjid(cont_bare.value)) {
     xows_doc_mbox_open(null, "Add contact and request authorisation",
                           xows_gui_page_cont_onvalid, "Submit");
   } else {
@@ -3165,7 +3189,7 @@ function xows_gui_page_cont_oninput(target)
 function xows_gui_page_cont_open()
 {
   // Reset inputs
-  xows_doc.cont_bare.value = "";
+  xows_doc("cont_bare").value = "";
   
   // Open dialog page
   xows_doc_page_open("page_cont",true,null,xows_gui_page_cont_oninput);
@@ -3205,7 +3229,7 @@ function xows_gui_page_join_onjoind(room, type, conf)
       xows_gui_page_join.room = room;
       
       // disable input 
-      xows_doc.join_room.disabled = true;
+      xows_doc("join_room").disabled = true;
       
       // Open new Message Box to confirm Room initial config process
       xows_doc_mbox_open(null, "The Room will be created, do you want to configure it ?",
@@ -3237,7 +3261,7 @@ function xows_gui_page_join_onvalid()
       
   } else {
     
-    const name = xows_doc.join_room.value;
+    const name = xows_doc("join_room").value;
     const nick = xows_cli_self.name; //< user nickname to join room with
     
     // Join or create room
@@ -3267,7 +3291,7 @@ function xows_gui_page_join_onabort()
  */
 function xows_gui_page_join_oninput(target)
 {
-  if(xows_doc.join_room.value.length) {
+  if(xows_doc("join_room").value.length) {
     xows_doc_mbox_open(null, "Join Room (create it if does not exist)",
                           xows_gui_page_join_onvalid, "Join");
   } else {
@@ -3291,9 +3315,11 @@ function xows_gui_page_join_onclose()
  */
 function xows_gui_page_join_open()
 {
+  const join_room = xows_doc("join_room");
+  
   // Reset inputs
-  xows_doc.join_room.disabled = false;
-  xows_doc.join_room.value = "";
+  join_room.disabled = false;
+  join_room.value = "";
   
   // Open dialog page
   xows_doc_page_open("page_join",true,xows_gui_page_join_onclose,
@@ -3334,28 +3360,28 @@ function xows_gui_page_room_onvalid()
     switch(form[i]["var"])
     {
     case "muc#roomconfig_roomname":
-      form[i].value = xows_doc.room_titl.value; break;
+      form[i].value = xows_doc("room_titl").value; break;
     case "muc#roomconfig_roomdesc":
-      form[i].value = xows_doc.room_desc.value; break;
+      form[i].value = xows_doc("room_desc").value; break;
     case "muc#roomconfig_persistentroom":
-      form[i].value = xows_doc.room_pers.checked?"1":"0"; break;
+      form[i].value = xows_doc("room_pers").checked?"1":"0"; break;
     case "muc#roomconfig_publicroom":
-      form[i].value = xows_doc.room_publ.checked?"1":"0"; break;
+      form[i].value = xows_doc("room_publ").checked?"1":"0"; break;
     //case "muc#roomconfig_roomsecret":
-    //  form[i].value = xows_doc.room_priv.checked ? xows_doc.room_pass.value : "";
+    //  form[i].value = xows_doc("room_priv").checked ? xows_doc("room_pass").value : "";
     //  break;
     case "muc#roomconfig_membersonly":
-      form[i].value = xows_doc.room_mbon.checked?"1":"0"; break;
+      form[i].value = xows_doc("room_mbon").checked?"1":"0"; break;
     case "muc#roomconfig_moderatedroom":
-      form[i].value = xows_doc.room_modo.checked?"1":"0"; break;
+      form[i].value = xows_doc("room_modo").checked?"1":"0"; break;
     case "muc#roomconfig_whois":
-      form[i].value = xows_doc.room_anon.value; break;
+      form[i].value = xows_doc("room_anon").value; break;
     case "muc#roomconfig_historylength":
-      form[i].value = xows_doc.room_hmax.value; break;
+      form[i].value = xows_doc("room_hmax").value; break;
     case "muc#roomconfig_defaulthistorymessages":
-      form[i].value = xows_doc.room_hdef.value; break;
+      form[i].value = xows_doc("room_hdef").value; break;
     case "muc#roomconfig_enablearchiving":
-      form[i].value = xows_doc.room_arch.checked?"1":"0"; break;
+      form[i].value = xows_doc("room_arch").checked?"1":"0"; break;
     }
   }
 
@@ -3375,33 +3401,33 @@ function xows_gui_page_room_onabort()
     switch(form[i]["var"])
     {
     case "muc#roomconfig_roomname":
-      xows_doc.room_titl.value = form[i].value; break;
+      xows_doc("room_titl").value = form[i].value; break;
     case "muc#roomconfig_roomdesc":
-      xows_doc.room_desc.value = form[i].value; break;
+      xows_doc("room_desc").value = form[i].value; break;
     case "muc#roomconfig_persistentroom":
-      xows_doc.room_pers.checked = xows_asbool(form[i].value); break;
+      xows_doc("room_pers").checked = xows_asbool(form[i].value); break;
     case "muc#roomconfig_publicroom":
-      xows_doc.room_publ.checked = xows_asbool(form[i].value); break;
+      xows_doc("room_publ").checked = xows_asbool(form[i].value); break;
     //case "muc#roomconfig_roomsecret":
-    //  xows_doc.room_priv.checked = form[i].value.length;
-    //  xows_doc.room_pass.value = form[i].value; 
+    //  xows_doc("room_priv").checked = form[i].value.length;
+    //  xows_doc("room_pass").value = form[i].value; 
     //  break;
     //case "muc#roomconfig_allowmemberinvites":
-    //  xows_doc.room_invt.checked = form[i].value; 
+    //  xows_doc("room_invt").checked = form[i].value; 
     //  break;
     case "muc#roomconfig_membersonly":
-      xows_doc.room_mbon.checked = xows_asbool(form[i].value); break;
+      xows_doc("room_mbon").checked = xows_asbool(form[i].value); break;
     case "muc#roomconfig_changesubject":
     case "muc#roomconfig_moderatedroom":
-      xows_doc.room_modo.checked = xows_asbool(form[i].value); break;
+      xows_doc("room_modo").checked = xows_asbool(form[i].value); break;
     case "muc#roomconfig_whois":
-      xows_doc.room_anon.value = form[i].value; break;
+      xows_doc("room_anon").value = form[i].value; break;
     case "muc#roomconfig_historylength":
-      xows_doc.room_hmax.value = form[i].value; break;
+      xows_doc("room_hmax").value = form[i].value; break;
     case "muc#roomconfig_defaulthistorymessages":
-      xows_doc.room_hdef.value = form[i].value; break;
+      xows_doc("room_hdef").value = form[i].value; break;
     case "muc#roomconfig_enablearchiving":
-      xows_doc.room_arch.checked = xows_asbool(form[i].value); break;
+      xows_doc("room_arch").checked = xows_asbool(form[i].value); break;
     }
   }
 }
@@ -3422,28 +3448,28 @@ function xows_gui_page_room_oninput(target)
     switch(form[i]["var"])
     {
     case "muc#roomconfig_roomname":
-      if(form[i].value !== xows_doc.room_titl.value) change = true; break;
+      if(form[i].value !== xows_doc("room_titl").value) change = true; break;
     case "muc#roomconfig_roomdesc":
-      if(form[i].value !== xows_doc.room_desc.value) change = true; break;
+      if(form[i].value !== xows_doc("room_desc").value) change = true; break;
     case "muc#roomconfig_persistentroom":
-      if(xows_asbool(form[i].value) !== xows_doc.room_pers.checked) change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc("room_pers").checked) change = true; break;
     case "muc#roomconfig_publicroom":
-      if(xows_asbool(form[i].value) !== xows_doc.room_publ.checked) change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc("room_publ").checked) change = true; break;
     //case "muc#roomconfig_roomsecret":
-    //  form[i].value = xows_doc.room_priv.checked ? xows_doc.room_pass.value : "";
+    //  form[i].value = xows_doc("room_priv").checked ? xows_doc("room_pass").value : "";
     //  break;
     case "muc#roomconfig_membersonly":
-      if(xows_asbool(form[i].value) !== xows_doc.room_mbon.checked) change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc("room_mbon").checked) change = true; break;
     case "muc#roomconfig_moderatedroom":
-      if(xows_asbool(form[i].value) !== xows_doc.room_modo.checked) change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc("room_modo").checked) change = true; break;
     case "muc#roomconfig_whois":
-      if(form[i].value !== xows_doc.room_anon.value) change = true; break;
+      if(form[i].value !== xows_doc("room_anon").value) change = true; break;
     case "muc#roomconfig_historylength":
-      if(form[i].value !== xows_doc.room_hmax.value) change = true; break;
+      if(form[i].value !== xows_doc("room_hmax").value) change = true; break;
     case "muc#roomconfig_defaulthistorymessages":
-      if(form[i].value !== xows_doc.room_hdef.value) change = true; break;
+      if(form[i].value !== xows_doc("room_hdef").value) change = true; break;
     case "muc#roomconfig_enablearchiving":
-      if(xows_asbool(form[i].value) !== xows_doc.room_arch.checked) change = true; break;
+      if(xows_asbool(form[i].value) !== xows_doc("room_arch").checked) change = true; break;
     }
     
     if(change) break;
@@ -3498,7 +3524,7 @@ function xows_gui_page_room_open(room, form)
   xows_doc_page_room.form = form;
   
   // Set the Room ID in the page header frame
-  xows_doc.room_bare.innerText = room.bare;
+  xows_doc("room_bare").innerText = room.bare;
   
   // Initialize inputs
   xows_gui_page_room_onabort();

@@ -41,7 +41,10 @@
 /**
  * Reference list to current document used DOM objects
  */
-const xows_doc = {};
+function xows_doc(id) 
+{
+  return document.getElementById(id);
+}
 
 /**
  * Object that stores backed documents Fragments.
@@ -79,16 +82,6 @@ const xows_doc_sel = document.getSelection();
  * Global reference to temporary selection Range object
  */
 const xows_doc_rng = document.createRange();
-
-/**
- * Create local reference of the specified DOM object
- * 
- * @param {string}  id  Element id to cache
- */
-function xows_doc_cache(id)
-{
-  xows_doc[id] = document.getElementById(id);
-}
 
 /**
  * Add an event listener to the specified object with proper options
@@ -162,7 +155,7 @@ function xows_doc_listener_rem_select(element, select, event, callback, passive 
  */
 function xows_doc_cls_has(id, clsname)
 {
-  return xows_doc[id].classList.contains(clsname);
+  return document.getElementById(id).classList.contains(clsname);
 }
 
 /**
@@ -173,7 +166,7 @@ function xows_doc_cls_has(id, clsname)
  */
 function xows_doc_cls_tog(id, clsname)
 {
-  return xows_doc[id].classList.toggle(clsname);
+  return document.getElementById(id).classList.toggle(clsname);
 }
 
 /**
@@ -184,7 +177,7 @@ function xows_doc_cls_tog(id, clsname)
  */
 function xows_doc_cls_add(id, clsname)
 {
-  xows_doc[id].classList.add(clsname);
+  document.getElementById(id).classList.add(clsname);
 }
 
 /**
@@ -195,7 +188,7 @@ function xows_doc_cls_add(id, clsname)
  */
 function xows_doc_cls_rem(id, clsname)
 {
-  xows_doc[id].classList.remove(clsname);
+  document.getElementById(id).classList.remove(clsname);
 }
 
 /**
@@ -207,7 +200,7 @@ function xows_doc_cls_rem(id, clsname)
  */
 function xows_doc_cls_set(id, clsname, add)
 {
-  xows_doc[id].classList.toggle(clsname, add);
+  document.getElementById(id).classList.toggle(clsname, add);
 }
 
 /**
@@ -217,7 +210,7 @@ function xows_doc_cls_set(id, clsname, add)
  */
 function xows_doc_show(id)
 {
-  xows_doc[id].classList.remove("HIDDEN");
+  document.getElementById(id).classList.remove("HIDDEN");
 }
 
 /**
@@ -227,7 +220,7 @@ function xows_doc_show(id)
  */
 function xows_doc_hide(id)
 {
-  xows_doc[id].classList.add("HIDDEN");
+  document.getElementById(id).classList.add("HIDDEN");
 }
 
 /**
@@ -238,7 +231,7 @@ function xows_doc_hide(id)
  */
 function xows_doc_hidden_set(id, hidden)
 {
-  xows_doc[id].classList.toggle("HIDDEN", hidden);
+  document.getElementById(id).classList.toggle("HIDDEN", hidden);
 }
 
 /**
@@ -251,7 +244,7 @@ function xows_doc_hidden_set(id, hidden)
  */
 function xows_doc_hidden(id)
 {
-  return xows_doc[id].classList.contains("HIDDEN");
+  return document.getElementById(id).classList.contains("HIDDEN");
 }
 
 /**
@@ -295,7 +288,7 @@ function xows_doc_frag_export(slot, element, clone)
   let s, d;
   
   // set source and destination
-  s = xows_doc[element];
+  s = document.getElementById(element);
   d = xows_doc_frag_db[slot][element] = document.createDocumentFragment();
 
   if(clone) {
@@ -328,10 +321,10 @@ function xows_doc_frag_import(slot, element, clone)
     
     // set source and destination
     s = xows_doc_frag_db[slot][element];
-    d = xows_doc[element];
+    d = document.getElementById(element);
     
     // empty destination
-    xows_doc[element].innerText = "";
+    d.innerText = "";
     
     if(clone) {
       
@@ -461,7 +454,7 @@ function xows_doc_sel_rng(index)
  */
 function xows_doc_list_clean(id)
 {
-  const child = xows_doc[id].querySelectorAll("LI");
+  const child = document.getElementById(id).querySelectorAll("LI");
   let i = child.length;
   while(i--) child[i].parentNode.removeChild(child[i]);
 }
@@ -478,57 +471,55 @@ function xows_doc_list_clean(id)
  */
 function xows_doc_init(onready)
 {
-  // Localy store references to all DOM elements with an id
-  const element = document.querySelectorAll("[id]");
-  let i = element.length;
-  while(i--) xows_doc_cache(element[i].id);
-
   // Main Page "scr_main" event listeners
-  xows_doc_listener_add(xows_doc.main_tabs,   "click",    xows_gui_rost_widen); //< capture mode
-  xows_doc_listener_add(xows_doc.main_hndr,   "click",    xows_gui_main_open);
-  xows_doc_listener_add(xows_doc.main_hndl,   "click",    xows_gui_main_open);
+  xows_doc_listener_add(xows_doc("main_tabs"),  "click",    xows_gui_rost_widen); //< capture mode
+  xows_doc_listener_add(xows_doc("main_hndr"),  "click",    xows_gui_main_open);
+  xows_doc_listener_add(xows_doc("main_hndl"),  "click",    xows_gui_main_open);
   
-  xows_doc_listener_add(xows_doc.rost_tabs,   "click",    xows_gui_rost_tabs_onclick);
-  xows_doc_listener_add(xows_doc.cont_list,   "click",    xows_gui_rost_list_onclick);
-  xows_doc_listener_add(xows_doc.room_list,   "click",    xows_gui_rost_list_onclick);
-  xows_doc_listener_add(xows_doc.cont_add,    "click",    xows_gui_page_cont_open);
-  xows_doc_listener_add(xows_doc.room_add,    "click",    xows_gui_room_add_onclick);
-  xows_doc_listener_add(xows_doc.room_upd,    "click",    xows_gui_room_list_reload);
+  xows_doc_listener_add(xows_doc("rost_tabs"),  "click",    xows_gui_rost_tabs_onclick);
+  xows_doc_listener_add(xows_doc("cont_list"),  "click",    xows_gui_rost_list_onclick);
+  xows_doc_listener_add(xows_doc("room_list"),  "click",    xows_gui_rost_list_onclick);
+  xows_doc_listener_add(xows_doc("cont_add"),   "click",    xows_gui_page_cont_open);
+  xows_doc_listener_add(xows_doc("room_add"),   "click",    xows_gui_room_add_onclick);
+  xows_doc_listener_add(xows_doc("room_upd"),   "click",    xows_gui_room_list_reload);
   
-  xows_doc_listener_add(xows_doc.menu_show,   "click",    xows_gui_menu_show_onclick);
-  xows_doc_listener_add(xows_doc.drop_show,   "click",    xows_gui_menu_show_onclick);
-  xows_doc_listener_add(xows_doc.menu_user,   "click",    xows_gui_page_user_open);
-  xows_doc_listener_add(xows_doc.user_stat,   "keypress", xows_gui_user_stat_onkeyp);
-  xows_doc_listener_add(xows_doc.user_stat,   "blur",     xows_gui_user_stat_onblur);
+  xows_doc_listener_add(xows_doc("menu_show"),  "click",    xows_gui_menu_show_onclick);
+  xows_doc_listener_add(xows_doc("drop_show"),  "click",    xows_gui_menu_show_onclick);
+  xows_doc_listener_add(xows_doc("menu_user"),  "click",    xows_gui_page_user_open);
+  xows_doc_listener_add(xows_doc("user_stat"),  "keypress", xows_gui_user_stat_onkeyp);
+  xows_doc_listener_add(xows_doc("user_stat"),  "blur",     xows_gui_user_stat_onblur);
   
   // Chat header
-  xows_doc_listener_add(xows_doc.chat_head,   "keypress", xows_gui_chat_head_onkeyp);
-  xows_doc_listener_add(xows_doc.chat_head,   "focusout", xows_gui_chat_head_onfocus);
-  xows_doc_listener_add(xows_doc.chat_head,   "click",    xows_gui_chat_head_onclick);
+  const chat_head = xows_doc("chat_head");
+  xows_doc_listener_add(chat_head,              "keypress", xows_gui_chat_head_onkeyp);
+  xows_doc_listener_add(chat_head,              "focusout", xows_gui_chat_head_onfocus);
+  xows_doc_listener_add(chat_head,              "click",    xows_gui_chat_head_onclick);
   
   // Chat main
-  xows_doc_listener_add(xows_doc.chat_main,   "scroll",   xows_gui_chat_main_onscroll);
-  xows_doc_listener_add(xows_doc.chat_main,   "click",    xows_gui_chat_main_onclick);
+  const chat_main = xows_doc("chat_main");
+  xows_doc_listener_add(chat_main,              "scroll",   xows_gui_chat_main_onscroll);
+  xows_doc_listener_add(chat_main,              "click",    xows_gui_chat_main_onclick);
   
   // Chat foot
-  xows_doc_listener_add(xows_doc.chat_file,   "change",   xows_gui_chat_file_onchange);
-  xows_doc_listener_add(xows_doc.drop_emoj,   "click",    xows_gui_drop_emoj_onclick);
-  xows_doc_listener_add(xows_doc.chat_panl,   "keydown",  xows_gui_chat_panl_onkeyp, false); //< need preventDefault()
-  xows_doc_listener_add(xows_doc.chat_panl,   "keyup",    xows_gui_chat_panl_onkeyp);
-  xows_doc_listener_add(xows_doc.chat_panl,   "input",    xows_gui_chat_panl_oninput);
-  xows_doc_listener_add(xows_doc.chat_panl,   "click",    xows_gui_chat_panl_onclick);
+  const chat_panl = xows_doc("chat_panl");
+  xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
+  xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
+  xows_doc_listener_add(chat_panl,              "keydown",  xows_gui_chat_panl_onkeyp, false); //< need preventDefault()
+  xows_doc_listener_add(chat_panl,              "keyup",    xows_gui_chat_panl_onkeyp);
+  xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_panl_oninput);
+  xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
   
-  xows_doc_listener_add(xows_doc.occu_list,   "click",    xows_gui_occu_list_onclick);
+  xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);
 
 
   // Page screen "scr_page" event listener
-  xows_doc_listener_add(xows_doc.scr_page,    "keyup",    xows_doc_page_onkeyu);
+  xows_doc_listener_add(xows_doc("scr_page"),   "keyup",    xows_doc_page_onkeyu);
   
   // Close page button "page_exit" event listener
-  xows_doc_listener_add(xows_doc.page_exit,   "click",    xows_doc_page_onclose);
+  xows_doc_listener_add(xows_doc("page_exit"),  "click",    xows_doc_page_onclose);
   
   // HTTP Upload Page "hist_upld" event listeners
-  xows_doc_listener_add(xows_doc.upld_exit,   "click",    xows_gui_upld_onclose);
+  xows_doc_listener_add(xows_doc("upld_exit"),  "click",    xows_gui_upld_onclose);
 
   // Check whether Registering option is enabled
   if(xows_options.allow_register) {
@@ -537,12 +528,12 @@ function xows_doc_init(onready)
   }
 
   // Modal screen "scr_void" event listener
-  xows_doc_listener_add(xows_doc.scr_void,    "click",    xows_doc_void_onclick);
+  xows_doc_listener_add(xows_doc("scr_void"),   "click",    xows_doc_void_onclick);
   
   // Message Box "over_mbox" event listeners
-  xows_doc_listener_add(xows_doc.mbox_close,  "click",    xows_doc_mbox_close);
-  xows_doc_listener_add(xows_doc.mbox_abort,  "click",    xows_doc_mbox_onabort);
-  xows_doc_listener_add(xows_doc.mbox_valid,  "click",    xows_doc_mbox_onvalid);
+  xows_doc_listener_add(xows_doc("mbox_close"), "click",    xows_doc_mbox_close);
+  xows_doc_listener_add(xows_doc("mbox_abort"), "click",    xows_doc_mbox_onabort);
+  xows_doc_listener_add(xows_doc("mbox_valid"), "click",    xows_doc_mbox_onvalid);
   
   // Set event listener to handle user presence and GUI focus
   xows_doc_listener_add(document,   "visibilitychange",   xows_gui_wnd_onfocus);
@@ -803,14 +794,15 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
   case XOWS_MBOX_ASK: cls = "TEXT-ASK"; break;
   }
   
-  xows_doc.mbox_text.classList = cls;
-  xows_doc.mbox_text.innerHTML = xows_l10n_get(text);
+  const mbox_text = xows_doc("mbox_text");
+  mbox_text.classList = cls;
+  mbox_text.innerHTML = xows_l10n_get(text);
   
   xows_doc_hidden_set("mbox_close", (onvalid || onabort));
   xows_doc_hidden_set("mbox_valid", !onvalid);
   xows_doc_hidden_set("mbox_abort", !onabort);
-  if(onvalid) xows_doc.mbox_valid.innerHTML = xows_l10n_get(valid);
-  if(onabort) xows_doc.mbox_abort.innerHTML = xows_l10n_get(abort);
+  if(onvalid) xows_doc("mbox_valid").innerHTML = xows_l10n_get(valid);
+  if(onabort) xows_doc("mbox_abort").innerHTML = xows_l10n_get(abort);
   
   // set callbacks
   xows_doc_mbox_cb_onabort = onabort;
@@ -936,15 +928,17 @@ function xows_doc_page_close(soft)
     
   xows_log(2,"gui_page_close",(soft?"soft":"hard")+" close",xows_doc_page_id);
 
+  const page = xows_doc(xows_doc_page_id);
+
   // remove "event" event listener
   if(xows_doc_page_cb_oninput) {
-    xows_doc_listener_rem(xows_doc[xows_doc_page_id],"input",xows_doc_page_oninput);
+    xows_doc_listener_rem(page,"input",xows_doc_page_oninput);
     xows_doc_page_cb_oninput = null;
   }
   
   // remove "click" event listener
   if(xows_doc_page_cb_onclick) {
-    xows_doc_listener_rem(xows_doc[xows_doc_page_id],"click",xows_doc_page_onclick);
+    xows_doc_listener_rem(page,"click",xows_doc_page_onclick);
     xows_doc_page_cb_onclick = null;     
   }
   
@@ -1010,16 +1004,18 @@ function xows_doc_page_open(id, close, onclose, oninput, onclick)
   // set callbacks
   xows_doc_page_cb_onclose = onclose;
   
+  const page = xows_doc(id);
+  
   // add "input" event listener
   if(oninput) {
     xows_doc_page_cb_oninput = oninput;
-    xows_doc_listener_add(xows_doc[id],"input",xows_doc_page_oninput);        
+    xows_doc_listener_add(page,"input",xows_doc_page_oninput);        
   }
   
   // add "click" event listener
   if(onclick) {
     xows_doc_page_cb_onclick = onclick;
-    xows_doc_listener_add(xows_doc[id],"click",xows_doc_page_onclick);        
+    xows_doc_listener_add(page,"click",xows_doc_page_onclick);        
   }
   
   // also exit potentially opened message box
@@ -1036,10 +1032,10 @@ function xows_doc_page_onkeyu(event)
   if(xows_doc_page_id && event.keyCode === 13) {
     // Emulate click on Valid button
     if(!xows_doc_hidden("over_mbox") && !xows_doc_hidden("mbox_valid")) {
-     xows_doc.mbox_valid.click();
+     xows_doc("mbox_valid").click();
    } else {
      // Emulate click on submit button
-     const submit = xows_doc[xows_doc_page_id].querySelector("*[type='submit']");
+     const submit = xows_doc(xows_doc_page_id).querySelector("*[type='submit']");
      if(submit) submit.click();
    }
   }
@@ -1130,8 +1126,8 @@ function xows_doc_view_open(media)
   if(media.tagName === "IMG") {
     
     // set proper link and references
-    xows_doc.view_img.src = media.src;
-    xows_doc.view_open.href = media.src;
+    xows_doc("view_img").src = media.src;
+    xows_doc("view_open").href = media.src;
     
     // show the media overlay element
     xows_doc_show("over_view");
