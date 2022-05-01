@@ -305,17 +305,6 @@ function xows_gui_peer_doc(peer, id)
 }
 
 /**
- * Remove roster <li> element corresponding to specified JID.
- * 
- * @param {string}      jid    Peer JID to search roster <li>.
- */
-function xows_gui_rost_li_remove(jid)
-{
-  const li = document.getElementById(jid);
-  if(li) li.parentNode.removeChild(li);
-}
-
-/**
  * Find occupant <li> element corresponding to specified Occupant JID.
  * 
  * @param {object}    room      Room object.
@@ -1370,16 +1359,15 @@ function xows_gui_cli_oncontpush(cont)
     // Remove the potential loading spinner
     cont_ul.classList.remove("LOADING");
     // Append new instance of contact <li> from template to roster <ul>
-    cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat,
-                                             cont.subs, cont.show, cont.stat));
-                                             
+    cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat, cont.subs, cont.show, cont.stat));
+    
     // Create new Peer offscreen elements with initial state
     xows_gui_peer_doc_init(cont);
     xows_gui_peer_scroll_save(cont); //< Initial history scroll save
+    
+    // Show the contacts <ul>
+    cont_ul.classList.remove("HIDDEN");
   }
-  
-  // Show or hide list depending content
-  cont_ul.classList.toggle("HIDDEN",(cont_ul.childNodes.length<2));
 }
 
 /**
@@ -1393,21 +1381,20 @@ function xows_gui_cli_oncontrem(bare)
   
   // Remove <li> element
   const li = document.getElementById(bare);
-  if(li) {
+  if(li && li.parentNode === cont_ul) {
     
     // switch peer if required
     if(xows_gui_peer && xows_gui_peer.bare === bare) 
       xows_gui_switch_peer(null);
     
     // delete <li> element
-    li.parentNode.removeChild(li);
+    cont_ul.removeChild(li);
+    // Show or hide list depending content
+    cont_ul.classList.toggle("HIDDEN",(cont_ul.childNodes.length < 2));
     
     // delete document fragment for this peer
     xows_doc_frag_delete(bare);
   }
-  
-  // Show or hide list depending content
-  cont_ul.classList.toggle("HIDDEN",(cont_ul.childNodes.length<2));
 }
 
 /* -------------------------------------------------------------------
@@ -1443,8 +1430,8 @@ function xows_gui_cli_onsubspush(bare, nick)
   subs_unrd.innerText = n;
   subs_unrd.classList.remove("HIDDEN");
   
-  // Show or hide list depending content
-  subs_ul.classList.toggle("HIDDEN", (n < 1));
+  // Show the subscribes <ul>
+  subs_ul.classList.remove("HIDDEN");
 }
 
 /**
@@ -1457,24 +1444,24 @@ function xows_gui_cli_onsubspush(bare, nick)
  */
 function xows_gui_cli_onsubsrem(bare)
 {
-  // Remove <li> element
-  xows_gui_rost_li_remove(bare);
-  
   const subs_ul = xows_doc("subs_ul");
-  const subs_unrd = xows_doc("subs_unrd");
-  
-  const n = subs_ul.childNodes.length - 1;
-  
-  // Update or disable the notification spot
-  if(n) {
-    subs_unrd.innerText = n;
-  } else {
-    subs_unrd.innerText = "";
-    subs_unrd.classList.remove("HIDDEN");
+
+  // Search and remove <li> element
+  const li = document.getElementById(bare);
+  if(li && li.parentNode === subs_ul) {
+
+    const subs_unrd = xows_doc("subs_unrd");
+
+    // Get count of pending authorization (<ul> children minus title)
+    const n = subs_ul.childNodes.length - 1;
+    
+    // Update or disable the notification spot
+    subs_unrd.innerText = (n > 0) ? n : "";
+    subs_unrd.classList.toggle("HIDDEN", (n < 1));
+    
+    // Show or hide list depending content
+    subs_ul.classList.toggle("HIDDEN", (n < 1));
   }
-  
-  // Show or hide list depending content
-  subs_ul.classList.toggle("HIDDEN", (n < 1));
 }
 
 /* -------------------------------------------------------------------
@@ -1533,14 +1520,14 @@ function xows_gui_cli_onroompush(room)
   // Select destination <ul>
   const dst_ul = (room.publ) ? xows_doc("room_ul") : (room.book) ? xows_doc("book_ul") : xows_doc("priv_ul");
   
-  let src_ul;
-  
   const li = document.getElementById(room.bare);
   if(li) {
     // Move existing <li> to proper destination if needed
     if(li.parentNode !== dst_ul) {
-      src_ul = li.parentNode;
+      const src_ul = li.parentNode;
       dst_ul.appendChild(li);
+      // Show or hide source <ul> depending content
+      src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length < 2));
     }
     // Update room <li> element according template
     xows_tpl_update_rost_room(li, room.name, room.desc, room.lock);
@@ -1555,9 +1542,8 @@ function xows_gui_cli_onroompush(room)
     xows_gui_peer_scroll_save(room); //< Initial history scroll save
   }
   
-  // Show or hide lists depending content
-  dst_ul.classList.toggle("HIDDEN",(dst_ul.childNodes.length<2));
-  if(src_ul) src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length<2));
+  // Show the destination list
+  dst_ul.classList.remove("HIDDEN");
 }
 
 /**
@@ -1567,8 +1553,6 @@ function xows_gui_cli_onroompush(room)
  */
 function xows_gui_cli_onroomrem(bare)
 {
-  let src_ul;
-  
   // Search <li> element
   const li = document.getElementById(bare);
   if(li) {
@@ -1578,15 +1562,14 @@ function xows_gui_cli_onroomrem(bare)
       xows_gui_switch_peer(null);
     
     // delete <li> element
-    src_ul = li.parentNode;
+    const src_ul = li.parentNode;
     src_ul.removeChild(li);
-    
+    // Show or hide source <ul> depending content
+    src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length < 2));
+  
     // delete document fragment for this peer
     xows_doc_frag_delete(bare);
   }
-  
-  // Show or hide lists depending content
-  if(src_ul) src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length<2));
 }
 
 /* -------------------------------------------------------------------
@@ -2689,15 +2672,11 @@ function xows_gui_cli_onoccupush(room, occu, code)
   // Search for existing occupant <li> element for this Room
   const li = xows_gui_peer_occu_li(room, occu.jid);
   if(li) {
-    
     // Update the existing <li> ellement according template
     xows_tpl_update_room_occu(li, occu.name, occu.avat, occu.full, occu.show, occu.stat);
-    
     // Update message history
     xows_gui_hist_avat_upd(room, occu.jid, occu.avat);
-    
-  } else {
-                    
+  } else {       
     // Create and append new <li> element from template
     const inst = xows_tpl_spawn_room_occu(occu.jid, occu.name, occu.avat, occu.full, occu.show, occu.stat);
     
@@ -2706,10 +2685,11 @@ function xows_gui_cli_onoccupush(room, occu, code)
     inst.querySelector(".OCCU-SUBS").classList.toggle("HIDDEN", !show_subs);
     
     // Select the proper role <ul> to put the occupant in
-    const occu_ul = xows_gui_peer_doc(room,(occu.role===XOWS_ROLE_MODO)?"modo_ul":"memb_ul");
-    
+    const dst_ul = xows_gui_peer_doc(room, (occu.role === XOWS_ROLE_MODO) ? "modo_ul" : "memb_ul");
     // Create and append new <li> element from template
-    occu_ul.appendChild(inst);
+    dst_ul.appendChild(inst);
+    // Show destination list
+    dst_ul.classList.remove("HIDDEN");
   }
 }
 
@@ -2717,21 +2697,29 @@ function xows_gui_cli_onoccupush(room, occu, code)
  * Function to remove item from the room occupant list
  * 
  * @param {object}  room    Room object to remove occupant from.
- * @param {string}  jid     Occupant JID or null for self.
+ * @param {string}  ojid    Occupant JID or null for self.
  */
-function xows_gui_cli_onoccurem(room, jid)
+function xows_gui_cli_onoccurem(room, ojid)
 {  
-  if(jid) {
+  if(ojid) {
     
     // Search and remove <li> in document or offscreen fragment
-    const li = xows_gui_peer_occu_li(room, jid);
-    if(li) li.parentNode.removeChild(li);
+    const li = xows_gui_peer_occu_li(room, ojid);
+    if(li) {
+      const src_ul = li.parentNode; //< hold source <ul>
+      src_ul.removeChild(li); //< remove <li> element 
+      // Show or hide list depending content
+      src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length < 2));
+    }
     
   } else { // null jid mean occumant is self: we leaved the room
     
     // Check whether current peer is the room
     if(room === xows_gui_peer) {
+      
       xows_gui_switch_peer(null); //< Unselect peer
+      
+      // remove SELECTED class from Room <li>
       const li = xows_doc("room_list").querySelector(".SELECTED");
       if(li) li.classList.remove("SELECTED");
     }
