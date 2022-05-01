@@ -117,7 +117,7 @@ a:active {
 
 *,::after,::before{
   box-sizing:border-box;
-  transition: opacity 200ms, color 200ms, border-color 200ms, background-color 200ms ease-out;
+  /*transition: opacity 200ms, color 200ms, border-color 200ms, background-color 200ms ease-out;*/
 }
 
 emoj {
@@ -141,6 +141,7 @@ button {
   font-weight: normal;
   cursor: pointer;
   border: 0;
+  transition: opacity 160ms, color 160ms, border-color 160ms, background-color 160ms ease-out;
 }
 button:focus {
   outline : 0;
@@ -291,7 +292,7 @@ button:disabled {
   width: 42px; height: 24px;
   border-radius: 20px;
   background-color: var(--ctrl-base);
-  transition: background-color 100ms;
+  transition: background-color 160ms;
 }
 .switch span::before {
   display: inline-block;
@@ -300,7 +301,7 @@ button:disabled {
   margin: 3px;
   background-color: var(--ctrl-thmb);
   border-radius: 50%;
-  transition: background-color 100ms, margin-left 100ms;
+  transition: background-color 160ms, margin-left 160ms;
 }
 .switch input:checked ~ span {
   background-color: var(--link-base);
@@ -438,7 +439,6 @@ button:disabled {
   background-repeat: no-repeat;
   overflow: hidden;
 }
-
 /* ------------------------------------------------------------------ */
 /* Main Screen flex layout */
 /* ------------------------------------------------------------------ */
@@ -458,7 +458,6 @@ button:disabled {
   width: 240px; height: 100%;
   display: flex;
   flex-direction: row;
-  transition: width 50ms;
 }
 .col-cntr {
   flex: auto;
@@ -1114,22 +1113,20 @@ figure {
 }
 .rost-tabs button::before {
   display: inline-block;
-  width: 8px; height: 0;
+  width: 8px; height: 10px;
   content:"";
   margin: 0 0 0 -45px;
   vertical-align: middle;
   border-radius: 5px;
   background-color: var(--link-base);
   transition: height 100ms;
+  visibility: hidden;
 }
 .rost-tabs button:disabled {
   background-color: transparent !important;
 }
 .rost-tabs button:hover::before {
-  height: 10px;
-}
-.rost-tabs button:disabled::before {
-  height: 0;
+  visibility: visible;
 }
 .tab-cont {
   background-image: url("images/contacts.svg");
@@ -1152,6 +1149,7 @@ figure {
 }
 .rost-tabs button.ENABLED::before {
   height: 100%;
+  visibility: visible;
 }
 .rost-tabs .ENABLED .UNRD-SPOT {
   display: none;
@@ -1286,29 +1284,6 @@ figure {
   padding: 0;
   margin: 0 7px 0 9px;
 }
-/*
-.list-title {
-  text-align: left;
-  text-transform: uppercase;
-  display: block;
-  font-size: 0.75em;
-  margin: 10px 0 0 0;
-  padding: 0;
-  color: var(--text-tone3);
-  white-space: nowrap;
-  overflow: hidden;
-  cursor: default;
-}
-.list-title::before {
-  display: block;
-  float:left;
-  text-align: center;
-  content: "\25CF";
-  font-style: normal;
-  width: 32px;
-  padding: 0;
-  margin: 0 7px 0 5px;
-}*/
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Roster Head */
 /* ------------------------------------------------------------------ */
@@ -1492,7 +1467,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   flex-direction: row;
   align-items: center;
   height: 40px;
-  border-radius: 6px;
+  border-radius: 3px;
   overflow: hidden;
   cursor: pointer !important;
   margin-left: -4px;
@@ -1507,13 +1482,15 @@ div[show="4"]  { background-color: var(--show-chat); }
 .ROST-CONT::before {
   display: block;
   content: "";
-  width: 8px; height: 0;
+  width: 8px; height: 10px;
   background-color: var(--link-base);
   border-radius: 10px;
   transition: height ease 50ms;
+  visibility: hidden;
 }.ROST-CONT:hover::before  {
-  height: 12px;
+  visibility: visible;
 }.ROST-CONT.SELECTED:before {
+  visibility: visible;
   height: 35px;
 }
 /* ------------------------------------------------------------------ */
@@ -1524,22 +1501,19 @@ div[show="4"]  { background-color: var(--show-chat); }
   flex-direction: row;
   align-items: center;
   width: 100%; height: 40px;
-  border-radius: 6px;
+  border-radius: 3px;
   overflow: hidden;
   cursor: pointer !important;
   margin-left: -4px;
+  transition: background-color 160ms;
 }.ROST-SUBS:hover {
   background-color: var(--base-tone4);
 }
 .ROST-SUBS::before {
   display: block;
   content: "";
-  width: 8px; height: 0;
-  background-color: var(--link-base);
-  border-radius: 10px;
-  transition: height ease 50ms;
-}.ROST-SUBS:hover::before  {
-  height: 12px;
+  width: 8px; height: 10px;
+  visibility: hidden;
 }
 .ROST-SUBS figure {
   background-color: var(--text-tone3);
@@ -1564,7 +1538,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   flex-direction: row;
   align-items: center;
   width: 100%; height: 40px;
-  border-radius: 6px;
+  border-radius: 3px;
   overflow: hidden;
   cursor: pointer !important;
   margin-left: -4px;
@@ -1579,13 +1553,15 @@ div[show="4"]  { background-color: var(--show-chat); }
 .ROST-ROOM::before {
   display: block;
   content: "";
-  width: 8px; height: 0;
+  width: 8px; height: 10px;
   background-color: var(--link-base);
   border-radius: 10px;
   transition: height ease 50ms;
+  visibility: hidden;
 }.ROST-ROOM:hover::before  {
-  height: 12px;
+  visibility: visible;
 }.ROST-ROOM.SELECTED:before {
+  visibility: visible;
   height: 35px;
 }
 .ROST-ROOM figure {
@@ -1996,7 +1972,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   background-position: center;
   background-image: url("images/download.svg");
   opacity: .6;
-  transition: opacity 100ms ease;
+  transition: opacity 160ms ;
 }
 .EMBD-DNL .dnld-btn:hover {
   opacity: .8;
@@ -2059,6 +2035,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* ------------------------------------------------------------------ */
 .chat-edit {
   display: flex;
+  min-width: 100px;
   padding: 10px;
   margin: 8px 12px 0 12px;
   border-radius: 5px;
@@ -2085,22 +2062,25 @@ div[show="4"]  { background-color: var(--show-chat); }
   opacity: .2 !important;
   cursor:default;
 }
-.PLACEHOLD::before {
-  content: attr(placeholder);
-  color: var(--text-tone3);
-  font-style: italic;
-  pointer-events: none;
-}
 .edit-mesg {
+  display: inline-block;
+  width: 0; /* DO NOT TOUCH THIS */
+  flex: auto;
   font-size: 0.9em;
   color: var(--text-tone1);
-  width: 100%;
   margin: 0 10px;
   border: 0;
   outline: 0;
-  overflow-y: auto;
+  overflow: hidden;
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   align-self: center;
+}
+.PLACEHOLD::before {
+  content: attr(placeholder);
+  font-style: italic;
+  color: var(--text-tone3);
+  pointer-events: none;
+  white-space: nowrap;
 }
 @media (max-width: 824px) {
   .edit-mesg {
@@ -2279,6 +2259,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   flex-direction: row;
   align-items: center;
   width: 100%; height: 42px;
+  border-radius: 3px;
   margin-left: -4px;
   cursor: pointer !important;
   overflow: hidden;
@@ -2293,13 +2274,15 @@ div[show="4"]  { background-color: var(--show-chat); }
 .ROOM-OCCU::before {
   display: block;
   content: "";
-  width: 8px; height: 0;
+  width: 8px; height: 10px;
   background-color: var(--link-base);
   border-radius: 10px;
   transition: height ease 50ms;
+  visibility: hidden;
 }.ROOM-OCCU:hover::before  {
-  height: 12px;
+  visibility: visible;
 }.ROOM-OCCU.SELECTED:before {
+  visibility: visible;
   height: 35px;
 }
 .OCCU-SUBS {
