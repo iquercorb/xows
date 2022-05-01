@@ -1530,20 +1530,25 @@ function xows_gui_cli_onroompush(room)
     return;
   }
   
-  // Select destination and source <ul>
-  const dest_ul = (room.publ) ? xows_doc("room_ul") : (room.book) ? xows_doc("book_ul") : xows_doc("priv_ul");
+  // Select destination <ul>
+  const dst_ul = (room.publ) ? xows_doc("room_ul") : (room.book) ? xows_doc("book_ul") : xows_doc("priv_ul");
+  
+  let src_ul;
   
   const li = document.getElementById(room.bare);
   if(li) {
     // Move existing <li> to proper destination if needed
-    if(li.parentNode !== dest_ul) dest_ul.appendChild(li);
+    if(li.parentNode !== dst_ul) {
+      src_ul = li.parentNode;
+      dst_ul.appendChild(li);
+    }
     // Update room <li> element according template
     xows_tpl_update_rost_room(li, room.name, room.desc, room.lock);
     // Update chat title bar
     xows_gui_chat_head_update(room);
   } else {
     // Append new instance of room <li> from template to roster <ul>
-    dest_ul.appendChild(xows_tpl_spawn_rost_room(room.bare, room.name, room.desc, room.lock));
+    dst_ul.appendChild(xows_tpl_spawn_rost_room(room.bare, room.name, room.desc, room.lock));
     
     // Create new Peer offscreen elements with initial state
     xows_gui_peer_doc_init(room);
@@ -1551,9 +1556,8 @@ function xows_gui_cli_onroompush(room)
   }
   
   // Show or hide lists depending content
-  xows_doc_hidden_set("book_ul", (xows_doc("book_ul").childNodes.length < 2));
-  xows_doc_hidden_set("room_ul", (xows_doc("room_ul").childNodes.length < 2));
-  xows_doc_hidden_set("priv_ul", (xows_doc("priv_ul").childNodes.length < 2));
+  dst_ul.classList.toggle("HIDDEN",(dst_ul.childNodes.length<2));
+  if(src_ul) src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length<2));
 }
 
 /**
@@ -1563,25 +1567,26 @@ function xows_gui_cli_onroompush(room)
  */
 function xows_gui_cli_onroomrem(bare)
 {
+  let src_ul;
+  
   // Search <li> element
   const li = document.getElementById(bare);
   if(li) {
     
     // switch peer if required
-    if(xows_gui_peer.bare === bare) 
+    if(xows_gui_peer && xows_gui_peer.bare === bare) 
       xows_gui_switch_peer(null);
     
     // delete <li> element
-    li.parentNode.removeChild(li);
+    src_ul = li.parentNode;
+    src_ul.removeChild(li);
     
     // delete document fragment for this peer
     xows_doc_frag_delete(bare);
   }
   
   // Show or hide lists depending content
-  xows_doc_hidden_set("book_ul", (xows_doc("book_ul").childNodes.length < 2));
-  xows_doc_hidden_set("room_ul", (xows_doc("room_ul").childNodes.length < 2));
-  xows_doc_hidden_set("priv_ul", (xows_doc("priv_ul").childNodes.length < 2));
+  if(src_ul) src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length<2));
 }
 
 /* -------------------------------------------------------------------

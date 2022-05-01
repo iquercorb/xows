@@ -90,11 +90,10 @@ const xows_doc_rng = document.createRange();
  * @param {string}    event     Event type to listen.
  * @param {function}  callback  Callback function for event listener
  * @param {boolean}   [passive] Optional force enable or disable passive.
- * @param {boolean}   [capture] Optional force enable or disable capture mode.
  */
-function xows_doc_listener_add(element, event, callback, passive = true, capture = false)
+function xows_doc_listener_add(element, event, callback, passive = true)
 {
-  element.addEventListener(event,callback,{capture:capture,passive:passive});
+  element.addEventListener(event,callback,{capture:false,passive:passive});
 }
 
 /**
@@ -104,47 +103,10 @@ function xows_doc_listener_add(element, event, callback, passive = true, capture
  * @param {string}    event    Event type to listen.
  * @param {function}  callback Callback function for event listener.
  * @param {boolean}   [passive] Optional force enable or disable passive.
- * @param {boolean}   [capture] Optional force enable or disable capture mode.
  */
-function xows_doc_listener_rem(element, event, callback, passive = true, capture = false)
+function xows_doc_listener_rem(element, event, callback, passive = true)
 {
-  element.removeEventListener(event,callback,{capture:capture,passive:passive});
-}
-
-/**
- * Add an event listener to selected children nodes of the specified 
- * object with proper options.
- * 
- * @param {object}    element   Element to add event listener to.
- * @param {string}    select    CSS selectors string to select children.
- * @param {string}    event     Event type to listen.
- * @param {function}  callback  Callback function for event listener.
- * @param {boolean}   [passive] Optional force enable or disable passive.
- */
-function xows_doc_listener_add_select(element, select, event, callback, passive = true)
-{
-  const nodes = element.querySelectorAll(select);
-  let i = nodes.length;
-  while(i--) nodes[i].addEventListener(event,callback,{capture:false,passive:passive});
-  
-}
-
-/**
- * Remove an event listener from selected children of the specified  
- * object with proper options.
- * 
- * @param {object}    element   Element to add event listener to.
- * @param {string}    select    CSS selectors string to select children.
- * @param {string}    event     Event type to listen.
- * @param {function}  callback  Callback function for event listener.
- * @param {boolean}   [passive] Optional force enable or disable passive.
- */
-function xows_doc_listener_rem_select(element, select, event, callback, passive = true)
-{
-  const nodes = element.querySelectorAll(select);
-  let i = nodes.length;
-  while(i--) nodes[i].removeEventListener(event,callback,{capture:false,passive:passive});
-  
+  element.removeEventListener(event,callback,{capture:false,passive:passive});
 }
 
 /**
