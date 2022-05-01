@@ -2832,7 +2832,6 @@ function xows_xmp_connect(url, jid, password, register)
   xows_xmp_res = null;
   xows_xmp_jid = null;
 
-
   // Split JID into user and domain parts
   const jid_split = jid.split("@");
 

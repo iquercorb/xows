@@ -978,7 +978,7 @@ function xows_clean_dom(node)
  * @param   {string}    name      Optional name to generate background and Letter
  * @param   {string}    font      Optional font for center letter
  *
- * @return  {string}  Resulting icon as Data-URL string
+ * @return  {string}    Resulting icon as Data-URL string
  */
 function xows_gen_avatar(size, image, name, font)
 {

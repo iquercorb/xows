@@ -2868,7 +2868,7 @@ function xows_cli_chatstate_set(peer, chat)
 /**
  * Checks wether client is connected
  * 
- * @return {boolean}    True if client is connected, false otherwise
+ * @return  {boolean}   True if client is connected, false otherwise
  */
 function xows_cli_connected()
 {

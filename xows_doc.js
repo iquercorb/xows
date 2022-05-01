@@ -1102,7 +1102,6 @@ function xows_doc_view_open(media)
   }
 }
 
-
 /**
  * Function to proceed click on void 'screen'
  *
