@@ -1271,7 +1271,7 @@ figure {
   text-align: left;
   text-transform: uppercase;
   display: block;
-  font-size: 0.75em;
+  font-size: 0.7em;
   margin: 0 0 5px 0;
   padding: 0;
   color: var(--text-tone3);
@@ -2331,9 +2331,28 @@ div[show="4"]  { background-color: var(--show-chat); }
   flex-direction: row;
   align-items: center;
   width: 100%; height: 42px;
-  /*margin-left: -4px;*/
-  padding-left: 5px;
+  margin-left: -4px;
+  cursor: pointer !important;
   overflow: hidden;
+}.ROOM-OCCU:hover {
+  background-color: var(--base-tone4);
+}.ROOM-OCCU.SELECTED  {
+  cursor: default !important;
+}.ROOM-OCCU.SELECTED:hover {
+  background-color: inherit;
+  border-color: transparent;
+}
+.ROOM-OCCU::before {
+  display: block;
+  content: "";
+  width: 8px; height: 0;
+  background-color: var(--link-base);
+  border-radius: 10px;
+  transition: height ease 50ms;
+}.ROOM-OCCU:hover::before  {
+  height: 12px;
+}.ROOM-OCCU.SELECTED:before {
+  height: 35px;
 }
 .OCCU-SUBS {
   background-image: url("images/contadd.svg");
