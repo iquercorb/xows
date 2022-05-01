@@ -39,22 +39,22 @@
  * ------------------------------------------------------------------ */
 
 /**
- * Private parser for HTML parsing from string.
+ * Private parser for HTML parsing from string
  */
 const xows_tpl_template_parser = new DOMParser();
 
 /**
- * Callback function called once templates successfully loaded.
+ * Callback function called once templates successfully loaded
  */
 let xows_tpl_fw_onready = function() {};
 
 /**
- * Stored remaining template loading.
+ * Stored remaining template loading
  */
 let xows_tpl_template_parse_remain = 0;
 
 /**
- * Stored instantiable templates list.
+ * Stored instantiable templates list
  */
 let xows_tpl_model = [];
 
@@ -71,7 +71,7 @@ let xows_tpl_fragment = null;
 let xows_tpl_theme = "dark";
 
 /**
- * Emojis short code to unicode map.
+ * Emojis short code to unicode map
  */
 const xows_tpl_emoj_map = {
   "100":"1F4AF","1234":"1F522","grinning":"1F600","smiley":"1F603","smile":"1F604","grin":"1F601","laughing":"1F606","sweat_smile":"1F605","rolling_on_the_floor_laughing":"1F923","joy":"1F602","slightly_smiling_face":"1F642","upside_down_face":"1F643","wink":"1F609","blush":"1F60A","innocent":"1F607","smiling_face_with_3_hearts":"1F970",
@@ -141,7 +141,7 @@ const xows_tpl_emoj_map = {
 
 /**
  * ASCII emoticons to unicode map, this member is filled with
- * JSON data dynamically loaded at startup. 
+ * JSON data dynamically loaded at startup
  * 
  *  See: xows_tpl_init, xows_tpl_init_json, xows_tpl_template_parse_json
  */
@@ -163,11 +163,10 @@ const xows_tpl_emot_map = {
 };
 
 /**
- * Launch the download of the specified template file.
+ * Launch the download of the specified template file
  * 
- * @param {string}  name    Template name to retreive file path.
- * @param {boolean} isinst  Indicate whether is instantiable, 
- *                            otherwise parse as static.
+ * @param   {string}    name      Template name to retreive file path
+ * @param   {boolean}   isinst    Indicate whether is instantiable
  */
 function xows_tpl_template_load(name, isinst)
 {
@@ -197,10 +196,10 @@ function xows_tpl_template_load(name, isinst)
 }
 
 /**
- * Check for completed template loading and parsing. This function is
- * called each time a template is successfully parsed. 
+ * Check for completed template loading and parsing
  * 
- * Once all templates are parsed, the function call the DOM 
+ * This function is called each time a template is successfully 
+ * parsed, once all templates are parsed, the function call the DOM 
  * initialization function.
  */
 function xows_tpl_template_done()
@@ -219,7 +218,7 @@ function xows_tpl_template_done()
 }
 
 /**
- * Parse the given HTML data as static template. 
+ * Parse the given HTML data as static template
  * 
  * Static template are intended to be added once in the document, they
  * are typically base GUI/layout templates.
@@ -235,10 +234,9 @@ function xows_tpl_template_done()
  * that a static templates cannot be included within instanciables ones
  * and will be ignored in this case.
  * 
- * @param {string}  html    HTML data to parse.
- * @param {string}  path    File URL/Path the data come from.
- * @param {boolean} isinst  Indicate whether is instantiable, 
- *                            otherwise parse as static.
+ * @param   {string}    html      HTML data to parse
+ * @param   {string}    path      File URL/Path the data come from
+ * @param   {boolean}   isinst    Indicate whether is instantiable
  */
 function xows_tpl_template_parse(html, path, isinst)
 {
@@ -316,12 +314,12 @@ function xows_tpl_template_parse(html, path, isinst)
 }
 
 /**
- * Entry point to start the whole template loading and parsing job.
+ * Entry point to start the whole template loading and parsing job
+ * 
  * This function must be called once to load the desired set of 
  * template.
  * 
- * @param {object}    onready   Callback function to be called once 
- *                                templates successfully loaded.
+ * @param   {object}    onready   Function to be called once templates successfully loaded
  */
 function xows_tpl_init(onready)
 {
@@ -358,18 +356,18 @@ function xows_tpl_init(onready)
 }
 
 /**
- * Function to create HTML embeding wrapper element.
+ * Function to create HTML embeding wrapper element
  * 
  * If the href parameter is not null, an HTML hyperlink is prepended to 
  * the embeded media. If the element parameter is null, it is simply
  * ignored.
  * 
- * @param {string}    href      Media original URL.
- * @param {string}    media     Media or embeded element to wrap.
- * @param {string}    style     Optional class name to style wrapper.
- * @param {string}    title     Optional title to add to wrapper.
+ * @param   {string}    href      Media original URL
+ * @param   {string}    media     Media or embeded element to wrap
+ * @param   {string}    style     Optional class name to style wrapper
+ * @param   {string}    title     Optional title to add to wrapper
  * 
- * @return  {string} Remplacement HTML sample.
+ * @return  {string}    Remplacement HTML sample
  */
 function xows_tpl_embed_wrap(href, media, style, title)
 {
@@ -387,12 +385,12 @@ function xows_tpl_embed_wrap(href, media, style, title)
 }
 
 /**
- * Function to create HTML embeded image from url.
+ * Function to create HTML embeded image from url
  * 
- * @param {string}  href  Image URL
- * @param {string}  ext   Image file extension part.
+ * @param   {string}    href      Image URL
+ * @param   {string}    ext       Image file extension part
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_image(href, ext)
 {
@@ -403,12 +401,12 @@ function xows_tpl_embed_image(href, ext)
 }
 
 /**
- * Function to create HTML embeded movie from url.
+ * Function to create HTML embeded movie from url
  * 
- * @param {string}  href  Movie URL
- * @param {string}  ext   Movie file extension part.
+ * @param   {string}    href      Movie URL
+ * @param   {string}    ext       Movie file extension part
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_movie(href, ext)
 {
@@ -417,12 +415,12 @@ function xows_tpl_embed_movie(href, ext)
               "EMBD-VID");
 }
 /**
- * Function to create HTML embeded audio from url.
+ * Function to create HTML embeded audio from url
  * 
- * @param {string}  href  Audio URL
- * @param {string}  ext   Audio file extension part.
+ * @param   {string}    href      Audio URL
+ * @param   {string}    ext       Audio file extension part
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_audio(href, ext)
 {
@@ -432,12 +430,12 @@ function xows_tpl_embed_audio(href, ext)
 }
 
 /**
- * Function to create HTML embeded Youtube movie from url.
+ * Function to create HTML embeded Youtube movie from url
  * 
- * @param {string}  href    Youtube movie URL
- * @param {string}  match   Matched substring in the source URL
+ * @param   {string}    href      Youtube movie URL
+ * @param   {string}    match     Matched substring in the source URL
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_youtube(href, match)
 {
@@ -449,12 +447,12 @@ function xows_tpl_embed_youtube(href, match)
 }
 
 /**
- * Function to create HTML embeded Dailymotion movie from url.
+ * Function to create HTML embeded Dailymotion movie from url
  * 
- * @param {string}  href    Dailymotion movie URL
- * @param {string}  match   Matched substring in the source URL
+ * @param   {string}    href      Dailymotion movie URL
+ * @param   {string}    match     Matched substring in the source URL
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_dailymo(href, match) 
 {
@@ -465,12 +463,12 @@ function xows_tpl_embed_dailymo(href, match)
 }
 
 /**
- * Function to create HTML embeded Dailymotion movie from url.
+ * Function to create HTML embeded Dailymotion movie from url
  * 
- * @param {string}  href    Dailymotion movie URL
- * @param {string}  match   Matched substring in the source URL
+ * @param   {string}    href      Dailymotion movie URL
+ * @param   {string}    match     Matched substring in the source URL
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_vimeo(href, match) 
 {
@@ -481,12 +479,12 @@ function xows_tpl_embed_vimeo(href, match)
 }
 
 /**
- * Function to create HTML embeded Odysee movie from url.
+ * Function to create HTML embeded Odysee movie from url
  * 
- * @param {string}  href    Odysee movie URL
- * @param {string}  match   Matched substring in the source URL
+ * @param   {string}    href      Odysee movie URL
+ * @param   {string}    match     Matched substring in the source URL
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_odysee(href, match)
 {
@@ -500,10 +498,10 @@ function xows_tpl_embed_odysee(href, match)
  * Function to create HTML embeded file of unknown type to be
  * downloaded.
  * 
- * @param {string}  href    Dailymotion movie URL
- * @param {string}  match   Matched substring in the source URL
+ * @param   {string}    href      Dailymotion movie URL
+ * @param   {string}    match     Matched substring in the source URL
  * 
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_embed_upld(href, match) 
 {
@@ -512,7 +510,7 @@ function xows_tpl_embed_upld(href, match)
 }
 
 /**
- * Per file extension embeding function correspondance map.
+ * Per file extension embeding function correspondance map
  */
 let xows_tpl_embed_files = { 
   "JPG"             : xows_tpl_embed_image,
@@ -529,7 +527,7 @@ let xows_tpl_embed_files = {
 };
 
 /**
- * Per plateform embeding function correspondance map.
+ * Per plateform embeding function correspondance map
  */
 let xows_tpl_embed_sites = { 
   "www.youtube.com"       : xows_tpl_embed_youtube,
@@ -541,15 +539,15 @@ let xows_tpl_embed_sites = {
 };
 
 /**
- * Per service URL embeding function correspondance map.
+ * Per service URL embeding function correspondance map
  */
 let xows_tpl_embed_uplds = { };
   
 /**
- * Add or modify an embedding site/plateform with its parsing function.
+ * Add or modify an embedding site/plateform with its parsing function
  * 
- * @param {string}  match  Domain name to match in the parsed URL.
- * @param {object}  parse  Function to create embd media from URL.
+ * @param   {string}    match     Domain name to match in the parsed URL
+ * @param   {object}    parse     Function to create embd media from URL
  */
 function xows_tpl_embed_add_site(match, parse)
 {
@@ -557,10 +555,10 @@ function xows_tpl_embed_add_site(match, parse)
 }
 
 /**
- * Add or modify an embedding site/plateform with its parsing function.
+ * Add or modify an embedding site/plateform with its parsing function
  * 
- * @param {string}  match  File extension to match in the parsed URL.
- * @param {object}  parse  Function to create embd media from URL.
+ * @param   {string}    match     File extension to match in the parsed URL
+ * @param   {object}    parse     Function to create embd media from URL
  */
 function xows_tpl_embed_add_file(match, parse)
 {
@@ -570,7 +568,7 @@ function xows_tpl_embed_add_file(match, parse)
 /**
  * Add an embedding site for file download.
  * 
- * @param {string}  match  Domain name to match in the parsed URL.
+ * @param   {string}    match     Domain name to match in the parsed URL
  */
 function xows_tpl_embed_add_upld(match)
 {
@@ -579,10 +577,10 @@ function xows_tpl_embed_add_upld(match)
 
 /**
  * Replacement function to substitute emojis shortcode by enhanced HTML  
- * sample with proper escaped emoji unicode.
+ * sample with proper escaped emoji unicode
  * 
- * @param {string}  match   Regex full match string.
- * @param {string}  code    Extracted emoji short code.
+ * @param   {string}    match     Regex full match string
+ * @param   {string}    code      Extracted emoji short code
  *  
  * @return  {string} Replacement HTML sample.
  */
@@ -594,12 +592,12 @@ function xows_tpl_replace_emoj_sc(match, code)
 
 /**
  * Replacement function to substitute emojis codepoint by enhanced HTML  
- * sample with proper escaped emoji unicode.
+ * sample with proper escaped emoji unicode
  * 
- * @param {string}  match   Regex full match string.
- * @param {string}  code    Extracted emoji short code.
+ * @param   {string}    match     Regex full match string
+ * @param   {string}    code      Extracted emoji short code
  *  
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_replace_emoj_cp(match, code) 
 {
@@ -608,14 +606,14 @@ function xows_tpl_replace_emoj_cp(match, code)
 
 /**
  * Replacement function to substitute ASCII emoticons by 
- * enhanced HTML with proper escaped emoji unicode.
+ * enhanced HTML with proper escaped emoji unicode
  * 
- * @param {string}  match   Regex full match string.
- * @param {string}  space   Preceding space or null.
- * @param {string}  eyes    Emoticon eyes (including tears).
- * @param {string}  mouth   Emoticon mouth.
+ * @param   {string}    match     Regex full match string
+ * @param   {string}    space     Preceding space or null
+ * @param   {string}    eyes      Emoticon eyes (including tears)
+ * @param   {string}    mouth     Emoticon mouth
  *  
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_replace_emots(match, space, eyes, mouth) 
 {
@@ -624,16 +622,16 @@ function xows_tpl_replace_emots(match, space, eyes, mouth)
 }
 
 /**
- * Stack of found URL during text format/replacement.
+ * Stack of found URL during text format/replacement
  */
 let xows_tpl_format_urls = null;
 
 /**
- * Replacement function to substitute URL by properly formated link.
+ * Replacement function to substitute URL by properly formated link
  * 
- * @param {string}  href   Regex full match string (URL).
+ * @param   {string}    href      Regex full match string (URL)
  *  
- * @return  {string} Replacement HTML sample.
+ * @return  {string}    Replacement HTML sample
  */
 function xows_tpl_replace_url(href) 
 {
@@ -654,12 +652,12 @@ function xows_tpl_replace_url(href)
 
 /**
  * Parses the given text (message body) to search known patterns such as 
- * emoticons and URLs to properly format them as HTML.
+ * emoticons and URLs to properly format them as HTML
  * 
- * @param {string}    body   Original text to parse.
- * @param {string[]}  urls   Optional array that receive found URLs.
+ * @param   {string}    body      Original text to parse
+ * @param   {string[]}  urls      Optional array that receive found URLs
  *  
- * @return  {string} Enhanced body with HTML inclusions
+ * @return  {string}    Enhanced body with HTML inclusions
  */
 function xows_tpl_format_body(body, urls)
 {
@@ -683,11 +681,11 @@ function xows_tpl_format_body(body, urls)
 }
 
 /**
- * Created embeded medias from the given URL list.
+ * Created embeded medias from the given URL list
  * 
- * @param {string[]}  urls   List of URLs to created embeded medias.
+ * @param   {string[]}  urls      List of URLs to created embeded medias
  *  
- * @return  {string}    Embeded medias HTML elements.
+ * @return  {string}    Embeded medias HTML elements
  */
 function xows_tpl_format_embed(urls)
 {
@@ -724,15 +722,15 @@ function xows_tpl_format_embed(urls)
 }
 
 /**
- * Stores the dynamically created CSS classes for avatars DataURL.
+ * Stores the dynamically created CSS classes for avatars DataURL
  */
 let xows_tpl_avat_cls_db = {};
 
 /**
  * Create a new CSS class with data-url as background-image style to 
- * be used as avatar.
+ * be used as avatar
  * 
- * @param {string}  hash    Avatar data hash (class name)
+ * @param   {string}    hash      Avatar data hash (class name)
  */
 function xows_tpl_spawn_avat_cls(hash)
 {
@@ -754,17 +752,17 @@ function xows_tpl_spawn_avat_cls(hash)
 }
 
 /**
- * Build and returns a new instance of roster contact <li> object from
- * template be added in the document cont_list <ul>
+ * Build and returns a new instance of roster Contact <li> object from
+ * template to be added in the roster list <ul>
  * 
- * @param {string}  bare    Contact JID
- * @param {string}  name    Contact display name
- * @param {string}  avat    Contact avatar hash
- * @param {number}  subs    Contact subscription
- * @param {number}  [show]  Optional Contact Show level
- * @param {string}  [stat]  Optional Contact Status
+ * @param   {string}    bare      Contact JID
+ * @param   {string}    name      Contact display name
+ * @param   {string}    avat      Contact avatar hash
+ * @param   {number}    subs      Contact subscription
+ * @param   {number}   [show]     Optional Contact Show level
+ * @param   {string}   [stat]     Optional Contact Status
  *  
- * @return  {object} Contact <li> HTML Elements
+ * @return  {object}    Contact <li> HTML Elements
  */
 function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
 {
@@ -794,14 +792,14 @@ function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
 }
 
 /**
- * Update the given instance of roster contact <li> object.
+ * Update the specified instance of roster Contact <li> object
  * 
- * @param {object}  li      Contact <li> element to update.
- * @param {string}  name    Contact display name
- * @param {string}  avat    Contact avatar image URL
- * @param {number}  subs    Contact subscription
- * @param {number}  [show]  Optional Contact Show level
- * @param {string}  [stat]  Optional Contact Status
+ * @param   {object}    li        Contact <li> element to update
+ * @param   {string}    name      Contact display name
+ * @param   {string}    avat      Contact avatar image URL
+ * @param   {number}    subs      Contact subscription
+ * @param   {number}   [show]     Optional Contact Show level
+ * @param   {string}   [stat]     Optional Contact Status
  */
 function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
 {
@@ -828,17 +826,90 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
 }
 
 /**
- * Build and returns a new instance of room contact (occupant) <li> 
- * object from template be added in the document occu_list <ul>
+ * Build and returns a new instance of roster Room <li> object from
+ * template to be added in the roster list <ul>
  * 
- * @param {string}  ojid      Occupant JID
- * @param {string}  nick      Occupant Nickname
- * @param {string}  avat      Occupant avatar image URL
- * @param {string} [full]     Occupant real full JID if available
- * @param {number} [show]     Optional Contact Show level
- * @param {string} [stat]     Optional Contact Status
+ * @param   {string}    bare      Charoom JID
+ * @param   {string}    name      Charoom display name
+ * @param   {string}    desc      Charoom description
+ * @param   {string}    lock      Charoom is password protected
  *  
- * @return  {object} Contact <li> HTML Elements
+ * @return  {object}    Room <li> HTML Elements
+ */
+function xows_tpl_spawn_rost_room(bare, name, desc, lock)
+{
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["ROST-ROOM"].firstChild.cloneNode(true);
+  
+  // Set content to proper elements
+  inst.id = bare;
+  inst.title = name+" ("+bare+")";
+  inst.querySelector("H3").innerText = name;
+  inst.querySelector("P").innerText = desc;
+  //const avat_dv = inst.querySelector("FIGURE");
+  //if(lock) avat_dv.classList.add("ROOM-LOCK");
+
+  return inst;
+}
+
+/**
+ * Update the specified instance of roster Room <li> object.
+ * 
+ * @param   {object}    li        Room <li> element to update
+ * @param   {string}    name      Room display name
+ * @param   {string}    desc      Room description
+ * @param   {string}    lock      Room is password protected
+ */
+function xows_tpl_update_rost_room(li, name, desc, lock)
+{
+  // Update content
+  li.title = name+" ("+li.id+")";
+  li.querySelector("H3").innerText = name;
+  li.querySelector("P").innerText = desc;
+
+  //const avat_dv = li.querySelector("FIGURE");
+  //if(lock) {
+  //  avat_dv.classList.add("ROOM-LOCK");
+  //} else {
+  //  avat_dv.classList.remove("ROOM-LOCK");
+  //}
+}
+
+/**
+ * Build and returns a new instance of Subscribe Request <li> object 
+ * from template to be added in roster list <ul>
+ * 
+ * @param   {string}    bare      Subscribe sender JID bare
+ * @param   {string}   [nick]     Subscribe sender preferend nick (if available)
+ *  
+ * @return  {object}    Subscribe Request <li> HTML Elements
+ */
+function xows_tpl_spawn_rost_subs(bare, nick)
+{
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["ROST-SUBS"].firstChild.cloneNode(true);
+  
+  // Set content to proper elements
+  inst.id = bare;
+  inst.title = nick+" ("+bare+")";
+  if(nick) inst.setAttribute("name", nick);
+  inst.querySelector("H3").innerText = nick ? nick : bare;
+
+  return inst;
+}
+
+/**
+ * Build and returns a new instance of Room Occupant <li> object from 
+ * template to be added in the Room's Occupants <ul>
+ * 
+ * @param   {string}    ojid      Occupant JID
+ * @param   {string}    nick      Occupant Nickname
+ * @param   {string}    avat      Occupant avatar image URL
+ * @param   {string}   [full]     Occupant real full JID if available
+ * @param   {number}   [show]     Optional Contact Show level
+ * @param   {string}   [stat]     Optional Contact Status
+ *  
+ * @return  {object}    Occupant <li> HTML Elements
  */
 function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
 {
@@ -862,14 +933,14 @@ function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
 }
 
 /**
- * Update the given instance of room occupant <li> object.
+ * Update the specified instance of Room Occupant <li> object.
  * 
- * @param {string}  li        Contact <li> element to update.
- * @param {string}  nick      Occupant Nickname
- * @param {string}  avat      Occupant avatar image URL
- * @param {string} [full]     Occupant real full JID if available
- * @param {number} [show]     Optional Contact Show level
- * @param {string} [stat]     Optional Contact Status
+ * @param   {string}    li        Occupant <li> element to update.
+ * @param   {string}    nick      Occupant Nickname
+ * @param   {string}    avat      Occupant avatar image URL
+ * @param   {string}   [full]     Occupant real full JID if available
+ * @param   {number}   [show]     Optional Contact Show level
+ * @param   {string}   [stat]     Optional Contact Status
  */
 function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
 {
@@ -887,91 +958,18 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
 }
 
 /**
- * Build and returns a new instance of roster Room <li> object from
- * template be added in the document room_list <ul>
+ * Build and returns a new instance of history Message <li> object 
+ * from template to be added in the chat history list <ul>
  * 
- * @param {string}  bare   Charoom JID
- * @param {string}  name   Charoom display name
- * @param {string}  desc   Charoom description
- * @param {string}  lock   Charoom is password protected
+ * @param   {string}    id        Message ID
+ * @param   {string}    from      Sender JID
+ * @param   {string}    time      Message timestamp
+ * @param   {string}    body      Message content
+ * @param   {boolean}   sent      Marks message as sent by client
+ * @param   {boolean}   recp      Marks message as receipt received
+ * @param   {object}   [sndr]     Message sender Peer object or null
  *  
- * @return  {object} Contact <li> HTML Elements
- */
-function xows_tpl_spawn_rost_room(bare, name, desc, lock)
-{
-  // Clone DOM tree from template
-  const inst = xows_tpl_model["ROST-ROOM"].firstChild.cloneNode(true);
-  
-  // Set content to proper elements
-  inst.id = bare;
-  inst.title = name+" ("+bare+")";
-  inst.querySelector("H3").innerText = name;
-  inst.querySelector("P").innerText = desc;
-  //const avat_dv = inst.querySelector("FIGURE");
-  //if(lock) avat_dv.classList.add("ROOM-LOCK");
-
-  return inst;
-}
-
-/**
- * Update the given instance of roster Room <li> object.
- * 
- * @param {object}  li     Room <li> element to update.
- * @param {string}  name   Room display name
- * @param {string}  desc   Room description
- * @param {string}  lock   Room is password protected
- */
-function xows_tpl_update_rost_room(li, name, desc, lock)
-{
-  // Update content
-  li.title = name+" ("+li.id+")";
-  li.querySelector("H3").innerText = name;
-  li.querySelector("P").innerText = desc;
-
-  //const avat_dv = li.querySelector("FIGURE");
-  //if(lock) {
-  //  avat_dv.classList.add("ROOM-LOCK");
-  //} else {
-  //  avat_dv.classList.remove("ROOM-LOCK");
-  //}
-}
-
-/**
- * Build and returns a new instance of room contact (occupant) <li> 
- * object from template be added in the document occu_list <ul>
- * 
- * @param {string}  bare      Subscribe sender JID bare
- * @param {string}  [nick]    Subscribe sender preferend nick (if available)
- *  
- * @return  {object} Contact <li> HTML Elements
- */
-function xows_tpl_spawn_rost_subs(bare, nick)
-{
-  // Clone DOM tree from template
-  const inst = xows_tpl_model["ROST-SUBS"].firstChild.cloneNode(true);
-  
-  // Set content to proper elements
-  inst.id = bare;
-  inst.title = nick+" ("+bare+")";
-  if(nick) inst.setAttribute("name", nick);
-  inst.querySelector("H3").innerText = nick ? nick : bare;
-
-  return inst;
-}
-
-/**
- * Build and returns a new instance of history full message <li> object 
- * from template be added in the document history list <ul>
- * 
- * @param {string}    id        Message ID.
- * @param {string}    from      Sender JID.
- * @param {string}    time      Message timestamp.
- * @param {string}    body      Message content.
- * @param {boolean}   sent      Marks message as sent by client.
- * @param {boolean}   recp      Marks message as receipt received.
- * @param {object}   [sndr]     Message sender Peer object or null.
- *  
- * @return  {object} History message <li> HTML Elements
+ * @return  {object}    History message <li> HTML Elements
  */
 function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
 {

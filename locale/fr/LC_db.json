@@ -1,235 +1,235 @@
 {
   "Unsername already exists":
   "Ce nom d'utilisateur existe déjà",
-  
+
   "Username contains illegal characters":
   "Le nom d'utilisateur contient des caractères non autorisés",
-  
+
   "Socket connection error":
   "Erreur de connexion du socket",
-  
+
   "Incomplete JID (undefined domain)":
   "JID incomplet (domaine non défini)",
-  
+
   "Invalid server framing":
   "Cadrage de serveur non valide",
-  
+
   "Server closed the stream":
   "Le serveur a fermé le flux",
-  
+
   "Server thrown a stream error":
   "Le serveur a renvoyé une erreur de flux",
-  
+
   "Unable to find a suitable authentication mechanism":
   "Impossible de trouver un mécanisme d'authentification approprié",
-  
+
   "Server does not provide required stream features":
   "Le serveur ne fournit pas les fonctionnalités de flux requises",
-  
+
   "Wrong username or password":
   "Nom d'utilisateur ou mot de passe incorrect",
-  
+
   "Authentication failure":
   "Échec d'authentification",
-  
+
   "Server integrity check failed":
   "Échec de la vérification de l'intégrité du serveur",
-  
+
   "Resource bind failure":
   "Échec de liaison de ressource",
-  
+
   "Session establishment failure":
   "Échec d'établissement de session",
-  
+
   "Login":
   "Connexion",
-  
+
   "Please enter your username and password":
   "Entrez votre nom d'utilisateur et votre mot de passe",
-  
+
   "Login automatically":
   "Se connecter automatiquement",
 
   "Username":
   "Nom d'utilisateur",
-  
+
   "Password":
   "Mot de passe",
-  
+
   "Connect":
   "Se connecter",
-  
+
   "Register a new account":
   "Créer un nouveau compte",
 
   "Account creation":
   "Creation de compte",
-  
+
   "Please enter new account username and password":
   "Entrez le nom d'utilisateur et le mot de passe du nouveau compte",
-  
+
   "I am not a robot":
   "Je ne suis pas un robot",
-  
+
   "Register":
   "S'enregistrer",
-  
+
   "Login with an existing account":
   "Se connecter avec un compte existant",
-  
+
   "It remains unsaved changes":
   "Il reste des modifications non enregistrées",
-  
+
   "Save changes":
   "Enregistrer les modifications",
-  
+
   "Reset":
   "Réinitialiser",
-  
+
   "Loading...":
   "Chargement...",
-  
+
   "Connecting...":
   "Connexion...",
-  
+
   "Please wait...":
   "Veuillez patienter...",
-  
+
   "Contacts":
   "Contacts",
 
   "Add a contact":
   "Ajouter un contact",
-  
+
   "Pending requests":
   "Requêtes en attente",
-  
+
   "Authorized":
   "Autorisés",
-  
+
   "Resend authorization request":
   "Renvoyer une demande d'autorisation",
-  
+
   "Remove contact":
   "Supprimer le contact",
-  
+
   "Awaiting authorization":
   "En attente d'autorisation",
-  
+
   "Chatrooms":
   "Salons",
-  
+
   "Join a chatroom":
   "Rejoindre un salon",
-  
+
   "Query public chatrooms list":
   "Interroger la liste des salons publics",
-  
+
   "Bookmarks":
   "Favoris",
-  
+
   "Public rooms":
   "Salons publics",
-  
+
   "Private rooms":
   "Salons privés",
-  
+
   "Edit user profile":
   "Modifier le profil utilisateur",
-  
+
   "No status defined":
   "Aucun statut défini",
 
   "Available For Chat":
   "Disponible pour discuter",
-  
+
   "Available":
   "Disponible",
-  
+
   "Away":
   "Absent",
-  
+
   "Extended Away":
   "Longue Absence",
-  
+
   "Do Not Disturb":
   "Ne Pas Déranger",
-  
+
   "Disconnect":
   "Se déconnecter",
-  
+
   "Change Room topic":
   "Changer le sujet du Salon",
-  
+
   "Room configuration":
   "Configuration du Salon",
-  
+
   "Enable notifications":
   "Activer les notifications",
-  
+
   "Disable notifications":
   "Désactiver les notifications",
-  
+
   "Room occupants list":
   "Liste des occupants du Salon",
-  
+
   "New unread messages":
   "Nouveaux messages non lus",
-  
+
   "Upload a file":
   "Envoyer un fichier",
-  
+
   "Send a message":
   "Envoyer un message",
-  
+
   "Add an emoji":
   "Ajouter un emoji",
 
   "Occupants":
   "Occupants",
-  
+
   "Moderators":
   "Modérateurs",
-  
+
   "Participants":
   "Participants",
-  
+
   "Add this Contact":
   "Ajouter ce Contact",
-  
+
   "Room identifier":
   "Identifiant du Salon",
-  
+
   "Identifier":
   "Identifiant",
-  
+
   "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
   "Si le Salon spécifié n'existe pas et si le serveur ne limite pas la création des Salons, un nouveau Salon sera créé avec vous en tant que propriétaire.",
-  
+
   "Join Room (create it if does not exist)":
   "Rejoindre le Salon (le créer si il n'existe pas)",
-  
+
   "Join":
   "Rejoindre",
-  
+
   "The Room will be created, do you want to configure it ?":
   "Le Salon va être créé, voulez-vous le configurer ?",
-  
+
   "Join now":
   "Rejoindre maintenant",
-  
+
   "Configure":
   "Configurer",
-  
+
   "Request subscription authorisation":
   "Faire une demande d'autorisation d'abonnement",
-  
+
   "Allow contact subscription ?":
   "Autoriser l'abonnement du contact ?",
-  
+
   "Allow":
   "Autoriser",
-  
+
   "Deny":
   "Refuser",
 
@@ -238,58 +238,58 @@
 
   "Add contact and request authorisation ?":
   "Ajouter le contact et faire une demande d'autorisation ?",
-  
+
   "Remove contact and revoke authorization ?":
   "Supprimer le contact et révoquer l'autorisation ?",
-  
+
   "Send a message to":
   "Envoyer un message à",
-  
+
   "is currently writing":
   "est en train d'écrire",
-  
+
   "and":
   "et",
-  
+
   "other(s)":
   "autre(s)",
-  
+
   "are currently writing":
   "sont en train d'écrire",
-  
+
   "Start of history":
   "Début de l'historique",
-  
+
   "at":
   "à",
-  
+
   "Contact address (JID)":
   "Adresse (JID) du Contact",
-  
+
   "XMPP/Jabber address":
   "Adresse XMPP/Jabber",
-  
+
   "The contact will be added but unavailable, a subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
   "Le contact sera ajouté mais indisponible, une demande d'autorisation d'abonnement sera envoyée à l'adresse indiquée, vous devrez attendre que le contact autorise cette demande.",
-  
+
   "Add contact and request authorisation":
   "Ajouter le contact et faire une demande d'autorisation",
-  
+
   "Submit":
   "Envoyer",
-  
+
   "Configure room...":
   "Configurer le salon...",
-  
+
   "Set room subject...":
   "Définir le sujet du salon...",
-  
+
   "Chatoom configuration":
   "Configuration du salon",
-  
+
   "Room subject":
   "Sujet du Salon",
-  
+
   "Room informations":
   "Informations du Salon",
 
@@ -307,13 +307,13 @@
 
   "Persistent Room":
   "Salon persistant",
-  
+
   "Rooms are automatically deleted when they are empty, unless this option is enabled":
   "Les Salons sont automatiquement supprimés lorsqu'ils sont vides, sauf si cette option est activée",
 
   "Public Room":
   "Salon publique",
-  
+
   "A public Room can be found by any user through normal means such as searching and service discovery":
   "Un Salon public peut être trouvé par n'importe quel utilisateur par des moyens normaux tels que la recherche et la découverte de services",
 
@@ -322,10 +322,10 @@
 
   "Allowed to members only":
   "Autorisé aux membres uniquement",
-  
+
   "Enable this to only allow access for Room owners, admins and members":
   "Activez cette option pour n'autoriser l'accès qu'aux propriétaires, administrateurs et membres du Salon",
-  
+
   "Moderated Room":
   "Salon modéré",
 
@@ -334,7 +334,7 @@
 
   "Occupants anonymity":
   "Anonymat des occupants",
-  
+
   "In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address":
   "Dans un Salon non-anonyme, l'adresse des occupants est exposée aux autres, sinon seuls les modérateurs peuvent voir l'adresse des occupants",
 
@@ -343,55 +343,55 @@
 
   "Non-Anonymous":
   "Non-Anonyme",
-  
+
   "History max length":
   "Taille maximum de l'historique",
-  
+
   "Specify the maximum number of previous messages that should be sent to users when they join the Room":
   "Spécifiez le nombre maximum de précédents messages qui doivent être envoyés aux utilisateurs lorsqu'ils rejoignent le Salon",
-  
+
   "History default length":
   "Taille par default de l'historique",
-  
+
   "Specify the number of previous messages sent to new users when they join the Room":
   "Spécifie le nombre de précédents messages envoyés aux nouveaux utilisateurs lorsqu'ils rejoignent le Salon",
-  
+
   "Enable messages archiving":
   "Activer l'archivage des messages",
-  
+
   "Stores messages in persistent way using Message Archive Management":
   "Stocke les messages de manière persistante à l'aide de Message Archive Management",
-  
+
   "User profile":
   "Profil d'utilisateur",
-  
+
   "Display name":
   "Nom d'affichage",
-  
+
   "My Nickname":
   "Mon pseudonyme",
 
   "Avatar image":
   "Image d'avatar",
-  
+
   "Profile access":
   "Accès au profile",
-  
+
   "Profile data in open access":
   "Données du profile en accès libre",
 
   "Uploading file":
   "Envoi du fichier",
-  
+
   "Error":
   "Erreur",
-  
+
   "Abort":
   "Annuler",
-  
+
   "Close":
   "Fermer",
-  
+
   "Cancel":
   "Annuler"
 }

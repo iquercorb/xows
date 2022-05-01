@@ -10,13 +10,13 @@
  *                    | \_/  |___\   /___|  \_/ |
  *                    .                         .
  *                     \.__       ___       __./
- *                         /     /   \     \ 
+ *                         /     /   \     \
  *                        /_____/     \_____\
- *         
+ *
  *                     Copyright (c) 2022 Eric M.
- * 
+ *
  *     This file is part of X.O.W.S (XMPP Over WebSocket Library).
- * 
+ *
  * The JavaScript code in this page is free software: you can
  * redistribute it and/or modify it under the terms of the GNU
  * General Public License (GNU GPL) as published by the Free Software
@@ -24,19 +24,19 @@
  * any later version.  The code is distributed WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
- * 
+ *
  * As additional permission under GNU GPL version 3 section 7, you
  * may distribute non-source (e.g., minimized or compacted) forms of
  * that code without the copy of the GNU GPL normally required by
  * section 4, provided you include this license notice and a URL
  * through which recipients can access the Corresponding Source
- * 
+ *
  * @licend
  */
- 
+
 /* Notice:
- * 
- * Classes with upper-case name are constants used as litteral in the 
+ *
+ * Classes with upper-case name are constants used as litteral in the
  * main program and must not be renamed.
  */
 
@@ -48,7 +48,7 @@
   --base-tone4:       #373740;  /* Main tone (Panel header, Chat history, Page frame, etc.) */
   --base-tone5:       #40404A;  /* Light tone (Main header, Chat editor) */
   --base-tone6:       #52525E;  /* Brighter tone (Input outline) */
-  
+
   --text-tone0:       #FFF;     /* White text (main titles, labels) */
   --text-tone1:       #DFDFE6;  /* Light text (common text) */
   --text-tone2:       #AAAAB3;  /* Medium text (section titles, secondary texts) */
@@ -56,34 +56,34 @@
   --text-tone4:       #45454D;  /* Darker text (Not used...) */
   --text-hligh:       #FFE9B7;  /* Highlight text (emphasis, highlighted text) */
   --text-error:       #FC8484;  /* Error text (forbiden and error text) */
-  
+
   --link-base :       #FFB000;  /* Link & Highlight Button background */
   --link-hover :      #FFCC17;  /* Link & Highlight Button background hover */
   --link-visited :    #F2BD0C;  /* Link visited */
   --link-text :       #FFF;     /* Highlight Button text */
   --link-text-hover : #FFF;     /* Highlight Button text hover */
-  
+
   --bttn-base:        #7A7D96;  /* Normal Button background */
   --bttn-hover:       #8D91AD;  /* Normal Button background hover */
   --bttn-text:        #DDD;     /* Normal Button text */
   --bttn-text-hover:  #FFF;     /* Normal Button text hover */
-  
+
   /* Input Checkboxes, Numbers, Selects...  */
   --ctrl-base:        #585966;  /* Input Control background */
   --ctrl-thmb:        #CCC;     /* Input Control Thumb & Button */
   --ctrl-thmb-hover:  #FFF;     /* Input Control Thumb & Button hover */
   --ctrl-text:        #FFF;     /* Input Control Text */
-  
+
   /* Unread notifications spot & banner */
   --notif-base:       #EB4439;  /* Notification background */
   --notif-hover:      #F06263;  /* Notification background hover */
   --notif-text:       #FFF;     /* Notification text */
-  
+
   /* Loading Spinning Ring */
   --load-tail:        rgba(115, 115, 128, 0.1);
   --load-dimm:        rgba(115, 115, 128, 0.3);
   --load-start:       rgba(115, 115, 128, 0.5);
-  
+
   /* Presence 'show level' colors */
   --show-off:         #858585;  /* Offline */
   --show-dnd:         #FD6154;  /* Do Not Disturb */
@@ -110,7 +110,7 @@ a {
 a:visited {
   color: var(--link-visited);
 }
-a:hover, 
+a:hover,
 a:active {
   color: var(--link-hover);
 }
@@ -165,8 +165,8 @@ button:disabled {
   animation: blink-anim 400ms ease-out infinite;
 }
 @keyframes loading-anim {
-  0% { transform: rotate(0); } 
-  100% { transform: rotate(360deg); } 
+  0% { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
 }
 .LOADING::after {
   content: "";
@@ -253,7 +253,7 @@ button:disabled {
 /* Button - Close */
 /* ------------------------------------------------------------------ */
 .btn-close {
-  margin: 0; 
+  margin: 0;
   padding: 0;
   width: 32px; height: 32px;
   border-radius: 50%;
@@ -368,8 +368,8 @@ button:disabled {
   -moz-appearance: textfield;
   appearance: textfield;
 }
-.spinnb input[type=number]::-webkit-inner-spin-button, 
-.spinnb input[type=number]::-webkit-outer-spin-button { 
+.spinnb input[type=number]::-webkit-inner-spin-button,
+.spinnb input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 /* ------------------------------------------------------------------ */
@@ -423,7 +423,7 @@ button:disabled {
 }
 .VOID-DARK {
   background-color: #000;
-  opacity: .8;  
+  opacity: .8;
 }
 /* ------------------------------------------------------------------ */
 /* Top-Level Pages Screen */
@@ -502,14 +502,14 @@ button:disabled {
     width: 0;
   }
   #main_coll,
-  .COLR-WIDE #main_coll, 
+  .COLR-WIDE #main_coll,
   .COLR-WIDE #main_colc,
   .COLL-WIDE #main_colc,
   .COLL-WIDE #main_colr {
     width: 0;
     z-index: -1;
   }
-  .COLR-WIDE #main_colr, 
+  .COLR-WIDE #main_colr,
   .COLL-WIDE #main_coll {
     width: 100%;
     flex: auto;
@@ -623,7 +623,7 @@ button:disabled {
 .over-mbox button {
   font-weight: normal;
 }
-.over-mbox .btn-valid, 
+.over-mbox .btn-valid,
 .over-mbox .btn-abort {
   margin: 5px;
   padding: 5px 10px;
@@ -632,7 +632,7 @@ button:disabled {
   margin: 5px;
 }
 @keyframes over-anim {
-  from {  
+  from {
     bottom: -80px;
   }
   to {
@@ -703,9 +703,9 @@ button:disabled {
 /* Media Viewer - Commons */
 /* ------------------------------------------------------------------ */
 .over-view {
-  display: block; 
-  position: absolute; 
-  z-index: 4; 
+  display: block;
+  position: absolute;
+  z-index: 4;
   top: 50%;
   transform: translate(0, -50%);
   padding: 0;
@@ -985,7 +985,7 @@ figure {
   animation: captcha-pulse 800Ms steps(5, end) 1;
 }
 @keyframes captcha-pulse {
-  0% {  
+  0% {
     width: 0; height: 0;
     color: rgba(0,0,0,0.0);
     background-color: transparent;
@@ -1017,7 +1017,7 @@ figure {
 /* Page for Add Contact */
 /* ------------------------------------------------------------------ */
 .page-cont {
-  
+
 }
 /* ------------------------------------------------------------------ */
 /* Page for User profile */
@@ -1069,7 +1069,7 @@ figure {
   transform: translate(-50%, -50%);
 }
 .page-wait .LOADING::after {
-  width: 44px; height: 44px; 
+  width: 44px; height: 44px;
   border-width: 5px;
 }
 .page-wait h1 {
@@ -1404,7 +1404,7 @@ figure {
   background-image: url("images/forbiden.svg");
   opacity: .6;
 }
-.peer-info { 
+.peer-info {
   flex: auto;
   display: inline;
   max-height: 32px;
@@ -1739,7 +1739,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   border-right: 1px solid var(--base-tone6);
 }
 .chat-titl {
-  margin: 0; 
+  margin: 0;
   padding: 0;
   font-weight: bold;
   font-size: 0.9em;
@@ -1807,7 +1807,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 .chat-hist ul {
   list-style: none;
   margin: 0;
-  padding: 0; 
+  padding: 0;
 }
 .hist-bound {
   height: 230px;
@@ -2158,7 +2158,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   .edit-mesg {
     font-size: 0.8em;
   }
-} 
+}
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Upload Button & Input */
 /* ------------------------------------------------------------------ */
@@ -2259,33 +2259,33 @@ div[show="4"]  { background-color: var(--show-chat); }
   animation: dots 800Ms steps(5, end) infinite;
 }
 @keyframes dots {
-  0% {  
+  0% {
     color:                  rgba(170,170,179,0.2);
-    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2), 
+    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2),
                   1.2em 0 0 rgba(170,170,179,0.2);}
-  16% {  
+  16% {
     color:                  rgba(170,170,179,1.0);
-    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2), 
+    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2),
                   1.2em 0 0 rgba(170,170,179,0.2);}
   32% {
     color:                  rgba(170,170,179,1.0);
-    text-shadow:  0.6em 0 0 rgba(170,170,179,1.0), 
+    text-shadow:  0.6em 0 0 rgba(170,170,179,1.0),
                   1.2em 0 0 rgba(170,170,179,0.2);}
   48% {
     color:                  rgba(170,170,179,1.0);
-    text-shadow:  0.6em 0 0 rgba(170,170,179,1.0), 
+    text-shadow:  0.6em 0 0 rgba(170,170,179,1.0),
                   1.2em 0 0 rgba(170,170,179,1.0);}
   64% {
     color:                  rgba(170,170,179,0.2);
-    text-shadow:  0.6em 0 0 rgba(170,170,179,1.0), 
+    text-shadow:  0.6em 0 0 rgba(170,170,179,1.0),
                   1.2em 0 0 rgba(170,170,179,1.0);}
   80% {
     color:                  rgba(170,170,179,0.2);
-    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2), 
+    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2),
                   1.2em 0 0 rgba(170,170,179,1.0);}
   100% {
     color:                  rgba(170,170,179,0.2);
-    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2), 
+    text-shadow:  0.6em 0 0 rgba(170,170,179,0.2),
                   1.2em 0 0 rgba(170,170,179,0.2);}
 }
 @media (max-width: 824px) {

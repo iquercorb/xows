@@ -1,61 +1,61 @@
 {
   "Unsername already exists":
   "",
-  
+
   "Username contains illegal characters":
   "",
 
   "Socket connection error":
   "",
-  
+
   "Incomplete JID (undefined domain)":
   "",
-  
+
   "Invalid server framing":
   "",
-  
+
   "Server closed the stream":
   "",
-  
+
   "Server thrown a stream error":
   "",
-  
+
   "Unable to find a suitable authentication mechanism":
   "",
-  
+
   "Server does not provide required stream features":
   "",
-  
+
   "Wrong username or password":
   "",
-  
+
   "Authentication failure":
   "",
 
   "Server integrity check failed":
   "",
-  
+
   "Resource bind failure":
   "",
-  
+
   "Session establishment failure":
   "",
-  
+
   "Login":
   "",
-  
+
   "Please enter your username and password":
   "",
-  
+
   "Login automatically":
   "",
-  
+
   "Username":
   "",
-  
+
   "Password":
   "",
-  
+
   "Connect":
   "",
 
@@ -64,235 +64,235 @@
 
   "Account creation":
   "",
-  
+
   "Please enter new account username and password":
   "",
-  
+
   "I am not a robot":
   "",
 
   "Login with an existing account":
   "",
-  
+
   "Register":
   "",
-  
+
   "It remains unsaved changes":
   "",
-  
+
   "Save changes":
   "",
-  
+
   "Reset":
   "",
-  
+
   "Loading...":
   "",
-  
+
   "Connecting...":
   "",
-  
+
   "Please wait...":
   "",
-  
+
   "Contacts":
   "",
 
   "Add a contact":
   "",
-  
+
   "Pending requests":
   "",
-  
+
   "Authorized":
   "",
-    
+
   "Resend authorization request":
   "",
-  
+
   "Remove contact":
   "",
-  
+
   "Awaiting authorization":
   "",
-  
+
   "Chatrooms":
   "",
-  
+
   "Join a chatroom":
   "",
-  
+
   "Query public chatrooms list":
   "",
-  
+
   "Bookmarks":
   "",
-  
+
   "Public rooms":
   "",
-  
+
   "Private rooms":
   "",
-  
+
   "Edit user profile":
   "",
-  
+
   "No status defined":
   "",
-  
+
   "Available For Chat":
   "",
-  
+
   "Available":
   "",
-  
+
   "Away":
   "",
-  
+
   "Extended Away":
   "",
-  
+
   "Do Not Disturb":
   "",
-  
+
   "Disconnect":
   "",
-  
+
   "Change Room topic":
   "",
-  
+
   "Room configuration":
   "",
-  
+
   "Enable notifications":
   "",
-  
+
   "Disable notifications":
   "",
-  
+
   "Room occupants list":
   "",
-  
+
   "New unread messages":
   "",
-  
+
   "Upload a file":
   "",
-  
+
   "Send a message":
   "",
-  
+
   "Add an emoji":
   "",
-  
+
   "Occupants":
   "",
-  
+
   "Moderators":
   "",
-  
+
   "Participants":
   "",
-  
+
   "Add this Contact":
   "",
-  
+
   "Room identifier":
   "",
-  
+
   "Identifier":
   "",
-  
+
   "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
   "",
-  
+
   "Join Room (create it if does not exist)":
   "",
-  
+
   "Join":
   "",
-  
+
   "The Room will be created, do you want to configure it ?":
   "",
-  
+
   "Join now":
   "",
-  
+
   "Configure":
   "",
 
   "Request subscription authorisation":
   "",
-  
+
   "Allow contact subscription ?":
   "",
-  
+
   "Allow":
   "",
-  
+
   "Deny":
   "",
-  
+
   "New authorization request was sent":
   "",
-  
+
   "Add contact and request authorisation ?":
   "",
-  
+
   "Remove contact and revoke authorization ?":
   "",
-  
+
   "Send a message to":
   "",
-  
+
   "is currently writing":
   "",
-  
+
   "and":
   "",
-  
+
   "other(s)":
   "",
-  
+
   "are currently writing":
   "",
-  
+
   "Start of history":
   "",
-  
+
   "at":
   "",
 
   "Contact address (JID)":
   "",
-  
+
   "XMPP/Jabber address":
   "Adresse XMPP/Jabber",
-  
+
   "The contact will be added but unavailable, a subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
   "",
-  
+
   "Add contact and request authorisation":
   "",
-  
+
   "Submit":
   "",
-  
+
   "Join":
   "",
-  
+
   "Configure room...":
   "",
-  
+
   "Set room subject...":
   "",
-  
+
   "Chatoom configuration":
   "",
-  
+
   "Room subject":
   "",
-  
+
   "Room informations":
   "",
 
@@ -310,13 +310,13 @@
 
   "Persistent Room":
   "",
-  
+
   "Rooms are automatically deleted when they are empty, unless this option is enabled":
   "",
 
   "Public Room":
   "",
-  
+
   "A public Room can be found by any user through normal means such as searching and service discovery":
   "",
 
@@ -325,37 +325,37 @@
 
   "Allowed to members only":
   "",
-  
+
   "Enable this to only allow access for Room owners, admins and members":
   "",
 
   "Moderated Room":
   "",
-  
+
   "In moderated Rooms occupants must be given permission to speak by a Room moderator":
   "",
-  
+
   "Occupants anonymity":
   "",
-  
+
   "In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address":
   "",
-  
+
   "Semi-Anonymous":
   "",
 
   "Non-Anonymous":
   "",
-  
+
   "History max length":
   "",
-  
+
   "Specify the maximum number of previous messages that should be sent to users when they join the Room":
   "",
-  
+
   "History default length":
   "",
-  
+
   "Specify the number of previous messages sent to new users when they join the Room":
   "",
 
@@ -364,13 +364,13 @@
 
   "Stores messages in persistent way using Message Archive Management":
   "",
-  
+
   "User profile":
   "",
-  
+
   "Display name":
   "",
-  
+
   "My Nickname":
   "",
 
@@ -379,22 +379,22 @@
 
   "Profile access":
   "",
-  
+
   "Profile data in open access":
   "",
-  
+
   "Uploading file":
   "",
-  
+
   "Error":
   "",
-  
+
   "Abort":
   "",
-  
+
   "Close":
   "",
-  
+
   "Cancel":
   ""
 }
