@@ -27,27 +27,6 @@ optimized as possible, avoiding as most as possible Javascript false friends lik
 "this" keyword, anonymous functions, and modern Javascript syntax and confusional 
 paradigms such as promises, sync and async functions features.
 
-The library is divided into several "API Modules" with one file per "module", each 
-"module" is dedicated to a specific aspect of the program and have a dedicated function 
-name prefix except the "base API". Here is module list and their quick description:
-
-- Low-Level API layer
-  - Base (xows_base.js): Base constants and function such as string/bytes manipulation and algorithms
-  - l10n Module (xows_l10n.js): Localization mechanisms and translation functions 
-  - XML Module (xows_xml.js): XML parsing, manipulation and building functions
-  - SALS Module (xows_sasl.js): SASL mechanism implementation
-  - WebSocket Module (xows_sck.js): WebSocket interface functions
-  - XMPP Protocol Module (xows_xmp.js): "Low-Level" XMPP protocol client interface
-- Mid-Level client interface layer
-  - Caching Module (xows_cach.js): Data caching and Browser local storage management functions
-  - Client Module (xows_cli.js): "High-level" XMPP client interface
-- GUI and Public/High-Level interface layer
-  - HTML Templates Module (xows_tpl.js): HTML templates download and parsing mechanism
-  - DOM Managment Module (xows_doc.js): Browser DOM document management and GUI base tools
-  - GUI Module (xows_gui.js): GUI related functions and mechanisms
-  - Initialization Module (xows_init.js): The main "Public" API and library initialization functions
-
-
 XMPP Client Features
 ----------------------------------------------------------------------------------------
 - Connexion to server via WebSocket
@@ -89,3 +68,32 @@ Version history
 
 0.9.0 (2021-02-07)
  - First public BETA release
+
+
+Library architecture
+----------------------------------------------------------------------------------------
+
+The library is divided into several "API Modules" with one file per "module", each 
+"module" is dedicated to a specific aspect of the program and have a dedicated function 
+name prefix except the "base API". Here is module list and their quick description:
+
+### Low-Level API layer
+
+- `xows_base.js` **Base API**: Base constants and function such as string/bytes manipulation and algorithms
+- `xows_l10n.js` **l10n Module**: Localization mechanisms and translation functions 
+- `xows_xml.js`  **XML Module**: XML parsing, manipulation and building functions
+- `xows_sasl.js` **SALS Module**: SASL mechanism implementation
+- `xows_sck.js`  **WebSocket Module**: WebSocket interface functions
+- `xows_xmp.js`  **XMPP Module**: "Low-Level" XMPP protocol client interface
+
+###  Mid-Level client interface layer
+
+- `xows_cach.js` **Caching Module**: Data caching and Browser local storage management functions
+- `xows_cli.js`  **Client Module**: "High-level" XMPP client interface
+
+###  GUI and Public/High-Level interface layer
+
+- `xows_tpl.js`  **HTML Templates Module**: HTML templates download and parsing mechanism
+- `xows_doc.js`  **DOM Managment Module**: Browser DOM document management and GUI base tools
+- `xows_gui.js`  **GUI Module**: GUI related functions and mechanisms
+- `xows_init.js` **Init Module**: The main "Public" API and library initialization functions
