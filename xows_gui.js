@@ -2398,7 +2398,8 @@ function xows_gui_chat_panl_onclick(event)
       edit_mesg.focus();
       // move edit caret to end of content
       const rng = xows_doc_sel_rng(0);
-      xows_doc_caret_around(rng.endContainer, false);
+      if(rng.endContainer != edit_mesg)
+        xows_doc_caret_around(rng.endContainer);
       break;
     }
     
