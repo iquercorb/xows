@@ -2706,7 +2706,7 @@ function xows_xmp_send_message(type, to, body, recp)
 
   // Create message stanza
   const stanza =  xows_xml_node("message",{"id":id,"to":to,"type":type},
-                    xows_xml_node("body",null,xows_xml_escape(body)));
+                    xows_xml_node("body",null,body));
 
   // Add receipt request
   if(recp) xows_xml_parent(stanza, xows_xml_node("request",{"xmlns":XOWS_NS_RECEIPTS}));
