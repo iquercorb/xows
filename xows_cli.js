@@ -819,39 +819,49 @@ function xows_cli_srv_items_parse(from, item)
  */
 function xows_cli_srv_item_info_parse(from, iden, feat)
 {
-  // Get item identity
-  const catg = iden[0].category;
-  const type = iden[0].type;
-  const name = iden[0].name;
-  // Output log
-  xows_log(2,"cli_srv_item_info_parse","discover service features", 
-              from+": "+catg+", "+type+", \""+name+"\"");
-  
-  let i;
-  // Check for Http-Upload service
-  if(catg === "store" && type === "file") {
-    // Search for the proper feature
-    i = feat.length;
-    while(i--) {
-      if(feat[i].includes(XOWS_NS_HTTPUPLOAD)) {
-        // Set XEP xmlns (version) to use for this session
-        xows_xmp_use_xep(feat[i]);
-        xows_cli_svc_url[XOWS_NS_HTTPUPLOAD] = from;
-        xows_log(2,"cli_srv_item_info_parse","use service for Http-Upload",from);
+  // prevent further crash
+  if(iden.length) {
+
+    // Get item identity
+    const catg = iden[0].category;
+    const type = iden[0].type;
+    const name = iden[0].name;
+    
+    // Output log
+    xows_log(2,"cli_srv_item_info_parse","discover service features", 
+                from+": "+catg+", "+type+", \""+name+"\"");
+    
+    let i;
+    // Check for Http-Upload service
+    if(catg === "store" && type === "file") {
+      // Search for the proper feature
+      i = feat.length;
+      while(i--) {
+        if(feat[i].includes(XOWS_NS_HTTPUPLOAD)) {
+          // Set XEP xmlns (version) to use for this session
+          xows_xmp_use_xep(feat[i]);
+          xows_cli_svc_url[XOWS_NS_HTTPUPLOAD] = from;
+          xows_log(2,"cli_srv_item_info_parse","use service for Http-Upload",from);
+        }
       }
     }
-  }
-  // Check for MUC service
-  if(catg === "conference" && type === "text") {
-    // Search for the proper feature
-    i = feat.length;
-    while(i--) {
-      if(feat[i] === XOWS_NS_MUC) {
-        xows_cli_svc_url[XOWS_NS_MUC] = from;
-        xows_log(2,"cli_srv_item_info_parse","use service for Multi-User Chat",from);
+    // Check for MUC service
+    if(catg === "conference" && type === "text") {
+      // Search for the proper feature
+      i = feat.length;
+      while(i--) {
+        if(feat[i] === XOWS_NS_MUC) {
+          xows_cli_svc_url[XOWS_NS_MUC] = from;
+          xows_log(2,"cli_srv_item_info_parse","use service for Multi-User Chat",from);
+        }
       }
     }
+    
+  } else {
+    xows_log(1,"cli_srv_item_info_parse","item without identity",from);
+    return;
   }
+
   if(xows_cli_srv_items_stack.length) {
     // Query info for the next service
     xows_xmp_discoinfo_query(xows_cli_srv_items_stack.pop(), null, xows_cli_srv_item_info_parse);
@@ -1540,6 +1550,9 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
     } else {
       xows_cli_vcard_query(cont.bare);
     }
+    
+    // Update nickname in case changed
+    xows_cli_nick_query(cont.bare);
   }
   
   // Save current peer status to local storage

@@ -138,7 +138,7 @@
           <input id="chat_file" class="chat-file" type="file"></input>
         </aside>
         <div id="chat_panl" class="chat-panl">
-          <div class="chat-edit">
+          <div id="chat_edit" class="chat-edit">
             <button id="edit_upld" class="edit-upld" title="${'Upload a file'}"></button>
             <div id="edit_mesg" class="edit-mesg PLACEHOLD" placeholder="${'Send a message'}" contenteditable spellcheck></div>
             <button id="edit_emoj" class="edit-emoj" title="${'Add an emoji'}"> </button>
@@ -159,10 +159,14 @@
     <!-- Right Panel -->
     <div class="col-frame">
       <!-- Head Frame (Room Title bar) -->
-      <div class="row-head room-head">
+      <div id="room_head" class="row-head room-head">
         <div class="head-info">${'Occupants'}</div>
         <div class="head-meta"></div> 
-        <div class="head-acts"></div>
+        <div class="head-acts">
+          <button id="occu_conf" class="occu-conf HIDDEN" title="${'Manage occupant'}" disabled="1"></button>
+          <button id="occu_kick" class="occu-kick HIDDEN" title="${'Kick occupant'}" disabled="1"></button>
+          <!-- <button id="occu_kban" class="occu-kban HIDDEN" title="${'Ban occupant'}"></button> -->
+        </div>
       </div>
       <!-- Main Frame (Room Occupants List) -->
       <div id="occu_list" class="row-main occu-list list-scroll">

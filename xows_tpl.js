@@ -439,7 +439,7 @@ function xows_tpl_embed_audio(href, ext)
  */
 function xows_tpl_embed_youtube(href, match)
 {
-  let ref = href.match(/(v=|embed\/|youtu\.be\/)(.+)/)[2];
+  let ref = href.match(/(v=|embed\/|shorts\/|youtu\.be\/)(.+)/)[2];
   ref = ref.replace(/t=/,"start="); //< replace the potential t= by start=
   return xows_tpl_embed_wrap(href, 
               "<iframe src=\"https://www.youtube.com/embed/"+ref+"\"/>", 

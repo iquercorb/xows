@@ -473,6 +473,11 @@ function xows_doc_init(onready)
   xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_panl_oninput);
   xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
 
+  // Room header
+  const room_head = xows_doc("room_head");
+  xows_doc_listener_add(room_head,              "click",    xows_gui_room_head_onclick);
+  
+  // Room Occupants list
   xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);
 
 
@@ -493,6 +498,9 @@ function xows_doc_init(onready)
 
   // Modal screen "scr_void" event listener
   xows_doc_listener_add(xows_doc("scr_void"),   "click",    xows_doc_void_onclick);
+
+  // Image viewer "over_view" event listener
+  xows_doc_listener_add(xows_doc("over_view"),  "click",    xows_doc_view_close);
 
   // Message Box "over_mbox" event listeners
   xows_doc_listener_add(xows_doc("mbox_close"), "click",    xows_doc_mbox_close);
@@ -1123,3 +1131,4 @@ function xows_doc_void_onclick(event)
   xows_doc_mbox_modal();
 
 }
+

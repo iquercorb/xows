@@ -215,6 +215,7 @@ function xows_gui_peer_doc_init(peer)
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_head");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_hist");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_panl");
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "room_head");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "occu_list");
 
   const is_room = (peer.type === XOWS_PEER_ROOM);
@@ -261,6 +262,7 @@ function xows_gui_peer_doc_export(peer)
   xows_doc_frag_export(peer.bare, "chat_head");
   xows_doc_frag_export(peer.bare, "chat_hist");
   xows_doc_frag_export(peer.bare, "chat_panl");
+  xows_doc_frag_export(peer.bare, "room_head");
   xows_doc_frag_export(peer.bare, "occu_list");
 }
 
@@ -274,6 +276,7 @@ function xows_gui_peer_doc_import(peer)
   if(peer) {
     // import document elements from offscreen fragment
     xows_doc_frag_import(peer.bare, "occu_list");
+    xows_doc_frag_import(peer.bare, "room_head");
     xows_doc_frag_import(peer.bare, "chat_panl");
     xows_doc_frag_import(peer.bare, "chat_hist");
     xows_doc_frag_import(peer.bare, "chat_head");
@@ -282,6 +285,7 @@ function xows_gui_peer_doc_import(peer)
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_head", true);
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_hist", true);
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_panl", true);
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "room_head", true);
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "occu_list", true);
   }
 }
@@ -349,6 +353,7 @@ function xows_gui_init()
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_head", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_hist", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_panl", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "room_head", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
 
   // The DOM is now to its default state
@@ -772,6 +777,7 @@ function xows_gui_reset()
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_head",true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_hist",true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_panl",true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"room_head",true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"occu_list",true);
 
   // The DOM is now to its default state
@@ -1685,7 +1691,7 @@ function xows_gui_chat_conf_update(room)
   chat_meta.title = topic ? xows_l10n_get("Change Room topic") : "";
 
   // Room configuration button
-  let chat_conf = xows_gui_peer_doc(room,"chat_conf");
+  const chat_conf = xows_gui_peer_doc(room,"chat_conf");
   chat_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
 }
 
@@ -1877,6 +1883,32 @@ function xows_gui_chat_main_onscroll(event)
 }
 
 /**
+ * Go to chat history end (last messages), reloading last MAM archives 
+ * if required
+ */
+function xows_gui_chat_main_scroll_end()
+{
+  //Check whether last message is reachable
+  if(xows_doc_hidden("hist_end")) {
+
+    // Scroll chat history to bottom
+    xows_doc("chat_main").scrollTop = xows_doc("chat_main").scrollHeight;
+
+  } else {
+    // Last message is beyond the current history "window",
+    // we must query last archived messages
+
+    // Reset the chat history to initial stat
+    xows_doc("hist_ul").innerText = "";
+    xows_doc("hist_beg").innerText = "";
+    xows_doc_hide("hist_end");
+
+    // Query for the last archives, with no delay
+    xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE, 0);
+  }
+}
+
+/**
  * Callback function to handle user click into the chat history
  *
  * @param   {object}    event     Event object associated with trigger
@@ -1885,25 +1917,9 @@ function xows_gui_chat_main_onclick(event)
 {
   // Check for click on New Message notification banner
   if(event.target.id === "hist_new") {
-
-    //Check whether last message is reachable
-    if(xows_doc_hidden("hist_end")) {
-
-      // Scroll chat history to bottom
-      xows_doc("chat_main").scrollTop = xows_doc("chat_main").scrollHeight;
-
-    } else {
-      // Last message is beyond the current history "window",
-      // we must query last archived messages
-
-      // Reset the chat history to initial stat
-      xows_doc("hist_ul").innerText = "";
-      xows_doc("hist_beg").innerText = "";
-      xows_doc_hide("hist_end");
-
-      // Query for the last archives, with no delay
-      xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE, 0);
-    }
+    
+    // Go to end of history (last messages)
+    xows_gui_chat_main_scroll_end();
   }
 }
 
@@ -1994,16 +2010,29 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // Send browser notification popup
   if(!xows_gui_has_focus && !sent && peer.noti)
     xows_gui_notify_push(sndr, body);
-
+  
   // Check whether end of history is croped, in this cas the new message
-  // must not be appended, we will show it by querying archives
-  if(!sent && !xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
-    // Show the "new messages" warning
-    xows_gui_peer_doc(peer,"hist_new").classList.remove("HIDDEN");
+  //  must not be appended, we will show it by querying archives
+  if(!xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
+    if(!sent) {
+      // Show the "new messages" warning
+      xows_gui_peer_doc(peer,"hist_new").classList.remove("HIDDEN");
+    } else {
+      // if chat windows is onscree, reset history and load latest archives
+      if(!offscreen) {
+        // Reset the chat history to initial stat
+        xows_doc("hist_ul").innerText = "";
+        xows_doc("hist_beg").innerText = "";
+        xows_doc_hide("hist_end");
+
+        // Query for the last archives, with no delay
+        xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE, 0);
+      }
+    }
     // Do not append any message, return now
     return;
   }
-
+  
   // Required elements, offscreen or from document
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
@@ -2363,6 +2392,16 @@ function xows_gui_chat_panl_onclick(event)
 
   switch(event.target.id)
   {
+    case "chat_edit": {
+      const edit_mesg = xows_doc("edit_mesg");
+      // Set input focus to message edit area
+      edit_mesg.focus();
+      // move edit caret to end of content
+      const rng = xows_doc_sel_rng(0);
+      xows_doc_caret_around(rng.endContainer, false);
+      break;
+    }
+    
     case "edit_mesg": {
       // Get selection range
       const rng = xows_doc_sel_rng(0);
@@ -2653,6 +2692,125 @@ function xows_gui_cli_onchatstate(peer, from, chat)
  * -------------------------------------------------------------------*/
 
 /**
+ * Enable or disable UI elements according Room role and affiliation
+ *
+ * @param   {object}    room      Room object
+ * @param   {object}   [occu]     Optional Occupant object
+ */
+function xows_gui_room_conf_update(room, occu)
+{
+  /*
+   * Privilege                  None      Visitor   Participant  Moderator
+   * ---------------------------------------------------------------------
+   * Present in Room                        x           x           x
+   * Change Nickname                        x           x           x
+   * Send Private Messages                  x           x           x
+   * Invite Other Users                     x           x           x
+   * Send Messages to All                   +           x           x
+   * Modify Subject                                     x           x
+   * Kick                                                           x
+   * Grant Voice                                                    x
+   * Revoke Voice                                                   x
+   *
+   *
+   * Privilege                Outcast   None    Member    Admin   Owner
+   * ---------------------------------------------------------------------
+   * Ban Members                                            x       x
+   * Edit Member List                                       x       x
+   * Assign / Remove Moderator Role                         !       !
+   * Edit Admin List                                                x
+   * Edit Owner List                                                x
+   * Change Room Configuration                                      x
+   * Destroy Room                                                   x
+   */
+
+  const modo = (room.role > XOWS_ROLE_PART);
+
+  // Kick occupant button
+  const occu_kick = xows_gui_peer_doc(room,"occu_kick");
+  occu_kick.classList.toggle("HIDDEN",!modo);
+
+  // Occupant configuration button
+  const occu_conf = xows_gui_peer_doc(room,"occu_conf");
+  occu_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
+  
+  if(occu && !occu.self) {
+    occu_kick.disabled = !modo;
+    occu_conf.disabled = (room.affi < occu.affi);
+  } else {
+    occu_kick.disabled = true;
+    occu_conf.disabled = true;
+  }
+}
+
+/**
+ * Chat header bar informations update
+ *
+ * @param   {object}    peer      Peer object, either Contact or Room
+ */
+function xows_gui_room_head_update(peer)
+{
+
+}
+
+/**
+ * Switch the current selected room occupant
+ *
+ * @param   {string}    jid       Peer JID to select
+ */
+function xows_gui_switch_occu(jid)
+{
+  const occu_list = document.getElementById("occu_list");
+  
+  // remeve selection from previous occupant <li>
+  const sel_li = occu_list.querySelector(".SELECTED");
+  if(sel_li) sel_li.classList.remove("SELECTED");
+  
+  // add selection to next occupant <li>
+  document.getElementById(jid).classList.add("SELECTED");
+  
+  const occu = xows_cli_occu_get(xows_gui_peer, jid);
+  xows_gui_room_conf_update(xows_gui_peer, occu);
+}
+
+/* -------------------------------------------------------------------
+ *
+ * Main Screen - Room Occupants - Header
+ *
+ * -------------------------------------------------------------------*/
+/* -------------------------------------------------------------------
+ * Main Screen - Room Occupants - Header - Actions Buttons
+ * -------------------------------------------------------------------*/
+
+/**
+ * Chat Header on-click callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_room_head_onclick(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  switch(event.target.id)
+  {
+    case "occu_conf": {
+      break;
+    }
+    case "occu_kick": {
+      break;
+    }
+    case "occu_kban": {
+      break;
+    }
+  }
+}
+
+/* -------------------------------------------------------------------
+ *
+ * Main Screen - Room Occupants - Occupants List
+ *
+ * -------------------------------------------------------------------*/
+/**
  * Handle the received occupant from MUC Room
  *
  * @param   {object}    room      Room object
@@ -2667,6 +2825,7 @@ function xows_gui_cli_onoccupush(room, occu, code)
     xows_gui_page_join_onjoind(room, null, code.includes(201));
     // Update privileges related GUI elements
     xows_gui_chat_conf_update(room);
+    xows_gui_room_conf_update(room);
   }
 
   // Search for existing occupant <li> element for this Room
@@ -2762,9 +2921,17 @@ function xows_gui_occu_list_onclick(event)
 
       } //< switch
     }
+    
+    if(xows_gui_peer.role > XOWS_ROLE_PART && xows_gui_peer.role > XOWS_AFFI_MEMB) {
+      // Switch occupant
+      xows_gui_switch_occu(li.id);
+    }
   }
 }
 
+
+ 
+ 
 /* -------------------------------------------------------------------
  *
  * Main Screen - User status Edition

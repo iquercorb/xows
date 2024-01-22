@@ -266,11 +266,12 @@ button:disabled {
   color: var(--bttn-text-hover);
   border: 2px solid var(--bttn-hover);
 }.btn-close::before {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: bold;
   line-height: 0;
   padding: 0;
   margin: 0;
-  content: "\1F5D9";
+  content: "\2A2F";
 }
 /* ------------------------------------------------------------------ */
 /* Custom Checkbox
@@ -2040,6 +2041,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   margin: 8px 12px 0 12px;
   border-radius: 5px;
   background-color: var(--base-tone5);
+  cursor: text;
 }
 .chat-edit button {
   flex: none;
@@ -2250,6 +2252,15 @@ div[show="4"]  { background-color: var(--show-chat); }
   .COLR-WIDE .room-head .head-acts {
     display: inline-block;
   }
+}
+.occu-kick {
+  background-image: url("images/occukick.svg");
+}
+.occu-kban {
+  background-image: url("images/occuban.svg");
+}
+.occu-conf {
+  background-image: url("images/gear.svg");
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Right Col - Main Frame - Occupant <li> element */
