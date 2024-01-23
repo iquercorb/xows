@@ -75,9 +75,14 @@
   --ctrl-text:        #FFF;     /* Input Control Text */
 
   /* Unread notifications spot & banner */
-  --notif-base:       #EB4439;  /* Notification background */
-  --notif-hover:      #F06263;  /* Notification background hover */
+  --notif-base:       #E64545;  /* Notification background */
+  --notif-hover:      #F26161;  /* Notification background hover */
   --notif-text:       #FFF;     /* Notification text */
+  
+  /* history back to recent ribbon */
+  --back-base:        #545461;  /* Normal Ribbon background */
+  --back-hover:       #606070;  /* Normal Ribbon background hover */
+  --back-text:        #FFF;     /* Ribbon text */
 
   /* Loading Spinning Ring */
   --load-tail:        rgba(115, 115, 128, 0.1);
@@ -86,10 +91,10 @@
 
   /* Presence 'show level' colors */
   --show-off:         #858585;  /* Offline */
-  --show-dnd:         #FD6154;  /* Do Not Disturb */
-  --show-xa:          #FD8954;  /* Extended Away */
-  --show-away:        #FDD554;  /* Away / AFK */
-  --show-on:          #58CD4E;  /* Online */
+  --show-dnd:         #FD4E3F;  /* Do Not Disturb */
+  --show-xa:          #FD8733;  /* Extended Away */
+  --show-away:        #FFBF40;  /* Away / AFK */
+  --show-on:          #31D065;  /* Online */
   --show-chat:        #7FFFCB;  /* Available for chat */
 }
 
@@ -124,7 +129,7 @@ emoj {
   display: inline;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
   font-size: 1.3em;
-  padding: 0 2px;
+  padding: 0 3px 0 5px;
   vertical-align: top;
 }
 @media (max-width: 824px) {
@@ -1782,7 +1787,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Unread Chat message notifier */
 /* ------------------------------------------------------------------ */
-.hist-new {
+.hist-bot {
   position: -webkit-sticky;
   position: sticky;
   height: 22px;
@@ -1792,19 +1797,33 @@ div[show="4"]  { background-color: var(--show-chat); }
   text-align: center;
   font-size: 0.8em;
   font-weight: bold;
-  color: var(--notif-text);
+  color: var(--back-text);
+  background-color: var(--back-base);
+  opacity: 0.9;
+  cursor:pointer;
+  transition: background-color 200ms ease;
+}
+.hist-bot::before, .hist-bot::after {
+  content:"\25BE";
+  padding: 0 10px;
+}
+@media (max-width: 824px) {
+  .hist-bot {
+    font-size: 0.7em;
+  }
+}
+.hist-bot:hover {
+  background-color: var(--back-hover);
+}
+.hist-new {
   background-color: var(--notif-base);
   cursor:pointer;
   transition: background-color 200ms ease;
 }
-@media (max-width: 824px) {
-  .hist-new {
-    font-size: 0.7em;
-  }
-}
 .hist-new:hover {
   background-color: var(--notif-hover);
 }
+
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - History Message */
 /* ------------------------------------------------------------------ */

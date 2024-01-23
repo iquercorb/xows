@@ -1869,11 +1869,20 @@ function xows_gui_chat_main_onscroll(event)
     // Query archive for current chat contact
     xows_gui_mam_query(false);
   }
+  
+  // Get scroll distance from bottom
+  const scroll_bottom = ((chat_main.scrollHeight - chat_main.scrollTop) - chat_main.clientHeight);
+  
+  // If scroll is enough far from bottom, show the "Back to recent" banner
+  if(scroll_bottom > 300) {
+    if(xows_doc_hidden("hist_bot"))
+      xows_gui_hist_back_recent_show(xows_gui_peer, true);
+  }
 
   // Check whether the scroll is at bottom of frame
-  if(((chat_main.scrollHeight - chat_main.scrollTop) - chat_main.clientHeight) < 20) {
-    // Hide the "new messages" warning if displayed
-    xows_doc_hide("hist_new");
+  if(scroll_bottom < 20) {
+    // Hide the "Back to recent" banner/button
+    xows_gui_hist_back_recent_show(xows_gui_peer, false);
     // Check whether we have cropped history
     if(!xows_doc_hidden("hist_end")) {
       // Query archive for current chat contact
@@ -1916,12 +1925,75 @@ function xows_gui_chat_main_scroll_end()
 function xows_gui_chat_main_onclick(event)
 {
   // Check for click on New Message notification banner
-  if(event.target.id === "hist_new") {
+  if(event.target.id === "hist_bot") {
+    
+    // Hide the banner
+    xows_gui_hist_back_recent_show(xows_gui_peer, false);
     
     // Go to end of history (last messages)
     xows_gui_chat_main_scroll_end();
   }
 }
+
+/* -------------------------------------------------------------------
+ * Main Screen - Chat Frame - History - Navigation
+ * -------------------------------------------------------------------*/
+
+/**
+ * Function to show or hide the "Back to recent" banner of chat history
+ *
+ * @param   {object}    peer     Peer object
+ * @param   {boolean}   show     Boolean to set visibility
+ */
+function xows_gui_hist_back_recent_show(peer, show)
+{
+  // Get the peer history bottom banner
+  const hist_bot = xows_gui_peer_doc(peer,"hist_bot");
+                            
+  if(show) {
+    // Show element
+    hist_bot.classList.remove("HIDDEN");
+  } else {
+    // Hide element
+    hist_bot.classList.add("HIDDEN");
+    // Reset to initial state if required
+    if(hist_bot.classList.contains("hist-new")) {
+      hist_bot.innerText = xows_l10n_get("Back to recent messages");
+      hist_bot.classList.remove("hist-new");
+    }
+  }
+}
+
+/**
+ * Function to show chat history "New unread message" button/banner
+ *
+ * @param   {object}    peer     Peer object
+ */
+function xows_gui_hist_back_recent_new(peer)
+{
+  // Get the peer history bottom banner
+  const hist_bot = xows_gui_peer_doc(peer,"hist_bot");
+
+  // Set text and class for new message
+  hist_bot.innerText = xows_l10n_get("New unread messages");
+  hist_bot.classList.add("hist-new");
+}
+
+/**
+ * Function to hide chat history "Back to recent messages" button/banner
+ *
+ * @param   {object}    peer     Optional peer for offscreen fragment
+ */
+ /*
+function xows_gui_hist_back_hide(peer)
+{
+  // Get the history bottom banner/button
+  const hist_bot = (peer) ? xows_gui_peer_doc(peer,"hist_bot") :
+                            xows_doc("hist_bot");
+  // Hide element
+  hist_bot.classList.add("HIDDEN");
+}
+*/
 
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - History - Message Insertion
@@ -2016,7 +2088,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   if(!xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
     if(!sent) {
       // Show the "new messages" warning
-      xows_gui_peer_doc(peer,"hist_new").classList.remove("HIDDEN");
+      xows_gui_hist_back_recent_new(peer);
     } else {
       // if chat windows is onscree, reset history and load latest archives
       if(!offscreen) {
@@ -2060,7 +2132,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // history, we don't scroll at bottom but display a warning message
   if(!sent && (scrl_bot > 100)) {
     // Show the "new messages" warning
-    xows_gui_peer_doc(peer,"hist_new").classList.remove("HIDDEN"); //< show
+    xows_gui_hist_back_recent_new(peer);
   } else {
     // scroll history down
     xows_gui_peer_scroll_down(peer);
