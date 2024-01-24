@@ -52,7 +52,7 @@ let xows_sasl_select = "";
 /**
  * Get the SASL initial auth request string according the current
  * initialized mechanism
- * 
+ *
  * This function is intended to be replaced by the proper SASL mechanism.
  *
  * @return  {string}    Initial SASL auth request string
@@ -62,7 +62,7 @@ let xows_sasl_get_request = function() {return "";};
 /**
  * Get the SASL challenge response string according the current
  * initialized mechanism
- * 
+ *
  * This function is intended to be replaced by the proper SASL mechanism.
  *
  * @param   {string}    challenge Received SASL challenge
@@ -74,7 +74,7 @@ let xows_sasl_get_response = function(challenge) {return "";};
 /**
  * Checks the SASL integrity according the current
  * initialized mechanism
- * 
+ *
  * This function is intended to be replaced by the proper SASL mechanism.
  *
  * @param   {string}    signature Received SASL signature

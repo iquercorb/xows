@@ -40,7 +40,7 @@
 
 /**
  * Get document element by Id (alias of getElementById)
- * 
+ *
  * @param   {string}    id    Element id to get.
  */
 function xows_doc(id)
@@ -212,7 +212,7 @@ function xows_doc_hidden(id)
 }
 
 /**
- * Clone specified element from source offscreen slot to 
+ * Clone specified element from source offscreen slot to
  * destination offscreen slot
  *
  * @param   {string}    dst       Destination offscreen slot identifier
@@ -476,7 +476,7 @@ function xows_doc_init(onready)
   // Room header
   const room_head = xows_doc("room_head");
   xows_doc_listener_add(room_head,              "click",    xows_gui_room_head_onclick);
-  
+
   // Room Occupants list
   xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);
 

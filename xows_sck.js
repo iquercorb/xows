@@ -65,7 +65,7 @@ let xows_sck_fw_onclose = function() {};
 
 /**
  * Set custom callback function for socket event
- * 
+ *
  * The possible event type are the following:
  *  - open   : Socket successfully opened
  *  - recv   : Socket received data

@@ -639,8 +639,8 @@ function xows_xmp_error_str(stanza)
 }
 
 /**
- * Function to parse an iq stanza in a generial way. 
- * 
+ * Function to parse an iq stanza in a generial way.
+ *
  * This parse function may be used by serveral other functions.
  *
  * @param   {object}    stanza    Received iq stanza
@@ -730,13 +730,13 @@ function xows_xmp_bind_parse(stanza)
     xows_xmp_send_close(XOWS_SIG_ERR, err_msg); //< Close with error
     return;
   }
-  
+
   // Get the full JID and parse the received resource
   const jid = stanza.querySelector("jid"); //< <jid> node
   xows_xmp_jid = xows_xml_get_text(jid);
   xows_xmp_res = xows_jid_to_nick(xows_xmp_jid);
   xows_log(2,"xmp_bind_parse","Resource Bind accepted",xows_xmp_jid);
-  
+
   // Check whether stream session feature is available
   if(xows_xmp_stream_feat.includes(XOWS_NS_IETF_SESSION)) {
     // Query for stream session
@@ -818,7 +818,7 @@ function xows_xmp_discoinfo_parse(stanza, onparse)
                 "type"    : nodes[i].getAttribute("type"),
                 "name"    : nodes[i].getAttribute("name")});
   }
-  
+
   // Turn each <feature var=""> into string array.
   nodes = query.getElementsByTagName("feature");
   const feat = [];
@@ -826,7 +826,7 @@ function xows_xmp_discoinfo_parse(stanza, onparse)
     if(nodes[i].hasAttribute("var"))
       feat.push(nodes[i].getAttribute("var"));
   }
-  
+
   // Parse the <x> element if exists
   const x = query.querySelector("x");
   const form = x ? xows_xmp_xdata_parse(x) : null;
@@ -873,13 +873,13 @@ function xows_xmp_discoitems_parse(stanza, onparse)
     item.push({ "jid"   : nodes[i].getAttribute("jid"),
                 "name"  : nodes[i].getAttribute("name")});
   }
-  
+
   // check for required data to prevent further crash
   if(!item.length) {
     xows_log(1,"xmp_discoitems_parse","parse Disco#items","malformed stanza");
     return;
   }
-  
+
   // Forward result to client
   if(xows_isfunc(onparse))
     onparse( stanza.getAttribute("from"), item);
@@ -1398,7 +1398,7 @@ function xows_xmp_avat_data_get_query(to, hash, onparse)
 function xows_xmp_avat_meta_get_parse(stanza, onparse)
 {
   const from = stanza.getAttribute("from");
-  
+
   if(stanza.getAttribute("type") === "error") {
     xows_log(1,"xmp_avat_meta_get_parse","parse get Avatar-Metadata ("+from+")",xows_xmp_error_str(stanza));
     return;
@@ -1455,7 +1455,7 @@ function xows_xmp_nick_publish(nick, onparse)
 function xows_xmp_nick_get_parse(stanza, onparse)
 {
   const from = stanza.getAttribute("from");
-  
+
   if(stanza.getAttribute("type") === "error") {
     xows_log(1,"xmp_nick_get_parse","parse get Nickname ("+from+")",xows_xmp_error_str(stanza));
     return;
@@ -1582,10 +1582,10 @@ const xows_xmp_mam_query_param = {};
 function xows_xmp_mam_parse(stanza, onparse)
 {
   const id = stanza.getAttribute("id");
-  
+
   // Retreive the "from" parameter corresponding to id
   const from = xows_xmp_mam_query_param[id].to;
-  
+
   if(stanza.getAttribute("type") === "error") {
     xows_log(1,"xmp_mam_parse","Archive query failure ("+from+")",xows_xmp_error_str(stanza));
     return;
@@ -2798,8 +2798,8 @@ function xows_xmp_sck_onclose(code, mesg)
 }
 
 /**
- * Handle socket received message event 
- * 
+ * Handle socket received message event
+ *
  * This parse the raw data as XML then forward it to the proper function.
  *
  * @param   {string}    data      Received raw data string

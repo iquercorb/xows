@@ -114,7 +114,7 @@ function xows_gui_peer_scroll_load(peer)
 }
 
 /**
- * Get the main chat scroll top position corresponding to the 
+ * Get the main chat scroll top position corresponding to the
  * specified peer
  *
  * If the specified Peer history is offscree, the function
@@ -130,7 +130,7 @@ function xows_gui_peer_scroll_top(peer)
 }
 
 /**
- * Get the main chat scroll bottom relative position corresponding to 
+ * Get the main chat scroll bottom relative position corresponding to
  * the specified peer
  *
  * If the specified Peer history is offscree, the function
@@ -148,7 +148,7 @@ function xows_gui_peer_scroll_bot(peer)
 }
 
 /**
- * Get the main chat scroll offset to top corresponding to the 
+ * Get the main chat scroll offset to top corresponding to the
  * specified peer
  *
  * If the specified Peer history is offscree, the function
@@ -165,7 +165,7 @@ function xows_gui_peer_scroll_off(peer)
 }
 
 /**
- * Move to bottom the main chat scroll corresponding to the 
+ * Move to bottom the main chat scroll corresponding to the
  * specified peer
  *
  * If the specified Peer history is offscree, the function
@@ -182,7 +182,7 @@ function xows_gui_peer_scroll_down(peer)
 }
 
 /**
- * Move by offset the main chat scroll corresponding to the 
+ * Move by offset the main chat scroll corresponding to the
  * specified Peer
  *
  * If the specified Peer history is offscree, the function
@@ -1869,10 +1869,10 @@ function xows_gui_chat_main_onscroll(event)
     // Query archive for current chat contact
     xows_gui_mam_query(false);
   }
-  
+
   // Get scroll distance from bottom
   const scroll_bottom = ((chat_main.scrollHeight - chat_main.scrollTop) - chat_main.clientHeight);
-  
+
   // If scroll is enough far from bottom, show the "Back to recent" banner
   if(scroll_bottom > 300) {
     if(xows_doc_hidden("hist_bot"))
@@ -1892,7 +1892,7 @@ function xows_gui_chat_main_onscroll(event)
 }
 
 /**
- * Go to chat history end (last messages), reloading last MAM archives 
+ * Go to chat history end (last messages), reloading last MAM archives
  * if required
  */
 function xows_gui_chat_main_scroll_end()
@@ -1926,10 +1926,10 @@ function xows_gui_chat_main_onclick(event)
 {
   // Check for click on New Message notification banner
   if(event.target.id === "hist_bot") {
-    
+
     // Hide the banner
     xows_gui_hist_back_recent_show(xows_gui_peer, false);
-    
+
     // Go to end of history (last messages)
     xows_gui_chat_main_scroll_end();
   }
@@ -1949,7 +1949,7 @@ function xows_gui_hist_back_recent_show(peer, show)
 {
   // Get the peer history bottom banner
   const hist_bot = xows_gui_peer_doc(peer,"hist_bot");
-                            
+
   if(show) {
     // Show element
     hist_bot.classList.remove("HIDDEN");
@@ -2082,7 +2082,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // Send browser notification popup
   if(!xows_gui_has_focus && !sent && peer.noti)
     xows_gui_notify_push(sndr, body);
-  
+
   // Check whether end of history is croped, in this cas the new message
   //  must not be appended, we will show it by querying archives
   if(!xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
@@ -2104,7 +2104,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
     // Do not append any message, return now
     return;
   }
-  
+
   // Required elements, offscreen or from document
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
@@ -2474,7 +2474,7 @@ function xows_gui_chat_panl_onclick(event)
         xows_doc_caret_around(rng.endContainer);
       break;
     }
-    
+
     case "edit_mesg": {
       // Get selection range
       const rng = xows_doc_sel_rng(0);
@@ -2806,7 +2806,7 @@ function xows_gui_room_conf_update(room, occu)
   // Occupant configuration button
   const occu_conf = xows_gui_peer_doc(room,"occu_conf");
   occu_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
-  
+
   if(occu && !occu.self) {
     occu_kick.disabled = !modo;
     occu_conf.disabled = (room.affi < occu.affi);
@@ -2834,14 +2834,14 @@ function xows_gui_room_head_update(peer)
 function xows_gui_switch_occu(jid)
 {
   const occu_list = document.getElementById("occu_list");
-  
+
   // remeve selection from previous occupant <li>
   const sel_li = occu_list.querySelector(".SELECTED");
   if(sel_li) sel_li.classList.remove("SELECTED");
-  
+
   // add selection to next occupant <li>
   document.getElementById(jid).classList.add("SELECTED");
-  
+
   const occu = xows_cli_occu_get(xows_gui_peer, jid);
   xows_gui_room_conf_update(xows_gui_peer, occu);
 }
@@ -2994,7 +2994,7 @@ function xows_gui_occu_list_onclick(event)
 
       } //< switch
     }
-    
+
     if(xows_gui_peer.role > XOWS_ROLE_PART && xows_gui_peer.role > XOWS_AFFI_MEMB) {
       // Switch occupant
       xows_gui_switch_occu(li.id);
@@ -3003,8 +3003,8 @@ function xows_gui_occu_list_onclick(event)
 }
 
 
- 
- 
+
+
 /* -------------------------------------------------------------------
  *
  * Main Screen - User status Edition
@@ -3571,7 +3571,7 @@ const xows_doc_page_room = {};
 
 /**
  * Room Configuration page query result callback function
- * 
+ *
  * @param   {object}    Room object
  * @param   {string}    Query result type
  */

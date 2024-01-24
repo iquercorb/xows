@@ -121,7 +121,7 @@ function xows_def_readonly(obj, prop, value)
 }
 
 /**
- * Pseudo-random, seed based, number generation using the Mulberry32 
+ * Pseudo-random, seed based, number generation using the Mulberry32
  * PRNG algorithm
  *
  * @param   {number}    seed      Seed to generate number
@@ -390,7 +390,7 @@ function xows_gen_uuid()
 }
 
 /**
- * Get hexadecimal representation of a randomly generated number 
+ * Get hexadecimal representation of a randomly generated number
  * bytes sequence
  *
  * @param   {number}    len       Bytes sequence length in bytes
