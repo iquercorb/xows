@@ -653,10 +653,10 @@ function xows_doc_loader_check(force)
         // parent, which is usualy the placeholder
         media.classList.add("FLATTEN"); //< media
         media.parentNode.classList.add("LOADING"); //< container
-
-        // Define an onload function to handle loading end
-        media.onload = function(){xows_doc_loader_onload(this);};
       }
+
+      // Define an onload function to handle loading end
+      media.onload = function(){xows_doc_loader_onload(this);};
 
       // Set the src from data_src to start load data
       media.src = media.getAttribute(xows_doc_loader_attrib);
