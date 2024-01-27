@@ -57,7 +57,7 @@ const xows_doc_frag_db = {};
  * Variable to hold scroll position of the last loading checkup to
  * prevent useless flood while scrolling
  */
-let xows_doc_loader_scroll = {"top":99999,"off":0};
+let xows_doc_loader_scroll = {"top":99999,"off":0,"bot":0};
 
 /**
  * Current target of the lazy loader, this is the element with
@@ -599,8 +599,18 @@ function xows_doc_loader_onload(media)
   media.parentNode.classList.remove("LOADING"); //< container
   media.classList.remove("FLATTEN"); //< media
 
-  // Adjust scroll position to compensate content new height
-  xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.off;
+  if(xows_doc_loader_scroll.bot < 400) {
+    // Force scroll position to bottom
+    xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight;
+  } else {
+    // Adjust scroll position to compensate content new height
+    xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.off;
+  }
+
+  // Keep scroll parameters
+  xows_doc_loader_scroll.top = xows_doc_loader_client.scrollTop;
+  xows_doc_loader_scroll.off = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.top;
+  xows_doc_loader_scroll.bot = xows_doc_loader_scroll.off - xows_doc_loader_client.clientHeight;
 }
 
 /**
@@ -623,6 +633,7 @@ function xows_doc_loader_check(force)
   // Keep scroll parameters
   xows_doc_loader_scroll.top = xows_doc_loader_client.scrollTop;
   xows_doc_loader_scroll.off = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.top;
+  xows_doc_loader_scroll.bot = xows_doc_loader_scroll.off - xows_doc_loader_client.clientHeight;
 
   // Used variables
   const view_bound = xows_doc_loader_client.getBoundingClientRect();
