@@ -454,6 +454,9 @@ function xows_gui_cli_onconnect(user)
     // Reset connection loss
     xows_gui_connect_loss = false;
 
+    // Reload/Refresh opened chat history
+    xows_gui_chat_main_scroll_end(true); //< force refresh from MAM
+
   } else {
 
     // Reset the Roster and Chat window
@@ -461,6 +464,9 @@ function xows_gui_cli_onconnect(user)
 
     // Setup the lazy loader
     xows_doc_loader_setup(xows_doc("chat_main"), "lazy_src");
+
+    // Set the presence menu for current user
+    //xows_gui_cli_onselfchange(user);
 
     // Check whether file Upload is available
     if(xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
@@ -473,9 +479,6 @@ function xows_gui_cli_onconnect(user)
       xows_doc("tab_room").disabled = false;
       //xows_doc("tab_book").disabled = false; /* alternative Bookmarks implementation */
     }
-
-    // Set the presence menu for current user
-    //xows_gui_cli_onselfchange(user);
 
     // Refresh public room list
     xows_gui_room_list_reload();
@@ -1928,16 +1931,15 @@ function xows_gui_chat_main_onscroll(event)
 /**
  * Go to chat history end (last messages), reloading last MAM archives
  * if required
+ *
+ *  @param   {boolean}  refresh   Force refresh history from server
  */
-function xows_gui_chat_main_scroll_end()
+function xows_gui_chat_main_scroll_end(refresh = false)
 {
-  //Check whether last message is reachable
-  if(xows_doc_hidden("hist_end")) {
+  // Scroll chat history to bottom
+  xows_doc("chat_main").scrollTop = xows_doc("chat_main").scrollHeight;
 
-    // Scroll chat history to bottom
-    xows_doc("chat_main").scrollTop = xows_doc("chat_main").scrollHeight;
-
-  } else {
+  if(!xows_doc_hidden("hist_end") || refresh) {
     // Last message is beyond the current history "window",
     // we must query last archived messages
 
