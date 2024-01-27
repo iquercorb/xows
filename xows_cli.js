@@ -2531,8 +2531,12 @@ function xows_cli_upld_handle(put_url, head_list, get_url, error)
   xhr.upload.addEventListener("load", xows_cli_upld_xhr_success, false);
   xhr.upload.addEventListener("error", xows_cli_upld_xhr_error, false);
   xhr.upload.addEventListener("abort", xows_cli_upld_xhr_abort, false);
+  // Create PUT request with proper headers
   xhr.open("PUT", put_url, true);
   xhr.setRequestHeader("Content-Type","main_menucation/octet-stream");
+  for(let i = 0; i < head_list.length; ++i)
+    xhr.setRequestHeader(head_list[i].getAttribute("name"),head_list[i].innerHTML);
+
   xows_log(2,"cli_upload_handle","send PUT http request",put_url);
   // Store reference to XMLHttpRequest
   xows_cli_upld_xhr = xhr;
