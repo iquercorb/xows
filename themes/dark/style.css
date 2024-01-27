@@ -1084,6 +1084,13 @@ figure {
   font-style: italic;
   color: var(--text-tone3);
 }
+.page-wait button {
+  height: auto;
+  border-radius: 26px;
+  padding: 10px 20px;
+  margin: 20px 10px;
+  font-size: 1.0em;
+}
 /* ------------------------------------------------------------------ */
 /* Main Page - App Panel - Commons */
 /* ------------------------------------------------------------------ */

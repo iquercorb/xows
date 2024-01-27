@@ -584,7 +584,7 @@ function xows_xmp_set_callback(type, callback)
 function xows_xmp_send(stanza, onresult, onparse)
 {
   if(!xows_sck_sock) {
-    xows_log(1,"xows_xmp_send","socket is closed");
+    xows_log(1,"xmp_send","socket is closed");
     return;
   }
 
@@ -1803,15 +1803,11 @@ function xows_xmp_auth_sasl_request(mechanisms)
 {
   // Try to initialize SASL
   if(!xows_sasl_init(mechanisms, xows_xmp_bare, xows_xmp_user, xows_xmp_auth)) {
-    xows_xmp_auth = null;
     let err_msg = "Unable to find a suitable authentication mechanism";
     xows_log(0,"xmp_auth_sasl_request",err_msg);
     xows_xmp_send_close(XOWS_SIG_ERR, err_msg);
     return true;
   }
-
-  // Delete auth data to prevent malicious use
-  xows_xmp_auth = null;
 
   // SASL succeed to Initialize, we start the process
   const sasl_mechanism = xows_sasl_get_selected();
@@ -1901,7 +1897,6 @@ function xows_xmp_auth_register_set_parse(from, type, er_type, er_code, er_name,
 
   // If we got an error the process stops here
   if(err_msg !== null) {
-    xows_xmp_auth = null;
     xows_log(0,"xmp_auth_register_set_parse",err_msg);
     // Close with error after delay
     setTimeout(xows_xmp_send_close, xows_options.login_delay, XOWS_SIG_ERR, err_msg);
@@ -2022,12 +2017,12 @@ function xows_xmp_recv_close(stanza)
 {
   xows_log(2,"xmp_recv_close","stream closed");
 
-  if(xows_xmp_bare) {
-    // Close is server initiative, we reply and throw error
-    xows_xmp_send_close(XOWS_SIG_ERR,"Server closed the stream");
-    xows_xmp_bare = null; //< reset connection data
+  // Check whether this is an unexpected close
+  if(xows_xmp_res) {
+    // Close is unexpected
+    xows_xmp_connectloss("Server closed the stream");
   } else {
-    // Close is our initiative, close socket and forward message
+    // Close follow our request
     xows_sck_destroy();
     xows_xmp_fw_onclose(3); //< close without error
   }
@@ -2048,7 +2043,8 @@ function xows_xmp_recv_streamerror(stanza)
   const err_txt = xows_xml_get_text(stanza.querySelector("text"));
   // Output log
   xows_log(0,"xmp_recv_streamerror",err_cde,err_txt);
-  xows_xmp_send_close(XOWS_SIG_ERR,"Server thrown a stream error");
+  // Server stream error
+  xows_xmp_connectloss("Server thrown a stream error");
   return true;
 }
 
@@ -2076,7 +2072,6 @@ function xows_xmp_recv_streamfeatures(stanza)
     const candidates = [];
     for(let i = 0, n = mechanisms.length; i < n; ++i)
       candidates.push(xows_xml_get_text(mechanisms[i]));
-
 
     // Output log
     xows_log(2,"xmp_recv_streamfeatures","received authentication mechanisms",candidates.join(", "));
@@ -2113,6 +2108,7 @@ function xows_xmp_recv_streamfeatures(stanza)
     // no <mechanism> in stanza, this should be the second <stream:features>
     // sent after authentication success, so we check for <bind> and <session>
     // items to continue with session initialization.
+    xows_xmp_stream_feat.length = 0;
 
     // Store list of stream features XMLNS
     let i = stanza.childNodes.length;
@@ -2228,6 +2224,7 @@ function xows_xmp_recv_success(stanza)
 
   // From now the stream is implicitly closed, we must reopen it
   xows_xmp_send_open();
+
   return true; //< stanza processed
 }
 
@@ -2401,6 +2398,7 @@ function xows_xmp_recv_mam_result(result)
         body = child.hasChildNodes() ? xows_xml_get_text(child) : "";
       }
     }
+    /*
     let log;
     if(body !== undefined) {
       // This should never happen
@@ -2412,6 +2410,15 @@ function xows_xmp_recv_mam_result(result)
       log = "Skipped archived message without body";
     }
     xows_log(2,"xmp_recv_mam_result",log,"from "+from+" to "+to);
+    */
+
+    // This should never happen
+    if(!time) time = new Date(0).getTime();
+
+    // Add archived message to stack
+    xows_xmp_mam_stk.push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body});
+
+    xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
     return true; //< stanza processed
   }
   return false;
@@ -2756,11 +2763,21 @@ function xows_xmp_send_close(code, mesg)
   // Send the <close> stanza to close stream
   xows_xmp_send(xows_xml_node("close",{"xmlns":XOWS_NS_IETF_FRAMING,"id":"_ciao"}));
 
-  // Reset connection data
-  xows_xmp_bare = null;
+  // Session is over
+  xows_xmp_res = null;
 
-  // Regular close will be handled by server response to close
-  if(mesg) xows_xmp_fw_onclose(code, mesg);
+  // Different behavior depending whether close initiated by client
+  if(code < 0) {
+
+    // This is an unexpected error, threated as server error
+    xows_xmp_fw_onclose(code, mesg);
+
+  } else {
+
+    // Reset auth data only if close is initiated by user
+    xows_xmp_bare = null;
+    xows_xmp_auth = null;
+  }
 }
 
 /**
@@ -2779,6 +2796,7 @@ function xows_xmp_send_open()
  */
 function xows_xmp_sck_onopen()
 {
+  // Initialize XMPP session open
   xows_xmp_send_open();
 }
 
@@ -2790,11 +2808,10 @@ function xows_xmp_sck_onopen()
  */
 function xows_xmp_sck_onclose(code, mesg)
 {
-  // Foward only if unexpected
-  if(xows_xmp_bare) {
-    xows_xmp_bare = null; //< Reset connection data
-    xows_xmp_fw_onclose(code, mesg);
-  }
+  xows_log(1,"xmp_sck_onclose",mesg);
+
+  // This may be a connection loss
+  xows_xmp_connectloss(mesg);
 }
 
 /**
@@ -2880,4 +2897,52 @@ function xows_xmp_connect(url, jid, password, register)
 
   // Open new WebSocket connection
   xows_sck_create(url, "xmpp");
+}
+
+/**
+ * Perform specific actions to handle XMPP connection loss
+ *
+ * @param   {string}    mesg  Optional error message
+ */
+function xows_xmp_connectloss(mesg)
+{
+  // Output log
+  xows_log(2,"xmp_connectloss","connection lost",xows_xmp_res);
+
+  let code;
+
+  // If session is active, this is indeed a connection loss
+  if(xows_xmp_res) {
+
+    // Session is now over
+    xows_xmp_res = null;
+    // This is actually a connection loss
+    code = XOWS_SIG_HUP;
+
+  } else {
+
+    // This is a connection error
+    code = XOWS_SIG_ERR;
+  }
+  // Forward to client
+  xows_xmp_fw_onclose(code,mesg);
+}
+
+/**
+ * Try to open a new XMPP client session to the specified WebSocket URL
+ * using previousely defined connexion parameter.
+ */
+function xows_xmp_reconnect()
+{
+  // Output log
+  xows_log(2,"xmp_reconnect","try reconnect",xows_xmp_url);
+
+  // Verify we have connexion parameters
+  if(!xows_xmp_url || !xows_xmp_bare || !xows_xmp_user || !xows_xmp_auth)
+    return;
+
+  // If socket already openned, close it
+  xows_sck_destroy();
+  // Open new WebSocket connection
+  xows_sck_create(xows_xmp_url, "xmpp");
 }

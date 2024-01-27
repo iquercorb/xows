@@ -183,6 +183,11 @@ let xows_cli_fw_onerror = function() {};
 let xows_cli_fw_onclose = function() {};
 
 /**
+ * Flag for client connexion loss
+ */
+let xows_cli_connect_loss = false;
+
+/**
  * Client current user object
  */
 let xows_cli_self = {
@@ -577,7 +582,7 @@ function xows_cli_set_callback(type, callback)
  * session, and is set to false once the initial presence is sent
  * after the first query to roster content.
  */
-let xows_cli_initialize = true;
+let xows_cli_initialize = 0;
 
 /**
  * Connecte client to the specified XMPP over WebSocket service
@@ -624,7 +629,7 @@ function xows_cli_connect(url, jid, password, register)
   xows_xmp_set_callback("close", xows_cli_xmp_onclose);
 
   // We are in initial state
-  xows_cli_initialize = true;
+  xows_cli_initialize = 1; //< 1 = normal/full initialization
 
   // Open a new XMPP connection
   return xows_xmp_connect(url, jid, password, register);
@@ -640,6 +645,9 @@ function xows_cli_connect(url, jid, password, register)
  */
 function xows_cli_xmp_onsession(jid)
 {
+  // Connexion is ok
+  xows_cli_connect_loss = false;
+
   // Store the full JID for this session
   xows_cli_self.jid = jid;
   xows_cli_self.bare = xows_jid_to_bare(jid);
@@ -671,23 +679,49 @@ function xows_cli_xmp_onsession(jid)
  */
 function xows_cli_xmp_onclose(code, mesg)
 {
-  // Ignore if already closed
-  if(xows_cli_self.jid) {
+  // Output log
+  xows_log(2,"cli_xmp_onclose","connexion cloded","("+code+") "+mesg);
 
-    // Clean the client
-    xows_cli_cont.length = 0;
-    xows_cli_room.length = 0;
+  if(xows_cli_connect_loss) {
 
-    // Reset client user entity
-    xows_cli_self.jid  = null;
-    xows_cli_self.bare = null;
-    xows_cli_self.name = null;
-    xows_cli_self.avat = null;
-    xows_cli_self.stat = null;
-    xows_cli_self.vcrd = null;
+    // Try reconnect
+    xows_cli_reconnect();
 
-    // Stop presence activity
-    xows_cli_activity_stop();
+    return;
+  }
+
+  // Check whether this is a connection loss
+  if(code == XOWS_SIG_HUP) {
+
+    // Set connexion loss
+    xows_cli_connect_loss = true;
+
+    // Try reconnect
+    xows_cli_reconnect();
+
+  } else {
+
+    // Ignore if already closed or if connection loss
+    if(xows_cli_self.jid) {
+
+      // Output log
+      xows_log(1,"cli_xmp_onclose","session destroy",mesg);
+
+      // Clean the client
+      xows_cli_cont.length = 0;
+      xows_cli_room.length = 0;
+
+      // Reset client user entity
+      xows_cli_self.jid  = null;
+      xows_cli_self.bare = null;
+      xows_cli_self.name = null;
+      xows_cli_self.avat = null;
+      xows_cli_self.stat = null;
+      xows_cli_self.vcrd = null;
+
+      // Stop presence activity
+      xows_cli_activity_stop();
+    }
   }
 
   // Forward the connexion close code and message
@@ -886,12 +920,12 @@ function xows_cli_rost_update(bare, name, subs, group)
 {
   // Sepecial case if we receive a 'remove' subscription
   if(subs < 0) {
-    xows_log(2,"cli_roster_update","Roster update",bare+" \""+name+"\" subscription: "+subs);
+    xows_log(2,"cli_rost_update","Roster update",bare+" \""+name+"\" subscription: "+subs);
     // Remove contact from local list
     let i = xows_cli_cont.length;
     while(i--) {
       if(xows_cli_cont[i].bare === bare) {
-        xows_log(2,"cli_roster_update","removing Contact",bare);
+        xows_log(2,"cli_rost_update","removing Contact",bare);
         xows_cli_cont.splice(i,1);
         xows_cli_fw_oncontrem(bare); //< Forward contact to remove
         break;
@@ -900,12 +934,12 @@ function xows_cli_rost_update(bare, name, subs, group)
     return;
   }
 
-  xows_log(2,"cli_roster_update","update Contact",bare+" \""+name+"\" subscription: "+subs);
-
   let cont = xows_cli_cont_get(bare);
   if(cont !== null) {
     cont.name = name ? name : bare;
     cont.subs = subs;
+
+    xows_log(2,"cli_rost_update","update Contact",bare+" \""+name+"\" subscription: "+subs);
   } else {
 
     let avat = null;
@@ -922,6 +956,8 @@ function xows_cli_rost_update(bare, name, subs, group)
 
     // Create new contact
     cont = xows_cli_cont_new(bare, name, subs, avat);
+
+    xows_log(2,"cli_rost_update","new Contact",bare+" \""+name+"\" subscription: "+subs);
   }
 
   // Query Avatar for the contact
@@ -943,9 +979,6 @@ function xows_cli_rost_update(bare, name, subs, group)
  */
 function xows_cli_rost_get_parse(item)
 {
-  // Empty the contact list
-  xows_cli_cont.length = 0;
-
   if(item.length) {
     // Fill up the Roster with received contact
     for(let i = 0, n = item.length; i < n; ++i) {
@@ -958,9 +991,8 @@ function xows_cli_rost_get_parse(item)
   }
 
   // If we are in initialize state, we now send the initial presence
-  if(xows_cli_initialize) {
+  if(xows_cli_initialize > 0)
     xows_cli_presence_init();
-  }
 }
 
 /**
@@ -2598,7 +2630,7 @@ function xows_cli_subscribe_allow(bare, allow, nick)
 /**
  * Join existing room or create new one
  *
- * If not room object is supplied the function try to join (ie. create)
+ * If no room object is supplied the function try to join (ie. create)
  * the room using the supplied room name.
  *
  * @param   {object}    room      Room object to join, or null
@@ -2698,27 +2730,44 @@ function xows_cli_presence_init()
   // Send simple initial presence, without avatar advert
   xows_xmp_send_presence(null, null, 3, xows_cli_self.stat);
 
-  // Do not initialize again for this session
-  xows_cli_initialize = false;
+  // Initialization can be normal or following connection loss
+  if(xows_cli_initialize > 1) {
 
-  // Query for own vcard
-  if(!xows_options.vcard4_notify) {
-    xows_cli_vcard_query(xows_cli_self.bare);
+    // This is a partial/reconnect initilization
+
+    // We must re-join joigned rooms after reconnect
+    let i = xows_cli_room.length;
+    while(i--) {
+      if(xows_cli_room[i].join) {
+        xows_cli_room[i].join = null;
+        xows_cli_room_join(xows_cli_room[i]);
+      }
+    }
+
+  } else {
+
+    // This is a full/normal initialization
+
+    // Query for own vcard
+    if(!xows_options.vcard4_notify)
+      xows_cli_vcard_query(xows_cli_self.bare);
+
+    // Query for own avatar
+    if(!xows_options.avatar_notify)
+      xows_cli_avat_meta_query(xows_cli_self.bare);
+
+    // Query for own nickname
+    xows_cli_nick_query(xows_cli_self.bare);
+
+    // Update user parameters
+    xows_cli_fw_onselfchange(xows_cli_self);
   }
-
-  // Query for own avatar
-  if(!xows_options.avatar_notify) {
-    xows_cli_avat_meta_query(xows_cli_self.bare);
-  }
-
-  // Query for own nickname
-  xows_cli_nick_query(xows_cli_self.bare);
 
   // All discovery finished, client is ready
   xows_cli_fw_onconnect(xows_cli_self);
 
-  // Update user parameters
-  xows_cli_fw_onselfchange(xows_cli_self);
+  // Do not initialize again for this session
+  xows_cli_initialize = 0;
 }
 
 /**
@@ -2893,11 +2942,14 @@ function xows_cli_connected()
  */
 function xows_cli_disconnect()
 {
-  xows_log(2,"cli_disconnect","prepare disconnect");
-
   // do not disconnect not connected
   if(!xows_cli_self.jid)
     return;
+
+  xows_log(2,"cli_disconnect","prepare disconnect");
+
+  // No more connection loss
+  xows_cli_connect_loss = false;
 
   // Client is now Offline
   xows_cli_self.show = XOWS_SHOW_OFF;
@@ -2907,4 +2959,46 @@ function xows_cli_disconnect()
 
   // Close the connection
   xows_xmp_send_close(3); //< Close without error
+}
+
+/**
+ * Reconnect attempt timeout reference
+ */
+let xows_cli_reconnect_attempt_to = null;
+
+/**
+ * Attempt to reconnect client to XMPP server using previousely defined
+ * auhentication data
+ */
+function xows_cli_reconnect_attempt()
+{
+  // Try reconnect XMPP session
+  if(xows_cli_connect_loss)
+    xows_xmp_reconnect();
+
+  // Another attempt can be initated
+  xows_cli_reconnect_attempt_to = null;
+}
+
+/**
+ * Try to reconnect client to XMPP server using previousely defined
+ * auhentication data
+ */
+function xows_cli_reconnect()
+{
+  if(xows_cli_connect_loss) {
+
+    // Output log
+    xows_log(2,"cli_reconnect","try reconnect");
+
+    // We are in initial state
+    xows_cli_initialize = 2; //< 2 = Recon initialization
+
+    // Reset presence activity
+    xows_cli_activity_stop();
+
+    // Wait a second and try again
+    if(!xows_cli_reconnect_attempt_to)
+      xows_cli_reconnect_attempt_to = setTimeout(xows_cli_reconnect_attempt, 1000);
+  }
 }

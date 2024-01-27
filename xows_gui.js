@@ -79,6 +79,11 @@ let xows_gui_has_focus = true;
 let xows_gui_clean = true;
 
 /**
+ * Flag for client connexion loss
+ */
+let xows_gui_connect_loss = false;
+
+/**
  * Object that stores saved scroll values
  */
 const xows_gui_peer_scroll_db = {};
@@ -417,22 +422,25 @@ function xows_gui_connect(register = false)
 function xows_gui_cli_onconnect(user)
 {
   // Check whether user asked to remember
-  if(xows_gui_auth.cred) {
+  if(xows_gui_auth) {
 
-    // Output log
-    xows_log(2,"gui_loggedin","Saving credential");
+    if(xows_gui_auth.cred) {
 
-    // Store credentials
-    if(window.PasswordCredential) {
-      const cred_data = { "id"        : xows_gui_auth.user,
-                          "password"  : xows_gui_auth.pass};
-      const cred = new PasswordCredential(cred_data);
-      navigator.credentials.store(cred);
+      // Output log
+      xows_log(2,"gui_loggedin","Saving credential");
+
+      // Store credentials
+      if(window.PasswordCredential) {
+        const cred_data = { "id"        : xows_gui_auth.user,
+                            "password"  : xows_gui_auth.pass};
+        const cred = new PasswordCredential(cred_data);
+        navigator.credentials.store(cred);
+      }
     }
-  }
 
-  // Erase auth data
-  xows_gui_auth = null;
+    // Erase auth data
+    xows_gui_auth = null;
+  }
 
   // Open main 'screen'
   xows_gui_main_open();
@@ -440,27 +448,38 @@ function xows_gui_cli_onconnect(user)
   // widen roster panel (only in narrow-screen)
   xows_gui_rost_widen();
 
-  // Reset the Roster and Chat window
-  xows_gui_peer = null;
-  // Setup the lazy loader
-  xows_doc_loader_setup(xows_doc("chat_main"), "lazy_src");
-  // Check whether file Upload is available
-  if(xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
-    xows_doc("edit_upld").disabled = false;
-    // Add embeded download matching http upload service domain
-    xows_tpl_embed_add_upld(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD]);
-  }
-  // Check whether MUC service is available
-  if(xows_cli_svc_exist(XOWS_NS_MUC)) {
-    xows_doc("tab_room").disabled = false;
-    //xows_doc("tab_book").disabled = false; /* alternative Bookmarks implementation */
-  }
+  // Check whether we recover from connexion loss
+  if(xows_gui_connect_loss) {
 
-  // Set the presence menu for current user
-  //xows_gui_cli_onselfchange(user);
+    // Reset connection loss
+    xows_gui_connect_loss = false;
 
-  // Refresh public room list
-  xows_gui_room_list_reload();
+  } else {
+
+    // Reset the Roster and Chat window
+    xows_gui_peer = null;
+
+    // Setup the lazy loader
+    xows_doc_loader_setup(xows_doc("chat_main"), "lazy_src");
+
+    // Check whether file Upload is available
+    if(xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
+      xows_doc("edit_upld").disabled = false;
+      // Add embeded download matching http upload service domain
+      xows_tpl_embed_add_upld(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD]);
+    }
+    // Check whether MUC service is available
+    if(xows_cli_svc_exist(XOWS_NS_MUC)) {
+      xows_doc("tab_room").disabled = false;
+      //xows_doc("tab_book").disabled = false; /* alternative Bookmarks implementation */
+    }
+
+    // Set the presence menu for current user
+    //xows_gui_cli_onselfchange(user);
+
+    // Refresh public room list
+    xows_gui_room_list_reload();
+  }
 }
 
 /**
@@ -486,7 +505,25 @@ function xows_gui_disconnect()
  */
 function xows_gui_cli_onclose(code, mesg)
 {
-  // Present reset GUI multiple times
+  // Output log
+  xows_log(2,"gui_cli_onclose","connexion cloded","("+code+") "+mesg);
+
+  // Check whether this is a connexion loss
+  if(code == XOWS_SIG_HUP) {
+
+    // This is a connection loss
+    xows_gui_connect_loss = true;
+
+    // Close message box
+    xows_doc_mbox_close();
+
+    // Display wait screen
+    xows_gui_page_wait_open("Connecting...");
+
+    return;
+  }
+
+  // Prevent reset GUI multiple times
   if(!xows_gui_clean) {
 
     // reset GUI
@@ -496,11 +533,8 @@ function xows_gui_cli_onclose(code, mesg)
     xows_gui_page_auth_open();
   }
 
-  // If message, display info popup
-  if(mesg) {
-    // Display popup message
-    xows_doc_mbox_open(code, mesg);
-  }
+  // Display popup message
+  if(mesg) xows_doc_mbox_open(code, mesg);
 }
 
 /**
@@ -2286,6 +2320,10 @@ function xows_gui_mam_parse(peer, result, complete)
 
   for(let i = 0, n = result.length; i < n; ++i) {
 
+    // Ignore messages without body (probably a receipt)
+    if(!result[i].body)
+      continue;
+
     // If message with id alread exists, skip to prevent double
     if(xows_gui_peer_mesg_li(peer, result[i].id))
       continue;
@@ -3050,6 +3088,25 @@ function xows_gui_user_stat_onkeyp(event)
  * Page Screen - Wait Screen Page
  *
  * -------------------------------------------------------------------*/
+/**
+ * Connection Waiting page on-click event callback function
+ *
+ * @param   {object}    target    Target object of the triggered Event
+ */
+function xows_gui_page_wait_onclick(target)
+{
+  if(target.id === "wait_abrt") { //< Cancel button
+
+    // Disconnect client
+    xows_gui_disconnect();
+
+    // reset GUI
+    xows_gui_reset();
+
+    // Display Login page
+    xows_gui_page_auth_open();
+  }
+}
 
 /**
  * Wait Screen page open
@@ -3063,6 +3120,9 @@ function xows_gui_page_wait_open(text)
 
   // Open wait page
   xows_doc_page_open("page_wait");
+
+  // Open dialog page
+  xows_doc_page_open("page_wait",false,null,null,xows_gui_page_wait_onclick);
 }
 
 /* -------------------------------------------------------------------
@@ -3072,7 +3132,7 @@ function xows_gui_page_wait_open(text)
  * -------------------------------------------------------------------*/
 
 /**
- * User Login page on-unput event callback function
+ * User Login page on-input event callback function
  *
  * @param   {object}    target    Target object of the triggered Event
  */
@@ -3135,7 +3195,6 @@ function xows_gui_page_auth_open()
   // Open dialog page
   xows_doc_page_open("page_auth",false,null,xows_gui_page_auth_oninput,
                                             xows_gui_page_auth_onclick);
-
   // Add navigation history
   xows_gui_nav_push("auth_open", xows_gui_page_auth_open);
 }

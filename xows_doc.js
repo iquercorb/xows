@@ -480,7 +480,6 @@ function xows_doc_init(onready)
   // Room Occupants list
   xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);
 
-
   // Page screen "scr_page" event listener
   xows_doc_listener_add(xows_doc("scr_page"),   "keyup",    xows_doc_page_onkeyu);
 

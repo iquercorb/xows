@@ -56,6 +56,7 @@ const XOWS_APP_NODE = "https://github.com/sedenion/xows";
  * Global status signal
  */
 const XOWS_SIG_ERR = -1;
+const XOWS_SIG_HUP = -2; //< used for connect loss
 const XOWS_SIG_WRN = 0;
 
 /**
