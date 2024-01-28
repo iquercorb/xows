@@ -713,6 +713,7 @@ button:disabled {
   z-index: 4;
   top: 50%;
   transform: translate(0, -50%);
+  height: 100%;
   padding: 0;
   margin: auto;
   background-color: transparent;
@@ -720,21 +721,27 @@ button:disabled {
 .over-view figure {
   display: inline-block;
   text-align: left;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   margin: 0;
-  padding: 0 20px;
 }
 .over-view img {
   display: block;
+  position: relative;
+  top: 50%;
+  transform: translate(0, -50%);
   max-width: 100%;
-  height: auto;
+  max-height: 100%;
+  padding: 20px 20px 30px 20px;
 }
 .over-view a {
   display: block;
+  position: absolute;
+  left: 0;
+  bottom: 2px;
   text-decoration: none;
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 14px;
+  margin: 5px 20px;
 }
 .over-view a,
 .over-view a:visited {
