@@ -52,6 +52,11 @@ const XOWS_PEER_OCCU  = 3;
 const XOWS_AVAT_SIZE  = 48;
 
 /**
+ * Delay in miliseconds between reconnect attempts
+ */
+const XOWS_RECON_DELAY = 3000;
+
+/**
  * List of available own account feature
  */
 const xows_cli_feat_own = [];
@@ -3003,6 +3008,6 @@ function xows_cli_reconnect()
 
     // Wait a second and try again
     if(!xows_cli_reconnect_attempt_to)
-      xows_cli_reconnect_attempt_to = setTimeout(xows_cli_reconnect_attempt, 1000);
+      xows_cli_reconnect_attempt_to = setTimeout(xows_cli_reconnect_attempt, XOWS_RECON_DELAY);
   }
 }
