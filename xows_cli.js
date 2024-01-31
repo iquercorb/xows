@@ -587,7 +587,7 @@ function xows_cli_set_callback(type, callback)
  * session, and is set to false once the initial presence is sent
  * after the first query to roster content.
  */
-let xows_cli_initialize = 0;
+let xows_cli_initialize = true;
 
 /**
  * Connecte client to the specified XMPP over WebSocket service
@@ -634,7 +634,7 @@ function xows_cli_connect(url, jid, password, register)
   xows_xmp_set_callback("close", xows_cli_xmp_onclose);
 
   // We are in initial state
-  xows_cli_initialize = 1; //< 1 = normal/full initialization
+  xows_cli_initialize = true;
 
   // Open a new XMPP connection
   return xows_xmp_connect(url, jid, password, register);
@@ -650,9 +650,6 @@ function xows_cli_connect(url, jid, password, register)
  */
 function xows_cli_xmp_onsession(jid)
 {
-  // Connexion is ok
-  xows_cli_connect_loss = false;
-
   // Store the full JID for this session
   xows_cli_self.jid = jid;
   xows_cli_self.bare = xows_jid_to_bare(jid);
@@ -672,8 +669,14 @@ function xows_cli_xmp_onsession(jid)
   // Create default avatar if needed
   if(!xows_cli_self.avat) xows_cli_self.avat = xows_cli_avat_temp(xows_cli_self.bare);
 
-  // Start features & services discovery
-  xows_xmp_discoinfo_query(xows_cli_self.bare, null, xows_cli_own_info_parse);
+
+  if(xows_cli_connect_loss) {
+    // Recovery from connexion loss, skip features & services discovery
+    xows_cli_presence_init();
+  } else {
+    // Start features & services discovery
+    xows_xmp_discoinfo_query(xows_cli_self.bare, null, xows_cli_own_info_parse);
+  }
 }
 
 /**
@@ -996,7 +999,7 @@ function xows_cli_rost_get_parse(item)
   }
 
   // If we are in initialize state, we now send the initial presence
-  if(xows_cli_initialize > 0)
+  if(xows_cli_initialize)
     xows_cli_presence_init();
 }
 
@@ -2740,9 +2743,12 @@ function xows_cli_presence_init()
   xows_xmp_send_presence(null, null, 3, xows_cli_self.stat);
 
   // Initialization can be normal or following connection loss
-  if(xows_cli_initialize > 1) {
+  if(xows_cli_connect_loss) {
 
     // This is a partial/reconnect initilization
+
+    // Connexion is now ok
+    xows_cli_connect_loss = false;
 
     // We must re-join joigned rooms after reconnect
     let i = xows_cli_room.length;
@@ -2776,7 +2782,7 @@ function xows_cli_presence_init()
   xows_cli_fw_onconnect(xows_cli_self);
 
   // Do not initialize again for this session
-  xows_cli_initialize = 0;
+  xows_cli_initialize = false;
 }
 
 /**
@@ -2999,9 +3005,6 @@ function xows_cli_reconnect()
 
     // Output log
     xows_log(2,"cli_reconnect","try reconnect");
-
-    // We are in initial state
-    xows_cli_initialize = 2; //< 2 = Recon initialization
 
     // Reset presence activity
     xows_cli_activity_stop();
