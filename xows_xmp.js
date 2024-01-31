@@ -59,6 +59,7 @@ const XOWS_NS_AVATAR_META  = "urn:xmpp:avatar:metadata";
 const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
 const XOWS_NS_HTTPUPLOAD   = "urn:xmpp:http:upload";
 const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1"; //< XEP-0402
+const XOWS_NS_EXTDISCO     = "urn:xmpp:extdisco:2";
 const XOWS_NS_IETF_FRAMING = "urn:ietf:params:xml:ns:xmpp-framing";
 const XOWS_NS_IETF_SASL    = "urn:ietf:params:xml:ns:xmpp-sasl";
 const XOWS_NS_IETF_BIND    = "urn:ietf:params:xml:ns:xmpp-bind";
@@ -790,6 +791,66 @@ function xows_xmp_carbons_query(enable, onparse)
 
   // Use generic parsing function
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
+ * Parse result of external services discovery query
+ *
+ * @param   {object}    stanza    Received query response stanza
+ * @param   {function}  onparse   Callback to forward parse result
+ */
+function xows_xmp_extdisco_parse(stanza, onparse)
+{
+  if(stanza.getAttribute("type") === "error") {
+    xows_log(1,"xmp_extdisco_parse","parse extdisco",xows_xmp_error_str(stanza));
+    // Forward result to client
+    if(xows_isfunc(onparse))
+      onparse(null);
+    return;
+  }
+
+  // Get the <services> child element
+  const query = stanza.querySelector("services");
+
+  let i, n, nodes;
+
+  // Turn each <service> into object's array.
+  nodes = query.getElementsByTagName("service");
+  const svcs = [];
+  for(i = 0, n = nodes.length; i < n; ++i) {
+    svcs.push({ "type"      : nodes[i].getAttribute("type"),
+                "host"      : nodes[i].getAttribute("host"),
+                "port"      : nodes[i].getAttribute("port"),
+                "transport" : nodes[i].getAttribute("transport"),
+                "username"  : nodes[i].getAttribute("username"),
+                "password"  : nodes[i].getAttribute("password"),
+                "restricted": nodes[i].getAttribute("restricted")});
+  }
+
+  // Forward result to client
+  if(xows_isfunc(onparse))
+    onparse(svcs);
+}
+
+/**
+ * Send a external services discovery query
+ *
+ * @param   {string}    type      Query type attribute or null to ignore
+ * @param   {function}  onparse   Callback to forward parse result
+ */
+function xows_xmp_extdisco_query(type, onparse)
+{
+  xows_log(2,"xmp_extdisco_query","query extdisco");
+
+  // Create the services child
+  const services = xows_xml_node("services",{"xmlns":XOWS_NS_EXTDISCO});
+
+  // Add type if supplied
+  if(type) services.setAttribute("type",type);
+
+  const iq =  xows_xml_node("iq",{"type":"get","to":xows_xmp_domain},services);
+
+  xows_xmp_send(iq, xows_xmp_extdisco_parse, onparse);
 }
 
 /**

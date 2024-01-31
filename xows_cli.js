@@ -108,6 +108,26 @@ function xows_cli_svc_exist(xmlns)
 }
 
 /**
+ * List of defined external services
+ */
+const xows_cli_ext_svc = [];
+
+/**
+ * Get list of external services by type
+ *
+ * @param   {string}    type      Service type to retrieve
+ */
+function xows_cli_svc_get(type)
+{
+  const result = [];
+  for(let i = 0, n = xows_cli_ext_svc.length; i < n; ++i)
+    if(xows_cli_ext_svc[i].type === type)
+      result.push(xows_cli_ext_svc[i]);
+
+  return result;
+}
+
+/**
  * Callback function for client connected
  */
 let xows_cli_fw_onconnect = function() {};
@@ -836,7 +856,9 @@ function xows_cli_srv_items_parse(from, item)
   // If no item is reported we are ready right now
   if(!item.length) {
     // Server discovery finished, now query for roster
-    xows_cli_rost_get_query();
+    //xows_cli_rost_get_query();
+    // Query for external services (ftp, stun, etc.)
+    xows_xmp_extdisco_query(null, xows_cli_extdisco_parse);
     return;
   }
   // Ensure services stack is empty
@@ -909,8 +931,30 @@ function xows_cli_srv_item_info_parse(from, iden, feat)
     xows_xmp_discoinfo_query(xows_cli_srv_items_stack.pop(), null, xows_cli_srv_item_info_parse);
   } else {
     // Server discovery finished, now query for roster
-    xows_cli_rost_get_query();
+    //xows_cli_rost_get_query();
+    // Query for external services (ftp, stun, etc.)
+    xows_xmp_extdisco_query(null, xows_cli_extdisco_parse);
   }
+}
+
+/**
+ * Function to handle parsed result of external services query
+ *
+ * @param   {object[]}  svcs      Array of parsed <service> objects
+ */
+function xows_cli_extdisco_parse(svcs)
+{
+  // Copy arrays
+  if(svcs) {
+    for(let i = 0; i < svcs.length; ++i) {
+      xows_cli_ext_svc.push(svcs[i]);
+      // Output some logs
+      xows_log(2,"cli_extdisco_parse","external service",svcs[i].type+" ("+svcs[i].host+":"+svcs[i].port+")");
+    }
+  }
+
+  // Server discovery finished, now query for roster
+  xows_cli_rost_get_query();
 }
 
 /**
