@@ -58,6 +58,7 @@ const XOWS_APP_NODE = "https://github.com/sedenion/xows";
 const XOWS_SIG_ERR = -1;
 const XOWS_SIG_HUP = -2; //< used for connect loss
 const XOWS_SIG_WRN = 0;
+const XOWS_SIG_OK  = 1;
 
 /**
  * Xows Logo SVG path
@@ -428,6 +429,24 @@ function xows_gen_nonce_asc(len)
 
   let nonce = "";
   for(let i = 0; i < len; ++i) nonce += XOWS_CMAP_B64[r[i] % 62];
+  return nonce;
+}
+
+/**
+ * Generates random numerical ASCII string of the specified length
+ *
+ * @param   {number}    len       Length of the string to generate
+ *
+ * @return  {string}    Randomly generated numeric string
+ */
+function xows_gen_nonce_num(len)
+{
+  // get random value using modern crypto object
+  const r = new Uint8Array(len);
+  window.crypto.getRandomValues(r);
+
+  let nonce = "";
+  for(let i = 0; i < len; ++i) nonce += XOWS_CMAP_HEX[r[i] % 10];
   return nonce;
 }
 
@@ -1080,4 +1099,263 @@ function xows_gen_avatar(size, image, name, font)
   }
 
   return cv.toDataURL("image/png");
+}
+
+/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+ *                       SDP protocol parsing
+ * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
+
+/**
+ *  Parse raw SDP attribute line to JSON
+ *
+ * @param   {string}    parent    JSON parent object to attach parsed objet to
+ * @param   {string}    entry     Raw SDP entry line
+ */
+function xows_sdp_parse_a(parent, entry)
+{
+  const cln = entry.indexOf(':');
+  const name = (cln > 0) ? entry.substr(2,cln-2) : entry.substr(2);
+  const vals = (cln > 0) ? entry.substr(cln+1).split(' ') : null;
+
+  switch(name)
+  {
+  // Typical Session attributes
+
+  // a=group:BUNDLE 0 1
+  case "group":
+    parent.group = {type:vals[0],mids:vals.slice(1)};
+    break;
+
+  // a=msid-semantic:WMS *
+  case "msid-semantic":
+    parent.msidSemantic = {semantic:vals[0],token:vals[1]};
+    break;
+
+  // a=ice-options:trickle
+  case "ice-options":
+    parent.iceOptions = vals[0];
+    break;
+  
+  // Session or Media attributes
+
+  // a=fingerprint:sha-256 4B:79:0D:B1:55:FC:68:33:8A:FC:52:83:73:AC:A2:C1:40:03:9B:FB:4D:DE:23:BE:4F:B5:51:A2:B1:5F:59:A8
+  case "fingerprint": {
+    if(!parent.fingerprint) parent.fingerprint = [];
+    parent.fingerprint.push({type:vals[0],hash:vals[1]});
+    break; }
+
+  // Typical Media attributes
+
+  // a=sendrecv
+  case "sendrecv":
+  case "sendonly":
+  case "recvonly":
+  case "inactive":
+    parent.direction = name;
+    break;
+
+  // a=extmap:2/recvonly urn:ietf:params:rtp-hdrext:csrc-audio-level
+  case "extmap": {
+    if(!parent.extmap) parent.extmap = [];
+    const obj = {value:parseInt(vals[0]),uri:vals[1]};
+    const spl = vals[0].split('/');
+    if(spl[1]) obj.direction = spl[1];
+    parent.extmap.push(obj);
+    break; }
+
+  // a=fmtp:97 profile-level-id=42e01f;level-asymmetry-allowed=1
+  case "fmtp": {
+    if(!parent.fmtp) parent.fmtp = [];
+    parent.fmtp.push({payload:parseInt(vals[0]),config:vals[1].split(';')});
+    break; }
+
+  // a=ice-ufrag:be55f801
+  case "ice-ufrag":
+    parent.iceUfrag = vals[0];
+    break;
+
+  // a=ice-pwd:65f2abf2054469b04a33377f896ae292
+  case "ice-pwd":
+    parent.icePwd = vals[0];
+    break;
+
+  // a=msid:- {d33c8907-5cc1-4f22-ae89-3a20202e14fb}
+  case "msid":
+    parent.msid = {group:vals[0],id:vals[1]};
+    break;
+
+  // a=rtcp-fb:120 ccm fir
+  case "rtcp-fb": {
+    if(!parent.rtcpFb) parent.rtcpFb = [];
+    const obj = {payload:parseInt(vals[0]),type:vals[1]};
+    if(vals[2]) obj.subtype = vals[2];
+    parent.rtcpFb.push(obj);
+    break; }
+
+  // a=rtcp-mux
+  case "rtcp-mux":
+    parent.rtcpMux = true;
+    break;
+
+  // a=rtcp-rsize
+  case "rtcp-rsize":
+    parent.rtcpRsize = true;
+    break;
+
+  // a=rtpmap:109 opus/48000/2
+  case "rtpmap": {
+    if(!parent.rtpmap) parent.rtpmap = [];
+    const obj = {payload:parseInt(vals[0])};
+    const spl = vals[1].split('/');
+    obj.codec = spl[0]; if(spl[1]) obj.rate = spl[1]; if(spl[2]) obj.channels = spl[2];
+    parent.rtpmap.push(obj);
+    break; }
+
+  // a=ssrc:3343992477 cname:{8ef032e4-1cf5-4049-9d6c-6cb5e71ce74d}
+  case "ssrc": {
+    if(!parent.ssrc) parent.ssrc = [];
+    const obj = {id:parseInt(vals[0])};
+    if(vals[1]) {
+      const spl = vals[1].split(':');
+      obj.attribute = spl[0]; obj.value = spl[1];
+    }
+    parent.ssrc.push(obj);
+    break; }
+
+  // a=ssrc-group:FID 3343992477 2205592591
+  case "ssrc-group": {
+    if(!parent.ssrcGroup) parent.ssrcGroup = [];
+    parent.ssrcGroup.push({semantics:vals[0],ssrcs:vals.slice(1)});
+    break; }
+
+  // a=candidate:5 1 UDP 92216575 46.226.104.66 59098 typ relay raddr 46.226.104.66 rport 59098
+  case "candidate": {
+    if(!parent.candidate) parent.candidate = [];
+    // Parse common attributes
+    const obj = { network:1,foundation:vals[0],component:vals[1],
+                  protocol:vals[2].toLowerCase(),priority:vals[3],
+                  ip:vals[4],port:vals[5]};
+    // Parse extra attributes
+    for(let i = 6; i < vals.length; i+=2) {
+      switch(vals[i])
+      {
+      case 'typ': obj.type = vals[i+1]; break;
+      case 'raddr': obj.raddr = vals[i+1]; break;
+      case 'rport': obj.rport = vals[i+1]; break;
+      case 'generation': o.generation = vals[i+1]; break;
+      case 'tcptype': obj.tcptype = vals[i+1]; break;
+      }
+    }
+    parent.candidate.push(obj);
+    break; }
+
+  // a=attribute:value value value
+  default:
+    parent[name] = vals ? vals[0] : true;
+    break;
+  }
+}
+
+/**
+ *  Parse raw SDP data into JSON descriptor
+ *
+ * @param   {string}    raw       Raw SDP data to parse
+ *
+ * @return  {object}    Parsed SDP as JSON descriptor
+ */
+function xows_sdp_parse(raw)
+{
+  const entries = raw.split('\r\n');
+  
+  const sdpout = {};
+
+  for(let i = 0; i < entries.length; ++i) {
+
+    const entry = entries[i];
+
+    switch(entry.charAt(0))
+    {
+    // v=0
+    case 'v': //< version
+      sdpout.version = entry.substr(2);
+      break;
+
+    // o=tartempion-5.24 5832058394281212273 0 IN IP4 0.0.0.0
+    case 'o': { //< origin
+      const vals = entry.substr(2).split(' ');
+      sdpout.origin = {username:vals[0],sessionId:vals[1],sessionVersion:vals[2],
+                    netType:vals[3],ipVer:parseInt(vals[4].charAt(2)),address:vals[5]};
+      break; }
+
+    // s=-
+    case 's': //< session name
+      sdpout.name = entry.substr(2);
+      break;
+
+    // t=0 0
+    case 't': { //< session name
+      const vals = entry.substr(2).split(' ');
+      sdpout.timing = {start:vals[0],stop:vals[1]};
+      break; }
+
+    // m=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101
+    case 'm': { //< media description
+      if(!sdpout.media) sdpout.media = [];
+      const vals = entry.substr(2).split(' ');
+      sdpout.media.push({type:vals[0],port:parseInt(vals[1]),protocols:vals[2],payloads:vals.slice(3)});
+      break; }
+
+    // c=IN IP4 0.0.0.0
+    case 'c': { //< connection
+      if(sdpout.media) {
+        const media = sdpout.media[sdpout.media.length - 1];
+        const vals = entry.substr(2).split(' ');
+        media.connection = {type:vals[0],version:parseInt(vals[1].charAt(2)),ip:vals[2]};
+      }
+      break; }
+
+    // a=attribue:values
+    case 'a': { //< attribute
+      let parent;
+      if(sdpout.media) {
+        parent = sdpout.media[sdpout.media.length - 1];
+      } else {
+        parent = sdpout;
+      }
+      xows_sdp_parse_a(parent, entry);
+      break; }
+    }
+  }
+    
+  //console.log(sdpout);
+  
+  return sdpout;
+}
+
+/**
+ *  Get medias type list from SDP string
+ *
+ * @param   {string}    raw       Raw SDP data to parse
+ *
+ * @return  {object}    Media constraints
+ */
+function xows_sdp_get_medias(raw)
+{
+  const constraints = {}
+  let m = raw.indexOf("m=");
+  while(m > 0) {
+    
+    m += 2;
+    
+    const media = raw.substr(m).split(' ')[0];
+    
+    if(media === "audio" && !constraints.audio)
+      constraints.audio = true;
+    if(media === "video" && !constraints.video)
+      constraints.video = true;
+      
+    m = raw.indexOf("m=", m);
+  }
+  
+  return constraints;
 }

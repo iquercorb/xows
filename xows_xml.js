@@ -147,7 +147,7 @@ function xows_xml_node(name, attr, child)
   // Add attributes to node
   if(typeof(attr) === "object") {
     for(const k in attr) {
-      if(attr.hasOwnProperty(k) && attr[k])
+      if(attr.hasOwnProperty(k) && attr[k] !== null && attr[k] !== undefined)
         node.setAttribute(k, attr[k]);
     }
   }
@@ -266,3 +266,7 @@ function xows_xml_get_text(node) {
 
   return xows_xml_unesc(str);
 }
+
+/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+ *                 SDP protocol translation utilities
+ * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */

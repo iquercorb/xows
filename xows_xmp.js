@@ -60,10 +60,21 @@ const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
 const XOWS_NS_HTTPUPLOAD   = "urn:xmpp:http:upload";
 const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1"; //< XEP-0402
 const XOWS_NS_EXTDISCO     = "urn:xmpp:extdisco:2";
+const XOWS_NS_JINGLE       = "urn:xmpp:jingle:1";                     //< XEP-0166
+const XOWS_NS_JINGLE_RTP1  = "urn:xmpp:jingle:apps:rtp:1";            //< XEP-0166
+const XOWS_NS_JINGLE_RTPA  = "urn:xmpp:jingle:apps:rtp:audio";        //< XEP-0166
+const XOWS_NS_JINGLE_RTPV  = "urn:xmpp:jingle:apps:rtp:video";        //< XEP-0166
+const XOWS_NS_JINGLE_ICE   = "urn:xmpp:jingle:transports:ice-udp:1";  //< XEP-0166 / XEP-0176
+const XOWS_NS_JINGLE_FB    = "urn:xmpp:jingle:apps:rtp:rtcp-fb:0";    //< XEP-0166 / XEP-0293
+const XOWS_NS_JINGLE_HEXT  = "urn:xmpp:jingle:apps:rtp:rtp-hdrext:0"; //< XEP-0166 / XEP-0294
+const XOWS_NS_JINGLE_DTLS  = "urn:xmpp:jingle:apps:dtls:0";           //< XEP-0166 / XEP-0320
+const XOWS_NS_JINGLE_GRP   = "urn:xmpp:jingle:apps:grouping:0";       //< XEP-0166 / XEP-0338
+const XOWS_NS_JINGLE_SSMA  = "urn:xmpp:jingle:apps:rtp:ssma:0";       //< XEP-0166 / XEP-0339
 const XOWS_NS_IETF_FRAMING = "urn:ietf:params:xml:ns:xmpp-framing";
 const XOWS_NS_IETF_SASL    = "urn:ietf:params:xml:ns:xmpp-sasl";
 const XOWS_NS_IETF_BIND    = "urn:ietf:params:xml:ns:xmpp-bind";
 const XOWS_NS_IETF_SESSION = "urn:ietf:params:xml:ns:xmpp-session";
+const XOWS_NS_IETF_STANZAS = "urn:ietf:params:xml:ns:xmpp-stanzas";
 const XOWS_NS_IETF_VCARD4  = "urn:ietf:params:xml:ns:vcard-4.0";
 const XOWS_NS_VCARD        = "vcard-temp";
 const XOWS_NS_VCARDXUPDATE = "vcard-temp:x:update";
@@ -367,7 +378,11 @@ function xows_xmp_get_caps()
     xows_xml_node("feature",{"var":vcard4}),
     xows_xml_node("feature",{"var":XOWS_NS_AVATAR_DATA}),
     xows_xml_node("feature",{"var":avatar}),
-    xows_xml_node("feature",{"var":XOWS_NS_BOOKMARKS+"+notify"})
+    xows_xml_node("feature",{"var":XOWS_NS_BOOKMARKS+"+notify"}),
+    xows_xml_node("feature",{"var":XOWS_NS_JINGLE}),
+    xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTP1}),
+    xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTPA}),
+    xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTPV})
   ];
 
   return caps;
@@ -520,6 +535,11 @@ let xows_xmp_fw_onsubject = function() {};
 let xows_xmp_fw_onpubsub = function() {};
 
 /**
+ * Reference to callback function for received Jingle query
+ */
+let xows_xmp_fw_onjingle = function() {};
+
+/**
  * Reference to callback function for XMPP stream closed
  */
 let xows_xmp_fw_onerror = function() {};
@@ -565,6 +585,7 @@ function xows_xmp_set_callback(type, callback)
     case "receipt":   xows_xmp_fw_onreceipt = callback; break;
     case "subject":   xows_xmp_fw_onsubject = callback; break;
     case "pubsub":    xows_xmp_fw_onpubsub = callback; break;
+    case "jingle":    xows_xmp_fw_onjingle = callback; break;
     case "error":     xows_xmp_fw_onerror = callback; break;
     case "close":     xows_xmp_fw_onclose = callback; break;
   }
@@ -637,6 +658,33 @@ function xows_xmp_error_str(stanza)
   }
 
   return str;
+}
+
+/**
+ * Function to send formated <iq> error stanza
+ *
+ * @parma   {string}    id          Query ID the error is related to
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    type        Error type (type attribute of <error> node)
+ * @param   {string}    reason      Error reason (<error> child node tagname)
+ * @param   {string}   [message]    Optionnal message to include within reason
+ */
+function xows_xmp_send_iq_error(id, to, type, reason, message)
+{
+  xows_xmp_send(  xows_xml_node("iq",{"id":id,"type":"error","to":to},
+                    xows_xml_node("error",{"type":type},
+                      xows_xml_node(reason,{"xmlns":XOWS_NS_IETF_STANZAS},content))));
+}
+
+/**
+ * Function to send formated <iq> result stanza
+ *
+ * @parma   {string}    id          Query ID the error is related to
+ * @parma   {string}    to          Destination JID
+ */
+function xows_xmp_send_iq_result(id, to)
+{
+  xows_xmp_send(xows_xml_node("iq",{"id":id,"type":"result","to":to}));
 }
 
 /**
@@ -1851,6 +1899,476 @@ function xows_xmp_upload_query(url, filename, size, type, onparse)
 }
 
 /**
+ * Create SDP string from jingle RTP session request
+ *
+ * The supplied jingle node must follow the Jingle RTP Sessions
+ * standard (XEP-0167), which is the only one supported by this
+ * function.
+ *
+ * @parma   {object}    jingle      Jingle node to convert
+ *
+ * @return  {string}    SDP string or null if failed.
+ */
+function xows_xmp_sdp_from_jingle(jingle)
+{
+  // Check for support and compatibility
+  const descs = jingle.querySelectorAll("description");
+  for(let i = 0; i < descs.length; ++i)
+    if(descs[i].getAttribute("xmlns") !== XOWS_NS_JINGLE_RTP1)
+      return null;
+
+  // Get proper SID for originator
+  const sid = Math.round(Date.now() / 1.0);
+
+  // Sessions base infos
+  let sdp = "v=0\r\n"
+          + "o=- "+sid+" 0 IN IP4 0.0.0.0\r\n"
+          + "s=-\r\n"
+          + "t=0 0\r\n";
+
+  // Session group infos
+  const group = jingle.querySelector("group");
+  if(group) { // a=group:BUNDLE 0 1
+    sdp += "a=group:"+group.getAttribute("semantics");
+    const content = group.querySelectorAll("content");
+    for(let i = 0; i < content.length; ++i) {
+      sdp += " " + content[i].getAttribute("name");
+    }
+    sdp += "\r\n";
+  }
+
+  //a=msid-semantic:WMS *
+  // not implemented
+
+  //a=ice-options:trickle
+  // not handled by jingle
+
+  // Medias infos from <content> nodes
+  const content = jingle.querySelectorAll(":scope > content");
+  for(let i = 0; i < content.length; ++i) {
+
+    const description = content[i].querySelector("description");
+    const transport = content[i].querySelector("transport");
+    const fingerprints = transport.querySelectorAll("fingerprint");
+
+    //m=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101
+    sdp += "m="+description.getAttribute("media");
+    sdp += fingerprints.length ? " 1 RTP/SAVPF" : " RTP/AVPF";
+
+    const payload_type = description.querySelectorAll("payload-type");
+    for(let j = 0; j < payload_type.length; ++j)
+      sdp += " "+payload_type[j].getAttribute("id");
+    sdp += "\r\n";
+
+    // c=IN IP4 0.0.0.0
+    sdp += "c=IN IP4 0.0.0.0\r\n";
+
+    // a=sendrecv
+    const senders = transport.getAttribute("senders");
+    switch(senders)
+    {
+    case "both": sdp += "a=sendrecv"; break;
+    case "initiator": sdp += "a=sendonly"; break;
+    case "responder": sdp += "a=recvonly"; break;
+    case "none": sdp += "a=inactive"; break;
+    }
+    sdp += "\r\n";
+
+    //a=mid:0
+    sdp += "a=mid:"+content[i].getAttribute("name")+"\r\n";
+
+    //a=ice-ufrag:73bc0993
+    if(transport.hasAttribute("ufrag"))
+      sdp += "a=ice-ufrag:"+transport.getAttribute("ufrag")+"\r\n";
+
+    //a=ice-pwd:fd0164c4f8e4c916de72c655471c5214
+    if(transport.hasAttribute("pwd"))
+      sdp += "a=ice-pwd:"+transport.getAttribute("pwd")+"\r\n";
+
+    //a=fingerprint:sha-256 3F:65:FD:45:26:D7:04:9F:54:7F:A6:28:BE:99:DA:F2:2D:10:D8:AA:CA:73:AA:17:81:29:FD:4F:BE:FD:14:90
+    const fingerprint = transport.querySelectorAll("fingerprint");
+    for(let j = 0; j < fingerprint.length; ++j)
+      sdp += "a=fingerprint:"+fingerprint[j].getAttribute("hash")+" "+xows_xml_get_text(fingerprint[j])+"\r\n";
+
+    //a=setup:actpass
+    if(fingerprint.length)
+      sdp += "a=setup:"+fingerprint[0].getAttribute("setup")+"\r\n";
+
+    //a=extmap:3 urn:ietf:params:rtp-hdrext:sdes:mid
+    const rtp_hdrext = description.querySelectorAll("rtp-hdrext");
+    for(let j = 0; j < rtp_hdrext.length; ++j) {
+      sdp += "a=extmap:"+rtp_hdrext[j].getAttribute("id");
+      if(rtp_hdrext[j].getAttribute("senders") == "initiator") sdp += "/recvonly";
+      sdp += " "+rtp_hdrext[j].getAttribute("uri")+"\r\n";
+    }
+
+    //a=fmtp:97 profile-level-id=42e01f;level-asymmetry-allowed=1
+    for(let j = 0; j < payload_type.length; ++j) {
+      const parameter = payload_type[j].querySelectorAll("parameter");
+      if(parameter.length) {
+        sdp += "a=fmtp:"+payload_type[j].getAttribute("id")+" ";
+        for(let k = 0; k < parameter.length; ++k) {
+          sdp += parameter[k].getAttribute("name")+"="+parameter[k].getAttribute("value");
+          if(k < (parameter.length - 1)) sdp += ";";
+        }
+        sdp += "\r\n";
+      }
+    }
+
+    //a=rtcp-fb:120 nack
+    for(let j = 0; j < payload_type.length; ++j) {
+      const rtcp_fb = payload_type[j].querySelectorAll("rtcp-fb");
+      if(rtcp_fb.length) {
+        for(let k = 0; k < rtcp_fb.length; ++k) {
+          sdp += "a=rtcp-fb:"+payload_type[j].getAttribute("id");
+          sdp += " "+rtcp_fb[k].getAttribute("type");
+          if(rtcp_fb[k].hasAttribute("subtype"))
+            sdp += " "+rtcp_fb[k].getAttribute("subtype");
+          sdp += "\r\n";
+        }
+      }
+    }
+
+    //a=rtcp-mux
+    if(description.querySelector("rtcp-mux"))
+      sdp += "a=rtcp-mux\r\n";
+
+    //a=rtpmap:98 rtx/90000
+    for(let j = 0; j < payload_type.length; ++j) {
+      sdp += "a=rtpmap:"+payload_type[j].getAttribute("id")+" ";
+      sdp += payload_type[j].getAttribute("name");
+      if(payload_type[j].hasAttribute("clockrate"))
+        sdp += "/"+payload_type[j].getAttribute("clockrate");
+      if(payload_type[j].hasAttribute("channels"))
+        sdp += "/"+payload_type[j].getAttribute("channels");
+      sdp += "\r\n";
+    }
+
+    //a=ssrc:1815119038 cname:{082af9fe-ac02-43d5-b5b6-069a14fa999f}
+    const source = description.querySelectorAll("source");
+    for(let j = 0; j < source.length; ++j) {
+      sdp += "a=ssrc:"+source[j].getAttribute("ssrc");
+      const parameter = source[j].querySelector("parameter");
+      if(parameter)
+        sdp += " "+parameter.getAttribute("name")+":"+parameter.getAttribute("value");
+      sdp += "\r\n";
+    }
+
+    //a=ssrc-group:FID 1815119038 3975978373
+    const ssrc_group = description.querySelectorAll("ssrc-group");
+    for(let j = 0; j < ssrc_group.length; ++j) {
+      sdp += "a=ssrc-group:"+ssrc_group[j].getAttribute("semantics");
+      const source = ssrc_group[j].querySelectorAll("source");
+      for(let k = 0; k < source.length; ++k) {
+        sdp += " "+source[k].getAttribute("ssrc");
+      }
+      sdp += "\r\n";
+    }
+
+    //a=candidate:0 1 UDP 2122187007 192.168.16.8 35041 typ host
+    const candidate = transport.querySelectorAll("candidate");
+    for(let j = 0; j < candidate.length; ++j) {
+      sdp += "a=candidate:"+candidate[j].getAttribute("foundation");
+      sdp += " "+candidate[j].getAttribute("component");
+      sdp += " "+candidate[j].getAttribute("protocol").toUpperCase();
+      sdp += " "+candidate[j].getAttribute("priority");
+      sdp += " "+candidate[j].getAttribute("ip");
+      sdp += " "+candidate[j].getAttribute("port");
+      if(candidate[j].hasAttribute("type")) sdp += " typ "+candidate[j].getAttribute("type");
+      if(candidate[j].hasAttribute("rel-addr")) sdp += " raddr "+candidate[j].getAttribute("rel-addr");
+      if(candidate[j].hasAttribute("rel-port")) sdp += " rport "+candidate[j].getAttribute("rel-port");
+      if(candidate[j].hasAttribute("generation")) sdp += " generation "+candidate[j].getAttribute("generation");
+      sdp += "\r\n";
+    }
+  }
+
+  return sdp;
+}
+
+/**
+ * Create jingle RTP session request from SDP raw string.
+ *
+ * The created jingle node does not have all required attributes:
+ * initiator, responder and action attributes have to be defined.
+ *
+ * @parma   {string}    sdp         SDP string to parse
+ *
+ * @return  {object}    RTP session <Jingle> node.
+ */
+function xows_xmp_sdp_to_jingle(sdp)
+{
+  // Parse SDP string to JSON
+  const sdpjson = xows_sdp_parse(sdp);
+
+  // Base <jingle> node
+  const jingle = xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE});
+
+  const creator = "initiator"; //< FIXME: when this is not the case ?
+
+  // Create the <group> node
+  const group = xows_xml_node("group",{"xmlns":XOWS_NS_JINGLE_GRP,"semantics":sdpjson.group.type});
+  for(const mid in sdpjson.group.mids)
+    xows_xml_parent(group, xows_xml_node("content",{"name":mid}));
+  // Add <group> node to <jingle>
+  xows_xml_parent(jingle, group);
+
+  // Create <content> nodes from SDP Medias
+  for(let i = 0; i < sdpjson.media.length; ++i) {
+
+    // Create the <content> node
+    const content = xows_xml_node("content",{"creator":creator,"name":sdpjson.media[i].mid});
+
+    // Create the <description> node
+    const description = xows_xml_node("description",{"xmlns":XOWS_NS_JINGLE_RTP1,"media":sdpjson.media[i].type});
+
+    // Add the <payload-type> nodes to <description>
+    if(sdpjson.media[i].rtpmap) {
+      const rtp = sdpjson.media[i].rtpmap;
+      for(let j = 0; j < rtp.length; ++j)
+        xows_xml_parent(description, xows_xml_node("payload-type",{"id":rtp[j].payload,"name":rtp[j].codec,"clockrate":rtp[j].rate,"channels":rtp[j].channels}));
+    }
+
+    // Add <parameter> nodes (from fmtp) to <payload-type> nodes
+    if(sdpjson.media[i].fmtp) {
+      const fmt = sdpjson.media[i].fmtp;
+      for(let j = 0; j < fmt.length; ++j) {
+        // Retrieve previousely created <payload-type> node
+        const payload_type = description.querySelector("payload-type[id='"+fmt[j].payload+"']");
+        if(payload_type) {
+          for(let k = 0; k < fmt[j].config.length; ++k) {
+            const param = fmt[j].config[k].split('=');
+            xows_xml_parent(payload_type, xows_xml_node("parameter",{"name":param[0],"value":param[1]}));
+          }
+        }
+      }
+    }
+    // Add <rtcp-fb> nodes (from rtcp-fb) to <payload-type> nodes
+    if(sdpjson.media[i].rtcpFb) {
+      const fb = sdpjson.media[i].rtcpFb;
+      for(let j = 0; j < fb.length; ++j) {
+        // Retrieve previousely created <payload-type> node
+        const payload_type = description.querySelector("payload-type[id='"+fb[j].payload+"']");
+        if(payload_type)
+          xows_xml_parent(payload_type, xows_xml_node("rtcp-fb",{"xmlns":XOWS_NS_JINGLE_FB,"type":fb[j].type,"subtype":fb[j].subtype}));
+      }
+    }
+
+    // add <ssrc-group> nodes to <description>
+    if(sdpjson.media[i].ssrcGroup) {
+      const sgrp = sdpjson.media[i].ssrcGroup;
+      for(let j = 0; j < sgrp.length; ++j) {
+        // new <ssrc-group> node
+        const ssrc_group = xows_xml_node("ssrc-group",{"xmlns":XOWS_NS_JINGLE_SSMA,"semantics":sgrp[j].semantics});
+        // add <source> nodes to <ssrc-group>
+        for(let k = 0; k < sgrp[j].ssrcs.length; ++k)
+          xows_xml_parent(ssrc_group, xows_xml_node("source",{"ssrc":sgrp[j].ssrcs[k]}));
+        // add to <description>
+        xows_xml_parent(description, ssrc_group);
+      }
+    }
+
+    // add <source> nodes
+    if(sdpjson.media[i].ssrc) {
+      const ssrc = sdpjson.media[i].ssrc;
+      for(let j = 0; j < ssrc.length; ++j) {
+        // new <source> node with <parameter> into <description>
+        xows_xml_parent(description, xows_xml_node("source",{"xmlns":XOWS_NS_JINGLE_SSMA,"ssrc":ssrc[j].id},
+                                        xows_xml_node("parameter",{"name":ssrc[j].attribute,"value":ssrc[j].value})));
+      }
+    }
+
+    // add <rtp-hdrext> nodes
+    if(sdpjson.media[i].extmap) {
+      const ext = sdpjson.media[i].extmap;
+      for(let j = 0; j < ext.length; ++j) {
+        // new <rtp-hdrext> node
+        const rtp_hdrext = xows_xml_node("rtp-hdrext",{"xmlns":XOWS_NS_JINGLE_HEXT,"id":ext[j].value,"uri":ext[j].uri});
+        if(ext[j].direction === "recvonly") rtp_hdrext.setAttribute("senders","initiator");
+        // add to <description>
+        xows_xml_parent(description, rtp_hdrext);
+      }
+    }
+
+    // add <rtcp-mux> node
+    if(sdpjson.media[i].rtcpMux)
+      xows_xml_parent(description, xows_xml_node("rtcp-mux"));
+
+    // Add <content> to <description>
+    xows_xml_parent(content, description);
+
+    // Create the <transport> node
+    const transport = xows_xml_node("transport",{"xmlns":XOWS_NS_JINGLE_ICE,"pwd":sdpjson.media[i].icePwd,"ufrag":sdpjson.media[i].iceUfrag});
+
+    // Set transport 'senders' attribute according SDP media direction
+    switch(sdpjson.media[i].direction)
+    {
+    case "sendrecv":  transport.setAttribute("senders","both"); break;
+    case "sendonly":  transport.setAttribute("senders","initiator"); break;
+    case "recvonly":  transport.setAttribute("senders","responder"); break;
+    case "inactive":  transport.setAttribute("senders","none"); break;
+    }
+
+    // Add <fingerprint> nodes
+    if(sdpjson.media[i].fingerprint || sdpjson.fingerprint) {
+      const fingerprint = sdpjson.media[i].fingerprint ? sdpjson.media[i].fingerprint : sdpjson.fingerprint;
+      for(let j = 0; j < fingerprint.length; ++j)
+        xows_xml_parent(transport, xows_xml_node("fingerprint",{"xmlns":XOWS_NS_JINGLE_DTLS,"hash":fingerprint[j].type,"setup":sdpjson.media[i].setup},fingerprint[j].hash));
+    }
+
+    // Add ICE candidates
+    if(sdpjson.media[i].candidate) {
+      const ice = sdpjson.media[i].candidate;
+      for(let j = 0; j < ice.length; ++j) {
+        // Node attributes
+        const attribs = { "component":ice[j].component,"network":ice[j].network,"foundation":ice[j].foundation,"generation":ice[j].generation,
+                          "protocol":ice[j].protocol,"priority":ice[j].priority,"ip":ice[j].ip,"port":ice[j].port,"type":ice[j].type,
+                          "rel-addr":ice[j].raddr,"rel-port":ice[j].rport};
+
+        // Add <candidate> node to <transport>
+        xows_xml_parent(transport, xows_xml_node("candidate", attribs));
+      }
+    }
+
+    // Add <transport> node to <content>
+    xows_xml_parent(content, transport);
+
+    // Add <content> to <jingle>
+    xows_xml_parent(jingle, content);
+  }
+
+  return jingle;
+}
+
+/**
+ * Function to proceed an received <jingle> stanza
+ *
+ * @param   {object}    stanza    Received <jingle> stanza
+ */
+function xows_xmp_recv_jingle(stanza)
+{
+  const from = stanza.getAttribute("from");
+  const jingle = stanza.querySelector("jingle");
+  const action = jingle.getAttribute("action");
+
+  let mesg;
+
+  if(action === "session-terminate") {
+
+    // Get terminate reason
+    const reason = jingle.querySelector("reason");
+    if(reason && reason.childNodes[0])
+      mesg = reason.childNodes[0].tagName;
+
+  } else {
+
+    // Convert jingle RTP Session description to SDP string
+    mesg = xows_xmp_sdp_from_jingle(jingle);
+    if(mesg === null) {
+      xows_log(1,"xmp_recv_jingle","error","RTP to SDP conversion failed");
+      // Send back error
+      xows_xmp_send_iq_error(stanza.getAttribute("id"), from, "cancel", "bad-request");
+      return;
+    }
+
+  }
+
+  xows_log(2,"xmp_recv_jingle","received "+action,from);
+
+  // Forward to client
+  xows_xmp_fw_onjingle(from, stanza.getAttribute("id"), jingle.getAttribute("sid"), action, mesg);
+}
+
+/**
+ * Parse received jingle request acknowledge, this function forward
+ * only errors to client.
+ *
+ * @param   {object}    stanza    Received query response stanza
+ * @param   {function}  onresult  Callback to forward result
+ */
+function xows_xmp_jingle_result(stanza, onresult)
+{
+  if(stanza.getAttribute("type") === "error") {
+
+    const err_msg = xows_xmp_error_str(stanza);
+    xows_log(1,"xmp_jingle_parse","Jingle query error",err_msg);
+
+    // Forward parse result
+    if(xows_isfunc(onresult))
+      onresult(XOWS_SIG_ERR, err_msg);
+
+    return;
+  }
+
+  // Forward parse result
+  if(xows_isfunc(onresult))
+    onresult(3);
+}
+
+/**
+ * Send Jingle RTP session initiate from SDP offer
+ *
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    sid         Jingle session ID
+ * @parma   {string}    sdp         SDP offer string
+ * @param   {function} [onresult]   Optionnal callback for request result
+ */
+function xows_xmp_jingle_sdp_offer(to, sid, sdp, onresult)
+{
+  // Create <jingle> RTP session from SDP string
+  const jingle = xows_xmp_sdp_to_jingle(sdp);
+
+  // Complete <jingle> node with proper attributes
+  jingle.setAttribute("initiator",xows_xmp_bare+"/"+xows_xmp_res);
+  jingle.setAttribute("action","session-initiate");
+  jingle.setAttribute("sid",sid);
+
+  // Send message
+  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},jingle),
+                xows_xmp_jingle_result, onresult);
+}
+
+/**
+ * Send Jingle RTP session accept from SDP answer
+ *
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    sid         Jingle session ID
+ * @parma   {string}    sdp         SDP answer string
+ * @param   {function} [onresult]   Optionnal callback for request result
+ */
+function xows_xmp_jingle_sdp_answer(to, sid, sdp, onresult)
+{
+  // Create <jingle> RTP session from SDP string
+  const jingle = xows_xmp_sdp_to_jingle(sdp);
+
+  // Complete <jingle> node with proper attributes
+  jingle.setAttribute("responder",xows_xmp_bare+"/"+xows_xmp_res);
+  jingle.setAttribute("action","session-accept");
+  jingle.setAttribute("sid",sid);
+
+  // Send message
+  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},jingle),
+                xows_xmp_jingle_result, onresult);
+}
+
+/**
+ * Send Jingle session request from SDP
+ *
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    sid         Jingle session ID
+ * @parma   {string}    reason      Session terminate reason
+ * @param   {function} [onresult]   Optionnal callback for request result
+ */
+function xows_xmp_jingle_terminate(to, sid, reason, onresult)
+{
+  // Send message
+  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},
+                  xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-terminate"},
+                    xows_xml_node("reason",null,xows_xml_node(reason)))),
+                      xows_xmp_jingle_result, onresult);
+}
+
+
+/**
  * Array of available SASL mechanism for late authentication
  */
 let xows_xmp_auth_sasl_mechanisms = null;
@@ -2459,19 +2977,6 @@ function xows_xmp_recv_mam_result(result)
         body = child.hasChildNodes() ? xows_xml_get_text(child) : "";
       }
     }
-    /*
-    let log;
-    if(body !== undefined) {
-      // This should never happen
-      if(!time) time = new Date(0).getTime();
-      // Add archived message to stack
-      xows_xmp_mam_stk.push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body});
-      log = "Adding archived message to result stack";
-    } else {
-      log = "Skipped archived message without body";
-    }
-    xows_log(2,"xmp_recv_mam_result",log,"from "+from+" to "+to);
-    */
 
     // This should never happen
     if(!time) time = new Date(0).getTime();
@@ -2643,6 +3148,8 @@ function xows_xmp_recv_iq(stanza)
       const xmlns = child.getAttribute("xmlns");
       // Check for roster push
       if(xmlns === XOWS_NS_ROSTER) return xows_xmp_recv_roster_push(stanza);
+      // Check for jingle session
+      if(xmlns === XOWS_NS_JINGLE) return xows_xmp_recv_jingle(stanza);
     }
     return false; //< stanza not processed
   }
@@ -3004,6 +3511,7 @@ function xows_xmp_reconnect()
 
   // If socket already openned, close it
   xows_sck_destroy();
+
   // Open new WebSocket connection
   xows_sck_create(xows_xmp_url, "xmpp");
 }

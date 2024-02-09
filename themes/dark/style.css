@@ -67,7 +67,16 @@
   --bttn-hover:       #8D91AD;  /* Normal Button background hover */
   --bttn-text:        #DDD;     /* Normal Button text */
   --bttn-text-hover:  #FFF;     /* Normal Button text hover */
-
+  
+  /* Multimedia session buttons and elements */
+  --reje-base:        #E64545;  /* Reject button background */
+  --reje-hover:       #F26161;  /* Reject button background hover */
+  --reje-text:        #FFF;     /* Reject button text */
+  
+  --acce-base:        #2FC661;  /* Accept button background */
+  --acce-hover:       #3FE274;  /* Accept button background hover */
+  --acce-text:        #FFF;     /* Accept button text */
+  
   /* Input Checkboxes, Numbers, Selects...  */
   --ctrl-base:        #585966;  /* Input Control background */
   --ctrl-thmb:        #CCC;     /* Input Control Thumb & Button */
@@ -186,6 +195,23 @@ button:disabled {
   color: transparent;
   animation: loading-anim 400Ms linear infinite;
 }
+@keyframes ring-dialog-anim {
+  0% {
+    background-color: var(--base-tone6);
+  }
+}
+.RING-DIALOG {
+  animation: ring-dialog-anim 1s ease-out infinite;
+}
+@keyframes ring-roster-anim {
+  0% {
+    background-color: var(--notif-base);
+  }
+}
+.RING-ROSTER {
+  border-radius: 3px;
+  animation: ring-roster-anim 1s ease-out infinite;
+}
 /* ------------------------------------------------------------------ */
 /* Global WebKit scroll style to mimic Gecko
 /* ------------------------------------------------------------------ */
@@ -254,6 +280,29 @@ button:disabled {
 }.btn-abort:hover {
   color: var(--bttn-text-hover);
   background-color: var(--bttn-hover);
+}
+/* ------------------------------------------------------------------ */
+/* Buttons - Accept, Reject and Hang-Up */
+/* ------------------------------------------------------------------ */
+.btn-rejec {
+  margin: 0 10px 10px 0;
+  min-width: 120px; height: 32px;
+  padding: 8px 30px;
+  border-radius: 4px;
+  color: var(--reje-text);
+  background-color: var(--reje-base);
+}.btn-rejec:hover {
+  background-color: var(--reje-hover);
+}
+.btn-accep {
+  margin: 0 10px 10px 0;
+  min-width: 120px; height: 32px;
+  padding: 8px 30px;
+  border-radius: 4px;
+  color: var(--acce-text);
+  background-color: var(--acce-base);
+}.btn-accep:hover {
+  background-color: var(--acce-hover);
 }
 /* ------------------------------------------------------------------ */
 /* Button - Close */
@@ -548,6 +597,15 @@ button:disabled {
   flex: auto;
   width: 100%; height: 100%;
   overflow-y: auto;
+}
+.row-half {
+  flex: auto;
+  width: 100%; height: 30%;
+  min-height: 200px;
+}
+.row-full {
+  flex: auto;
+  width: 100%; height: 100%;
 }
 /* ------------------------------------------------------------------ */
 /* Pages Screen flex layout */
@@ -899,7 +957,7 @@ figure {
   text-align: center;
   vertical-align: middle;
   background-size: cover;
-  background-color: inherit;
+  /*background-color: inherit;*/
   border-radius: 50%;
 }
 /* ------------------------------------------------------------------ */
@@ -1261,9 +1319,8 @@ figure {
 }
 .head-acts button {
   display: inline-block;
-  width: 18px; height: 100%;
+  width: 36px; height: 100%;
   padding: 0;
-  margin-left: 10px;
   border: 0;
   background-color: transparent;
   background-size: 18px;
@@ -1713,6 +1770,12 @@ div[show="4"]  { background-color: var(--show-chat); }
 .CHAT-MUTE {
   background-image: url("images/notify_off.svg");
 }
+.chat-rtcv {
+  background-image: url("images/cam.svg");
+}
+.chat-rtca {
+  background-image: url("images/call.svg");
+}
 .chat-book {
   background-image: url("images/bookmark.svg");
 }
@@ -1739,7 +1802,160 @@ div[show="4"]  { background-color: var(--show-chat); }
   background-color: var(--base-tone1);
   border-color: var(--base-tone4);
 }
+/* ------------------------------------------------------------------ */
+/* Main Page - Center Col - Main Frame - Chat Call */
+/* ------------------------------------------------------------------ */
+.chat-call {
+  background-color: var(--base-tone1);
+  padding: 0 10px;
+  display: flex;
+  flex-direction: column;
+}
+.call-view {
+  height: 100%;
+  position: relative;
+}
+.call-vdeo {
+  width: 100%; height: 100%;
+  position: absolute;
+}
+.call-menu {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+.call-menu button {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  border-radius: 25%;
+  background-size: 18px;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.call-volu {
+  flex: none;
+  width: 120px; height: 100%;
+  padding-left: 10px;
+}
+.call-volu button  {
+  width: 24px; height: 24px;
+  background-color: transparent;
+  opacity: .7;
+}.call-volu button:hover {
+  opacity: 1;
+}
+.CALL-VMUT {
+  background-image: url("images/volume_0.svg");
+}
+.CALL-VMIN {
+  background-image: url("images/volume_1.svg");
+}
+.CALL-VMID {
+  background-image: url("images/volume_2.svg");
+}
+.CALL-VMAX {
+  background-image: url("images/volume_3.svg");
+}
+.call-vsld {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 2px;
+  width: 80px; height: 4px;
+  background: #FFF;
+  outline: none;
+  opacity:1;
+}.call-vsld:disabled{
+  background: #777;
+}
+.call-vsld::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  border: none;
+  border-radius: 50%;
+  width: 14px; height: 14px;
+  background: #FFF;
+  cursor: pointer;
+}.call-vsld:disabled::-webkit-slider-thumb {
+  background: #777;
+}
+.call-vsld::-moz-range-thumb {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  border: none;
+  border-radius: 50%;
+  width: 14px; height: 14px;
+  background: #FFF;
+  cursor: pointer;
+}.call-vsld:disabled::-moz-range-thumb{
+  background: #777;
+}
 
+
+.call-acts {
+  flex: auto;
+  height: 100%;
+  text-align: center;
+}
+.call-acts button {
+  width: 48px; height: 48px;
+  margin-left: 10px;
+  background-color: var(--base-tone4);
+}.call-acts button:hover  {
+  background-color: var(--base-tone6);
+}
+.CALL-CAM1 {
+  background-image: url("images/cam.svg");
+}
+.CALL-CAM0 {
+  background-image: url("images/cam_off.svg");
+}
+.CALL-MIC1 {
+  background-image: url("images/mic.svg");
+}
+.CALL-MIC0 {
+  background-image: url("images/mic_off.svg");
+}
+.CALL-HGUP {
+  background-image: url("images/call_hup.svg");
+  background-color: var(--reje-base) !important;
+}.CALL-HGUP:hover  {
+  background-color: var(--reje-hover) !important;
+}
+/*
+#call_hgup {
+  background-color: var(--reje-base);
+}#call_hgup:hover {
+  background-color: var(--reje-hover);
+}
+*/
+.call-geom {
+  flex: none;
+  display: inline-block;
+  width: 120px;
+  text-align: right;
+}
+.call-geom button {
+  width: 48px; height: 48px;
+  background-color: transparent;
+  opacity: .7;
+}.call-geom button:hover {
+  opacity: 1;
+}
+.CALL-MAXI {
+  background-image: url("images/maximize.svg");
+}
+.CALL-MINI {
+  background-image: url("images/minimize.svg");
+}
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - Chat History */
 /* ------------------------------------------------------------------ */
@@ -1797,6 +2013,91 @@ div[show="4"]  { background-color: var(--show-chat); }
   text-align: right;
   padding: 0;
   margin: 0 0 0 10px;
+}
+.hist-call {
+  display: flex;
+  align-items: end;
+  border-radius: 5px;
+  height: 75px;
+  margin: 10px 3px 5px 2px;
+  padding: 15px 15px 15px 0;
+  background-color: var(--base-tone5);
+}
+.hist-call figure {
+  display: inline-block;
+  width: 38px; height: 42px;
+  background-size: 28px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.hist-call section {
+  flex: auto;
+  height: 42px;
+  margin-left: 6px;
+}
+.hist-call h3 {
+ display: inline-block;
+ color: var(--text-tone1);
+ font-size: .9em;
+ line-height: .9em;
+ vertical-align: middle;
+ /*text-transform: uppercase;*/
+}
+.hist-call fieldset {
+  flex: auto;
+  border: 0;
+  text-align: right;
+  padding: 0;
+  margin: 0 0 0 10px;
+}
+.hist-call fieldset button:not(.btn-close) {
+  display: inline-block;
+  float: right;
+  width: 42px; height: 42px;
+  min-width: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-size: 18px;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  margin: 0 10px;
+}
+.hist-call fieldset .btn-close {
+  margin: 5px 10px;
+}
+.CALL-PKUP {
+  background-image: url("images/call_pup.svg");
+}
+.CALL-REJE {
+  background-image: url("images/delete.svg");
+}
+.CALL-AUD {
+  background-image: url("images/call.svg");
+}
+.CALL-VID {
+  background-image: url("images/cam.svg");
+}
+.CALL-TERM {
+  background-image: url("images/call_end.svg");
+}
+@media (max-width: 824px) {
+  .hist-call {
+    margin: 10px 6px 0 8px;
+  }
+  .hist-call figure {
+    width: 32px;
+    background-size: 24px;
+  }
+  .hist-call section {
+    margin-left: 0;
+  }
+  .hist-call h3 {
+    font-size: .7em;
+    margin: 14px 0;
+  }
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Unread Chat message notifier */
@@ -1967,6 +2268,11 @@ div[show="4"]  { background-color: var(--show-chat); }
   max-width: 480px; max-height: 300px;
   border-radius: 4px;
 }
+.EMBD-IMG iframe {
+  width: 426px; height: 240px;
+  border-radius: 5px;
+  border: none;
+}
 .EMBD-STR {
   width: 452px; height: 300px;
   margin: 0;
@@ -1978,7 +2284,13 @@ div[show="4"]  { background-color: var(--show-chat); }
 .EMBD-STR iframe {
   width: 426px; height: 240px;
   border-radius: 5px;
-  border: 0;
+  border: none;
+}
+.EMBD-VER {
+  width: 240px; height: 480px; 
+}
+.EMBD-VER iframe {
+  width: 240px; height: 420px; 
 }
 .EMBD-DNL {
   min-width: 450px; min-height: 50px;

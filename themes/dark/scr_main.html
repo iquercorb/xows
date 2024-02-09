@@ -98,16 +98,39 @@
         </div>
         <div id="chat_meta" class="head-meta"></div>
         <div class="head-acts">
+          <button id="chat_rtcv" class="chat-rtcv HIDDEN" title="${'Video call'}"></button>
+          <button id="chat_rtca" class="chat-rtca HIDDEN" title="${'Audio call'}"></button>
           <button id="chat_conf" class="chat-conf HIDDEN" title="${'Room configuration'}"></button>
           <button id="chat_book" class="chat-book HIDDEN" title="${'Add Room to Bookmarks'}"></button>
           <button id="chat_noti" class="CHAT-NOTI" title="${'Enable notifications'}"></button>
           <button id="chat_occu" class="chat-occu HIDDEN" title="${'Room occupants list'}"></button>
         </div>
       </div>
+      <!-- Half Frame (Chat Multimedia session) -->
+      <div id="chat_call" class="row-half chat-call HIDDEN">
+        <div class="call-view">
+          <video id="call_vdeo" class="call-vdeo">
+          </video>
+          <div id="call_menu" class="call-menu">
+            <div class="call-volu">
+              <button id="call_vbtn" class="CALL-VMID" title="${'Disable sound'}"></button>
+              <input id="call_vsld" class="call-vsld" type="range" min="0" max="100" value="50" title="${'Volume'}">
+            </div>
+            <div class="call-acts">
+              <button id="call_bcam" class="CALL-CAM1" title="${'Disable camera'}"></button>
+              <button id="call_bmic" class="CALL-MIC1" title="${'Disable microphone'}"></button>
+              <button id="call_hgup" class="CALL-HGUP" title="${'Hang up'}"></button>
+            </div>
+            <div class="call-geom">
+              <button id="call_geom" class="CALL-MAXI" title="${'Expand'}"></button>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- Main Frame (Chat Messages history) -->
       <div id="chat_main" class="row-main chat-main">
+        <!-- Chat History - Message list -->
         <div id="chat_hist" class="chat-hist">
-
           <div id="hist_beg" class="hist-bound hist-start"></div>
           <ul id="hist_ul">
             <li class="MESG-FULL" is_instance></li>
@@ -118,6 +141,7 @@
             ${'Back to recent messages'}
           </div>
         </div>
+        <!-- Chat History - File Upload Progress -->
         <div id="hist_upld" class="hist-upld HIDDEN">
           <section>
             <h3>${'Uploading file'}</h3>
@@ -130,9 +154,21 @@
             <button id="upld_exit" class="btn-close"></button>
           </fieldset>
         </div>
+        <!-- Chat History - Call Signaling Dialog -->
+        <div id="hist_call" class="hist-call RING-DIALOG HIDDEN">
+          <figure id="call_icon" class="CALL-RING"></figure>
+          <section>
+            <h3 id="call_mesg">${'Incoming call'}</h3>
+          </section>
+          <fieldset>
+            <button id="call_reje" class="btn-rejec CALL-REJE" title="${'Reject call'}"></button>
+            <button id="call_pkup" class="btn-accep CALL-PKUP" title="${'Accept call'}"></button>
+            <button id="call_clos" class="btn-close HIDDEN" title="${'Close'}"></button>
+          </fieldset>
+        </div>
       </div>
-      <!-- Froot Frame (Chat Input Panel) -->
-      <div class="row-foot chat-foot">
+      <!-- Foot Frame (Chat Input Panel) -->
+      <div id="chat_foot" class="row-foot chat-foot">
         <aside>
           <div id="drop_emoj" class="drop-emoj HIDDEN" has_template></div>
           <input id="chat_file" class="chat-file" type="file"></input>

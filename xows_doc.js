@@ -486,9 +486,6 @@ function xows_doc_init(onready)
   // Close page button "page_exit" event listener
   xows_doc_listener_add(xows_doc("page_exit"),  "click",    xows_doc_page_onclose);
 
-  // HTTP Upload Page "hist_upld" event listeners
-  xows_doc_listener_add(xows_doc("upld_exit"),  "click",    xows_gui_upld_onclose);
-
   // Check whether Registering option is enabled
   if(xows_options.allow_register) {
     // Show and configure the "Register new account" link in the Login Page
@@ -517,8 +514,17 @@ function xows_doc_init(onready)
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
 
-  // Load the notification sound
-  xows_gui_notify_sound = new Audio("/" + xows_options.root + "/sounds/notify.mp3?456");
+  // Load sound effects
+  xows_gui_sound.notify = new Audio("/" + xows_options.root + "/sounds/notify.ogg");
+  xows_gui_sound.disable = new Audio("/" + xows_options.root + "/sounds/disable.ogg");
+  xows_gui_sound.enable = new Audio("/" + xows_options.root + "/sounds/enable.ogg");
+  xows_gui_sound.mute = new Audio("/" + xows_options.root + "/sounds/mute.ogg");
+  xows_gui_sound.unmute = new Audio("/" + xows_options.root + "/sounds/unmute.ogg");
+  xows_gui_sound.ringtone = new Audio("/" + xows_options.root + "/sounds/ringtone.ogg");
+  xows_gui_sound.ringtone.loop = true;
+  xows_gui_sound.ringbell = new Audio("/" + xows_options.root + "/sounds/ringbell.ogg");
+  xows_gui_sound.ringbell.loop = true;
+  xows_gui_sound.hangup = new Audio("/" + xows_options.root + "/sounds/hangup.ogg");
 
   xows_log(2,"gui_start","document ready");
 
@@ -599,10 +605,12 @@ function xows_doc_loader_onload(media)
   media.parentNode.classList.remove("LOADING"); //< container
   media.classList.remove("FLATTEN"); //< media
 
-  if(xows_doc_loader_scroll.bot < 400) {
+  if(xows_doc_loader_scroll.bot < 80) {
     // Force scroll position to bottom
     xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight;
   } else {
+    console.log(media);
+    console.log(xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.off);
     // Adjust scroll position to compensate content new height
     xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.off;
   }
@@ -627,7 +635,7 @@ function xows_doc_loader_check(force)
     return;
 
   // We perform check only if scroll changed enough to justify it
-  if(!force && Math.abs(xows_doc_loader_client.scrollTop - xows_doc_loader_scroll.top) < 120)
+  if(!force && (Math.abs(xows_doc_loader_client.scrollTop - xows_doc_loader_scroll.top) < 120))
     return;
 
   // Keep scroll parameters
@@ -647,36 +655,38 @@ function xows_doc_loader_check(force)
     // Get client bounding for this element
     media_bound = media.getBoundingClientRect();
 
+    xows_log(2,"doc_loader_check",media.getAttribute(xows_doc_loader_attrib),media_bound.top+", "+media_bound.bottom);
+
     // Check whether the object is currently within the chat history
     // window client (the visible part)
     if(media_bound.bottom > view_bound.top && media_bound.top <= view_bound.bottom) {
 
-      // The NOLOADER attribute, non-standard HTML attribute, is
+      // The NOSPINNER attribute, non-standard HTML attribute, is
       // used to indiate the media should not be hidden during
-      // loading. This is typically used for GIF images, assumed as
-      // animated, to let them starting playing without waiting full
-      // loading (which can take long).
-      if(!media.hasAttribute("NOLOADER")) {
+      // loading. This is typically used for AUDIO and VIDEO, to display them
+      // without waiting full loading (which can take long).
+      if(!media.hasAttribute("NOSPINNER")) {
 
         // We virtually hide the media by setting its height to 0 using
         // the flatten class, then we add a spin loader to its
         // parent, which is usualy the placeholder
         media.classList.add("FLATTEN"); //< media
         media.parentNode.classList.add("LOADING"); //< container
+
+        // Define an onload function to handle loading end
+        media.onload = function(){xows_doc_loader_onload(this);};
       }
 
-      // Define an onload function to handle loading end
-      media.onload = function(){xows_doc_loader_onload(this);};
-
       // Set the src from data_src to start load data
-      media.src = media.getAttribute(xows_doc_loader_attrib);
+      const src = media.getAttribute(xows_doc_loader_attrib);
       media.removeAttribute(xows_doc_loader_attrib);
+      media.src = src;
 
       // Remove this one from stack
       xows_doc_loader_stack.splice(i,1);
 
       // Output log
-      xows_log(2,"doc_loader_check","loading",media.src);
+      xows_log(2,"doc_loader_check","loading",src);
     }
   }
 }
@@ -779,8 +789,8 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
   const mbox_text = xows_doc("mbox_text");
   mbox_text.classList = cls;
   mbox_text.innerHTML = xows_l10n_get(text);
-
-  xows_doc_hidden_set("mbox_close", (onvalid || onabort));
+  
+  xows_doc_hidden_set("mbox_close", !(!onvalid && !onabort));
   xows_doc_hidden_set("mbox_valid", !onvalid);
   xows_doc_hidden_set("mbox_abort", !onabort);
   if(onvalid) xows_doc("mbox_valid").innerHTML = xows_l10n_get(valid);

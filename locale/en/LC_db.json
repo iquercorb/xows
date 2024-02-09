@@ -161,7 +161,16 @@
   "Change Room topic":
   "",
 
+  "Video call":
+  "",
+
+  "Audio call":
+  "",
+
   "Room configuration":
+  "",
+
+  "Add Room to Bookmarks":
   "",
 
   "Enable notifications":
@@ -399,5 +408,53 @@
   "",
 
   "Cancel":
+  "",
+
+  "Retry":
+  "",
+
+  "Enable camera":
+  "",
+
+  "Disable camera":
+  "",
+
+  "Enable microphone":
+  "",
+
+  "Disable microphone":
+  "",
+
+  "Disable sound":
+  "",
+
+  "Enable sound":
+  "",
+
+  "Volume":
+  "",
+
+  "Hang up":
+  "",
+
+  "Expand":
+  "",
+
+  "Reduce":
+  "",
+
+  "Incoming call from":
+  "",
+
+  "Incoming video call from":
+  "",
+
+  "Incoming audio call from":
+  "",
+
+  "has declined your call":
+  "",
+
+  "has hung up":
   ""
 }

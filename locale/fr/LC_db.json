@@ -161,8 +161,17 @@
   "Change Room topic":
   "Changer le sujet du Salon",
 
+  "Video call":
+  "Appel vidéo",
+
+  "Audio call":
+  "Appel audio",
+
   "Room configuration":
   "Configuration du Salon",
+
+  "Add Room to Bookmarks":
+  "Ajouter le Salon aux Favoris",
 
   "Enable notifications":
   "Activer les notifications",
@@ -396,5 +405,53 @@
   "Fermer",
 
   "Cancel":
-  "Annuler"
+  "Annuler",
+
+  "Retry":
+  "Réessayer",
+
+  "Enable camera":
+  "Activer la caméra",
+
+  "Disable camera":
+  "Désactiver la caméra",
+
+  "Enable microphone":
+  "Activer le microphone",
+
+  "Disable microphone":
+  "Désactiver le microphone",
+
+  "Disable sound":
+  "Désactiver le son",
+
+  "Enable sound":
+  "Activer le son",
+
+  "Volume":
+  "Volume",
+
+  "Hang up":
+  "Raccrocher",
+
+  "Expand":
+  "Etendre",
+
+  "Reduce":
+  "Réduire",
+
+  "Incoming call from":
+  "Appel entrant de",
+
+  "Incoming video call from":
+  "Appel vidéo entrant de",
+
+  "Incoming audio call from":
+  "Appel audio entrant de",
+
+  "has declined your call":
+  "a refusé votre appel",
+
+  "has hung up":
+  "a raccroché"
 }
