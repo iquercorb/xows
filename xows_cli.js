@@ -369,11 +369,11 @@ function xows_cli_cont_best_jid(cont)
     if(ress.length) {
       if(ress.length > 1) {
         // First sort by Show level
-        ress.sort(function(a,b){return b.show - a.show});
+        ress.sort(function(a,b){return b.show - a.show;});
         // Then sort by Priority
-        ress.sort(function(a,b){return b.prio - a.prio});
+        ress.sort(function(a,b){return b.prio - a.prio;});
       }
-      res = ress[0]
+      res = ress[0];
     }
 
     // Select ressource according show level and priority
