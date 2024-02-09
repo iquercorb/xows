@@ -1341,7 +1341,7 @@ function xows_sdp_parse(raw)
  */
 function xows_sdp_get_medias(raw)
 {
-  const constraints = {}
+  const constraints = {};
   let m = raw.indexOf("m=");
   while(m > 0) {
     
