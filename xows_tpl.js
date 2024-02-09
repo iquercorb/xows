@@ -394,10 +394,7 @@ function xows_tpl_embed_wrap(href, media, style, title)
  */
 function xows_tpl_embed_image(href, ext)
 {
-  const noload = (ext === "GIF") ? "NOLOADER" : "";
-  return xows_tpl_embed_wrap(href,
-              "<img src=\""+href+"\" "+noload+">",
-              "EMBD-IMG");
+  return xows_tpl_embed_wrap(href,"<img src=\""+href+"\">","EMBD-IMG");
 }
 
 /**
@@ -411,7 +408,7 @@ function xows_tpl_embed_image(href, ext)
 function xows_tpl_embed_movie(href, ext)
 {
   return xows_tpl_embed_wrap(href,
-              "<video controls src=\""+href+"\" NOLOADER></video>",
+              "<video controls src=\""+href+"\" nospinner=1></video>",
               "EMBD-VID");
 }
 /**
@@ -425,7 +422,7 @@ function xows_tpl_embed_movie(href, ext)
 function xows_tpl_embed_audio(href, ext)
 {
   return xows_tpl_embed_wrap(href,
-              "<audio controls src=\""+href+"\" NOLOADER/>",
+              "<audio controls src=\""+href+"\" nospinner=1/>",
               "EMBD-SND");
 }
 
@@ -439,8 +436,10 @@ function xows_tpl_embed_audio(href, ext)
  */
 function xows_tpl_embed_youtube(href, match)
 {
-  let ref = href.match(/(v=|embed\/|shorts\/|youtu\.be\/)(.+)/)[2];
-  ref = ref.replace(/t=/,"start="); //< replace the potential t= by start=
+  const parse = href.match(/(v=|embed\/|shorts\/|youtu\.be\/)([\w\d]+)(&.+)?/);
+  let ref = parse[2];
+  // add options and replace the potential t= by start=
+  if(parse[3]) ref += parse[3].replace(/t=/,"start=");
   return xows_tpl_embed_wrap(href,
               "<iframe src=\"https://www.youtube.com/embed/"+ref+"\"/>",
               "EMBD-STR", "YouTube");
@@ -534,8 +533,8 @@ let xows_tpl_embed_sites = {
   "youtu.be"              : xows_tpl_embed_youtube,
   "www.dailymotion.com"   : xows_tpl_embed_dailymo,
   "dai.ly"                : xows_tpl_embed_dailymo,
-  "vimeo.com"             : xows_tpl_embed_vimeo
-  //"odysee.com"            : xows_tpl_embed_odysee /* not properly implemented */
+  "vimeo.com"             : xows_tpl_embed_vimeo,
+  "odysee.com"            : xows_tpl_embed_odysee //< not properly implemented
 };
 
 /**
