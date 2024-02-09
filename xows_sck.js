@@ -96,7 +96,7 @@ function xows_sck_error(event)
   xows_log(0,"sck_error","Socket connection error");
   //const err_msg = "Socket connection error";
   //xows_sck_fw_onclose(XOWS_SIG_ERR,err_msg); //< Close with error
-  //xows_sck_sock = null; //< destroy socket object
+  xows_sck_sock = null; //< destroy socket object
 }
 
 /**
@@ -183,10 +183,10 @@ function xows_sck_create(url, protocols)
   xows_sck_sock = new WebSocket(xows_sck_url, protocols);
 
   // assing callback to WebSocket object
-  xows_sck_sock.onerror = xows_sck_error;
-  xows_sck_sock.onopen = xows_sck_opened;
   xows_sck_sock.onclose = xows_sck_closed;
+  xows_sck_sock.onerror = xows_sck_error;
   xows_sck_sock.onmessage = xows_sck_recv;
+  xows_sck_sock.onopen = xows_sck_opened;
 }
 
 /**
@@ -194,7 +194,7 @@ function xows_sck_create(url, protocols)
  */
 function xows_sck_destroy()
 {
-  if(xows_sck_sock !== null) {
+  if(xows_sck_sock) {
     xows_log(3,"sck_destroy","closing WebSocket");
     xows_sck_sock.close();
     xows_sck_sock = null;
