@@ -67,16 +67,16 @@
   --bttn-hover:       #8D91AD;  /* Normal Button background hover */
   --bttn-text:        #DDD;     /* Normal Button text */
   --bttn-text-hover:  #FFF;     /* Normal Button text hover */
-  
+
   /* Multimedia session buttons and elements */
   --reje-base:        #E64545;  /* Reject button background */
   --reje-hover:       #F26161;  /* Reject button background hover */
   --reje-text:        #FFF;     /* Reject button text */
-  
+
   --acce-base:        #2FC661;  /* Accept button background */
   --acce-hover:       #3FE274;  /* Accept button background hover */
   --acce-text:        #FFF;     /* Accept button text */
-  
+
   /* Input Checkboxes, Numbers, Selects...  */
   --ctrl-base:        #585966;  /* Input Control background */
   --ctrl-thmb:        #CCC;     /* Input Control Thumb & Button */
@@ -457,7 +457,18 @@ button:disabled {
   border-radius: 50%;
   font-weight: bold;
   color: var(--notif-text);
+  background-size: 9px;
+  background-position: center;
+  background-repeat: no-repeat;
   background-color: var(--notif-base);
+}
+.UNRD-RING {
+  color: transparent !important;
+  background-image: url("images/call.svg");
+}
+.UNRD-CALL {
+  color: transparent !important;
+  background-image: url("images/call_hup.svg");
 }
 /* ------------------------------------------------------------------ */
 /* Top-Level Main Screen */
@@ -1231,6 +1242,9 @@ figure {
 }
 .rost-tabs .ENABLED .UNRD-SPOT {
   display: none;
+}
+.rost-tabs .ENABLED.RING-ROSTER {
+  animation-name: none;
 }
 .rost-tabs .ENABLED figure {
   opacity: 1;
@@ -2023,6 +2037,9 @@ div[show="4"]  { background-color: var(--show-chat); }
   padding: 15px 15px 15px 0;
   background-color: var(--base-tone5);
 }
+.hist-call span {
+  background-color: var(--text-hligh);
+}
 .hist-call figure {
   display: inline-block;
   width: 38px; height: 42px;
@@ -2287,10 +2304,10 @@ div[show="4"]  { background-color: var(--show-chat); }
   border: none;
 }
 .EMBD-VER {
-  width: 240px; height: 480px; 
+  width: 240px; height: 480px;
 }
 .EMBD-VER iframe {
-  width: 240px; height: 420px; 
+  width: 240px; height: 420px;
 }
 .EMBD-DNL {
   min-width: 450px; min-height: 50px;

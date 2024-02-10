@@ -564,7 +564,7 @@ function xows_gui_disconnect()
     xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_GONE);
 
   // Hangup and clear any Media Call
-  xows_gui_call_hangup();
+  xows_gui_call_terminate();
 
   // Disconnect client
   xows_cli_disconnect();
@@ -1004,13 +1004,6 @@ function xows_gui_switch_peer(jid)
     // understanding why and how to prevent it...
     if(xows_gui_peer_scroll_bot(next) < 50)
       xows_gui_peer_scroll_down(next);
-    // Check whether we have pending incomming call for this peer
-    if(xows_gui_call_incoming === next) {
-      // Disable Incomming Call Animation in roster
-      xows_gui_rost_incall(next, false);
-      // Show Incomming Call Dialog in chat history
-      xows_gui_hist_call_open();
-    }
     xows_log(2,"gui_switch_peer","peer \""+next.bare+"\"","selected");
     push_nav = true; //< we can push nav
   } else {
@@ -1403,26 +1396,60 @@ function xows_gui_rost_list_onclick(event)
 }
 
 /* -------------------------------------------------------------------
- * Main screen - Roster - Incoming call Notifications
+ * Main screen - Roster - Unread Notifications
  * -------------------------------------------------------------------*/
 
 /**
- * Function to set incoming call animation/notification on a roster
- * Contact.
+ * Function to update roster tab unread notification spot according
+ * current state.
+ *
+ * This function is a 'private' shortcut to avoid code duplication
+ * and should not be called alone.
  *
  * @param   {object}    peer      Peer object, either Room or Contact
- * @param   {boolean}   enable    Enable or disable incoming call animation
  */
-function xows_gui_rost_incall(peer, enable)
+function xows_gui_unread_tab_update(peer, mesg, call, ring)
 {
-  // Get the corresponding peer <li> (room or contact) in roster
-  const li = document.getElementById(peer.bare);
-  if(li) li.classList.toggle("RING-ROSTER", enable); //< show
-}
+  // Select proper tab elements depending peer type
+  let tab, tab_spot;
+  if(peer.type === XOWS_PEER_ROOM) {
+    tab = xows_doc("tab_room");
+    tab_spot = xows_doc("room_unrd");
+  } else {
+    tab = xows_doc("tab_cont");
+    tab_spot = xows_doc("cont_unrd");
+  }
 
-/* -------------------------------------------------------------------
- * Main screen - Roster - Unread Notifications
- * -------------------------------------------------------------------*/
+  // Update unread message count
+  let remain_mesg = (parseInt(tab_spot.innerText) || 0);
+  if(mesg) {
+    remain_mesg += mesg;
+    tab_spot.innerText = (remain_mesg > 0) ? remain_mesg : "";
+  }
+
+  // Update missed call count
+  let remain_call = parseInt(tab_spot.getAttribute("call"));
+  if(call) {
+    remain_call += call;
+    tab_spot.setAttribute("call", remain_call);
+  }
+
+  // Update ringing call count
+  let remain_ring = parseInt(tab_spot.getAttribute("ring"));
+  if(ring) {
+    remain_ring += ring;
+    tab_spot.setAttribute("ring", remain_ring);
+  }
+
+  // Update 'call' notification classes
+  tab_spot.classList.toggle("UNRD-CALL", remain_call > 0);
+  tab_spot.classList.toggle("UNRD-RING", remain_ring > 0);
+  tab.classList.toggle("RING-ROSTER", remain_ring > 0);
+
+  // Show or hide notification spot
+  let has_notif = (remain_mesg > 0 || remain_call > 0 || remain_ring > 0);
+  tab_spot.classList.toggle("HIDDEN", !has_notif);
+}
 
 /**
  * Function to add and/or increase an unread message notification on
@@ -1433,26 +1460,46 @@ function xows_gui_rost_incall(peer, enable)
  */
 function xows_gui_unread_add(peer, id)
 {
-  // Select proper element depending peer type
-  const bt_spot = (peer.type === XOWS_PEER_ROOM)?xows_doc("room_unrd"):xows_doc("cont_unrd");
-
-  // Add the unread for the roster tab
-  let n = parseInt(bt_spot.innerText) || 0;
-  bt_spot.innerText = n + 1;
-  bt_spot.classList.remove("HIDDEN"); //< show
-
   // Get the corresponding peer <li> (room or contact) in roster
   const li = document.getElementById(peer.bare);
-  if(li) {
+  if(!li) return;
 
-    // Inside the <li> search for the unread <div>
-    const li_spot = li.querySelector(".UNRD-SPOT");
+  // Inside the <li> search for the unread <div>
+  const li_spot = li.querySelector(".UNRD-SPOT");
 
-    // Increase the current unread count
-    n = parseInt(li_spot.innerText) || 0;
-    li_spot.innerText = n + 1;
-    li_spot.classList.remove("HIDDEN"); //< show
-  }
+  // Increase the current unread count
+  li_spot.innerText = (parseInt(li_spot.innerText) || 0) + 1;
+  li_spot.classList.remove("HIDDEN"); //< show
+
+  // Update tab button class and animation according new state
+  xows_gui_unread_tab_update(peer, 1);
+}
+
+/**
+ * Function to add and toggle ringing call and missed call notification
+ * on the displayed roster contact DOM element
+ *
+ * @param   {object}    peer      Peer object, either Room or Contact
+ * @param   {boolean}   ring      If true set ringing call otherwise set missed call
+ */
+function xows_gui_unread_call(peer, ring)
+{
+  // Get the corresponding peer <li> (room or contact) in roster
+  const li = document.getElementById(peer.bare);
+  if(!li) return;
+
+  // Add or remove ringing animation to Contact <li>
+  li.classList.toggle("RING-ROSTER", ring);
+
+  // Inside the <li> search for the unread <div>
+  const li_spot = li.querySelector(".UNRD-SPOT");
+  const had_ring = li_spot.classList.contains("UNRD-RING");
+  li_spot.classList.toggle("UNRD-RING", ring);
+  li_spot.classList.toggle("UNRD-CALL", !ring);
+  li_spot.classList.remove("HIDDEN"); //< show
+
+  // Update tab button class and animation according new state
+  xows_gui_unread_tab_update(peer, null, ring ? 0 : 1, (ring ? 1 : (had_ring ? -1 : 0)));
 }
 
 /**
@@ -1463,29 +1510,29 @@ function xows_gui_unread_add(peer, id)
  */
 function xows_gui_unread_reset(peer)
 {
-  // Select proper element depending peer type
-  const bt_spot = (peer.type === XOWS_PEER_ROOM)?xows_doc("room_unrd"):xows_doc("cont_unrd");
-
-  // Store current tab total unread
-  //let n = bt_spot.firstChild ? parseInt(bt_spot.innerText) : 0;
-  let n = parseInt(bt_spot.innerText) || 0;
-
   // Get the corresponding peer <li> (room or contact) in roster
   const li = document.getElementById(peer.bare);
-  if(li) {
-    // Inside the <li> search for the unread <div>
-    const li_spot = li.querySelector(".UNRD-SPOT");
+  if(!li) return;
 
-    // Subtract the element unread from tab total
-    n -= parseInt(li_spot.innerText) || 0;
-    // Reset the unready div properties
-    li_spot.innerText = "";
-    li_spot.classList.add("HIDDEN"); //< hide
-  }
+  // Remove the ringing call effect
+  li.classList.remove("RING-ROSTER");
 
-  // Update the tab unread count, or disable it if suitable
-  bt_spot.innerText = (n > 0) ? n : "";
-  if(n <= 0) bt_spot.classList.add("HIDDEN"); //< hide
+  // Inside the <li> search for the unread <div>
+  const li_spot = li.querySelector(".UNRD-SPOT");
+
+  // Get unread element to 'substract' for roster tab button update
+  const mesg = -(parseInt(li_spot.innerText) || 0);
+  const ring = li_spot.classList.contains("UNRD-RING") ? 0 : -1;
+  const call = li_spot.classList.contains("UNRD-CALL") ? 0 : -1;
+
+  // Reset the unread spot <div> properties
+  li_spot.innerText = "";
+  li_spot.classList.remove("UNRD-RING");
+  li_spot.classList.remove("UNRD-CALL");
+  li_spot.classList.add("HIDDEN"); //< hide
+
+  // Update tab button class and animation according new state
+  xows_gui_unread_tab_update(peer, mesg, call, ring);
 }
 
 /* -------------------------------------------------------------------
@@ -1981,8 +2028,6 @@ function xows_gui_chat_head_onclick(event)
       xows_gui_call_incoming = null;
       // Start by getting user Media Stream
       xows_gui_call_media_get({"audio": true, "video": video});
-      // Open the Media Call view frame
-      xows_gui_chat_call_open(video);
       break;
     }
   }
@@ -2135,7 +2180,7 @@ function xows_gui_call_menu_onclick(event)
 
     case "call_hgup": {
       // Hangup and clear call data
-      xows_gui_call_hangup();
+      xows_gui_call_terminate();
       break;
     }
 
@@ -2224,17 +2269,19 @@ function xows_gui_hist_call_onclick(event)
     break;
 
   case "call_reje":
-    // Reject and clear call data
-    xows_gui_call_hangup("decline");
-    // Close the Incoming Call dialog
+    // Close the Incomming Call dialog
     xows_gui_hist_call_close();
+    // Reject and clear call data
+    xows_gui_call_terminate();
     break;
 
-  default:
+  case "call_clos":
     // Close the Incomming Call dialog
     xows_gui_hist_call_close();
     break;
   }
+
+
 }
 
 /* -------------------------------------------------------------------
@@ -2293,52 +2340,66 @@ function xows_gui_chat_call_close()
 /**
  * Function to open the Chat Incoming Call dialog
  *
+ * @param   {object}    peer      Contact Peer object.
  * @param   {string}    reason    Calling dialog open reason
  */
-function xows_gui_hist_call_open(reason)
+function xows_gui_hist_call_open(peer, reason)
 {
-  const hist_call = xows_doc("hist_call");
+  const hist_call = xows_gui_peer_doc(peer, "hist_call");
 
   // Add event listeners
   xows_doc_listener_add(hist_call,"click",xows_gui_hist_call_onclick);
 
-  const name = xows_cli_call_peer.name;
-  let call_icon, call_mesg, call_close = true;
+  const video = xows_gui_call_constraints.video;
+
+  let icon, mesg, btn_reje, btn_pkup;
 
   switch(reason)
   {
-  case "decline": { //< peer declined offer
-      call_icon = "CALL-TERM";
-      call_mesg = name + " " + xows_l10n_get("has declined your call");
+  case "decline": { //< peer declined call
+      icon = "CALL-TERM";
+      mesg = xows_l10n_get("The call has been declined");
     } break;
 
-  case "success": { //< peer hung up
-      call_icon = "CALL-TERM";
-      call_mesg = name + " " + xows_l10n_get("has hung up");
+  case "success": { //< peer hung up call
+      icon = "CALL-TERM";
+      if(xows_cli_call_stat === 3) {
+        mesg = xows_l10n_get("The other person has hung up");
+      } else {
+        mesg = xows_l10n_get("You missed a call");
+      }
+    } break;
+
+  case "initiate": { //< initiating call
+      icon = video ? "CALL-VID" : "CALL-AUD";
+      mesg = xows_l10n_get("Call in progress...");
+      btn_reje = true;
     } break;
 
   default: { // incoming call
-      const video = xows_gui_call_constraints.video;
-      call_icon = video ? "CALL-VID" : "CALL-AUD";
-      const mesg = video ? "Incoming video call from" : "Incoming audio call from";
-      call_mesg = xows_l10n_get(mesg) + " " + name;
-      call_close = false;
+      icon = video ? "CALL-VID" : "CALL-AUD";
+      mesg = video ? xows_l10n_get("Incoming video call...") : xows_l10n_get("Incoming audio call...");
+      btn_reje = true; btn_pkup = true;
     } break;
   }
 
-  xows_doc("call_icon").className = call_icon;
-  xows_doc("call_mesg").innerText = call_mesg;
-  xows_doc_hidden_set("call_reje", call_close);
-  xows_doc_hidden_set("call_pkup", call_close);
-  xows_doc_hidden_set("call_clos", !call_close);
+  xows_gui_peer_doc(peer, "call_icon").className = icon;
+  xows_gui_peer_doc(peer, "call_mesg").innerText = mesg;
+  xows_gui_peer_doc(peer, "call_reje").classList.toggle("HIDDEN",!btn_reje);
+  xows_gui_peer_doc(peer, "call_pkup").classList.toggle("HIDDEN",!btn_pkup);
+  xows_gui_peer_doc(peer, "call_clos").classList.toggle("HIDDEN",btn_reje);
 
-  hist_call.classList.toggle("RING-DIALOG", !call_close);
+  hist_call.classList.toggle("RING-DIALOG", btn_reje);
+
+  console.log("avant: "+hist_call.classList);
 
   // Show the incoming call dialog
   hist_call.classList.remove("HIDDEN");
 
+  console.log("apres: "+hist_call.classList);
+
   // Scroll history down
-  xows_gui_chat_main_scroll_down();
+  xows_gui_peer_scroll_down(peer);
 }
 
 /**
@@ -2398,8 +2459,12 @@ function xows_gui_call_media_onresult(stream)
     // Accept WebRTC/Jingle call
     xows_cli_call_accept(stream);
   } else {
+
     // Initiate WebRTC/Jingle call
     xows_cli_call_initiate(stream, xows_gui_peer);
+
+    // Open Call dialog
+    xows_gui_hist_call_open(xows_gui_peer, "initiate");
 
     // Play Ring Tone sound
     if(xows_gui_sound.ringtone)
@@ -2523,15 +2588,14 @@ function xows_gui_call_clear()
 
 /**
  * Function to hangup or decline incoming call
- *
- * @param   {string}   [reason]   Optional reason for session terminate
  */
-function xows_gui_call_hangup(reason)
+function xows_gui_call_terminate()
 {
-  // Hangup or reject call
-  xows_cli_call_terminate(reason ? reason : "success");
   // Clear call data
   xows_gui_call_clear();
+
+  // Terminate call
+  xows_cli_call_terminate();
 }
 
 /**
@@ -2550,13 +2614,12 @@ function xows_gui_cli_oncallincoming(peer, medias)
   xows_gui_call_constraints = { audio: (medias.audio && xows_gui_medias_has("audioinput")),
                                 video: (medias.video && xows_gui_medias_has("videoinput")) };
 
-  if(peer === xows_gui_peer) {
-    // Open the Incoming Call dialog
-    xows_gui_hist_call_open();
-  } else {
-    // Set Incoming call animation to contact in Roster
-    xows_gui_rost_incall(peer, true);
-  }
+  // Open the Incoming Call dialog
+  xows_gui_hist_call_open(peer);
+
+  // If peer is offscreen during incomming call, add notification
+  if(peer !== xows_gui_peer)
+    xows_gui_unread_call(peer, true);
 
   // Play Ring Bell sound
   if(xows_gui_sound.ringbell)
@@ -2576,6 +2639,14 @@ function xows_gui_cli_oncallstream(stream)
   const call_video = xows_doc("call_vdeo");
   call_video.srcObject = stream;
   call_video.onloadedmetadata = function(e){call_video.play();};
+
+  // Check whether we initiated this call
+  if(!xows_gui_call_incoming) {
+    // Close the Incoming Call dialog
+    xows_gui_hist_call_close();
+    // Open Chat Multimedia interface
+    xows_gui_chat_call_open();
+  }
 
   // Stop the Ringtone
   if(xows_gui_sound.ringtone)
@@ -2606,7 +2677,11 @@ function xows_gui_cli_oncallerror(code, mesg)
 function xows_gui_cli_oncallended(code, mesg)
 {
   // Open the Call dialog
-  xows_gui_hist_call_open(mesg);
+  xows_gui_hist_call_open(xows_cli_call_peer, mesg);
+
+  // If peer is offscreen during ended call change notification
+  if(xows_cli_call_peer !== xows_gui_peer)
+    xows_gui_unread_call(xows_cli_call_peer, false);
 
   // Clear call data
   xows_gui_call_clear();

@@ -443,18 +443,24 @@
   "Reduce":
   "",
 
-  "Incoming call from":
+  "Incoming call...":
   "",
 
-  "Incoming video call from":
+  "Incoming video call...":
   "",
 
-  "Incoming audio call from":
+  "Incoming audio call...":
   "",
 
-  "has declined your call":
+  "The call has been declined":
   "",
 
-  "has hung up":
+  "Call terminated":
+  "",
+
+  "Call in progress...":
+  "",
+
+  "You missed a call":
   ""
 }

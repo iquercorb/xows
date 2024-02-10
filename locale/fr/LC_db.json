@@ -440,18 +440,24 @@
   "Reduce":
   "Réduire",
 
-  "Incoming call from":
-  "Appel entrant de",
+  "Incoming call...":
+  "Appel entrant...",
 
-  "Incoming video call from":
-  "Appel vidéo entrant de",
+  "Incoming video call...":
+  "Appel vidéo entrant...",
 
-  "Incoming audio call from":
-  "Appel audio entrant de",
+  "Incoming audio call...":
+  "Appel audio entrant...",
 
-  "has declined your call":
-  "a refusé votre appel",
+  "The call has been declined":
+  "L'appel a été refusé",
 
-  "has hung up":
-  "a raccroché"
+  "The other person has hung up":
+  "Le correspondant a raccroché",
+
+  "Call in progress...":
+  "Appel en cours...",
+
+  "You missed a call":
+  "Vous avez manqué un appel"
 }

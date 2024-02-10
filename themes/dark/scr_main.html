@@ -9,11 +9,11 @@
       <!-- Main Frame (Roster Tabs selector) -->
       <div id="rost_tabs" class="row-main rost-tabs">
         <button id="tab_cont" class="tab-cont ENABLED" title="${'Contacts'}">
-          <div id="cont_unrd" class="UNRD-SPOT HIDDEN"></div>
+          <div id="cont_unrd" ring="0" call="0" class="UNRD-SPOT HIDDEN"></div>
           <div id="subs_unrd" class="UNRD-SPOT HIDDEN"></div>
         </button>
         <button id="tab_room" class="tab-room" title="${'Chatrooms'}" disabled>
-          <div id="room_unrd" class="UNRD-SPOT HIDDEN"></div>
+          <div id="room_unrd" ring="0" call="0" class="UNRD-SPOT HIDDEN"></div>
         </button>
       </div>
       <!-- Froot Frame (App About button) -->
@@ -140,6 +140,18 @@
           <div id="hist_bot" class="hist-bot HIDDEN">
             ${'Back to recent messages'}
           </div>
+          <!-- Chat History - Call Signaling Dialog -->
+          <div id="hist_call" class="hist-call RING-DIALOG HIDDEN">
+            <figure id="call_icon" class="CALL-RING"></figure>
+            <section>
+              <h3 id="call_mesg">${'Incoming call...'}</h3>
+            </section>
+            <fieldset>
+              <button id="call_reje" class="btn-rejec CALL-REJE" title="${'Reject call'}"></button>
+              <button id="call_pkup" class="btn-accep CALL-PKUP" title="${'Accept call'}"></button>
+              <button id="call_clos" class="btn-close HIDDEN" title="${'Close'}"></button>
+            </fieldset>
+          </div>
         </div>
         <!-- Chat History - File Upload Progress -->
         <div id="hist_upld" class="hist-upld HIDDEN">
@@ -152,18 +164,6 @@
           </section>
           <fieldset>
             <button id="upld_exit" class="btn-close"></button>
-          </fieldset>
-        </div>
-        <!-- Chat History - Call Signaling Dialog -->
-        <div id="hist_call" class="hist-call RING-DIALOG HIDDEN">
-          <figure id="call_icon" class="CALL-RING"></figure>
-          <section>
-            <h3 id="call_mesg">${'Incoming call'}</h3>
-          </section>
-          <fieldset>
-            <button id="call_reje" class="btn-rejec CALL-REJE" title="${'Reject call'}"></button>
-            <button id="call_pkup" class="btn-accep CALL-PKUP" title="${'Accept call'}"></button>
-            <button id="call_clos" class="btn-close HIDDEN" title="${'Close'}"></button>
           </fieldset>
         </div>
       </div>

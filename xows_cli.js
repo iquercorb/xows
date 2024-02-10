@@ -306,7 +306,8 @@ function xows_cli_cont_new(bare, name, subs, avat)
     "show": -1,                 //< Displayed presence show level
     "stat": "",                 //< Displayed presence status string
     "noti": true,               //< Notification Enabled/Mute
-    "chat": 0                   //< Chatstate level
+    "chat": 0,                  //< Chatstate level
+    "call": null                //< Jingle call SID
   };
 
   // set Constant properties
@@ -3166,24 +3167,24 @@ function xows_cli_reconnect(attempt)
  * Global constants for Jingle/WebRTC call status
  */
 const XOWS_CALL_HGUP = 0;
-const XOWS_CALL_ANSW = 1;
+const XOWS_CALL_RING = 1;
 const XOWS_CALL_INIT = 2;
 const XOWS_CALL_LINK = 3;
+
+/**
+ * Media Call current state
+ */
+let xows_cli_call_stat = 0;
+
+/**
+ * Media Call Jingle session sid
+ */
+let xows_cli_call_ssid = null;
 
 /**
  * Media Call client Contact PEER object
  */
 let xows_cli_call_peer = null;
-
-/**
- * Media Call client Contact full JID
- */
-let xows_cli_call_jid = null;
-
-/**
- * Media Call Jingle Session SID
- */
-let xows_cli_call_ssid = null;
 
 /**
  * Media Call WebRTC RTCPeerConnection object
@@ -3201,10 +3202,15 @@ function xows_cli_call_clear()
     xows_cli_webrtc_pc = null;
   }
 
+  // Reset peer associaled call full JID
+  xows_cli_call_peer.call = null;
+
   // Reset call parameters
   xows_cli_call_ssid = null;
   xows_cli_call_peer = null;
-  xows_cli_call_jid = null;
+
+  // Update call state
+  xows_cli_call_stat = 0;
 }
 
 /**
@@ -3259,13 +3265,26 @@ function xows_cli_webrtc_setlocaldesc(description)
 /**
  * Callback function for WebRTC negotiation required
  *
- * @param   {object}      description    Session Description (RTCSessionDescription) object
+ * @param   {object}      event     Event object
  */
 function xows_cli_webrtc_onnegotiation(event)
 {
   // Request to create an SDP Offer
   xows_log(2,"cli_webrtc_onnegotiation","create SDP offer");
   xows_cli_webrtc_pc.createOffer().then(xows_cli_webrtc_setlocaldesc, xows_cli_webrtc_onerror);
+}
+
+/**
+ * Callback function for WebRTC connection state changed
+ *
+ * @param   {object}      event     Event object
+ */
+function xows_cli_webrtc_onstatechange(event)
+{
+  xows_log(2,"cli_webrtc_onstatechange",xows_cli_webrtc_pc.connectionState);
+  // Update call state
+  if(xows_cli_webrtc_pc.connectionState === "connected")
+    xows_cli_call_stat = XOWS_CALL_LINK;
 }
 
 /**
@@ -3282,11 +3301,14 @@ function xows_cli_webrtc_onicestate(event)
     // Get local description
     const sdp = xows_cli_webrtc_pc.localDescription.sdp;
 
+    // Peer call full JID
+    const jid = xows_cli_call_peer.call;
+
     // Already set sessions sid mean call answer
     if(xows_cli_call_ssid) {
 
       // Send SDP answer via Jingle
-      xows_xmp_jingle_sdp_answer(xows_cli_call_jid, xows_cli_call_ssid, sdp, xows_cli_call_jingle_result);
+      xows_xmp_jingle_sdp_answer(jid, xows_cli_call_ssid, sdp, xows_cli_call_jingle_result);
 
     } else {
 
@@ -3294,7 +3316,7 @@ function xows_cli_webrtc_onicestate(event)
       xows_cli_call_ssid = xows_gen_nonce_asc(16);
 
       // Send SDP offer via Jingle
-      xows_xmp_jingle_sdp_offer(xows_cli_call_jid, xows_cli_call_ssid, sdp, xows_cli_call_jingle_result);
+      xows_xmp_jingle_sdp_offer(jid, xows_cli_call_ssid, sdp, xows_cli_call_jingle_result);
     }
   }
 }
@@ -3306,11 +3328,9 @@ function xows_cli_webrtc_onicestate(event)
  */
 function xows_cli_webrtc_ontrack(event)
 {
-  xows_log(2,"cli_webrtc_ontrack","remote track received",event.track.type);
-
+  xows_log(2,"cli_webrtc_ontrack","remote track",event.track.type);
   // Forward media stream
-  if(event.streams.length)
-    xows_cli_fw_oncallstream(event.streams[0]);
+  if(event.streams.length) xows_cli_fw_oncallstream(event.streams[0]);
 }
 
 /**
@@ -3349,13 +3369,81 @@ function xows_cli_webrtc_create()
   // Create new RTC Peer Connection object
   xows_cli_webrtc_pc = new RTCPeerConnection(options);
 
-  // Set callback for available remote media stream
+  // Set callback functions
   xows_cli_webrtc_pc.ontrack = xows_cli_webrtc_ontrack;
-
   xows_cli_webrtc_pc.onnegotiationneeded = xows_cli_webrtc_onnegotiation;
-
-  // Set callback for ICE Gathering state
+  xows_cli_webrtc_pc.onconnectionstatechange = xows_cli_webrtc_onstatechange;
   xows_cli_webrtc_pc.onicegatheringstatechange = xows_cli_webrtc_onicestate;
+}
+
+/**
+ * Initiate Media Call (WebRTC/Jingle) to the specified Contact using
+ * given Media Stream
+ *
+ * @param   {object}      stream  Acquired user Media Stream
+ * @param   {object}      peer    Contact Peer object to be called
+ */
+function xows_cli_call_initiate(stream, peer)
+{
+  // Set Peer for this call
+  xows_cli_call_peer = peer;
+
+  // Select most suitable full JID for all
+  xows_cli_call_peer.call = xows_cli_cont_best_jid(peer);
+
+  // Create new RTC Peer Connection object
+  xows_cli_webrtc_create();
+
+  // Add stream tracks to RTC Connection
+  const tracks = stream.getTracks();
+  for(let i = 0; i < tracks.length; ++i)
+    xows_cli_webrtc_pc.addTrack(tracks[i]);
+
+  // Set call state
+  xows_cli_call_stat = XOWS_CALL_INIT;
+
+  // Now, xows_cli_webrtc_onnegotiation() will be called
+}
+
+/**
+ * Function to decline any currentling pending call
+ *
+ * @param   {object}      stream  Acquired user Media Stream
+ */
+function xows_cli_call_accept(stream)
+{
+  if(!xows_cli_webrtc_pc)
+    return;
+
+  // Add stream tracks to RTC Connection
+  const tracks = stream.getTracks();
+  for(let i = 0; i < tracks.length; ++i)
+    xows_cli_webrtc_pc.addTrack(tracks[i]);
+
+  // Request to create an SDP Answer
+  xows_cli_webrtc_pc.createAnswer().then(xows_cli_webrtc_setlocaldesc, xows_cli_webrtc_onerror);
+  xows_log(2,"cli_call_accept","create SDP answer");
+}
+
+/**
+ * Function to terminate current Call Session, either to hangup or
+ * reject call
+ *
+ * @param   {object}      peer    Contact Peer (not used yet)
+ */
+function xows_cli_call_terminate(peer)
+{
+  if(xows_cli_call_stat > 0) {
+
+    // Reason depend on current call state
+    const reason = (xows_cli_call_stat === XOWS_CALL_RING) ? "decline" : "success"
+
+    xows_log(2,"cli_call_terminate",reason,xows_cli_call_peer.call);
+    xows_xmp_jingle_terminate(xows_cli_call_peer.call, xows_cli_call_ssid, reason);
+
+    // Clear call elements
+    xows_cli_call_clear();
+  }
 }
 
 /**
@@ -3393,14 +3481,12 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
 
     xows_log(2,"cli_xmp_onjingle","incoming call", from);
 
-    // set session sid
-    xows_cli_call_ssid = sid;
+    // Store Jingle sessions SID
+    xows_cli_call_ssid = sid; //< set session sid
 
     // Set Peer for this call
     xows_cli_call_peer = peer;
-
-    // Get most suitable full JID
-    xows_cli_call_jid = xows_cli_cont_best_jid(peer);
+    xows_cli_call_peer.call = from;
 
     // Create new RTC Peer Connection object
     xows_cli_webrtc_create();
@@ -3408,6 +3494,9 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
     // Set the Remote description
     const description = new RTCSessionDescription({"type":"offer","sdp":mesg});
     xows_cli_webrtc_pc.setRemoteDescription(description).then(null, xows_cli_webrtc_onerror);
+
+    // Set call state
+    xows_cli_call_stat = XOWS_CALL_RING;
 
     // Forward incomming call (with medias list from SDP)
     xows_cli_fw_oncallincoming(xows_cli_call_peer, xows_sdp_get_medias(mesg));
@@ -3445,88 +3534,5 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
     // Clear objects and data
     xows_cli_call_clear();
   }
-}
-
-/**
- * Function to decline any currentling pending call
- */
-/*
-function xows_cli_call_decline()
-{
-  if(xows_cli_call_ssid && xows_cli_call_peer) {
-
-    xows_log(2,"cli_call_decline","declined call",xows_cli_call_jid);
-
-    xows_xmp_jingle_terminate(xows_cli_call_jid, xows_cli_call_ssid, "decline");
-
-    // Clear call elements
-    xows_cli_call_clear();
-  }
-}
-*/
-
-/**
- * Function to terminate current Call Session, either to hangup or
- * reject call
- *
- * @param   {string}      reason  Terminate reason, can be "success" or "decline"
- * @param   {object}      peer    Contact Peer (not used yet)
- */
-function xows_cli_call_terminate(reason, peer)
-{
-  if(xows_cli_call_ssid && xows_cli_call_peer) {
-
-    xows_log(2,"cli_call_terminate",reason,xows_cli_call_jid);
-
-    xows_xmp_jingle_terminate(xows_cli_call_jid, xows_cli_call_ssid, reason);
-
-    // Clear call elements
-    xows_cli_call_clear();
-  }
-}
-
-/**
- * Initiate Media Call (WebRTC/Jingle) to the specified Contact using
- * given Media Stream
- *
- * @param   {object}      stream  Acquired user Media Stream
- * @param   {object}      peer    Contact Peer object to be called
- */
-function xows_cli_call_initiate(stream, peer)
-{
-  // Set Peer for this call
-  xows_cli_call_peer = peer;
-  // Get most suitable full JID
-  xows_cli_call_jid = xows_cli_cont_best_jid(peer);
-
-  // Create new RTC Peer Connection object
-  xows_cli_webrtc_create();
-
-  // Add stream tracks to RTC Connection
-  const tracks = stream.getTracks();
-  for(let i = 0; i < tracks.length; ++i)
-    xows_cli_webrtc_pc.addTrack(tracks[i]);
-
-  // Now, xows_cli_webrtc_onnegotiation() will be called
-}
-
-/**
- * Function to decline any currentling pending call
- *
- * @param   {object}      stream  Acquired user Media Stream
- */
-function xows_cli_call_accept(stream)
-{
-  if(!xows_cli_webrtc_pc)
-    return;
-
-  // Add stream tracks to RTC Connection
-  const tracks = stream.getTracks();
-  for(let i = 0; i < tracks.length; ++i)
-    xows_cli_webrtc_pc.addTrack(tracks[i]);
-
-  // Request to create an SDP Answer
-  xows_cli_webrtc_pc.createAnswer().then(xows_cli_webrtc_setlocaldesc, xows_cli_webrtc_onerror);
-  xows_log(2,"cli_call_accept","create SDP answer");
 }
 
