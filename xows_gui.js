@@ -2391,12 +2391,8 @@ function xows_gui_hist_call_open(peer, reason)
 
   hist_call.classList.toggle("RING-DIALOG", btn_reje);
 
-  console.log("avant: "+hist_call.classList);
-
   // Show the incoming call dialog
   hist_call.classList.remove("HIDDEN");
-
-  console.log("apres: "+hist_call.classList);
 
   // Scroll history down
   xows_gui_peer_scroll_down(peer);
