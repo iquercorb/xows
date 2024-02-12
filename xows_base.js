@@ -1135,7 +1135,7 @@ function xows_sdp_parse_a(parent, entry)
   case "ice-options":
     parent.iceOptions = vals[0];
     break;
-  
+
   // Session or Media attributes
 
   // a=fingerprint:sha-256 4B:79:0D:B1:55:FC:68:33:8A:FC:52:83:73:AC:A2:C1:40:03:9B:FB:4D:DE:23:BE:4F:B5:51:A2:B1:5F:59:A8
@@ -1266,7 +1266,7 @@ function xows_sdp_parse_a(parent, entry)
 function xows_sdp_parse(raw)
 {
   const entries = raw.split('\r\n');
-  
+
   const sdpout = {};
 
   for(let i = 0; i < entries.length; ++i) {
@@ -1326,9 +1326,9 @@ function xows_sdp_parse(raw)
       break; }
     }
   }
-    
+
   //console.log(sdpout);
-  
+
   return sdpout;
 }
 
@@ -1344,18 +1344,35 @@ function xows_sdp_get_medias(raw)
   const constraints = {};
   let m = raw.indexOf("m=");
   while(m > 0) {
-    
+
     m += 2;
-    
+
     const media = raw.substr(m).split(' ')[0];
-    
+
     if(media === "audio" && !constraints.audio)
       constraints.audio = true;
     if(media === "video" && !constraints.video)
       constraints.video = true;
-      
+
     m = raw.indexOf("m=", m);
   }
-  
+
   return constraints;
+}
+
+/**
+ * Generate Turn server REST API credential from secret
+ *
+ * @param   {string}    name      Username to use for generation
+ * @param   {string}    secret    TURN server static secret
+ *
+ * @return  {object}    Generated username and password
+ */
+function xows_gen_turn_credential(name, secret)
+{
+  const expire = parseInt(Date.now()/1000) + 24*3600;
+  const username = expire+":"+name;
+  const password = xows_bytes_to_b64(xows_hmac_sha1(username, secret));
+
+  return {"username":username,"password":password};
 }

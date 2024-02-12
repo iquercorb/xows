@@ -53,7 +53,8 @@ let xows_options = {
   legacy_vcard    : false,      //< Force usage of legacy XEP-0054 vcard-temp instead of XEP-0292 vCard4 Over XMPP
   vcard4_notify   : true,       //< Request for Vcard4 PubSub notifications
   avatar_notify   : true,       //< Request for User Avatar PubSub notifications
-  login_delay     : 2000        //< Delay (in milliseconds) between registration and failed attempts
+  login_delay     : 2000,       //< Delay (in milliseconds) between registration and failed attempts
+  extern_services : []          //< Additionnal External Services (as XEP-0215 replacement with same fashion)
 };
 
 /**
@@ -161,18 +162,19 @@ function xows_init(options)
 {
   // Store options
   if(options) {
-    if("root" in options)           xows_options.root = options.root;
-    if("url" in options)            xows_options.url = options.url;
-    if("domain" in options)         xows_options.domain = options.domain;
-    if("locale" in options)         xows_options.locale = options.locale;
-    if("theme" in options)          xows_options.theme = options.theme;
-    if("verbose" in options)        xows_options.verbose = options.verbose;
-    if("uncache" in options)        xows_options.uncache = options.uncache;
-    if("allow_register" in options) xows_options.allow_register = options.allow_register;
-    if("legacy_vcard" in options)   xows_options.legacy_vcard = options.legacy_vcard;
-    if("vcard4_notify" in options)  xows_options.vcard4_notify = options.vcard4_notify;
-    if("avatar_notify" in options)  xows_options.avatar_notify = options.avatar_notify;
-    if("fail_delay" in options)     xows_options.fail_delay = options.fail_delay;
+    if("root" in options)             xows_options.root = options.root;
+    if("url" in options)              xows_options.url = options.url;
+    if("domain" in options)           xows_options.domain = options.domain;
+    if("locale" in options)           xows_options.locale = options.locale;
+    if("theme" in options)            xows_options.theme = options.theme;
+    if("verbose" in options)          xows_options.verbose = options.verbose;
+    if("uncache" in options)          xows_options.uncache = options.uncache;
+    if("allow_register" in options)   xows_options.allow_register = options.allow_register;
+    if("legacy_vcard" in options)     xows_options.legacy_vcard = options.legacy_vcard;
+    if("vcard4_notify" in options)    xows_options.vcard4_notify = options.vcard4_notify;
+    if("avatar_notify" in options)    xows_options.avatar_notify = options.avatar_notify;
+    if("fail_delay" in options)       xows_options.fail_delay = options.fail_delay;
+    if("extern_services" in options)  xows_options.extern_services = options.extern_services;
   }
 
   xows_log(2,"init","xows init start");

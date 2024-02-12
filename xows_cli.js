@@ -119,6 +119,13 @@ const xows_cli_ext_svc = [];
  */
 function xows_cli_ext_svc_has(type)
 {
+  if(xows_options.extern_services) {
+    const ext_svc = xows_options.extern_services;
+    for(let i = 0, n = ext_svc.length; i < n; ++i)
+      if(ext_svc[i].type === type)
+        return true;
+  }
+
   for(let i = 0, n = xows_cli_ext_svc.length; i < n; ++i)
     if(xows_cli_ext_svc[i].type === type)
       return true;
@@ -134,6 +141,14 @@ function xows_cli_ext_svc_has(type)
 function xows_cli_ext_svc_get(type)
 {
   const result = [];
+
+  if(xows_options.extern_services) {
+    const ext_svc = xows_options.extern_services;
+    for(let i = 0, n = ext_svc.length; i < n; ++i)
+      if(ext_svc[i].type === type)
+        result.push(ext_svc[i]);
+  }
+
   for(let i = 0, n = xows_cli_ext_svc.length; i < n; ++i)
     if(xows_cli_ext_svc[i].type === type)
       result.push(xows_cli_ext_svc[i]);
@@ -3368,16 +3383,21 @@ function xows_cli_webrtc_create()
   const stuns = xows_cli_ext_svc_get("stun");
   for(i = 0; i < stuns.length; ++i) {
     serv = {"urls":'stun:'+stuns[i].host};
-    if(stuns[i].username) serv.username = stuns[i].username;
-    if(stuns[i].password) serv.credential = stuns[i].password;
     iceservers.push(serv);
   }
   // Add TURN servers (if any)
   const truns = xows_cli_ext_svc_get("turn");
   for(i = 0; i < truns.length; ++i) {
     serv = {"urls":'turn:'+truns[i].host};
-    if(truns[i].username) serv.username = truns[i].username;
-    if(truns[i].password) serv.credential = truns[i].password;
+    // Check whether we need to generate credentials
+    if(truns[i].secret) {
+      const creds = xows_gen_turn_credential(xows_cli_self.bare, truns[i].secret);
+      serv.username = creds.username;
+      serv.credential = creds.password;
+    } else {
+      if(truns[i].username) serv.username = truns[i].username;
+      if(truns[i].password) serv.credential = truns[i].password;
+    }
     iceservers.push(serv);
   }
 
