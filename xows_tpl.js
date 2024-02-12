@@ -638,7 +638,7 @@ function xows_tpl_replace_url(href)
   if(xows_tpl_format_urls) xows_tpl_format_urls.push(href);
 
   // Check whether URL is any of upload/internal service URL
-  const match = href.match(/\/\/(.*?[\w\d-_]+\.\w+)\//);
+  const match = href.match(/\/\/(.*?[\w\d_-]+\.\w+)\//);
   if(match) {
     if(xows_tpl_embed_uplds[match[1].toLowerCase()]) { //< always compare with lowercase
       return ""; //< Delete the written URL
@@ -676,7 +676,7 @@ function xows_tpl_format_body(body, urls)
   xows_tpl_format_urls = urls;
 
   // Search for URLs to create links and add to embed stack
-  return body.replace(/(http|https|ftp|ftps):\/\/(\S*)/g, xows_tpl_replace_url);
+  return body.replace(/(http|https|ftp|ftps):\/\/(\S[^*"'()<>|\[\]\\]*)/g, xows_tpl_replace_url);
 }
 
 /**
