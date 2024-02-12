@@ -232,6 +232,11 @@ let xows_cli_fw_oncallincoming = function() {};
 let xows_cli_fw_oncallstream = function() {};
 
 /**
+ * Callback function for incoming Media Call session request
+ */
+let xows_cli_fw_oncalllinked = function() {};
+
+/**
  * Callback function for connection or login error
  */
 let xows_cli_fw_onerror = function() {};
@@ -677,6 +682,7 @@ function xows_cli_set_callback(type, callback)
     case "callended":   xows_cli_fw_oncallended = callback; break;
     case "callincoming":xows_cli_fw_oncallincoming = callback; break;
     case "callstream":  xows_cli_fw_oncallstream = callback; break;
+    case "calllinked":  xows_cli_fw_oncalllinked = callback; break;
     case "error":       xows_cli_fw_onerror = callback; break;
     case "timeout":     xows_cli_fw_ontimeout = callback; break;
     case "close":       xows_cli_fw_onclose = callback; break;
@@ -2134,6 +2140,10 @@ function xows_cli_mam_parse(from, _with, result, count, complete)
   if(peer.type === XOWS_PEER_CONT) {
 
     while(i--) {
+      // Expurge messages without body (probably receipts)
+      if(!result[i].body) {
+        result.splice(i, 1); continue;
+      }
       result[i].sent = xows_cli_isself(result[i].from);
       result[i].sndr = result[i].sent ? xows_cli_self : peer;
     }
@@ -2143,6 +2153,10 @@ function xows_cli_mam_parse(from, _with, result, count, complete)
     let from, sndr;
 
     while(i--) {
+      // Expurge messages without body (probably receipts)
+      if(!result[i].body) {
+        result.splice(i, 1); continue;
+      }
       from = result[i].from;
       result[i].sent = (from === peer.join);
       // this is chat room, we return self or a Room Cccupant
@@ -3283,8 +3297,11 @@ function xows_cli_webrtc_onstatechange(event)
 {
   xows_log(2,"cli_webrtc_onstatechange",xows_cli_webrtc_pc.connectionState);
   // Update call state
-  if(xows_cli_webrtc_pc.connectionState === "connected")
+  if(xows_cli_webrtc_pc.connectionState === "connected") {
     xows_cli_call_stat = XOWS_CALL_LINK;
+    // Forward status
+    xows_cli_fw_oncalllinked();
+  }
 }
 
 /**
@@ -3330,7 +3347,8 @@ function xows_cli_webrtc_ontrack(event)
 {
   xows_log(2,"cli_webrtc_ontrack","remote track",event.track.type);
   // Forward media stream
-  if(event.streams.length) xows_cli_fw_oncallstream(event.streams[0]);
+  if(event.streams.length)
+    xows_cli_fw_oncallstream(xows_cli_call_peer, event.streams[0]);
 }
 
 /**
@@ -3436,7 +3454,7 @@ function xows_cli_call_terminate(peer)
   if(xows_cli_call_stat > 0) {
 
     // Reason depend on current call state
-    const reason = (xows_cli_call_stat === XOWS_CALL_RING) ? "decline" : "success"
+    const reason = (xows_cli_call_stat === XOWS_CALL_RING) ? "decline" : "success";
 
     xows_log(2,"cli_call_terminate",reason,xows_cli_call_peer.call);
     xows_xmp_jingle_terminate(xows_cli_call_peer.call, xows_cli_call_ssid, reason);

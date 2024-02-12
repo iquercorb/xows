@@ -107,10 +107,12 @@
         </div>
       </div>
       <!-- Half Frame (Chat Multimedia session) -->
-      <div id="chat_call" class="row-half chat-call HIDDEN">
+      <div id="chat_call" class="chat-call">
         <div class="call-view">
-          <video id="call_vdeo" class="call-vdeo">
-          </video>
+          <div id="call_grid" class="call-grid">
+            <audio class="STREAM-AUDIO" jid="" name="" is_instance></audio>
+            <video class="STREAM-VIDEO" jid="" name="" is_instance></video>
+          </div>
           <div id="call_menu" class="call-menu">
             <div class="call-volu">
               <button id="call_vbtn" class="CALL-VMID" title="${'Disable sound'}"></button>
@@ -122,7 +124,7 @@
               <button id="call_hgup" class="CALL-HGUP" title="${'Hang up'}"></button>
             </div>
             <div class="call-geom">
-              <button id="call_geom" class="CALL-MAXI" title="${'Expand'}"></button>
+              <button id="call_geom" title="${'Expand'}"></button>
             </div>
           </div>
         </div>
@@ -132,7 +134,7 @@
         <!-- Chat History - Message list -->
         <div id="chat_hist" class="chat-hist">
           <div id="hist_beg" class="hist-bound hist-start"></div>
-          <ul id="hist_ul">
+          <ul id="hist_ul" class="HIDDEN">
             <li class="MESG-FULL" is_instance></li>
             <li class="MESG-AGGR" is_instance></li>
           </ul>

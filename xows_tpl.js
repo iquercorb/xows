@@ -1009,3 +1009,49 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
   // Return final tree
   return inst;
 }
+
+/**
+ * Build and returns a new instance of Room Occupant <li> object from
+ * template to be added in the Room's Occupants <ul>
+ *
+ * @param   {string}    jid       Call Peer full JID
+ * @param   {string}    nick      Peer Nickname
+ * @param   {string}    avat      Peer avatar image URL
+ *
+ * @return  {object}    Occupant <li> HTML Elements
+ */
+function xows_tpl_spawn_stream_audio(jid, nick, avat)
+{
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["STREAM-AUDIO"].firstChild.cloneNode(true);
+
+  // Set content to proper elements
+  inst.setAttribute("jid", jid);
+  inst.setAttribute("name", nick);
+  xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
+  inst.querySelector("FIGURE").className = "h-"+avat;
+
+  return inst;
+}
+
+/**
+ * Build and returns a new instance of Room Occupant <li> object from
+ * template to be added in the Room's Occupants <ul>
+ *
+ * @param   {string}    jid       Call Peer full JID
+ * @param   {string}    nick      Peer Nickname
+ * @param   {string}    avat      Peer avatar image URL
+ *
+ * @return  {object}    Occupant <li> HTML Elements
+ */
+function xows_tpl_spawn_stream_video(jid, nick, avat)
+{
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["STREAM-VIDEO"].firstChild.cloneNode(true);
+
+  // Set content to proper elements
+  inst.setAttribute("jid", jid);
+  inst.setAttribute("name", nick);
+
+  return inst;
+}

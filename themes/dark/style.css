@@ -471,6 +471,25 @@ button:disabled {
   background-image: url("images/call_hup.svg");
 }
 /* ------------------------------------------------------------------ */
+/* Call session Notification Spot */
+/* ------------------------------------------------------------------ */
+.CALL-SPOT {
+  display: block;
+  position: absolute;
+  top: 2px; right: 2px;
+  width: 19px; height: 19px;
+  font-size: 9px;
+  line-height: 13px;
+  text-align: center;
+  border-radius: 50%;
+  font-weight: bold;
+  background-size: 9px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--acce-base);
+  background-image: url("images/call_pup.svg");
+}
+/* ------------------------------------------------------------------ */
 /* Top-Level Main Screen */
 /* ------------------------------------------------------------------ */
 .scr-main {
@@ -1473,6 +1492,11 @@ figure {
   top: -4px; left: -5px;
   border: 3px solid var(--base-tone3);
 }
+.ROST-CONT .CALL-SPOT,
+.ROST-ROOM .CALL-SPOT {
+  top: -4px; right: -5px;
+  border: 3px solid var(--base-tone3);
+}
 .PEER-SHOW {
   display: inline-block;
   position: absolute;
@@ -1806,6 +1830,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   padding: 0 10px;
   background-color: var(--base-tone4);
   scrollbar-color: var(--base-tone1) transparent;
+  scroll-snap-type: y mandatory;
 }
 @media (max-width: 824px) {
   .chat-main {
@@ -1816,30 +1841,77 @@ div[show="4"]  { background-color: var(--show-chat); }
   background-color: var(--base-tone1);
   border-color: var(--base-tone4);
 }
+.CALL-OPEN .chat-call {
+  display: flex;
+  width: 100%; height: 33%;
+  min-height: 200px;
+}
+.CALL-FULL .chat-call {
+  width: 100%; height: 100%;
+}
+.CALL-FULL .chat-main,
+.CALL-FULL .chat-foot {
+  display: none;
+}
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - Chat Call */
 /* ------------------------------------------------------------------ */
 .chat-call {
+  display: none;
+  flex: auto;
   background-color: var(--base-tone1);
-  padding: 0 10px;
-  display: flex;
+  padding: 5px;
   flex-direction: column;
 }
 .call-view {
   height: 100%;
   position: relative;
 }
-.call-vdeo {
-  width: 100%; height: 100%;
+.call-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  grid-gap: 5px;
   position: absolute;
+  left: 0; right: 0;
+  height: 100%;
+}
+.STREAM-AUDIO {
+  width: 100px;
+  height: 100px;
+  margin: 15px;
+  border-radius: 25%;
+  background-color: var(--base-tone5);
+  border: 3px solid var(--text-tone3);
+  position: relative;
+}
+.STREAM-AUDIO figure {
+  position: absolute;
+  top: 25%; left: 25%;
+  width: 48px; height: 48px;
+  margin: auto;
+}
+.STREAM-VIDEO {
+  min-height: 0;
+  min-width: 0;
+  display: inherit;
+  text-align: center;
+}
+.STREAM-VIDEO video {
+  width: auto;
+  height: auto;
+  max-height: 100%;
+  max-width: 100%;
+  border-radius: 5px;
+  margin: auto;
 }
 .call-menu {
   position: absolute;
   bottom: 0;
   width: 100%;
-  padding-bottom: 10px;
   display: flex;
   align-items: center;
+  padding-bottom: 5px;
 }
 .call-menu button {
   display: inline-block;
@@ -1853,15 +1925,12 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .call-volu {
   flex: none;
-  width: 120px; height: 100%;
+  width: 100px; height: 100%;
   padding-left: 10px;
 }
 .call-volu button  {
   width: 24px; height: 24px;
   background-color: transparent;
-  opacity: .7;
-}.call-volu button:hover {
-  opacity: 1;
 }
 .CALL-VMUT {
   background-image: url("images/volume_0.svg");
@@ -1879,12 +1948,12 @@ div[show="4"]  { background-color: var(--show-chat); }
   -webkit-appearance: none;
   appearance: none;
   border-radius: 2px;
-  width: 80px; height: 4px;
+  width: 60px; height: 4px;
   background: #FFF;
   outline: none;
   opacity:1;
 }.call-vsld:disabled{
-  background: #777;
+  background: var(--reje-base);
 }
 .call-vsld::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1897,7 +1966,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   background: #FFF;
   cursor: pointer;
 }.call-vsld:disabled::-webkit-slider-thumb {
-  background: #777;
+  background: var(--reje-base);
 }
 .call-vsld::-moz-range-thumb {
   -webkit-appearance: none;
@@ -1910,10 +1979,8 @@ div[show="4"]  { background-color: var(--show-chat); }
   background: #FFF;
   cursor: pointer;
 }.call-vsld:disabled::-moz-range-thumb{
-  background: #777;
+  background: var(--reje-base);
 }
-
-
 .call-acts {
   flex: auto;
   height: 100%;
@@ -1921,10 +1988,15 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .call-acts button {
   width: 48px; height: 48px;
-  margin-left: 10px;
+  margin: 0 5px;
   background-color: var(--base-tone4);
 }.call-acts button:hover  {
   background-color: var(--base-tone6);
+}
+@media (max-width: 824px) {
+  .call-acts button {
+    margin: 0 2px;
+  }
 }
 .CALL-CAM1 {
   background-image: url("images/cam.svg");
@@ -1944,30 +2016,21 @@ div[show="4"]  { background-color: var(--show-chat); }
 }.CALL-HGUP:hover  {
   background-color: var(--reje-hover) !important;
 }
-/*
-#call_hgup {
-  background-color: var(--reje-base);
-}#call_hgup:hover {
-  background-color: var(--reje-hover);
-}
-*/
 .call-geom {
   flex: none;
   display: inline-block;
-  width: 120px;
+  width: 100px;
   text-align: right;
 }
 .call-geom button {
   width: 48px; height: 48px;
   background-color: transparent;
+  background-image: url("images/maximize.svg");
   opacity: .7;
 }.call-geom button:hover {
   opacity: 1;
 }
-.CALL-MAXI {
-  background-image: url("images/maximize.svg");
-}
-.CALL-MINI {
+.CALL-FULL .call-geom button {
   background-image: url("images/minimize.svg");
 }
 /* ------------------------------------------------------------------ */

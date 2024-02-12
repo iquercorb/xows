@@ -983,12 +983,6 @@ function xows_xmp_discoitems_parse(stanza, onparse)
                 "name"  : nodes[i].getAttribute("name")});
   }
 
-  // check for required data to prevent further crash
-  if(!item.length) {
-    xows_log(1,"xmp_discoitems_parse","parse Disco#items","malformed stanza");
-    return;
-  }
-
   // Forward result to client
   if(xows_isfunc(onparse))
     onparse( stanza.getAttribute("from"), item);

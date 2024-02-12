@@ -463,6 +463,8 @@ function xows_doc_init(onready)
   const chat_main = xows_doc("chat_main");
   xows_doc_listener_add(chat_main,              "scroll",   xows_gui_chat_main_onscroll);
   xows_doc_listener_add(chat_main,              "click",    xows_gui_chat_main_onclick);
+  // Add Resize observer
+  new ResizeObserver(xows_gui_chat_main_onresize).observe(chat_main);
 
   // Chat foot
   const chat_panl = xows_doc("chat_panl");
@@ -513,6 +515,10 @@ function xows_doc_init(onready)
 
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
+
+  // Set event listener to keep track of window resizing
+  //xows_doc_listener_add(window,     "resize",             xows_gui_wnd_onresize);
+
 
   // Load sound effects
   xows_gui_sound.notify = new Audio("/" + xows_options.root + "/sounds/notify.ogg");
@@ -655,8 +661,6 @@ function xows_doc_loader_check(force)
     // Get client bounding for this element
     media_bound = media.getBoundingClientRect();
 
-    xows_log(2,"doc_loader_check",media.getAttribute(xows_doc_loader_attrib),media_bound.top+", "+media_bound.bottom);
-
     // Check whether the object is currently within the chat history
     // window client (the visible part)
     if(media_bound.bottom > view_bound.top && media_bound.top <= view_bound.bottom) {
@@ -789,7 +793,7 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
   const mbox_text = xows_doc("mbox_text");
   mbox_text.classList = cls;
   mbox_text.innerHTML = xows_l10n_get(text);
-  
+
   xows_doc_hidden_set("mbox_close", !(!onvalid && !onabort));
   xows_doc_hidden_set("mbox_valid", !onvalid);
   xows_doc_hidden_set("mbox_abort", !onabort);
@@ -922,6 +926,9 @@ function xows_doc_page_close(soft)
 
   const page = xows_doc(xows_doc_page_id);
 
+  // Revert window title to previous one
+  if(page.title) xows_gui_title_pop();
+
   // remove "event" event listener
   if(xows_doc_page_cb_oninput) {
     xows_doc_listener_rem(page,"input",xows_doc_page_oninput);
@@ -1009,6 +1016,10 @@ function xows_doc_page_open(id, close, onclose, oninput, onclick)
     xows_doc_page_cb_onclick = onclick;
     xows_doc_listener_add(page,"click",xows_doc_page_onclick);
   }
+
+  // Change window title accorging page title
+  if(page.title)
+    xows_gui_title_push(xows_l10n_get(page.title)+" - XOWS");
 
   // also exit potentially opened message box
   xows_doc_mbox_close();
