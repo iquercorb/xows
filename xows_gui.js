@@ -44,9 +44,9 @@
 const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
 
 /**
- * Maximum count of message per history
+ * Maximum count of message the history can contain
  */
-const XOWS_GUI_HIST_SIZE = 50; //< Size of the history "window"
+const XOWS_GUI_HIST_SIZE = 100; //< Size of the history "window"
 
 /**
  * Current selected GUI locale code
@@ -1047,7 +1047,7 @@ function xows_gui_switch_peer(jid)
       if(!next.join) xows_cli_room_join(next);
     // Hidden history mean first "open", so we load a bunch of history
     if(xows_doc_hidden("hist_ul")) {
-      xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE, 0);
+      xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2, 0);
       xows_doc_show("hist_ul");
     }
     // Clear contact unread notification for next peer
@@ -2934,7 +2934,7 @@ function xows_gui_chat_main_onscroll(event)
   // Check whether the scroll is at top of frame
   if(xows_gui_chat_main_scroll.top < 20) {
     // Query archive for current chat contact
-    xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE);
+    xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2);
   }
 
   // If scroll is enough far from bottom, show the "Back to recent" banner
@@ -2946,7 +2946,7 @@ function xows_gui_chat_main_onscroll(event)
     // Check whether we have cropped history
     if(!xows_doc_hidden("hist_end")) {
       // Query archive for current chat contact
-      xows_gui_mam_query(true, XOWS_GUI_HIST_SIZE);
+      xows_gui_mam_query(true, XOWS_GUI_HIST_SIZE/2);
     } else {
       // Hide the "Back to recent" banner/button
       xows_gui_hist_back_recent_show(xows_gui_peer, false);
@@ -2976,7 +2976,7 @@ function xows_gui_chat_main_scroll_down(refresh = false)
     xows_doc_hide("hist_end");
 
     // Query for the last archives, with no delay
-    xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE, 0);
+    xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2, 0);
   }
 }
 
@@ -3159,7 +3159,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
         xows_doc_hide("hist_end");
 
         // Query for the last archives, with no delay
-        xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE, 0);
+        xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2, 0);
       }
     }
     // Do not append any message, return now
