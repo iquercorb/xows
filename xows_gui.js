@@ -2774,7 +2774,6 @@ function xows_gui_call_clear()
   xows_gui_call_stream.rmt = null;
 
   // Reset call variables
-  xows_gui_call_peer = null;
   xows_gui_call_constraints = null;
   xows_gui_call_incoming = null;
 
