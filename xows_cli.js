@@ -2625,9 +2625,10 @@ function xows_cli_upld_xhr_progress(event)
  */
 function xows_cli_upld_xhr_success()
 {
-  // Forward file download URL
+  // Forward file download URL with some delay to be sure uploaded file
+  // will be available for automatic loading
   if(xows_isfunc(xows_cli_upld_fw_success))
-    xows_cli_upld_fw_success(xows_cli_upld_param.url);
+    setInterval(xows_cli_upld_fw_success, 500, xows_cli_upld_param.url);
 
   xows_cli_upld_param = null; //< Reset query data
   xows_cli_upld_xhr = null;
