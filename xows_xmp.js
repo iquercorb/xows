@@ -2450,8 +2450,10 @@ function xows_xmp_auth_register_set_parse(from, type, er_type, er_code, er_name,
   // Check whether we got an error as submit response
   if(type === "error") {
     // Set error message string as possible
-    if(er_code === "409" || er_name === "conflict")  err_msg = "Unsername already exists";
-    if(er_code === "406" || er_name === "not-acceptable")  err_msg = "Username contains illegal characters";
+    if(er_code === "409" || er_name === "conflict")
+      err_msg = er_text ? er_text : "Unsername already exists";
+    if(er_code === "406" || er_name === "not-acceptable")
+      err_msg = er_text ? er_text : "Username contains illegal characters";
   } else {
     if(type === "result") {
       // Reset the client with congratulation message
@@ -2855,7 +2857,7 @@ function xows_xmp_recv_presence(stanza)
       return true;
     }
     if(type === "error") { //<  an error occurred
-      const err_msg = xows_xmp_error_str(stanza);
+      const err_msg = "("+from+") "+xows_xmp_error_str(stanza);
       xows_log(1,"xmp_recv_presence","error",from+" - "+err_msg);
       xows_xmp_fw_onerror(XOWS_SIG_ERR,err_msg);
       return true;
@@ -3220,7 +3222,7 @@ function xows_xmp_send_presence(to, type, level, status, photo, muc, nick)
   // Append <nick> child if required
   if(nick) xows_xml_parent(stanza, xows_xml_node("nick",{"xmlns":XOWS_NS_NICK},nick));
 
-  xows_log(2,"xmp_send_presence",(type)?type:"availability",((to)?to:"")+"show: "+xows_xmp_show_name_map[level]);
+  xows_log(2,"xmp_send_presence",type ? type : "show", to ? to : level);
 
   // Send the final <presence> stanza
   xows_xmp_send(stanza);
