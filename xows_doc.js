@@ -519,7 +519,6 @@ function xows_doc_init(onready)
   // Set event listener to keep track of window resizing
   //xows_doc_listener_add(window,     "resize",             xows_gui_wnd_onresize);
 
-
   // Load sound effects
   xows_gui_sound.notify = new Audio("/" + xows_options.root + "/sounds/notify.ogg");
   xows_gui_sound.disable = new Audio("/" + xows_options.root + "/sounds/disable.ogg");
@@ -532,7 +531,7 @@ function xows_doc_init(onready)
   xows_gui_sound.ringbell.loop = true;
   xows_gui_sound.hangup = new Audio("/" + xows_options.root + "/sounds/hangup.ogg");
 
-  xows_log(2,"gui_start","document ready");
+  xows_log(2,"doc_init","document ready");
 
   // Finaly call onready callback
   if(xows_isfunc(onready)) onready();
@@ -784,7 +783,8 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
 
   let cls;
 
-  switch(style)  {
+  switch(style)  
+  {
   case XOWS_MBOX_ERR: cls = "TEXT-ERR"; break; //< same as XOWS_SIG_ERR
   case XOWS_MBOX_WRN: cls = "TEXT-WRN"; break; //< same as XOWS_SIG_WRN
   case XOWS_MBOX_SCS: cls = "TEXT-SCS"; break;
@@ -923,7 +923,7 @@ function xows_doc_page_close(soft)
   if(!xows_doc_page_id)
     return;
 
-  xows_log(2,"gui_page_close",(soft?"soft":"hard")+" close",xows_doc_page_id);
+  xows_log(2,"doc_page_close",(soft?"soft":"hard")+" close",xows_doc_page_id);
 
   const page = xows_doc(xows_doc_page_id);
 
@@ -986,7 +986,7 @@ function xows_doc_page_open(id, close, onclose, oninput, onclick)
     xows_doc_page_close(true); //< close any opened dialog
   }
 
-  xows_log(2,"gui_dlg_open", id);
+  xows_log(2,"doc_page_open", id);
 
   // switch 'screens' only if hard oppen
   if(!soft) {
