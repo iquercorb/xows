@@ -2297,7 +2297,7 @@ function xows_cli_send_chatstate(peer, chat)
  */
 function xows_cli_send_subject(room, subj)
 {
-  xows_log(2,"cli_muc_subject_send","send subject",room.bare+" \""+subj+"\"");
+  xows_log(2,"cli_send_subject","send subject",room.bare+" \""+subj+"\"");
   // Send message with subject
   xows_xmp_send_subject(room.bare, subj);
 }
@@ -2628,7 +2628,7 @@ function xows_cli_upld_xhr_success()
   // Forward file download URL with some delay to be sure uploaded file
   // will be available for automatic loading
   if(xows_isfunc(xows_cli_upld_fw_success))
-    setTimeout(xows_cli_upld_fw_success, 500, xows_cli_upld_param.url);
+    setTimeout(xows_cli_upld_fw_success, 250, xows_cli_upld_param.url);
 
   xows_cli_upld_param = null; //< Reset query data
   xows_cli_upld_xhr = null;
