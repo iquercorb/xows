@@ -284,7 +284,7 @@ function xows_xmp_use_xep(xmlns)
 {
   const matches = xmlns.match(/([a-z\:]+)(:(\d|$))/);
 
-  if(matches[1]) {
+  if(matches) {
     // Check whether we know this xmlns prefix
     if(matches[1] in xows_xmp_xep_ns) {
       let keep_curr = false;
@@ -304,7 +304,7 @@ function xows_xmp_use_xep(xmlns)
         // Check whether this prefix was already set before
         if(xows_xmp_xep_ns[matches[1]] !== null) keep_curr = true;
       }
-      
+
       if(keep_curr) {
         // Keep current XMLNS as default
         xows_log(2,"xmp_use_xep","ignoring extension",xmlns);
@@ -835,7 +835,7 @@ function xows_xmp_carbons_query(enable, onparse)
   }
 
   xows_log(2,"xmp_carbons_query","query Message Carbons",tag);
-  
+
   // Send request to enable carbons
   const iq =  xows_xml_node("iq",{"type":"set"},
                 xows_xml_node(tag,{"xmlns":xmlns_carbons}));
