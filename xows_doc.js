@@ -614,8 +614,6 @@ function xows_doc_loader_onload(media)
     // Force scroll position to bottom
     xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight;
   } else {
-    console.log(media);
-    console.log(xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.off);
     // Adjust scroll position to compensate content new height
     xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.off;
   }
