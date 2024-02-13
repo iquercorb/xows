@@ -1650,28 +1650,47 @@ function xows_gui_cli_oncontpush(cont)
     return;
   }
 
-  const cont_ul = xows_doc("cont_ul");
-
   // Search for existing contact <li> element
   const li = document.getElementById(cont.bare);
   if(li) {
-    // Update the existing contact <li> element according template
-    xows_tpl_update_rost_cont(li, cont.name, cont.avat, cont.subs, cont.show, cont.stat);
-    // Update chat title bar
-    xows_gui_chat_head_update(cont);
-  } else {
-    // Remove the potential loading spinner
-    cont_ul.classList.remove("LOADING");
-    // Append new instance of contact <li> from template to roster <ul>
-    cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat, cont.subs, cont.show, cont.stat));
 
-    // Create new Peer offscreen elements with initial state
-    xows_gui_peer_doc_init(cont);
-    xows_gui_peer_scroll_save(cont); //< Initial history scroll save
+    // Check whether this is a subscribing contact
+    if(li.classList.contains("ROST-SUBS")) {
 
-    // Show the contacts <ul>
-    cont_ul.classList.remove("HIDDEN");
+      const subs_ul = xows_doc("subs_ul");
+      // Remove the subscribe <li> element
+      subs_ul.removeChild(li);
+      // Show subscribes <ul> if required
+      if(subs_ul.childNodes.length < 2)
+        subs_ul.classList.add("HIDDEN"); //< Hide the subscribes <ul>
+
+    } else {
+
+      // Update the existing contact <li> element according template
+      xows_tpl_update_rost_cont(li, cont.name, cont.avat, cont.subs, cont.show, cont.stat);
+      // Update chat title bar
+      xows_gui_chat_head_update(cont);
+
+      // Return now since we DO NOT append new <li> element
+      return;
+    }
   }
+
+  // Create and add new Contact <li> element
+  const cont_ul = xows_doc("cont_ul");
+
+  // Show Contact <ul> if required
+  if(cont_ul.classList.contains("HIDDEN")) {
+    cont_ul.classList.remove("LOADING"); //< Remove the potential loading spinner
+    cont_ul.classList.remove("HIDDEN"); //< Show the contacts <ul>
+  }
+
+  // Append new instance of contact <li> from template to roster <ul>
+  cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat, cont.subs, cont.show, cont.stat));
+
+  // Create new Peer offscreen elements with initial state
+  xows_gui_peer_doc_init(cont);
+  xows_gui_peer_scroll_save(cont); //< Initial history scroll save
 }
 
 /**
@@ -3353,10 +3372,8 @@ function xows_gui_mam_parse(peer, result, complete)
       pre_li = hist_ul.appendChild(new_li);
     }
 
-    if(!offscreen) {
-      // Add message medias to be monitored by lazy loader
-      xows_doc_loader_monitor(new_li);
-    }
+    // Add message medias to be monitored by lazy loader
+    if(!offscreen) xows_doc_loader_monitor(new_li);
 
     // Increase appended message
     appended++;
@@ -4533,6 +4550,9 @@ function xows_gui_page_cont_onvalid()
   // Compose display name from JID
   const userid = bare.split("@")[0];
   const name = userid[0].toUpperCase() + userid.slice(1);
+
+  // Close Add Contact page
+  xows_doc_page_close();
 
   // Request for roster add contact
   xows_cli_rost_edit(bare, name);
