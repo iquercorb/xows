@@ -922,9 +922,8 @@ function xows_cli_srv_info_parse(from, iden, feat)
 
     if(feat[i].includes(XOWS_NS_CARBONS)) {
       // Check and set the xmlns (version) to use for this session
-      if(xows_xmp_use_xep(feat[i])) {
+      if(xows_xmp_use_xep(feat[i]))
         xows_xmp_carbons_query(true); //< enable carbons
-      }
     }
     // Search for Http Upload feature
     if(feat[i].includes(XOWS_NS_HTTPUPLOAD)) {

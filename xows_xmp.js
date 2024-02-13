@@ -51,6 +51,7 @@ const XOWS_NS_PING         = "urn:xmpp:ping";
 const XOWS_NS_TIME         = "urn:xmpp:time";
 const XOWS_NS_DELAY        = "urn:xmpp:delay";
 const XOWS_NS_CARBONS      = "urn:xmpp:carbons";
+const XOWS_NS_CARBONS_RUL  = "urn:xmpp:carbons:rules";
 const XOWS_NS_RECEIPTS     = "urn:xmpp:receipts";
 const XOWS_NS_MAM          = "urn:xmpp:mam";
 const XOWS_NS_VCARD4       = "urn:xmpp:vcard4";
@@ -281,22 +282,21 @@ let xows_xmp_auth_register = false;
  */
 function xows_xmp_use_xep(xmlns)
 {
-  const matches = xmlns.match(/([a-z\:]+)(:\d|$)/);
+  const matches = xmlns.match(/([a-z\:]+)(:(\d|$))/);
 
   if(matches[1]) {
-    // Keep current XMLNS as default
-    let keep_curr = false;
     // Check whether we know this xmlns prefix
     if(matches[1] in xows_xmp_xep_ns) {
+      let keep_curr = false;
       // Extract version number if any
-      if(matches[2].length) { // should be ":#" where # is a number
+      if(matches[3].length) { // should be ":#" where # is a number
         if(xows_xmp_xep_ns[matches[1]] !== null) {
           // We need to compare the two version to keep the greater one
           let keep_curr = false;
           if(xows_xmp_xep_ns[matches[1]].length) {
             // Current client version IS a number, we compare integers
-            const vcur = parseInt(xows_xmp_xep_ns[matches[1]].charAt(1));
-            const vnew = parseInt(matches[2].charAt(1));
+            const vcur = parseInt(xows_xmp_xep_ns[matches[1]]);
+            const vnew = parseInt(matches[3]);
             if(vcur >= vnew) keep_curr = true;
           }
         }
@@ -304,18 +304,21 @@ function xows_xmp_use_xep(xmlns)
         // Check whether this prefix was already set before
         if(xows_xmp_xep_ns[matches[1]] !== null) keep_curr = true;
       }
-    }
-    if(keep_curr) {
-      xows_log(2,"xmp_use_xep","ignoring extension",xmlns);
-      return false;
-    } else {
-      // set version string or empty string for "base" version
-      xows_xmp_xep_ns[matches[1]] = (matches[2].length) ? matches[2] : "";
-      xows_log(2,"xmp_use_xep","use extension",xmlns);
-      return true;
+      
+      if(keep_curr) {
+        // Keep current XMLNS as default
+        xows_log(2,"xmp_use_xep","ignoring extension",xmlns);
+        return false;
+      } else {
+        // set version string or empty string for "base" version
+        xows_xmp_xep_ns[matches[1]] = (matches[3].length) ? matches[3] : "";
+        xows_log(2,"xmp_use_xep","use extension",xmlns);
+        return true;
+      }
     }
   }
-  xows_log(1,"xmp_use_xep","unsuported extension",matches[1]);
+
+  xows_log(1,"xmp_use_xep","unhandled extension",xmlns);
   return false;
 }
 
@@ -339,7 +342,7 @@ function xows_xmp_get_xep(xmlns)
 {
   if(xmlns in xows_xmp_xep_ns) {
     if(xows_xmp_xep_ns[xmlns]) {
-      return xmlns + xows_xmp_xep_ns[xmlns];
+      return xmlns+":"+xows_xmp_xep_ns[xmlns];
     }
   }
   xows_log(1,"xmp_get_xep","unknown extension",xmlns);
@@ -825,14 +828,14 @@ function xows_xmp_carbons_query(enable, onparse)
   // Create enable or disable node
   const tag = (enable) ? "enable" : "disable";
 
-  xows_log(2,"xmp_carbons_query","query XEP-0280 Carbons",tag);
-
   const xmlns_carbons = xows_xmp_get_xep(XOWS_NS_CARBONS);
   if(!xmlns_carbons) {
-    xows_log(1,"xmp_carbons_query","XEP-0280 Carbons unavailable");
+    xows_log(1,"xmp_carbons_query","Message Carbons unavailable");
     return;
   }
 
+  xows_log(2,"xmp_carbons_query","query Message Carbons",tag);
+  
   // Send request to enable carbons
   const iq =  xows_xml_node("iq",{"type":"set"},
                 xows_xml_node(tag,{"xmlns":xmlns_carbons}));
