@@ -3217,6 +3217,9 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
     // scroll history down
     xows_gui_peer_scroll_down(peer);
   }
+
+  // Ensure embeded media is loaded
+  if(!offscreen) xows_doc_loader_check(true);
 }
 
 /**
