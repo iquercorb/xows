@@ -1549,17 +1549,17 @@ div[show="4"]  { background-color: var(--show-chat); }
   flex: none;
 }
 .peer-acts button {
-  display: block;
+  display: none;
   width: 16px; height: 16px;
   padding: 0;
   margin: 2px 0;
   border: 0;
   background-color: transparent !important;
-  background-size: 16px;
+  background-size: 12px;
   background-position: center;
   background-repeat: no-repeat;
   cursor: pointer;
-  opacity: .6;
+  opacity: .5;
 }
 .peer-acts button:hover {
   opacity: 1;
@@ -1588,11 +1588,6 @@ div[show="4"]  { background-color: var(--show-chat); }
   margin-left: -4px;
 }.ROST-CONT:hover {
   background-color: var(--base-tone4);
-}.ROST-CONT.SELECTED  {
-  cursor: default !important;
-}.ROST-CONT.SELECTED:hover {
-  background-color: inherit;
-  border-color: transparent;
 }
 .ROST-CONT::before {
   display: block;
@@ -1607,6 +1602,9 @@ div[show="4"]  { background-color: var(--show-chat); }
 }.ROST-CONT.SELECTED:before {
   visibility: visible;
   height: 35px;
+}
+.ROST-CONT:hover button {
+  display: block;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Subscribe Request <li> element */
@@ -1705,6 +1703,10 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .user-cont .peer-icon:hover {
   cursor: pointer;
+}
+.user-cont button {
+  display: block;
+  background-size: 16px;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control elements  */
@@ -2701,11 +2703,6 @@ div[show="4"]  { background-color: var(--show-chat); }
   overflow: hidden;
 }.ROOM-OCCU:hover {
   background-color: var(--base-tone4);
-}.ROOM-OCCU.SELECTED  {
-  cursor: default !important;
-}.ROOM-OCCU.SELECTED:hover {
-  background-color: inherit;
-  border-color: transparent;
 }
 .ROOM-OCCU::before {
   display: block;
@@ -2720,6 +2717,10 @@ div[show="4"]  { background-color: var(--show-chat); }
 }.ROOM-OCCU.SELECTED:before {
   visibility: visible;
   height: 35px;
+}
+.ROOM-OCCU:hover button {
+  background-size: 16px;
+  display: block;
 }
 .OCCU-SUBS {
   background-image: url("images/contadd.svg");
