@@ -2150,7 +2150,7 @@ function xows_gui_chat_head_onfocus(event)
   const subj = document.getElementById("chat_meta").innerText;
 
   // If changed, inform of the new room topic
-  if(subj != xows_gui_peer.subj)
+  if(xows_gui_peer.type === XOWS_PEER_ROOM && subj != xows_gui_peer.subj)
     xows_cli_send_subject(xows_gui_peer, subj);
 }
 
@@ -2366,7 +2366,7 @@ let xows_gui_chat_call_peer = null;
 /**
  * Multimedia Call speak/silence visual effect animation function handle.
  */
-let xows_gui_chat_call_fx_loop = null;
+let xows_gui_chat_call_fx_hnd = null;
 
 /**
  * Animation function for Multimedia Call speak/silence visual effect
@@ -2378,9 +2378,6 @@ let xows_gui_chat_call_fx_loop = null;
  */
 function xows_gui_chat_call_fx()
 {
-  // Loop
-  xows_gui_chat_call_fx_loop = requestAnimationFrame(xows_gui_chat_call_fx);
-
   // Get list of Audio Media objects
   const audio = xows_doc("call_grid").querySelectorAll("audio");
 
@@ -2388,19 +2385,20 @@ function xows_gui_chat_call_fx()
   for(let i = 0; i < audio.length; ++i) {
 
     // Get Analyzer time domain (PCM samples)
-    audio[i].fftNode.getByteTimeDomainData(audio[i].fftBuff);
+    audio[i].fftNode.getFloatTimeDomainData(audio[i].fftBuff);
 
     // Get peek value for window
-    let data, peek = 0;
+    let data, peek = 0.0;
     for(let j = 0; j < audio[i].fftBuff.length; j++) {
-      data = Math.abs(audio[i].fftBuff[j]);
+      data = Math.abs(audio[i].fftBuff[j]); // raw data are between 1.0 and -1.0
       if(data > peek) peek = data;
     }
 
     // If peek value is greater than threshold, change color
-    const color = peek > 135.0 ? "var(--link-base)" : "var(--text-tone3)";
-    if(audio[i].parentNode.style.borderColor !== color)
+    const color = peek > 0.08 ? "var(--link-base)" : "var(--text-tone3)";
+    if(audio[i].parentNode.style.borderColor !== color) {
       audio[i].parentNode.style.borderColor = color;
+    }
   }
 }
 
@@ -2457,9 +2455,9 @@ function xows_gui_chat_call_open()
 function xows_gui_chat_call_close()
 {
   // Stop the speak/silence visual effects animation loop
-  if(xows_gui_chat_call_fx_loop) {
-    cancelAnimationFrame(xows_gui_chat_call_fx_loop);
-    xows_gui_chat_call_fx_loop = null;
+  if(xows_gui_chat_call_fx_hnd) {
+    clearInterval(xows_gui_chat_call_fx_hnd);
+    xows_gui_chat_call_fx_hnd = null;
   }
 
   // Mute sound
@@ -2535,13 +2533,13 @@ function xows_gui_chat_call_add_stream(peer, stream)
     // Create Analyser node dans Buffer node stored within the Media
     // objecy to perform audio peek analysis for visual effects
     media.fftNode = xows_gui_audio.ctx.createAnalyser();
-    media.fftNode.fftSize = 2048; //< no need for high-res FTT
-    media.fftBuff = new Uint8Array(media.fftNode.frequencyBinCount);
+    media.fftNode.fftSize = 2048;
+    media.fftBuff = new Float32Array(media.fftNode.frequencyBinCount);
     media.srcNode.connect(media.fftNode);
 
     // Start the speak/silence visual effects animation loop
-    if(!xows_gui_chat_call_fx_loop)
-      xows_gui_chat_call_fx_loop = requestAnimationFrame(xows_gui_chat_call_fx);
+    if(!xows_gui_chat_call_fx_hnd)
+      xows_gui_chat_call_fx_hnd = setInterval(xows_gui_chat_call_fx, 50);
   }
 
   // Connect AudioSource -> Analyser [-> GainNode]
