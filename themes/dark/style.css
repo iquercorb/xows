@@ -617,7 +617,7 @@ button:disabled {
   width: 100%; height: 44px;
   display: flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 5px 0 12px;
 }
 .row-foot {
   flex: none;
@@ -1325,7 +1325,7 @@ figure {
 .head-meta {
   flex: auto;
   display: inline-block;
-  margin-left: 5px;
+  margin: 0 5px;
   padding: 3px 5px;
   font-size: 0.8em;
   border-radius: 3px;
@@ -1352,7 +1352,7 @@ figure {
 }
 .head-acts button {
   display: inline-block;
-  width: 36px; height: 100%;
+  width: 32px; height: 100%;
   padding: 0;
   border: 0;
   background-color: transparent;
