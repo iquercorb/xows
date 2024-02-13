@@ -649,21 +649,22 @@ function xows_doc_loader_check(force)
   xows_doc_loader_scroll.off = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.top;
   xows_doc_loader_scroll.bot = xows_doc_loader_scroll.off - xows_doc_loader_client.clientHeight;
 
-  // Used variables
-  const view_bound = xows_doc_loader_client.getBoundingClientRect();
-  let media_bound;
+  // Get view client rect
+  const view_rect = xows_doc_loader_client.getBoundingClientRect();
+  // Add margin to ensure element at bottom of scroll are properly loaded
+  const scan_bottom = view_rect.bottom + 10;
 
-  let media, i = xows_doc_loader_stack.length;
+  let i = xows_doc_loader_stack.length;
   while(i--) {
 
-    media = xows_doc_loader_stack[i];
+    const media = xows_doc_loader_stack[i];
 
     // Get client bounding for this element
-    media_bound = media.getBoundingClientRect();
+    const media_rect = media.getBoundingClientRect();
 
     // Check whether the object is currently within the chat history
     // window client (the visible part)
-    if(media_bound.bottom > view_bound.top && media_bound.top <= view_bound.bottom) {
+    if(media_rect.bottom > view_rect.top && media_rect.top <= scan_bottom) {
 
       // The NOSPINNER attribute, non-standard HTML attribute, is
       // used to indiate the media should not be hidden during

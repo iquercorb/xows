@@ -3169,9 +3169,6 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // Required elements, offscreen or from document
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
-  // get scroll bottom relative position before message insertion
-  const scrl_bot = xows_gui_peer_scroll_bot(peer);
-
   // Create new message
   const li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr);
 
@@ -3190,16 +3187,13 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
 
   // If it is an incomming message and client is consulting top of
   // history, we don't scroll at bottom but display a warning message
-  if(!sent && (scrl_bot > 100)) {
+  if(!sent && (xows_gui_peer_scroll_bot(peer) > 120)) {
     // Show the "new messages" warning
     xows_gui_hist_back_recent_new(peer);
   } else {
     // scroll history down
     xows_gui_peer_scroll_down(peer);
   }
-
-  // Force lazy loader to check for media to loas
-  if(!offscreen) xows_doc_loader_check(true);
 }
 
 /**
