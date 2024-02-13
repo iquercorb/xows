@@ -2814,6 +2814,10 @@ function xows_gui_call_clear()
  */
 function xows_gui_call_terminate()
 {
+  // Prevent useless process
+  if(!xows_cli_call_stat)
+    return;
+
   // Clear call data
   xows_gui_call_clear();
 
