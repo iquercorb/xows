@@ -1327,8 +1327,6 @@ function xows_sdp_parse(raw)
     }
   }
 
-  //console.log(sdpout);
-
   return sdpout;
 }
 
