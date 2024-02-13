@@ -429,13 +429,6 @@ function xows_gui_init()
   // The DOM is now to its default state
   xows_gui_clean = true;
 
-  // Audio setup
-  xows_gui_audio.ctx = new AudioContext();
-  xows_gui_audio.vol = xows_gui_audio.ctx.createGain();
-  xows_gui_audio.vol.connect(xows_gui_audio.ctx.destination);
-  // Volume is muted by default
-  xows_gui_audio.vol.gain.value = 0;
-
   // Query available devices for Multimedia features
   if(navigator.mediaDevices) {
     navigator.mediaDevices.enumerateDevices().then(xows_gui_ondevicesinfos);
@@ -490,6 +483,15 @@ function xows_gui_connect(register = false)
 
   // From now the DOM is no longer in its default state
   xows_gui_clean = false;
+
+  // Create Audio context (must be done after user interaction)
+  if(!xows_gui_audio.ctx) {
+    xows_gui_audio.ctx = new AudioContext();
+    xows_gui_audio.vol = xows_gui_audio.ctx.createGain();
+    xows_gui_audio.vol.connect(xows_gui_audio.ctx.destination);
+    // Volume is muted by default
+    xows_gui_audio.vol.gain.value = 0;
+  }
 
   // Launch the client connection
   xows_cli_connect( xows_options.url,
