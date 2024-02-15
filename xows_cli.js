@@ -667,7 +667,13 @@ function xows_cli_peer_update(jid, nick, avat, stat)
  *  - upldok    : HTTP Upload success
  *  - upldpg    : HTTP Upload progress
  *  - upldab    : HTTP Upload Abort
+ *  - callerror : Multimedia call session error
+ *  - callended : Multimedia call session terminated
+ *  - callincoming: Multimedia call session incoming call
+ *  - callstream: Multimedia call session new remote stream
+ *  - calllinked: Multimedia call session established
  *  - error     : Client Error
+ *  - timeout   : Connection timeout
  *  - close     : Session closed
  *
  * @param   {string}    type      Callback slot
@@ -2624,10 +2630,10 @@ function xows_cli_upld_xhr_progress(event)
  */
 function xows_cli_upld_xhr_success()
 {
-  // Forward file download URL with some delay to be sure uploaded file
-  // will be available for automatic loading
+  // Forward file download URL with some delay to let the HTTP server
+  // to refresh and be able to provide correct GET access to file
   if(xows_isfunc(xows_cli_upld_fw_success))
-    setTimeout(xows_cli_upld_fw_success, 250, xows_cli_upld_param.url);
+    setTimeout(xows_cli_upld_fw_success, 800, xows_cli_upld_param.url);
 
   xows_cli_upld_param = null; //< Reset query data
   xows_cli_upld_xhr = null;
