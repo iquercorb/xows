@@ -3181,7 +3181,7 @@ function xows_gui_cli_onreceipt(peer, id)
 /**
  * Reference to setTimeout sent to temporize archive queries
  */
-let xows_gui_mam_query_to = null;
+let xows_gui_mam_query_to = {};
 
 /**
  * Query arvhived message for the current chat contact
@@ -3197,7 +3197,7 @@ let xows_gui_mam_query_to = null;
  */
 function xows_gui_mam_query(peer, after, max = 20, delay = 100)
 {
-  if(xows_gui_mam_query_to)  //< One poll at a time...
+  if(xows_gui_mam_query_to[peer.bare])  //< Query already pending
     return;
 
   const hist_ul = xows_doc("hist_ul");
@@ -3236,7 +3236,7 @@ function xows_gui_mam_query(peer, after, max = 20, delay = 100)
   }
   // To prevent flood and increase ergonomy the archive query is
   // temporised with a fake loading time.
-  xows_gui_mam_query_to = setTimeout(xows_cli_mam_query, delay, peer, max, start, end, xows_gui_mam_parse);
+  xows_gui_mam_query_to[peer.bare] = setTimeout(xows_cli_mam_query, delay, peer, max, start, end, xows_gui_mam_parse);
 }
 
 /**
@@ -3356,7 +3356,7 @@ function xows_gui_mam_parse(peer, result, complete)
   // Compensate history resize and back scroll at saved position
   xows_gui_peer_scroll_adjust(peer);
 
-  xows_gui_mam_query_to = null; //< Allow a new archive query
+  xows_gui_mam_query_to[peer.bare] = null; //< Allow a new archive query
 }
 
 /* -------------------------------------------------------------------

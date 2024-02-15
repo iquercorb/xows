@@ -2140,17 +2140,17 @@ let xows_cli_mam_cb = null;
  * Handles the archive query parsed result
  *
  * @param   {string}    from      Archives sender JID, may be Room or Null
- * @param   {string}    _with     With JID used as filter or Null
+ * @param   {string}    with_     With JID used as filter or Null
  * @param   {object[]}  result    Received archived messages
  * @param   {number}    count     Total result count
  * @param   {boolean}   complete  Current result set is complete
  */
-function xows_cli_mam_parse(from, _with, result, count, complete)
+function xows_cli_mam_parse(from, with_, result, count, complete)
 {
   // Retreive the contact related to this query
-  const peer = xows_cli_peer_get(from ? from : _with);
+  const peer = xows_cli_peer_get(from ? from : with_);
   if(!peer) {
-    xows_log(1,"cli_mam_parse","unknown/unsubscribed JID",from ? from : _with);
+    xows_log(1,"cli_mam_parse","unknown/unsubscribed JID",from ? from : with_);
     return;
   }
 

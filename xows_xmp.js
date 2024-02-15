@@ -1689,16 +1689,22 @@ function xows_xmp_mam_parse(stanza, onparse)
 {
   const id = stanza.getAttribute("id");
 
-  // Retreive the "from" parameter corresponding to id
-  const from = xows_xmp_mam_query_param[id].to;
+  // Retrieve initial query parameters
+  const param = xows_xmp_mam_query_param[id];
+  delete xows_xmp_mam_query_param[id];
 
-  if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_mam_parse","Archive query failure ("+from+")",xows_xmp_error_str(stanza));
+  // Get proper result stack accodring queryid
+  const stack = xows_xmp_mam_stk[param.queryid];
+  delete xows_xmp_mam_stk[param.queryid];
+  if(!stack) {
+    xows_log(1,"xmp_mam_parse","queryid result stack not found",queryid);
     return;
   }
 
-  // Retreive the "with" parameter corresponding to id
-  const _with = xows_xmp_mam_query_param[id]["with"];
+  if(stanza.getAttribute("type") === "error") {
+    xows_log(1,"xmp_mam_parse","Archive query failure ("+param.to+")",xows_xmp_error_str(stanza));
+    return;
+  }
 
   //Check for the <fin> node to ensure this is what we seek for
   const fin = stanza.querySelector("fin");
@@ -1722,7 +1728,7 @@ function xows_xmp_mam_parse(stanza, onparse)
       xows_log(2,"xmp_mam_parse","No result received");
       // Forward parse result
       if(xows_isfunc(onparse))
-        onparse(from, _with, [], count, complete);
+        onparse(param.to, param.peer, [], count, complete);
       return;
     }
 
@@ -1732,11 +1738,11 @@ function xows_xmp_mam_parse(stanza, onparse)
 
     // Extract messages from stack
     let i, result;
-    const n = xows_xmp_mam_stk.length;
+    const n = stack.length;
 
     // Align index to the first page
     for(i = 0; i < n; i++)
-      if(xows_xmp_mam_stk[i].page === first) break;
+      if(stack[i].page === first) break;
 
     if(i >= n) {
       xows_log(0, "xmp_mam_parse","first result page not found in stack",first);
@@ -1750,36 +1756,33 @@ function xows_xmp_mam_parse(stanza, onparse)
           break;
         }
         size++;
-      } while(xows_xmp_mam_stk[i++].page !== last);
+      } while(stack[i++].page !== last);
 
       // extract messages from stack
-      result = xows_xmp_mam_stk.splice(start, size);
+      result = stack.splice(start, size);
     }
 
     xows_log(2,"xmp_mam_parse","results collected","("+result.length+"/"+count+") '"+first+"'=>'"+last+"'");
 
     // Forward parse result
     if(xows_isfunc(onparse))
-      onparse(from, _with, result, count, complete);
+      onparse(param.to, param.peer, result, count, complete);
   }
-
-  // Delete key with id from stack the key from
-  delete xows_xmp_mam_query_param[id];
 }
 
 /**
  * Send query for archived messages matching the supplied filters
  * and the specified result set page
  *
- * @param   {number}    to        Query destination, or Null for default
+ * @param   {string}    to        Query destination, or Null for default
  * @param   {number}    max       Maximum count of result pages to get
- * @param   {object}    _with     With JID filter
+ * @param   {string}    peer      With JID filter
  * @param   {number}    start     Start time filter
  * @param   {number}    end       End time filter
  * @param   {string}    before    Result page Id to get messages before
  * @param   {function}  onparse   Callback to receive parse result
  */
-function xows_xmp_mam_query(to, max, _with, start, end, before, onparse)
+function xows_xmp_mam_query(to, max, peer, start, end, before, onparse)
 {
   // Get proper XMLNS
   const xmlns_mam = xows_xmp_get_xep(XOWS_NS_MAM);
@@ -1791,7 +1794,7 @@ function xows_xmp_mam_query(to, max, _with, start, end, before, onparse)
   // Add the needed x:data filter field
   const field = [];
   field.push({"var":"FORM_TYPE","type":"hidden","value":xmlns_mam});
-  if(_with) field.push({"var":"with"  ,"value":_with});
+  if( peer) field.push({"var":"with"  ,"value":peer});
   if(start) field.push({"var":"start" ,"value":new Date(start).toJSON()});
   if(  end) field.push({"var":"end"   ,"value":new Date(end).toJSON()});
 
@@ -1805,19 +1808,23 @@ function xows_xmp_mam_query(to, max, _with, start, end, before, onparse)
     xows_xml_parent(rsm, xows_xml_node("before",null,before));
   }
 
+  // Generate new query ID with proper stack slot
+  const queryid = xows_gen_nonce_asc(12);
+  xows_xmp_mam_stk[queryid] = [];
+
   // Create the final stanza
   const id = xows_gen_uuid();
   const iq =  xows_xml_node("iq",{"id":id,"type":"set"},
-                xows_xml_node("query",{"xmlns":xmlns_mam},[
+                xows_xml_node("query",{"xmlns":xmlns_mam,"queryid":queryid},[
                   xows_xmp_xdata_make(field),rsm]));
 
   if(to !== null) iq.setAttribute("to",to);
 
   // Store query ID with the "with" parameter
-  xows_xmp_mam_query_param[id] = {"to":to,"with":_with};
+  xows_xmp_mam_query_param[id] = {"to":to,"peer":peer,"queryid":queryid};
 
   xows_log(2,"xmp_mam_query","send Archive query",
-            "with "+_with+" start "+start+" end "+end);
+            "with "+peer+" start "+start+" end "+end);
 
   // Send the query
   xows_xmp_send(iq, xows_xmp_mam_parse, onparse);
@@ -2939,8 +2946,11 @@ function xows_xmp_recv_presence(stanza)
  */
 function xows_xmp_recv_mam_result(result)
 {
-  // Get the result page ID
+  // Get result page ID
   const page = result.getAttribute("id");
+
+  // Get result queryid
+  const qid = result.getAttribute("queryid");
 
   // Get forwarded content
   const forward = result.querySelector("forwarded");
@@ -2981,7 +2991,7 @@ function xows_xmp_recv_mam_result(result)
     if(!time) time = new Date(0).getTime();
 
     // Add archived message to stack
-    xows_xmp_mam_stk.push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body});
+    xows_xmp_mam_stk[qid].push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body});
 
     xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
     return true; //< stanza processed
