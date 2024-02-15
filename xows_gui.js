@@ -773,8 +773,11 @@ function xows_gui_wnd_onfocus(event)
  */
 function xows_gui_wnd_onunload(event)
 {
-  xows_log(2,"gui_evt_unload","Unload event from browser");
-  xows_gui_disconnect();
+  // Sends raw XMPP stanza hoping socket send it before  the browser's
+  // process being killed
+  xows_sck_send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
+  //xows_gui_disconnect();
+  //xows_log(2,"gui_evt_unload","Unload event from browser");
 }
 
 /* -------------------------------------------------------------------

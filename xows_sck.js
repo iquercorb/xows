@@ -208,6 +208,6 @@ function xows_sck_destroy()
  */
 function xows_sck_send(data)
 {
-  xows_log(3,"sck_send",data,null,"#55ABAB");
   xows_sck_sock.send(data);
+  xows_log(3,"sck_send",data,null,"#55ABAB");
 }
