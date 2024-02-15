@@ -490,6 +490,7 @@ function xows_doc_init(onready)
 
   // Set event listener to handle page quit or reload
   xows_doc_listener_add(window,     "beforeunload",       xows_gui_wnd_onunload);
+  xows_doc_listener_add(window,     "unload",             xows_gui_wnd_onunload);
 
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
