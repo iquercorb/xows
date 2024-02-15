@@ -1809,7 +1809,6 @@ div[show="4"]  { background-color: var(--show-chat); }
   padding: 0;
   font-weight: bold;
   font-size: 0.9em;
-  color: var(--text-hligh);
 }
 .chat-addr {
  margin-left: 10px;
@@ -2372,7 +2371,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .mesg-body aside.LOADING::after {
   height: 28px; width: 28px;
-  border-width: 8px;
+  border-width: 6px;
 }
 .EMBD-IMG {
   min-width: 0; min-height: 0;
@@ -2385,12 +2384,12 @@ div[show="4"]  { background-color: var(--show-chat); }
 .EMBD-IMG img {
   max-width: 480px; max-height: 300px;
   width: auto;
-  border-radius: 8px;
+  border-radius: 6px;
   border: none;
 }
 .EMBD-IMG iframe {
   width: 426px; height: 240px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: none;
 }
 .EMBD-STR,
@@ -2406,7 +2405,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .EMBD-STR iframe {
   width: 426px; height: 240px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: none;
 }
 .EMBD-VER {
