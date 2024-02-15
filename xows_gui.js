@@ -396,10 +396,7 @@ function xows_gui_peer_scroll_adjust(peer)
   const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
                                           xows_doc("chat_main");
 
-  if(obj.scrollSaved === undefined)
-    obj.scrollSaved = 0;
-
-  obj.scrollTop = obj.scrollHeight - (obj.clientHeight + obj.scrollSaved);
+  obj.scrollTop = obj.scrollHeight - (obj.clientHeight + (obj.scrollSaved | 0));
 }
 
 /* -------------------------------------------------------------------
@@ -2043,7 +2040,7 @@ function xows_gui_chat_head_update(peer)
     let video_call = false;
 
     // Enable or disable multimedia call buttons
-    if(peer.show > 1 && xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn")) {
+    if(peer.show > 0 && xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn")) {
       audio_call = xows_gui_medias_has("audioinput");
       video_call = xows_gui_medias_has("videoinput");
     }
@@ -3138,18 +3135,18 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
 
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
-  // Append message to history <ul>
-  hist_ul.appendChild(xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr));
-
   // To prevent history to inflate infinitely we keep it to a maximum
   // count of message and let user ability to query for archives
-  if(hist_ul.childNodes.length > XOWS_GUI_HIST_SIZE) {
+  if((hist_ul.childNodes.length + 1) > XOWS_GUI_HIST_SIZE) {
     hist_ul.removeChild(hist_ul.firstChild);
     xows_gui_peer_doc(peer,"hist_beg").innerText = ""; //< Allow query history
   }
 
-  // Add message medias to be monitored by lazy loader
-  //if(!offscreen) xows_doc_loader_monitor(new_li);
+  // Append message to history <ul>
+  hist_ul.appendChild(xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr));
+
+  // Compensate history resize and back scroll at saved position
+  xows_gui_peer_scroll_adjust(peer);
 
   // If scroll is not at bottom, show the 'unread message' banner
   if(!sent && xows_gui_peer_scroll_get(peer) > 120)
