@@ -37,7 +37,6 @@
  *                      DOM Templates API Module
  *
  * ------------------------------------------------------------------ */
-
 /**
  * Private parser for HTML parsing from string
  */
@@ -161,6 +160,44 @@ const xows_tpl_emot_map = {
   "X": {
     ")":"1F606","D":"1F606","P":"1F61D"}
 };
+
+/**
+ * Callback function for embeded media loaded
+ */
+let xows_tpl_fw_onembload = function() {};
+
+/**
+ * Callback function for embeded media loading error
+ */
+let xows_tpl_fw_onemberror = function() {};
+
+/**
+ * Callback function for  embeded media click
+ */
+let xows_tpl_fw_onembclick = function() {};
+
+/**
+ * Set callback functions for common client events
+ *
+ * Possibles slot parameter value are the following:
+ *  - embload   : Embeded media loaded
+ *  - emberror  : Embeded media loading error
+ *  - embclick  : Embeded media user click
+ *
+ * @param   {string}    type      Callback slot
+ * @param   {function}  callback  Callback function to set
+ */
+function xows_tpl_set_callback(type, callback)
+{
+  if(!xows_isfunc(callback))
+    return;
+
+  switch(type.toLowerCase()) {
+    case "embload":     xows_tpl_fw_onembload = callback; break;
+    case "emberror":    xows_tpl_fw_onemberror = callback; break;
+    case "embclick":    xows_tpl_fw_onembclick = callback; break;
+  }
+}
 
 /**
  * Launch the download of the specified template file
@@ -364,21 +401,20 @@ function xows_tpl_init(onready)
  *
  * @param   {string}    href      Media original URL
  * @param   {string}    media     Media or embeded element to wrap
- * @param   {string}    style     Optional class name to style wrapper
- * @param   {string}    title     Optional title to add to wrapper
+ * @param   {string}   [style]    Optional class name to style wrapper
+ * @param   {string}   [title]    Optional title to add to wrapper
  *
  * @return  {string}    Remplacement HTML sample
  */
 function xows_tpl_embed_wrap(href, media, style, title)
 {
   let wrap = "<aside class=\""; if(style) wrap += style;
-  wrap += "\" onclick=\"xows_doc_view_open(this.firstChild)\">";
+  wrap += "\" onclick=\"xows_tpl_fw_onembclick(this.firstChild)\">";
 
   if(title) wrap += "<a href=\""+href+"\" target=\"_blank\">"+title+"</a>";
 
-  // Replace src attribute for lazy loading
-  wrap += media.replace(/src=/g,"lazy_src=");
-
+  // Add envent callback and common attributes
+  wrap += media.replace(/src=/g,"loading=\"lazy\" onload=\"xows_tpl_fw_onembload(this)\" onerror=\"xows_tpl_fw_onemberror(this)\" src=");
   wrap += "</aside>";
 
   return wrap;
@@ -394,7 +430,9 @@ function xows_tpl_embed_wrap(href, media, style, title)
  */
 function xows_tpl_embed_image(href, ext)
 {
-  return xows_tpl_embed_wrap(href,"<img src=\""+href+"\">","EMBD-IMG");
+  return xows_tpl_embed_wrap(href,
+              "<img src=\""+href+"\">",
+              "EMBD-IMG LOADING");
 }
 
 /**
@@ -408,7 +446,7 @@ function xows_tpl_embed_image(href, ext)
 function xows_tpl_embed_movie(href, ext)
 {
   return xows_tpl_embed_wrap(href,
-              "<video controls src=\""+href+"\" nospinner=1></video>",
+              "<video controls src=\""+href+"\"></video>",
               "EMBD-VID");
 }
 /**
@@ -422,7 +460,7 @@ function xows_tpl_embed_movie(href, ext)
 function xows_tpl_embed_audio(href, ext)
 {
   return xows_tpl_embed_wrap(href,
-              "<audio controls src=\""+href+"\" nospinner=1/>",
+              "<audio controls src=\""+href+"\"/>",
               "EMBD-SND");
 }
 
@@ -442,7 +480,7 @@ function xows_tpl_embed_youtube(href, match)
   if(parse[3]) ref += parse[3].replace(/t=/,"start=");
   return xows_tpl_embed_wrap(href,
               "<iframe src=\"https://www.youtube.com/embed/"+ref+"\"/>",
-              "EMBD-STR", "YouTube");
+              "EMBD-STR LOADING","YouTube");
 }
 
 /**
@@ -458,7 +496,7 @@ function xows_tpl_embed_dailymo(href, match)
   const ref = href.match(/(video|dai\.ly)\/([\w\d]+)/)[2];
   return xows_tpl_embed_wrap(href,
               "<iframe src=\"https://www.dailymotion.com/embed/video/"+ref+"\"/>",
-              "EMBD-STR", "Dailymotion");
+              "EMBD-STR LOADING","Dailymotion");
 }
 
 /**
@@ -474,7 +512,7 @@ function xows_tpl_embed_vimeo(href, match)
   const ref = href.match(/\/([\d]+)/)[1];
   return xows_tpl_embed_wrap(href,
               "<iframe src=\"https://player.vimeo.com/video/"+ref+"\"></iframe>",
-              "EMBD-STR", "Vimeo");
+              "EMBD-STR LOADING","Vimeo");
 }
 
 /**
@@ -490,7 +528,7 @@ function xows_tpl_embed_odysee(href, match)
   const ref = href.match(/.com\/(.*)/)[1];
   return xows_tpl_embed_wrap(href,
               "<iframe src=\"https://odysee.com/$/embed/"+ref+"\"></iframe>",
-              "EMBD-STR", "Odysee");
+              "EMBD-STR LOADING","Odysee");
 }
 
 /**
@@ -505,7 +543,9 @@ function xows_tpl_embed_odysee(href, match)
 function xows_tpl_embed_upld(href, match)
 {
   const file = decodeURI(href.match(/(.+\/)*(.+\..+)/)[2]);
-  return xows_tpl_embed_wrap(href, "<a class=\"dnld-btn\" href=\""+href+"\" target=\"_blank\"></a>", "EMBD-DNL", file);
+  return xows_tpl_embed_wrap(href,
+              "<a class=\"dnld-btn\" href=\""+href+"\" target=\"_blank\"></a>",
+              "EMBD-DNL",file);
 }
 
 /**

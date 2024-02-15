@@ -3048,9 +3048,8 @@ function xows_gui_hist_back_recent_new(peer)
  * @param   {boolean}   sent      Marks message as sent by client
  * @param   {boolean}   recp      Marks message as receipt received
  * @param   {object}    sndr      Message sender Peer object
- * @param   {boolean}   lazy      Set embeded medias as lazy loading
  */
-function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr, lazy)
+function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr)
 {
   // Default is to add a simple aggregated message without author
   // name and avatar
@@ -3067,7 +3066,7 @@ function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr, la
   }
 
   // Create a simple aggregated message
-  return xows_tpl_mesg_spawn(id, from, body, time, sent, recp, aggregate ? null : sndr, lazy);
+  return xows_tpl_mesg_spawn(id, from, body, time, sent, recp, aggregate ? null : sndr);
 }
 
 /**

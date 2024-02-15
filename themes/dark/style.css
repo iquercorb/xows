@@ -183,6 +183,15 @@ button:disabled {
   0% { transform: rotate(0); }
   100% { transform: rotate(360deg); }
 }
+.LOADING img {
+  height: 0px !important;
+}
+.LOADING video {
+  height: 0px !important;
+}
+.LOADING iframe {
+  height: 0px !important;
+}
 .LOADING::after {
   content: "";
   display: inline-block;
@@ -194,6 +203,22 @@ button:disabled {
   border-left-color: transparent;
   color: transparent;
   animation: loading-anim 400Ms linear infinite;
+}
+.LOADERR img {
+  height: 0px !important;
+}
+.LOADERR video {
+  height: 0px !important;
+}
+.LOADERR iframe {
+  height: 0px !important;
+}
+.LOADERR {
+  background-size: 32px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("images/delete.svg");
+  opacity: .5;
 }
 @keyframes ring-dialog-anim {
   0% {
@@ -2315,11 +2340,14 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* ------------------------------------------------------------------ */
 /* Main Page - Message Embeded Medias/Elements */
 /* ------------------------------------------------------------------ */
+.mesg-body footer,
 .mesg-body aside {
-  display: block;
-  text-align: left;
-  position: relative;
   line-height: 0;
+}
+.mesg-body aside {
+  display: flex;
+  background-color: var(--base-tone3);
+  border-radius: 6px;
 }
 .mesg-body aside a {
   display: block;
@@ -2332,11 +2360,19 @@ div[show="4"]  { background-color: var(--show-chat); }
 .mesg-body aside a:hover {
   color: var(--link-text-hover);
 }
+.mesg-body .LOADING,
+.mesg-body .LOADERR {
+  align-items: center;
+  justify-content: center;
+  width: 192px; height: 108px;
+}
+.mesg-body .LOADING a,
+.mesg-body .LOADERR a{
+  display: none;
+}
 .mesg-body aside.LOADING::after {
-  position: absolute;
-  top: 45%; left: 45%;
-  height: 32px; width: 32px;
-  border-width: 4px;
+  height: 28px; width: 28px;
+  border-width: 8px;
 }
 .EMBD-IMG {
   min-width: 0; min-height: 0;
@@ -2348,14 +2384,19 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .EMBD-IMG img {
   max-width: 480px; max-height: 300px;
-  border-radius: 4px;
+  width: auto;
+  border-radius: 8px;
+  border: none;
 }
 .EMBD-IMG iframe {
   width: 426px; height: 240px;
-  border-radius: 5px;
+  border-radius: 8px;
   border: none;
 }
-.EMBD-STR {
+.EMBD-STR,
+.EMBD-STR.LOADING,
+.EMBD-STR.LOADERR {
+  flex-direction: column;
   width: 452px; height: 300px;
   margin: 0;
   padding: 10px;
@@ -2365,7 +2406,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 }
 .EMBD-STR iframe {
   width: 426px; height: 240px;
-  border-radius: 5px;
+  border-radius: 8px;
   border: none;
 }
 .EMBD-VER {
@@ -2426,7 +2467,10 @@ div[show="4"]  { background-color: var(--show-chat); }
   .EMBD-IMG img {
     max-width: 280px; max-height: 220px;
   }
-  .EMBD-STR {
+  .EMBD-STR,
+  .EMBD-STR.LOADING,
+  .EMBD-STR.LOADERR {
+    flex-direction: column;
     width: 300px; height: 200px;
     padding: 6px;
     border-radius: 4px 8px 8px 4px;

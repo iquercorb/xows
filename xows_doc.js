@@ -57,23 +57,23 @@ const xows_doc_frag_db = {};
  * Variable to hold scroll position of the last loading checkup to
  * prevent useless flood while scrolling
  */
-let xows_doc_loader_scroll = {"top":99999,"off":0,"bot":0};
+//let xows_doc_loader_scroll = {"top":99999,"off":0,"bot":0};
 
 /**
  * Current target of the lazy loader, this is the element with
  * monitored scrolling which the inner medias are checked for loading
  */
-let xows_doc_loader_client = null;
+//let xows_doc_loader_client = null;
 
 /**
  * Placeholder source attribute name to get media source URL
  */
-let xows_doc_loader_attrib = "";
+//let xows_doc_loader_attrib = "";
 
 /**
  * Array of objects to be checked against viewport for Lazy loading
  */
-const xows_doc_loader_stack = [];
+//const xows_doc_loader_stack = [];
 
 /**
  * Global reference to document's Selection object
@@ -464,7 +464,9 @@ function xows_doc_init(onready)
   xows_doc_listener_add(chat_main,              "scroll",   xows_gui_chat_main_onscroll);
   xows_doc_listener_add(chat_main,              "click",    xows_gui_chat_main_onclick);
   // Add Resize observer
-  new ResizeObserver(xows_gui_chat_main_onresize).observe(chat_main);
+  const observer = new ResizeObserver(xows_gui_chat_main_onresize);
+  observer.observe(chat_main);
+  observer.observe(xows_doc("chat_hist"));
 
   // Chat foot
   const chat_panl = xows_doc("chat_panl");
@@ -489,10 +491,8 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("page_exit"),  "click",    xows_doc_page_onclose);
 
   // Check whether Registering option is enabled
-  if(xows_options.allow_register) {
-    // Show and configure the "Register new account" link in the Login Page
-    xows_doc_show("auth_regi");
-  }
+  if(xows_options.allow_register)
+    xows_doc_show("auth_regi"); //< The link in Login Page
 
   // Modal screen "scr_void" event listener
   xows_doc_listener_add(xows_doc("scr_void"),   "click",    xows_doc_void_onclick);
@@ -516,9 +516,6 @@ function xows_doc_init(onready)
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
 
-  // Set event listener to keep track of window resizing
-  //xows_doc_listener_add(window,     "resize",             xows_gui_wnd_onresize);
-
   // Load sound effects
   xows_gui_sound.notify = new Audio("/" + xows_options.root + "/sounds/notify.ogg");
   xows_gui_sound.disable = new Audio("/" + xows_options.root + "/sounds/disable.ogg");
@@ -531,6 +528,11 @@ function xows_doc_init(onready)
   xows_gui_sound.ringbell.loop = true;
   xows_gui_sound.hangup = new Audio("/" + xows_options.root + "/sounds/hangup.ogg");
 
+  // Set template callback
+  xows_tpl_set_callback("embload", xows_doc_media_onload);
+  xows_tpl_set_callback("emberror", xows_doc_media_onerror);
+  xows_tpl_set_callback("embclick", xows_doc_view_open);
+
   xows_log(2,"doc_init","document ready");
 
   // Finaly call onready callback
@@ -538,15 +540,41 @@ function xows_doc_init(onready)
 }
 
 /**
+ * Common on-load callback function for loaded embeded medias
+ *
+ * @param   {object}    media     Media object that loaded
+ */
+function xows_doc_media_onload(media)
+{
+  // Remove the loading style
+  media.parentNode.classList.remove("LOADING"); //< container
+}
+
+/**
+ * Common on-error callback function for embeded medias loadin error
+ *
+ * @param   {object}    media     Media object that loaded
+ */
+function xows_doc_media_onerror(event)
+{
+  const media = event.target;
+  // Remove the loading style
+  media.parentNode.classList.remove("LOADING");
+  // Add loading error style
+  media.parentNode.classList.add("LOADERR");
+}
+
+/**
  * Empty the Lazy Loading stack to avoid useless checks
  */
+/*
 function xows_doc_loader_clear()
 {
   xows_doc_loader_stack.length = 0;
   xows_doc_loader_scroll.top = 99999;
   xows_log(2,"doc_loader_clear","loader stack cleared");
 }
-
+*/
 /**
  * Define a new client viewport for lazy-loading monitor
  *
@@ -557,6 +585,7 @@ function xows_doc_loader_clear()
  * @param   {object}    client    Scrolling element with content to be monitored
  * @param   {string}    attrib    Placeholder attribute containing media URL
  */
+/*
 function xows_doc_loader_setup(client, attrib)
 {
   xows_doc_loader_attrib = attrib;
@@ -583,12 +612,13 @@ function xows_doc_loader_setup(client, attrib)
   // Reset scroll to "infinite" to ve sure we make a first check
   xows_doc_loader_scroll.top = 99999;
 }
-
+*/
 /**
  * Add the specified element to the lazy-loading stack
  *
  * @param   {object}    target    Element to check for load monitoring
  */
+/*
 function xows_doc_loader_monitor(target)
 {
   const targets = Array.from(target.querySelectorAll("["+xows_doc_loader_attrib+"]"));
@@ -598,19 +628,20 @@ function xows_doc_loader_monitor(target)
     while(i--) xows_doc_loader_stack.push(targets[i]);
   }
 }
-
+*/
 /**
  * Lazy Loader on-load callback function for loaded medias
  *
  * @param   {object}    media     Media object that finished to load
  */
+/*
 function xows_doc_loader_onload(media)
 {
   // Remove the spin loader and show the media (normal height)
   media.parentNode.classList.remove("LOADING"); //< container
   media.classList.remove("FLATTEN"); //< media
 
-  if(xows_doc_loader_scroll.bot < 80) {
+  if(xows_doc_loader_scroll.bot < 120) {
     // Force scroll position to bottom
     xows_doc_loader_client.scrollTop = xows_doc_loader_client.scrollHeight;
   } else {
@@ -623,23 +654,62 @@ function xows_doc_loader_onload(media)
   xows_doc_loader_scroll.off = xows_doc_loader_client.scrollHeight - xows_doc_loader_scroll.top;
   xows_doc_loader_scroll.bot = xows_doc_loader_scroll.off - xows_doc_loader_client.clientHeight;
 }
+*/
+/**
+ * Lazy Loader load function
+ *
+ * this function fire the loading of the specified media replacing
+ * proper attributes.
+ *
+ * @param   {object}   media     DOM Object to start loading
+ */
+/*
+function xows_doc_loader_load(media)
+{
+  // The NOSPINNER attribute, non-standard HTML attribute, is
+  // used to indiate the media should not be hidden during
+  // loading. This is typically used for AUDIO and VIDEO, to display them
+  // without waiting full loading (which can take long).
+  if(!media.hasAttribute("NOSPINNER")) {
 
+    // We virtually hide the media by setting its height to 0 using
+    // the flatten class, then we add a spin loader to its
+    // parent, which is usualy the placeholder
+    media.classList.add("FLATTEN"); //< media
+    media.parentNode.classList.add("LOADING"); //< container
+
+    // Define an onload function to handle loading end
+    media.onload = function(){xows_doc_loader_onload(this);};
+  }
+
+  // Set the src from data_src to start load data
+  const src = media.getAttribute(xows_doc_loader_attrib);
+  media.removeAttribute(xows_doc_loader_attrib);
+  media.src = src;
+
+  // Output log
+  xows_log(2,"xows_doc_loader_load",src);
+}
+*/
 /**
  * Lazy Loader check function
  *
  * this function test embeded media containers against current viewport
  * to start loading source.
  *
- * @param   {boolean}   force     Force to perform check
+ * @param   {object}   event     Scroll event object or null
  */
-function xows_doc_loader_check(force)
+/*
+function xows_doc_loader_check(event)
 {
   if(!xows_doc_loader_stack.length)
     return;
 
   // We perform check only if scroll changed enough to justify it
-  if(!force && (Math.abs(xows_doc_loader_client.scrollTop - xows_doc_loader_scroll.top) < 120))
+  if(event && (Math.abs(xows_doc_loader_client.scrollTop - xows_doc_loader_scroll.top) < 128))
     return;
+
+  xows_log(2,"doc_loader_check","fired");
 
   // Keep scroll parameters
   xows_doc_loader_scroll.top = xows_doc_loader_client.scrollTop;
@@ -663,36 +733,15 @@ function xows_doc_loader_check(force)
     // window client (the visible part)
     if(media_rect.bottom > view_rect.top && media_rect.top <= scan_bottom) {
 
-      // The NOSPINNER attribute, non-standard HTML attribute, is
-      // used to indiate the media should not be hidden during
-      // loading. This is typically used for AUDIO and VIDEO, to display them
-      // without waiting full loading (which can take long).
-      if(!media.hasAttribute("NOSPINNER")) {
-
-        // We virtually hide the media by setting its height to 0 using
-        // the flatten class, then we add a spin loader to its
-        // parent, which is usualy the placeholder
-        media.classList.add("FLATTEN"); //< media
-        media.parentNode.classList.add("LOADING"); //< container
-
-        // Define an onload function to handle loading end
-        media.onload = function(){xows_doc_loader_onload(this);};
-      }
-
-      // Set the src from data_src to start load data
-      const src = media.getAttribute(xows_doc_loader_attrib);
-      media.removeAttribute(xows_doc_loader_attrib);
-      media.src = src;
+      // Start loading
+      xows_doc_loader_load(media);
 
       // Remove this one from stack
       xows_doc_loader_stack.splice(i,1);
-
-      // Output log
-      xows_log(2,"doc_loader_check","loading",src);
     }
   }
 }
-
+*/
 /**
  * Apply background blink animation to the specified object
  *
@@ -781,7 +830,7 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
 
   let cls;
 
-  switch(style)  
+  switch(style)
   {
   case XOWS_MBOX_ERR: cls = "TEXT-ERR"; break; //< same as XOWS_SIG_ERR
   case XOWS_MBOX_WRN: cls = "TEXT-WRN"; break; //< same as XOWS_SIG_WRN
