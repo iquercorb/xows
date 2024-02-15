@@ -1720,6 +1720,9 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
       xows_log(2,"cli_xmp_onpresence","removing Resource for "+cont.bare, res);
       delete cont.ress[res]; //< ressource gone offline remove it
     }
+    // If user goes unavailable we ensures that chatstat resets
+    cont.chat = 0;
+    xows_cli_fw_onchatstate(cont, cont.bare, 0);
   }
   // Set default show level and status
   cont.show = -1;
@@ -1918,7 +1921,7 @@ function xows_cli_entity_caps_test(node, xmlns)
  * @param   {string}    type      Message type
  * @param   {string}    from      Sender JID
  * @param   {string}    to        Recipient JID
- * @param   {string}    chat      Chat state
+ * @param   {number}    chat      Chat state
  * @param   {number}    time      Optional provided time (Unix epoch)
  */
 function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
