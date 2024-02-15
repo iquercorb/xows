@@ -200,6 +200,27 @@ function xows_tpl_set_callback(type, callback)
 }
 
 /**
+ * Callback function for embeded media
+ *
+ * this function is used to keep event binding consistent after minification
+ */
+function xows_tpl_emld(media) {xows_tpl_fw_onembload(media);};
+
+/**
+ * Callback function for embeded media
+ *
+ * this function is used to keep event binding consistent after minification
+ */
+function xows_tpl_emer(event) {xows_tpl_fw_onemberror(event);};
+
+/**
+ * Callback function for embeded media
+ *
+ * this function is used to keep event binding consistent after minification
+ */
+function xows_tpl_emck(event) {xows_tpl_fw_onembclick(event);};
+
+/**
  * Launch the download of the specified template file
  *
  * @param   {string}    name      Template name to retreive file path
@@ -409,12 +430,12 @@ function xows_tpl_init(onready)
 function xows_tpl_embed_wrap(href, media, style, title)
 {
   let wrap = "<aside class=\""; if(style) wrap += style;
-  wrap += "\" onclick=\"xows_tpl_fw_onembclick(this.firstChild)\">";
+  wrap += "\" onclick=\"xows_tpl_emck(this.firstChild)\">";
 
   if(title) wrap += "<a href=\""+href+"\" target=\"_blank\">"+title+"</a>";
 
   // Add envent callback and common attributes
-  wrap += media.replace(/src=/g,"loading=\"lazy\" onload=\"xows_tpl_fw_onembload(this)\" onerror=\"xows_tpl_fw_onemberror(this)\" src=");
+  wrap += media.replace(/src=/g,"loading=\"lazy\" onload=\"xows_tpl_emld(this)\" onerror=\"xows_tpl_emer(this)\" src=");
   wrap += "</aside>";
 
   return wrap;
