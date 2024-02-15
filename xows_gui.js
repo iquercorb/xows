@@ -144,135 +144,14 @@ function xows_gui_medias_has(type)
 }
 
 /**
- * Object that stores saved scroll values
- */
-const xows_gui_peer_scroll_db = {};
-
-/**
- * Save the main chat scroll and client values for the specified peer
- *
- * @param   {object}    peer      Peer object to save scroll value
- */
-function xows_gui_peer_scroll_save(peer)
-{
-  if(!xows_gui_peer_scroll_db[peer.bare])
-    xows_gui_peer_scroll_db[peer.bare] = {};
-
-  const chat_main = xows_doc("chat_main");
-
-  xows_gui_peer_scroll_db[peer.bare] = {
-    "scrollTop"     : chat_main.scrollTop,
-    "scrollHeight"  : chat_main.scrollHeight,
-    "clientHeight"  : chat_main.clientHeight,
-    "scrollBottom"  : chat_main.scrollHeight - (chat_main.scrollTop - chat_main.clientHeight)
-  };
-}
-
-/**
- * Restore the saved main chat scroll top position of the specified peer
- *
- * @param   {object}    peer      Peer object to restore scroll value
- */
-function xows_gui_peer_scroll_load(peer)
-{
-  if(peer.bare in xows_gui_peer_scroll_db) {
-    const chat_main = xows_doc("chat_main");
-    // We load scroll relative to position from bottom to compensate
-    // an eventual windows resise that occured between save and load
-    chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight - xows_gui_peer_scroll_db[peer.bare].scrollBottom);
-  }
-}
-
-/**
- * Get the main chat scroll top position corresponding to the
- * specified peer
- *
- * If the specified Peer history is offscree, the function
- * return the last saved scroll values.
- *
- * @param   {object}    peer      Peer object to get scroll value
- */
-function xows_gui_peer_scroll_top(peer)
-{
-  return (peer !== xows_gui_peer) ?
-          xows_gui_peer_scroll_db[peer.bare].scrollTop :
-          xows_doc("chat_main").scrollTop;
-}
-
-/**
- * Get the main chat scroll bottom relative position corresponding to
- * the specified peer
- *
- * If the specified Peer history is offscree, the function
- * return the last saved scroll values.
- *
- * @param   {object}    peer      Peer object to get scroll value
- */
-function xows_gui_peer_scroll_bot(peer)
-{
-  const obj = (peer !== xows_gui_peer) ?
-            xows_gui_peer_scroll_db[peer.bare] :
-            xows_doc("chat_main");
-
-  return ((obj.scrollHeight - obj.scrollTop) - obj.clientHeight);
-}
-
-/**
- * Get the main chat scroll offset to top corresponding to the
- * specified peer
- *
- * If the specified Peer history is offscree, the function
- * return the last saved scroll values.
- *
- * @param   {object}    peer      Peer object to get scroll value.
- */
-function xows_gui_peer_scroll_off(peer)
-{
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
-                                          xows_doc("chat_main");
-
-  return (obj.scrollHeight - obj.scrollTop);
-}
-
-/**
- * Move to bottom the main chat scroll corresponding to the
- * specified peer
- *
- * If the specified Peer history is offscree, the function
- * return the last saved scroll values.
- *
- * @param   {object}    peer      Peer object to get scroll value
- */
-function xows_gui_peer_scroll_down(peer)
-{
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
-                                          xows_doc("chat_main");
-
-  obj.scrollTop = obj.scrollHeight;
-}
-
-/**
- * Move by offset the main chat scroll corresponding to the
- * specified Peer
- *
- * If the specified Peer history is offscree, the function
- * return the last saved scroll values.
- *
- * @param   {object}    peer      Peer object to get scroll value
- * @param   {number}    offset    Offset value to move the scroll
- */
-function xows_gui_peer_scroll_seek(peer, offset)
-{
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
-                                          xows_doc("chat_main");
-
-  obj.scrollTop = obj.scrollHeight - offset;
-}
-
-/**
  * Constant for initial offscreen slot identifier
  */
 const XOWS_GUI_FRAG_INIT = "NULL";
+
+/**
+ * Object that stores saved scroll values
+ */
+const xows_gui_peer_scroll_db = {};
 
 /**
  * Create new Peer offscreen slot using initial DOM elements
@@ -317,6 +196,9 @@ function xows_gui_peer_doc_init(peer)
   const edit_mesg = xows_doc_frag_element_find(peer.bare,"chat_panl","edit_mesg");
   edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
 
+  // Initialize scroll parameters
+  xows_gui_peer_scroll_db[peer.bare] = {scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0};
+
   // set notification button
   xows_gui_chat_noti_update(peer);
 }
@@ -328,6 +210,15 @@ function xows_gui_peer_doc_init(peer)
  */
 function xows_gui_peer_doc_export(peer)
 {
+  // Save chat history scroll parameters
+  const chat_main = xows_doc("chat_main");
+  xows_gui_peer_scroll_db[peer.bare] = {
+    scrollTop:    chat_main.scrollTop,
+    scrollHeight: chat_main.scrollHeight,
+    clientHeight: chat_main.clientHeight,
+    scrollSaved:  chat_main.scrollSaved | 0
+  };
+
   // export document elements to offscreen fragment
   xows_doc_frag_export(peer.bare, "chat_head");
   xows_doc_frag_export(peer.bare, "chat_hist");
@@ -350,6 +241,11 @@ function xows_gui_peer_doc_import(peer)
     xows_doc_frag_import(peer.bare, "chat_panl");
     xows_doc_frag_import(peer.bare, "chat_hist");
     xows_doc_frag_import(peer.bare, "chat_head");
+
+    // Restore chat history with compensation in case of frame resize
+    const chat_main = xows_doc("chat_main");
+    chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + xows_gui_peer_scroll_db[peer.bare].scrollSaved);
+
   } else {
     // restore (clone) from initial (empty) document elements
     xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_head", true);
@@ -406,6 +302,104 @@ function xows_gui_peer_mesg_li(peer, id)
   } else {
     return xows_doc_frag_element_find(peer.bare,"chat_hist",id);
   }
+}
+
+/**
+ * Clear and reload the most recent peer chat history
+ *
+ * @param   {object}    peer      Peer object to reset history
+ */
+function xows_gui_peer_hist_reload(peer)
+{
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+                                          xows_doc("chat_main");
+  // Reset scroll
+  obj.scrollTop = (obj.scrollHeight - obj.clientHeight);
+  obj.scrollSaved = 0;
+
+  // Reset the chat history to initial stat
+  xows_gui_peer_doc(peer, "hist_beg").innerText = "";
+  xows_gui_peer_doc(peer, "hist_ul").innerText = "";
+  xows_gui_peer_doc(peer, "hist_end").classList.add("HIDDEN");
+
+  // Query for the last archives, with no delay
+  xows_gui_mam_query(peer, false, XOWS_GUI_HIST_SIZE/2, 0);
+}
+
+/**
+ * Save the main chat scroll and client values for the specified peer
+ *
+ * @param   {object}    peer      Peer object to save scroll value
+ */
+function xows_gui_peer_scroll_save(peer)
+{
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+                                          xows_doc("chat_main");
+
+  // The usefull scroll parameter that doesn't exist as built-in...
+  obj.scrollSaved = obj.scrollHeight - (obj.scrollTop + obj.clientHeight);
+}
+
+/**
+ * Get the main chat last saved scroll position (relative to bottom)
+ * corresponding to the specified peer
+ *
+ * If the specified Peer history is offscree, the function
+ * return the last saved scroll values.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ */
+function xows_gui_peer_scroll_get(peer)
+{
+  return (peer !== xows_gui_peer) ?
+          xows_gui_peer_scroll_db[peer.bare].scrollSaved :
+          xows_doc("chat_main").scrollSaved;
+}
+
+/**
+ * Move to bottom the main chat scroll corresponding to the
+ * specified peer
+ *
+ * If the specified Peer history is offscree, the function
+ * operate on the saved scroll parameters.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ */
+function xows_gui_peer_scroll_down(peer)
+{
+  if(xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
+
+    const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+                                            xows_doc("chat_main");
+
+    obj.scrollTop = (obj.scrollHeight - obj.clientHeight);
+    obj.scrollSaved = 0;
+
+  } else {
+    // If the most recent message is beyond the current history "window"
+    // we must reset history and query last archived messages
+    xows_gui_peer_hist_reload(peer);
+  }
+}
+
+/**
+ * Compensate (to keept at position) the main chat scroll corresponding
+ * to the specified peer.
+ *
+ * If the specified Peer history is offscree, the function
+ * operate on the saved scroll parameters.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ */
+function xows_gui_peer_scroll_adjust(peer)
+{
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+                                          xows_doc("chat_main");
+
+  if(obj.scrollSaved === undefined)
+    obj.scrollSaved = 0;
+
+  obj.scrollTop = obj.scrollHeight - (obj.clientHeight + obj.scrollSaved);
 }
 
 /* -------------------------------------------------------------------
@@ -542,7 +536,7 @@ function xows_gui_cli_onconnect(user)
 
     // Reload/Refresh opened chat history
     if(xows_gui_peer)
-      xows_gui_chat_main_scroll_down(true); //< force refresh from MAM
+      xows_gui_peer_hist_reload(xows_gui_peer);
 
   } else {
 
@@ -550,7 +544,7 @@ function xows_gui_cli_onconnect(user)
     xows_gui_peer = null;
 
     // Setup the lazy loader
-    xows_doc_loader_setup(xows_doc("chat_main"), "lazy_src");
+    //xows_doc_loader_setup(xows_doc("chat_main"), "lazy_src");
 
     // Set the presence menu for current user
     //xows_gui_cli_onselfchange(user);
@@ -1003,12 +997,11 @@ function xows_gui_switch_peer(jid)
     // Abort any uploading file
     xows_gui_upld_onclose();
   }
+
   // Get the next (to be selected) contact
   const next = jid ? xows_cli_peer_get(jid) : null;
 
   if(prev) {
-    // Save current history scroll position
-    xows_gui_peer_scroll_save(prev);
     // export document elements to offscreen fragment
     xows_gui_peer_doc_export(prev);
     // Remove "selected" class from <li> element
@@ -1038,8 +1031,6 @@ function xows_gui_switch_peer(jid)
     document.getElementById(next.bare).classList.add("SELECTED");
     // Bring back Peer document elements from offscreen
     xows_gui_peer_doc_import(next);
-    // Restore history scroll position
-    xows_gui_peer_scroll_load(next);
     // Open or close right panel
     xows_doc_cls_set("main_colr", "COL-HIDE", (next.type !== XOWS_PEER_ROOM));
     // Set the current contact
@@ -1049,15 +1040,15 @@ function xows_gui_switch_peer(jid)
       if(!next.join) xows_cli_room_join(next);
     // Hidden history mean first "open", so we load a bunch of history
     if(xows_doc_hidden("hist_ul")) {
-      xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2, 0);
+      xows_gui_mam_query(next, false, XOWS_GUI_HIST_SIZE/2, 0);
       xows_doc_show("hist_ul");
     }
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
     // Reset the lazy loader and force update
-    xows_doc_loader_clear();
-    xows_doc_loader_monitor(xows_doc("chat_main"));
-    xows_doc_loader_check(true);
+    //xows_doc_loader_clear();
+    //xows_doc_loader_monitor(xows_doc("chat_main"));
+    //xows_doc_loader_check();
     xows_log(2,"gui_switch_peer","peer \""+next.bare+"\"","selected");
     // Set window title
     xows_gui_title_push("@" + next.name + " - XOWS");
@@ -1692,7 +1683,6 @@ function xows_gui_cli_oncontpush(cont)
 
   // Create new Peer offscreen elements with initial state
   xows_gui_peer_doc_init(cont);
-  xows_gui_peer_scroll_save(cont); //< Initial history scroll save
 }
 
 /**
@@ -1864,7 +1854,6 @@ function xows_gui_cli_onroompush(room)
 
     // Create new Peer offscreen elements with initial state
     xows_gui_peer_doc_init(room);
-    xows_gui_peer_scroll_save(room); //< Initial history scroll save
   }
 
   // Show the destination list
@@ -2931,11 +2920,6 @@ function xows_gui_cli_oncallended(code, mesg)
  * -------------------------------------------------------------------*/
 
 /**
- * Object to keep track of last computed scroll position
- */
-let xows_gui_chat_main_scroll = {top:0,bot:0};
-
-/**
  * Callback function to handle user scroll the chat history window
  *
  * @param   {object}    event     Event object associated with trigger
@@ -2950,56 +2934,29 @@ function xows_gui_chat_main_onscroll(event)
   if(chat_main.scrollHeight === chat_main.clientHeight)
     return;
 
-  // Keep track of last computed scroll relative positions
-  xows_gui_chat_main_scroll.top = chat_main.scrollTop;
-  xows_gui_chat_main_scroll.bot = chat_main.scrollHeight - (chat_main.scrollTop + chat_main.clientHeight);
+  // Save scroll position
+  xows_gui_peer_scroll_save(xows_gui_peer);
 
   // Check whether the scroll is at top of frame
-  if(xows_gui_chat_main_scroll.top < 20) {
+  if(chat_main.scrollTop < 20) {
     // Query archive for current chat contact
-    xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2);
+    xows_gui_mam_query(xows_gui_peer, false, XOWS_GUI_HIST_SIZE/2);
   }
 
   // If scroll is enough far from bottom, show the "Back to recent" banner
-  if(xows_gui_chat_main_scroll.bot > chat_main.clientHeight)
+  if(chat_main.scrollSaved > chat_main.clientHeight)
     xows_gui_hist_back_recent_show(xows_gui_peer, true);
 
   // Check whether the scroll is at bottom of frame
-  if(xows_gui_chat_main_scroll.bot < 20) {
+  if(chat_main.scrollSaved < 20) {
     // Check whether we have cropped history
     if(!xows_doc_hidden("hist_end")) {
       // Query archive for current chat contact
-      xows_gui_mam_query(true, XOWS_GUI_HIST_SIZE/2);
+      xows_gui_mam_query(xows_gui_peer, true, XOWS_GUI_HIST_SIZE/2);
     } else {
       // Hide the "Back to recent" banner/button
       xows_gui_hist_back_recent_show(xows_gui_peer, false);
     }
-  }
-}
-
-/**
- * Go to chat history end (last messages), reloading last MAM archives
- * if required
- *
- *  @param   {boolean}  refresh   Force refresh history from server
- */
-function xows_gui_chat_main_scroll_down(refresh = false)
-{
-  // Scroll chat history to bottom
-  const chat_main = xows_doc("chat_main");
-  chat_main.scrollTop = chat_main.scrollHeight;
-
-  if(!xows_doc_hidden("hist_end") || refresh) {
-    // Last message is beyond the current history "window",
-    // we must query last archived messages
-
-    // Reset the chat history to initial stat
-    xows_doc("hist_ul").innerText = "";
-    xows_doc("hist_beg").innerText = "";
-    xows_doc_hide("hist_end");
-
-    // Query for the last archives, with no delay
-    xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2, 0);
   }
 }
 
@@ -3017,18 +2974,19 @@ function xows_gui_chat_main_onclick(event)
     xows_gui_hist_back_recent_show(xows_gui_peer, false);
 
     // Go to end of history (last messages)
-    xows_gui_chat_main_scroll_down();
+    xows_gui_peer_scroll_down(xows_gui_peer);
   }
 }
 
 /**
  * Callback function to handle chat frame resizing
+ *
+ * @param   {object[]}  entries   Array of ResizeObserverEntry entries
+ * @param   {object}    observer  Reference to the ResizeObserver
  */
-function xows_gui_chat_main_onresize()
+function xows_gui_chat_main_onresize(entries, observer)
 {
-  // Keep scroll at bottom
-  if(xows_gui_chat_main_scroll.bot < 20)
-    xows_gui_chat_main_scroll_down();
+  xows_gui_peer_scroll_adjust(xows_gui_peer);
 }
 
 /* -------------------------------------------------------------------
@@ -3090,8 +3048,9 @@ function xows_gui_hist_back_recent_new(peer)
  * @param   {boolean}   sent      Marks message as sent by client
  * @param   {boolean}   recp      Marks message as receipt received
  * @param   {object}    sndr      Message sender Peer object
+ * @param   {boolean}   lazy      Set embeded medias as lazy loading
  */
-function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr)
+function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr, lazy)
 {
   // Default is to add a simple aggregated message without author
   // name and avatar
@@ -3108,7 +3067,7 @@ function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr)
   }
 
   // Create a simple aggregated message
-  return xows_tpl_mesg_spawn(id, from, body, time, sent, recp, aggregate ? null : sndr);
+  return xows_tpl_mesg_spawn(id, from, body, time, sent, recp, aggregate ? null : sndr, lazy);
 }
 
 /**
@@ -3167,36 +3126,21 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   if(!xows_gui_has_focus && !sent && peer.noti)
     xows_gui_notify_push(sndr, body);
 
-  // Check whether end of history is croped, in this cas the new message
+  // Check whether end of history is croped, in this case the new message
   //  must not be appended, we will show it by querying archives
   if(!xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
     if(!sent) {
-      // Show the "new messages" warning
-      xows_gui_hist_back_recent_new(peer);
+      xows_gui_hist_back_recent_new(peer); //< Show the "new messages" warning
     } else {
-      // if chat windows is onscree, reset history and load latest archives
-      if(!offscreen) {
-        // Reset the chat history to initial stat
-        xows_doc("hist_ul").innerText = "";
-        xows_doc("hist_beg").innerText = "";
-        xows_doc_hide("hist_end");
-
-        // Query for the last archives, with no delay
-        xows_gui_mam_query(false, XOWS_GUI_HIST_SIZE/2, 0);
-      }
+      xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
     }
-    // Do not append any message, return now
-    return;
+    return; //< Do not append any message, return now
   }
 
-  // Required elements, offscreen or from document
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
-  // Create new message
-  const li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr);
-
   // Append message to history <ul>
-  hist_ul.appendChild(li);
+  hist_ul.appendChild(xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr));
 
   // To prevent history to inflate infinitely we keep it to a maximum
   // count of message and let user ability to query for archives
@@ -3206,20 +3150,11 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   }
 
   // Add message medias to be monitored by lazy loader
-  if(!offscreen) xows_doc_loader_monitor(li);
+  //if(!offscreen) xows_doc_loader_monitor(new_li);
 
-  // If it is an incomming message and client is consulting top of
-  // history, we don't scroll at bottom but display a warning message
-  if(!sent && (xows_gui_peer_scroll_bot(peer) > 120)) {
-    // Show the "new messages" warning
-    xows_gui_hist_back_recent_new(peer);
-  } else {
-    // scroll history down
-    xows_gui_peer_scroll_down(peer);
-  }
-
-  // Ensure embeded media is loaded
-  if(!offscreen) xows_doc_loader_check(true);
+  // If scroll is not at bottom, show the 'unread message' banner
+  if(!sent && xows_gui_peer_scroll_get(peer) > 120)
+    xows_gui_hist_back_recent_new(peer); //< Show the "new messages" warning
 }
 
 /**
@@ -3245,7 +3180,7 @@ function xows_gui_cli_onreceipt(peer, id)
  * -------------------------------------------------------------------*/
 
 /**
- * Reference to setTimeout sent fo temporize archive queries
+ * Reference to setTimeout sent to temporize archive queries
  */
 let xows_gui_mam_query_to = null;
 
@@ -3261,45 +3196,48 @@ let xows_gui_mam_query_to = null;
  * @param   {number}    max       Maximum result to get, default is 20
  * @param   {boolean}   delay     Delay to temporize query, default is 100 MS
  */
-function xows_gui_mam_query(after, max = 20, delay = 100)
+function xows_gui_mam_query(peer, after, max = 20, delay = 100)
 {
-  if(!xows_gui_mam_query_to) { //< One poll at a time...
+  if(xows_gui_mam_query_to)  //< One poll at a time...
+    return;
+
+  const hist_ul = xows_doc("hist_ul");
+
+  let start, end;
+
+  // Get start or end time depending after parameter, we get time
+  // always 25 MS after or before to prevent received the last or
+  // first message already in history.
+
+  if(after) {
 
     const hist_end = xows_doc("hist_end");
-    const hist_ul = xows_doc("hist_ul");
+
+    // Check whether we already got the latest message
+    if(hist_end.classList.contains("HIDDEN"))
+      return;
+
+    if(hist_ul.childNodes.length)
+      start = parseInt(hist_ul.lastChild.getAttribute("time"));
+
+    hist_end.classList.add("LOADING");
+
+  } else {
+
     const hist_beg = xows_doc("hist_beg");
 
-    let start, end;
+    // Check whether we already reached the first archived message
+    if(hist_beg.innerText.length)
+      return;
 
-    // Get start or end time depending after parameter, we get time
-    // always 25 MS after or before to prevent received the last or
-    // first message already in history.
-    if(after) {
+    if(hist_ul.childNodes.length)
+      end = parseInt(hist_ul.firstChild.getAttribute("time"));
 
-      // Check whether we already got the latest message
-      if(hist_end.classList.contains("HIDDEN"))
-        return;
-
-      if(hist_ul.childNodes.length)
-        start = parseInt(hist_ul.lastChild.getAttribute("time"));
-
-      hist_end.classList.add("LOADING");
-
-    } else {
-
-      // Check whether we already reached the first archived message
-      if(hist_beg.innerText.length)
-        return;
-
-      if(hist_ul.childNodes.length)
-        end = parseInt(hist_ul.firstChild.getAttribute("time"));
-
-      hist_beg.classList.add("LOADING");
-    }
-    // To prevent flood and increase ergonomy the archive query is
-    // temporised with a fake loading time.
-    xows_gui_mam_query_to = setTimeout(xows_cli_mam_query, delay, xows_gui_peer, max, start, end, xows_gui_mam_parse);
+    hist_beg.classList.add("LOADING");
   }
+  // To prevent flood and increase ergonomy the archive query is
+  // temporised with a fake loading time.
+  xows_gui_mam_query_to = setTimeout(xows_cli_mam_query, delay, peer, max, start, end, xows_gui_mam_parse);
 }
 
 /**
@@ -3321,11 +3259,11 @@ function xows_gui_mam_parse(peer, result, complete)
   const hist_end = xows_gui_peer_doc(peer,"hist_end");
 
   // Disable all spin loader
-  hist_beg.classList.remove("LOADING"); //< Allow query history
-  hist_end.classList.remove("LOADING"); //< Allow query history
+  hist_beg.classList.remove("LOADING");
+  hist_end.classList.remove("LOADING");
 
-  // Is this an initial query, with empty history ?
-  const initial = (hist_ul.childNodes.length === 0);
+  // Keep fact that history was empty and this is an initial fill-up
+  const initial = !hist_ul.childNodes.length;
 
   // Check whether we must append or prepend received archived messages
   let insert;
@@ -3353,8 +3291,8 @@ function xows_gui_mam_parse(peer, result, complete)
     }
   }
 
-  // Store scroll offset to restore it at its previous position
-  const scroll_off = xows_gui_peer_scroll_off(peer);
+  // Save current scroll parameters
+  xows_gui_peer_scroll_save(peer);
 
   let new_li, pre_li;
 
@@ -3370,7 +3308,7 @@ function xows_gui_mam_parse(peer, result, complete)
     // Create new message
     new_li = xows_gui_hist_gen_mesg(pre_li, result[i].id, result[i].from,
                                             result[i].body, result[i].time,
-                                            result[i].sent, true, result[i].sndr);
+                                            result[i].sent, true, result[i].sndr, true);
 
     // Inserte or append, keep current as previous
     if(insert) {
@@ -3380,7 +3318,7 @@ function xows_gui_mam_parse(peer, result, complete)
     }
 
     // Add message medias to be monitored by lazy loader
-    if(!offscreen) xows_doc_loader_monitor(new_li);
+    //if(!offscreen) xows_doc_loader_monitor(new_li);
 
     // Increase appended message
     appended++;
@@ -3388,41 +3326,36 @@ function xows_gui_mam_parse(peer, result, complete)
 
   if(complete) {
 
-    let beg = false;
+    let start_bound;
 
     // If no message was appended, this mean query doubling or
     // overlapped by already received messae (from MUC automatic
     // history for example).
     // In this partiular case, we must ensure which  history bound
     // was reached since "insert" will not necessarly be set
-    if(result.length && appended === 0) {
+    if(result.length && !appended) {
       // compare id of the last result with the last history message
       if(result[0].id === hist_ul.firstChild.id) {
-        beg = true;
+        start_bound = true;
       } else if (result[result.length-1].id !== hist_ul.lastChild.id) {
         // This is an unhandled situation
-        xows_log(1,"gui_mam_handle","Complete MAM query exception",
-                                    "bound messages ID mismatches");
+        xows_log(1,"gui_mam_parse","exception","bound messages ID mismatches");
       }
     } else {
-      beg = (insert !== undefined || initial);
+      start_bound = (insert || initial);
     }
 
-    if(beg) {
-      hist_beg.innerText = xows_l10n_get("Start of history");
+    if(start_bound) {
+      // We reached the oldest history message
+      hist_beg.innerText = xows_l10n_get("Start of history"); //< Disallow reaching history
     } else {
-      hist_end.classList.add("HIDDEN");
+      // We reached the most recent history message
+      hist_end.classList.add("HIDDEN"); //< Disallow reaching history
     }
   }
 
-  if(!offscreen) {
-    // Realign scroll to its previous position
-    if(insert) xows_gui_peer_scroll_seek(peer,scroll_off);
-    // For the first mam query, scroll down
-    if(initial) xows_gui_peer_scroll_down(peer);
-    // Launch lazy loader check routine
-    xows_doc_loader_check(true);
-  }
+  // Compensate history resize and back scroll at saved position
+  xows_gui_peer_scroll_adjust(peer);
 
   xows_gui_mam_query_to = null; //< Allow a new archive query
 }
@@ -3461,12 +3394,11 @@ function xows_gui_upld_onerror(mesg)
  */
 function xows_gui_upld_onsuccess(url)
 {
+  // Send a message to current selected contact with URL to download
+  xows_cli_send_message(xows_gui_peer, url);
+
   // Hide the Upload page
   xows_doc_hide("hist_upld");
-
-  // Send a message to current selected contact with URL to download
-  // We use small delay to let the HTTP server to refresh cache
-  setTimeout(xows_cli_send_message, 400, xows_gui_peer, url);
 }
 
 /**
@@ -3515,7 +3447,7 @@ function xows_gui_upld_open(file)
   xows_doc_show("hist_upld");
 
   // Scroll history down
-  xows_gui_chat_main_scroll_down();
+  xows_gui_peer_scroll_down(xows_gui_peer);
 }
 
 /**
@@ -3530,65 +3462,6 @@ function xows_gui_chat_file_onchange(event)
   // Check whether any peer is selected and file object is valid
   if(xows_gui_peer.bare && file)
     xows_gui_upld_open(file);
-}
-
-/* -------------------------------------------------------------------
- * Main screen - Chat Frame - History - Call Signaling
- * -------------------------------------------------------------------*/
-
-/**
- * Call Signaling on-abort callback function
- */
-function xows_gui_call_sign_onreject()
-{
-  xows_gui_call_sign_onclose();
-}
-
-/**
- * Call Signaling on-abort callback function
- */
-function xows_gui_call_sign_onpickup()
-{
-  xows_gui_call_sign_onclose();
-}
-
-/**
- * Call Signaling on-close callback function
- */
-function xows_gui_call_sign_onclose()
-{
-  // Remove exit button event listener
-  xows_doc_listener_rem(xows_doc("call_reje"),"click",xows_gui_call_sign_onreject);
-  xows_doc_listener_rem(xows_doc("call_pkup"),"click",xows_gui_call_sign_onpickup);
-
-  xows_doc_hide("hist_call");
-}
-
-/**
- * Call Signaling on-receive callback function
- */
-function xows_gui_call_sign_onrecv()
-{
-  if(!xows_gui_peer)
-    return;
-
-  // Scroll history down
-  xows_gui_chat_main_scroll_down();
-
-  // Set dialog title
-  //xows_doc("call_titl").innerText = xows_l10n_get("Inco") + " " + xows_gui_peer.nick;
-
-  // Setup buttons for outgoing call
-  xows_doc_hide("call_reje");
-  xows_doc_hide("call_pkup");
-  xows_doc_show("call_exit");
-
-  // Add event listener for exit button
-  xows_doc_listener_add(xows_doc("call_reje"),"click",xows_gui_call_sign_onreject);
-  xows_doc_listener_add(xows_doc("call_pkup"),"click",xows_gui_call_sign_onpickup);
-
-  // Show the dialog
-  xows_doc_show("hist_call");
 }
 
 /* -------------------------------------------------------------------
