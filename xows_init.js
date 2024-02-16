@@ -162,19 +162,19 @@ function xows_init(options)
 {
   // Store options
   if(options) {
-    if("root" in options)             xows_options.root = options.root;
-    if("url" in options)              xows_options.url = options.url;
-    if("domain" in options)           xows_options.domain = options.domain;
-    if("locale" in options)           xows_options.locale = options.locale;
-    if("theme" in options)            xows_options.theme = options.theme;
-    if("verbose" in options)          xows_options.verbose = options.verbose;
-    if("uncache" in options)          xows_options.uncache = options.uncache;
-    if("allow_register" in options)   xows_options.allow_register = options.allow_register;
-    if("legacy_vcard" in options)     xows_options.legacy_vcard = options.legacy_vcard;
-    if("vcard4_notify" in options)    xows_options.vcard4_notify = options.vcard4_notify;
-    if("avatar_notify" in options)    xows_options.avatar_notify = options.avatar_notify;
-    if("fail_delay" in options)       xows_options.fail_delay = options.fail_delay;
-    if("extern_services" in options)  xows_options.extern_services = options.extern_services;
+    if(options.hasOwnProperty("root"))             xows_options.root = options.root;
+    if(options.hasOwnProperty("url"))              xows_options.url = options.url;
+    if(options.hasOwnProperty("domain"))           xows_options.domain = options.domain;
+    if(options.hasOwnProperty("locale"))           xows_options.locale = options.locale;
+    if(options.hasOwnProperty("theme"))            xows_options.theme = options.theme;
+    if(options.hasOwnProperty("verbose"))          xows_options.verbose = options.verbose;
+    if(options.hasOwnProperty("uncache"))          xows_options.uncache = options.uncache;
+    if(options.hasOwnProperty("allow_register"))   xows_options.allow_register = options.allow_register;
+    if(options.hasOwnProperty("legacy_vcard"))     xows_options.legacy_vcard = options.legacy_vcard;
+    if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
+    if(options.hasOwnProperty("avatar_notify"))    xows_options.avatar_notify = options.avatar_notify;
+    if(options.hasOwnProperty("fail_delay"))       xows_options.fail_delay = options.fail_delay;
+    if(options.hasOwnProperty("extern_services"))  xows_options.extern_services = options.extern_services;
   }
 
   xows_log(2,"init","xows init start");

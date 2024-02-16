@@ -41,7 +41,7 @@
 /**
  * Map for cached avatar data stored by SAH-1 hash
  */
-const xows_cach_avat_db = {};
+const xows_cach_avat_db = new Map();
 
 /**
  * Save avatar data-URL to localStorage and live DB
@@ -58,7 +58,7 @@ function xows_cach_avat_save(data, hash, temp)
   const k = hash ? hash : xows_bytes_to_hex(xows_hash_sha1(xows_url_to_bytes(data)));
 
   // Store in live DB and localStorage
-  xows_cach_avat_db[k] = data;
+  xows_cach_avat_db.set(k, data);
   if(!temp) localStorage.setItem(k, data);
 
   return k;
@@ -73,9 +73,9 @@ function xows_cach_avat_save(data, hash, temp)
  */
 function xows_cach_avat_has(hash)
 {
-  if(hash in xows_cach_avat_db) {
+  if(xows_cach_avat_db.has(hash)) {
     return true;
-  } else if(hash in localStorage) {
+  } else if(localStorage.hasOwnProperty(hash)) {
     return true;
   }
   return false;
@@ -91,23 +91,22 @@ function xows_cach_avat_has(hash)
 function xows_cach_avat_get(hash)
 {
   // Try in live DB
-  if(hash in xows_cach_avat_db)
-    return xows_cach_avat_db[hash];
+  if(xows_cach_avat_db.has(hash))
+    return xows_cach_avat_db.get(hash);
 
   // Try in localStorage (and load to live DB)
-  if(hash in localStorage) {
-    xows_cach_avat_db[hash] = localStorage.getItem(hash);
-    return xows_cach_avat_db[hash];
+  if(localStorage.hasOwnProperty(hash)) {
+    xows_cach_avat_db.set(hash,localStorage.getItem(hash));
+    return xows_cach_avat_db.get(hash);
   }
 
   return null;
 }
 
-
 /**
  * Map for cached peer data stored by JID
  */
-const xows_cach_peer_db = {};
+const xows_cach_peer_db = new Map();
 
 /**
  * Save User, Room or Occupant data to localStorage and live DB
@@ -145,7 +144,7 @@ function xows_cach_peer_save(from, name, avat, desc, noti)
   }
 
   // Store in live DB and localStorage
-  xows_cach_peer_db[from] = cach;
+  xows_cach_peer_db.set(from, cach);
   localStorage.setItem(from, JSON.stringify(cach));
 }
 
@@ -158,9 +157,9 @@ function xows_cach_peer_save(from, name, avat, desc, noti)
  */
 function xows_cach_peer_has(from)
 {
-  if(from in xows_cach_peer_db) {
+  if(xows_cach_peer_db.has(from)) {
     return true;
-  } else if(from in localStorage) {
+  } else if(localStorage.hasOwnProperty(from)) {
     return true;
   }
   return false;
@@ -177,20 +176,20 @@ function xows_cach_peer_has(from)
 function xows_cach_peer_get(from)
 {
   // Try in live DB
-  if(from in xows_cach_peer_db)
-    return xows_cach_peer_db[from];
+  if(xows_cach_peer_db.has(from))
+    return xows_cach_peer_db.get(from);
 
   // Try in localStorage (and load to live DB)
-  if(from in localStorage) {
+  if(localStorage.hasOwnProperty(from)) {
     try {
-      xows_cach_peer_db[from] = JSON.parse(localStorage.getItem(from));
+      xows_cach_peer_db.set(from,JSON.parse(localStorage.getItem(from)));
     } catch(e) {
       // malformed data
       xows_log(1,"cli_cache_peer_get","JSON parse error",e);
       localStorage.removeItem(from);
       return null;
     }
-    return xows_cach_peer_db[from];
+    return xows_cach_peer_db.get(from);
   }
 
   return null;
@@ -199,7 +198,7 @@ function xows_cach_peer_get(from)
 /**
  * Array to store discovered entities's capabilities (XEP-0115)
  */
-const xows_cach_caps_db = {};
+const xows_cach_caps_db = new Map();
 
 /**
  * Save entity capabilities (features)
@@ -210,7 +209,7 @@ const xows_cach_caps_db = {};
 function xows_cach_caps_save(node, feat)
 {
   // Store in live DB and localStorage
-  xows_cach_caps_db[node] = feat;
+  xows_cach_caps_db.set(node, feat);
   localStorage.setItem(node, JSON.stringify(feat));
 }
 
@@ -223,9 +222,9 @@ function xows_cach_caps_save(node, feat)
  */
 function xows_cach_caps_has(node)
 {
-  if(node in xows_cach_caps_db) {
+  if(xows_cach_caps_db.has(node)) {
     return true;
-  } else if(node in localStorage) {
+  } else if(localStorage.hasOwnProperty(node)) {
     return true;
   }
   return false;
@@ -240,20 +239,20 @@ function xows_cach_caps_has(node)
  */
 function xows_cach_caps_get(node)
 {
-  if(node in xows_cach_caps_db)
-    return xows_cach_caps_db[node];
+  if(xows_cach_caps_db.has(node))
+    return xows_cach_caps_db.get(node);
 
   // Try in localStorage (and load to live DB)
-  if(node in localStorage) {
+  if(localStorage.hasOwnProperty(node)) {
     try {
-      xows_cach_caps_db[node] = JSON.parse(localStorage.getItem(node));
+      xows_cach_caps_db.set(node,JSON.parse(localStorage.getItem(node)));
     } catch(e) {
       // malformed data
       xows_log(1,"cli_cache_caps_get","JSON parse error",e);
       localStorage.removeItem(node);
       return null;
     }
-    return xows_cach_caps_db[node];
+    return xows_cach_caps_db.get(node);
   }
 
   return null;

@@ -217,15 +217,20 @@ const xows_xmp_xep_ns = {
 const xows_xmp_stream_feat = [];
 
 /**
- * Stack used to store result callback functions bound to sent stanzas
+ * Map object to store parameters bound to sent iq queries
  */
-let xows_xmp_iq_stk = [];
+const xows_xmp_iq_stack = new Map();
 
 /**
- *  Stack array to store incomming parsed archived messages
+ *  Map object to store separated stack of incomming archived messages
  *  following a MAM query
  */
-const xows_xmp_mam_stk = [];
+const xows_xmp_mam_stack = new Map();
+
+/**
+ *  Map object to store parameters associated with a MAM query
+ */
+const xows_xmp_mam_param = new Map();
 
 /**
  * Variable to hold the XMPP server connexion url
@@ -286,7 +291,7 @@ function xows_xmp_use_xep(xmlns)
 
   if(matches) {
     // Check whether we know this xmlns prefix
-    if(matches[1] in xows_xmp_xep_ns) {
+    if(xows_xmp_xep_ns.hasOwnProperty(matches[1])) {
       let keep_curr = false;
       // Extract version number if any
       if(matches[3].length) { // should be ":#" where # is a number
@@ -340,7 +345,7 @@ function xows_xmp_use_xep(xmlns)
  */
 function xows_xmp_get_xep(xmlns)
 {
-  if(xmlns in xows_xmp_xep_ns) {
+  if(xows_xmp_xep_ns.hasOwnProperty(xmlns)) {
     if(xows_xmp_xep_ns[xmlns]) {
       return xmlns+":"+xows_xmp_xep_ns[xmlns];
     }
@@ -630,7 +635,7 @@ function xows_xmp_send(stanza, onresult, onparse)
 
   // If callaback is supplied, add request to stack
   if(xows_isfunc(onresult))
-    xows_xmp_iq_stk.push({"id":id,"onresult":onresult,"onparse":onparse});
+    xows_xmp_iq_stack.set(id,{"onresult":onresult,"onparse":onparse});
 
   // Send serialized data to socket
   xows_sck_send(xows_xml_serialize(stanza));
@@ -1676,7 +1681,7 @@ function xows_xmp_register_set_query(to, user, pass, mail, form, onparse)
 /**
  * Variable to store contextual parameters for archives query
  */
-const xows_xmp_mam_query_param = {};
+//const xows_xmp_mam_query_param = {};
 
 /**
  * Archive result parsing function called when archive query result
@@ -1687,24 +1692,30 @@ const xows_xmp_mam_query_param = {};
  */
 function xows_xmp_mam_parse(stanza, onparse)
 {
+  // Get query result id
   const id = stanza.getAttribute("id");
-
-  // Retrieve initial query parameters
-  const param = xows_xmp_mam_query_param[id];
-  delete xows_xmp_mam_query_param[id];
-
-  // Get proper result stack accodring queryid
-  const stack = xows_xmp_mam_stk[param.queryid];
-  delete xows_xmp_mam_stk[param.queryid];
-  if(!stack) {
-    xows_log(1,"xmp_mam_parse","queryid result stack not found",queryid);
+  if(!xows_xmp_mam_param.has(id)) {
+    xows_log(1,"xmp_mam_parse","MAM query id not found",id);
     return;
   }
 
+  // Retrieve stored query parameters
+  const param = xows_xmp_mam_param.get(id);
+  xows_xmp_mam_param.delete(id); //< delete entrie we do not need it
+
+  // Check for query error
   if(stanza.getAttribute("type") === "error") {
     xows_log(1,"xmp_mam_parse","Archive query failure ("+param.to+")",xows_xmp_error_str(stanza));
     return;
   }
+
+  // Retrieve queryid to get proper result stack
+  if(!xows_xmp_mam_stack.has(param.queryid)) {
+    xows_log(1,"xmp_mam_parse","MAM result queryid not found",queryid);
+    return;
+  }
+  const stack = xows_xmp_mam_stack.get(param.queryid);
+  xows_xmp_mam_stack.delete(param.queryid); //< delete entrie we do not need it
 
   //Check for the <fin> node to ensure this is what we seek for
   const fin = stanza.querySelector("fin");
@@ -1810,7 +1821,7 @@ function xows_xmp_mam_query(to, max, peer, start, end, before, onparse)
 
   // Generate new query ID with proper stack slot
   const queryid = xows_gen_nonce_asc(12);
-  xows_xmp_mam_stk[queryid] = [];
+  xows_xmp_mam_stack.set(queryid,[]);
 
   // Create the final stanza
   const id = xows_gen_uuid();
@@ -1821,7 +1832,7 @@ function xows_xmp_mam_query(to, max, peer, start, end, before, onparse)
   if(to !== null) iq.setAttribute("to",to);
 
   // Store query ID with the "with" parameter
-  xows_xmp_mam_query_param[id] = {"to":to,"peer":peer,"queryid":queryid};
+  xows_xmp_mam_param.set(id,{"to":to,"peer":peer,"queryid":queryid});
 
   xows_log(2,"xmp_mam_query","send Archive query",
             "with "+peer+" start "+start+" end "+end);
@@ -2807,7 +2818,13 @@ function xows_xmp_recv_success(stanza)
 
   xows_log(2,"xmp_recv_success","authentication success");
 
-  // From now the stream is implicitly closed, we must reopen it
+  // Whenever a stream restart is mandated (eg. after successful SASL
+  // negotiation), both the server and client streams are implicitly
+  // closed and new streams MUST  be opened, using the same process as
+  // in Section 3.4.
+  //
+  // The client MUST send a new stream <open/> element and MUST NOT send
+  // a closing <close/> element.
   xows_xmp_send_open();
 
   return true; //< stanza processed
@@ -2950,7 +2967,11 @@ function xows_xmp_recv_mam_result(result)
   const page = result.getAttribute("id");
 
   // Get result queryid
-  const qid = result.getAttribute("queryid");
+  const queryid = result.getAttribute("queryid");
+  if(!xows_xmp_mam_stack.has(queryid)) {
+    xows_log(1,"xmp_recv_mam_result","unknown queryid for MAM result",queryid);
+    return;
+  }
 
   // Get forwarded content
   const forward = result.querySelector("forwarded");
@@ -2991,7 +3012,7 @@ function xows_xmp_recv_mam_result(result)
     if(!time) time = new Date(0).getTime();
 
     // Add archived message to stack
-    xows_xmp_mam_stk[qid].push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body});
+    xows_xmp_mam_stack.get(queryid).push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body});
 
     xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
     return true; //< stanza processed
@@ -3133,6 +3154,22 @@ function xows_xmp_recv_message(stanza)
  */
 function xows_xmp_recv_iq(stanza)
 {
+  const id = stanza.getAttribute("id"); //< Get the <iq> ID
+
+  // Search for query with the specified ID in stack
+  if(xows_xmp_iq_stack.has(id)) {
+
+    // Retrieve query parameters and remove entrie from stack
+    const query = xows_xmp_iq_stack.get(id);
+    xows_xmp_iq_stack.delete(id);
+
+    // If query have a valid onresult function, call it
+    if(xows_isfunc(query.onresult))
+      query.onresult(stanza, query.onparse);
+
+    return true; //< stanza is processed
+  }
+
   // Check for "get" iq type, can come from user to query infos
   if(stanza.getAttribute("type") === "get") {
     const child = stanza.firstChild; //< get the first chid
@@ -3161,24 +3198,6 @@ function xows_xmp_recv_iq(stanza)
       if(xmlns === XOWS_NS_JINGLE) return xows_xmp_recv_jingle(stanza);
     }
     return false; //< stanza not processed
-  }
-
-  const id = stanza.getAttribute("id"); //< Get the <iq> ID
-
-  // Search for query with the specified ID in stack
-  let i = xows_xmp_iq_stk.length;
-  while(i--) {
-
-    // If the id exists in the stack, call the proper callback
-    if(xows_xmp_iq_stk[i].id === id) {
-      if(xows_isfunc(xows_xmp_iq_stk[i].onresult)) {
-        return xows_xmp_iq_stk[i].onresult(stanza, xows_xmp_iq_stk[i].onparse);
-      } else {
-        xows_log(1,"xmp_recv_iq","invalid onresult callback for query",id);
-      }
-
-      xows_xmp_iq_stk.splice(i, 1);  //< Remove this query from stack
-    }
   }
 
   return false; //< stanza not processed
@@ -3335,10 +3354,12 @@ function xows_xmp_send_subject(to, subj)
 function xows_xmp_send_close(code, mesg)
 {
   // Some log output
-  xows_log(2,"xmp_send_close","saying goodbye");
+  xows_log(2,"xmp_send_close","close framed stream");
+
+  // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
 
   // Send the <close> stanza to close stream
-  xows_xmp_send(xows_xml_node("close",{"xmlns":XOWS_NS_IETF_FRAMING,"id":"_ciao"}));
+  xows_xmp_send(xows_xml_node("close",{"xmlns":XOWS_NS_IETF_FRAMING}));
 
   // Session is over
   xows_xmp_res = null;
@@ -3362,7 +3383,9 @@ function xows_xmp_send_close(code, mesg)
  */
 function xows_xmp_send_open()
 {
-  xows_log(2,"xmp_send_open","send stream open request",XOWS_NS_IETF_FRAMING);
+  xows_log(2,"xmp_send_open","open framed stream");
+
+  // https://datatracker.ietf.org/doc/html/rfc7395#section-3.3
 
   // Send the first <open> stanza to init stream
   xows_xmp_send(xows_xml_node("open",{"to":xows_xmp_domain,"version":"1.0","xmlns":XOWS_NS_IETF_FRAMING}));

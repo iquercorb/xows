@@ -151,7 +151,7 @@ const XOWS_GUI_FRAG_INIT = "NULL";
 /**
  * Object that stores saved scroll values
  */
-const xows_gui_peer_scroll_db = {};
+const xows_gui_peer_scroll_db = new Map();
 
 /**
  * Create new Peer offscreen slot using initial DOM elements
@@ -197,7 +197,7 @@ function xows_gui_peer_doc_init(peer)
   edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
 
   // Initialize scroll parameters
-  xows_gui_peer_scroll_db[peer.bare] = {scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0};
+  xows_gui_peer_scroll_db.set(peer.bare,{scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0});
 
   // set notification button
   xows_gui_chat_noti_update(peer);
@@ -212,12 +212,10 @@ function xows_gui_peer_doc_export(peer)
 {
   // Save chat history scroll parameters
   const chat_main = xows_doc("chat_main");
-  xows_gui_peer_scroll_db[peer.bare] = {
-    scrollTop:    chat_main.scrollTop,
-    scrollHeight: chat_main.scrollHeight,
-    clientHeight: chat_main.clientHeight,
-    scrollSaved:  chat_main.scrollSaved | 0
-  };
+  xows_gui_peer_scroll_db.set(peer.bare, {  scrollTop:chat_main.scrollTop,
+                                            scrollHeight:chat_main.scrollHeight,
+                                            clientHeight:chat_main.clientHeight,
+                                            scrollSaved:chat_main.scrollSaved|0});
 
   // export document elements to offscreen fragment
   xows_doc_frag_export(peer.bare, "chat_head");
@@ -244,7 +242,7 @@ function xows_gui_peer_doc_import(peer)
 
     // Restore chat history with compensation in case of frame resize
     const chat_main = xows_doc("chat_main");
-    chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + xows_gui_peer_scroll_db[peer.bare].scrollSaved);
+    chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + xows_gui_peer_scroll_db.get(peer.bare).scrollSaved);
 
   } else {
     // restore (clone) from initial (empty) document elements
@@ -311,7 +309,7 @@ function xows_gui_peer_mesg_li(peer, id)
  */
 function xows_gui_peer_hist_reload(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.bare) :
                                           xows_doc("chat_main");
   // Reset scroll
   obj.scrollTop = (obj.scrollHeight - obj.clientHeight);
@@ -333,7 +331,7 @@ function xows_gui_peer_hist_reload(peer)
  */
 function xows_gui_peer_scroll_save(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.bare) :
                                           xows_doc("chat_main");
 
   // The usefull scroll parameter that doesn't exist as built-in...
@@ -352,7 +350,7 @@ function xows_gui_peer_scroll_save(peer)
 function xows_gui_peer_scroll_get(peer)
 {
   return (peer !== xows_gui_peer) ?
-          xows_gui_peer_scroll_db[peer.bare].scrollSaved :
+          xows_gui_peer_scroll_db.get(peer.bare).scrollSaved :
           xows_doc("chat_main").scrollSaved;
 }
 
@@ -369,7 +367,7 @@ function xows_gui_peer_scroll_down(peer)
 {
   if(xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
 
-    const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+    const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.bare) :
                                             xows_doc("chat_main");
 
     obj.scrollTop = (obj.scrollHeight - obj.clientHeight);
@@ -393,7 +391,7 @@ function xows_gui_peer_scroll_down(peer)
  */
 function xows_gui_peer_scroll_adjust(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db[peer.bare] :
+  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.bare) :
                                           xows_doc("chat_main");
 
   obj.scrollTop = obj.scrollHeight - (obj.clientHeight + (obj.scrollSaved | 0));
@@ -773,11 +771,12 @@ function xows_gui_wnd_onfocus(event)
  */
 function xows_gui_wnd_onunload(event)
 {
-  // Sends raw XMPP stanza hoping socket send it before  the browser's
-  // process being killed
-  xows_sck_send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
-  //xows_gui_disconnect();
-  //xows_log(2,"gui_evt_unload","Unload event from browser");
+  // The closing process for the XMPP subprotocol mirrors that of the XMPP
+  // TCP binding as defined in Section 4.4 of [RFC6120], except that a
+  // <close/> element is used instead of the ending </stream:stream> tag.
+
+  // Direct and raw XMPP stanza to optimize chances to be sent
+  xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }
 
 /* -------------------------------------------------------------------
@@ -2887,8 +2886,11 @@ function xows_gui_cli_oncallerror(code, mesg)
   // Display popup error message
   xows_doc_mbox_open(XOWS_SIG_WRN,"Call session error: "+mesg);
 
+  // Close potentially opened dialog
+  xows_gui_hist_call_close();
+
   // Clear call data
-  xows_gui_call_clear();
+  xows_gui_call_terminate();
 }
 
 /**
@@ -3128,10 +3130,10 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // Check whether end of history is croped, in this case the new message
   //  must not be appended, we will show it by querying archives
   if(!xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
-    if(!sent) {
-      xows_gui_hist_back_recent_new(peer); //< Show the "new messages" warning
-    } else {
+    if(sent) {
       xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
+    } else {
+      xows_gui_hist_back_recent_new(peer); //< Show the "new messages" warning
     }
     return; //< Do not append any message, return now
   }
@@ -3148,12 +3150,15 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
   // Append message to history <ul>
   hist_ul.appendChild(xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr));
 
-  // Compensate history resize and back scroll at saved position
-  xows_gui_peer_scroll_adjust(peer);
-
-  // If scroll is not at bottom, show the 'unread message' banner
-  if(!sent && xows_gui_peer_scroll_get(peer) > 120)
-    xows_gui_hist_back_recent_new(peer); //< Show the "new messages" warning
+  if(sent) {
+    xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
+  } else {
+    // Adjust scroll to compensate history resize
+    xows_gui_peer_scroll_adjust(peer);
+    // If scroll is not at bottom, show the 'unread message' banner
+    if(xows_gui_peer_scroll_get(peer) >= 60)
+      xows_gui_hist_back_recent_new(peer);
+  }
 }
 
 /**

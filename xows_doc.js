@@ -51,7 +51,7 @@ function xows_doc(id)
 /**
  * Object that stores backed documents Fragments
  */
-const xows_doc_frag_db = {};
+const xows_doc_frag_db = new Map();
 
 /**
  * Global reference to document's Selection object
@@ -200,14 +200,15 @@ function xows_doc_hidden(id)
 function xows_doc_frag_clone(dst, src, element)
 {
   // create slot if required
-  if(!xows_doc_frag_db[dst])
-    xows_doc_frag_db[dst] = {};
+  if(!xows_doc_frag_db.has(dst))
+    xows_doc_frag_db.set(dst,new Map());
 
   let s, d;
 
   // set source and destination
-  s = xows_doc_frag_db[src][element];
-  d = xows_doc_frag_db[dst][element] = document.createDocumentFragment();
+  s = xows_doc_frag_db.get(src).get(element);
+  d = document.createDocumentFragment();
+  xows_doc_frag_db.get(dst).set(element, d);
 
   // clone source nodes to destination
   for(let i = 0, n = s.childNodes.length; i < n; ++i)
@@ -224,14 +225,15 @@ function xows_doc_frag_clone(dst, src, element)
 function xows_doc_frag_export(slot, element, clone)
 {
   // create slot if required
-  if(!xows_doc_frag_db[slot])
-    xows_doc_frag_db[slot] = {};
+  if(!xows_doc_frag_db.has(slot))
+    xows_doc_frag_db.set(slot,new Map());
 
   let s, d;
 
   // set source and destination
   s = document.getElementById(element);
-  d = xows_doc_frag_db[slot][element] = document.createDocumentFragment();
+  d = document.createDocumentFragment();
+  xows_doc_frag_db.get(slot).set(element, d);
 
   if(clone) {
 
@@ -257,12 +259,12 @@ function xows_doc_frag_export(slot, element, clone)
  */
 function xows_doc_frag_import(slot, element, clone)
 {
-  if(xows_doc_frag_db[slot]) {
+  if(xows_doc_frag_db.has(slot)) {
 
     let s, d;
 
     // set source and destination
-    s = xows_doc_frag_db[slot][element];
+    s = xows_doc_frag_db.get(slot).get(element);
     d = document.getElementById(element);
 
     // empty destination
@@ -292,7 +294,7 @@ function xows_doc_frag_import(slot, element, clone)
  */
 function xows_doc_frag_delete(slot)
 {
-  delete xows_doc_frag_db[slot];
+  xows_doc_frag_db.delete(slot);
 }
 
 /**
@@ -300,8 +302,7 @@ function xows_doc_frag_delete(slot)
  */
 function xows_doc_frag_clear()
 {
-  for(const slot in xows_doc_frag_db)
-    delete xows_doc_frag_db[slot];
+  xows_doc_frag_db.clear();
 }
 
 /**
@@ -312,7 +313,7 @@ function xows_doc_frag_clear()
  */
 function xows_doc_frag_element(slot, element)
 {
-  return xows_doc_frag_db[slot] ? xows_doc_frag_db[slot][element] : null;
+  return xows_doc_frag_db.has(slot) ? xows_doc_frag_db.get(slot).get(element) : null;
 }
 
 /**
@@ -323,14 +324,18 @@ function xows_doc_frag_element(slot, element)
  */
 function xows_doc_frag_find(slot, id)
 {
-  if(xows_doc_frag_db[slot] && xows_doc_frag_db[slot][id])
-    return xows_doc_frag_db[slot][id];
+  if(xows_doc_frag_db.has(slot)) {
 
-  let node;
+    const frag = xows_doc_frag_db.get(slot);
 
-  for(const element in xows_doc_frag_db[slot]) {
-    if(node = xows_doc_frag_db[slot][element].getElementById(id))
-      return node;
+    if(frag.has(id))
+      return frag.get(id);
+
+    let node;
+    for(const element of frag.values()) {
+      if(node = element.getElementById(id))
+        return node;
+    }
   }
 
   return null;
@@ -345,8 +350,15 @@ function xows_doc_frag_find(slot, id)
  */
 function xows_doc_frag_element_find(slot, element, id)
 {
-  if(xows_doc_frag_db[slot] && xows_doc_frag_db[slot][element])
-    return xows_doc_frag_db[slot][element].getElementById(id);
+  if(xows_doc_frag_db.has(slot)) {
+
+    const frag = xows_doc_frag_db.get(slot);
+
+    if(frag.has(element))
+      return frag.get(element).getElementById(id);
+  }
+
+  return null;
 }
 
 /**
@@ -908,7 +920,7 @@ function xows_doc_page_opened(page)
 /**
  * Currently opened menu elements
  */
-const xows_doc_menu = {};
+const xows_doc_menu = {btn:null,drop:null};
 
 /**
  * Close current opened menu

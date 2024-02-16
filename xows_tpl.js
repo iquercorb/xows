@@ -795,7 +795,7 @@ let xows_tpl_avat_cls_db = {};
 function xows_tpl_spawn_avat_cls(hash)
 {
   if(hash) {
-    if(!(hash in xows_tpl_avat_cls_db)) {
+    if(!xows_tpl_avat_cls_db.hasOwnProperty(hash)) {
       // Compose the CSS class string
       const cls = ".h-"+hash+" {background-image:url(\""+xows_cach_avat_get(hash)+"\");}\r\n";
 
@@ -846,6 +846,7 @@ function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
     // Set proper class for avatar
     xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
     avat_fi.className = "h-"+avat;
+    avat_fi.name = bare;
   }
 
   return inst;
@@ -906,8 +907,8 @@ function xows_tpl_spawn_rost_room(bare, name, desc, lock)
   inst.title = name+" ("+bare+")";
   inst.querySelector("H3").innerText = name;
   inst.querySelector("P").innerText = desc;
-  //const avat_dv = inst.querySelector("FIGURE");
-  //if(lock) avat_dv.classList.add("ROOM-LOCK");
+  //const avat_fi = inst.querySelector("FIGURE");
+  //if(lock) avat_fi.classList.add("ROOM-LOCK");
 
   return inst;
 }
@@ -926,12 +927,11 @@ function xows_tpl_update_rost_room(li, name, desc, lock)
   li.title = name+" ("+li.id+")";
   li.querySelector("H3").innerText = name;
   li.querySelector("P").innerText = desc;
-
-  //const avat_dv = li.querySelector("FIGURE");
+  //const avat_fi = li.querySelector("FIGURE");
   //if(lock) {
-  //  avat_dv.classList.add("ROOM-LOCK");
+  //  avat_fi.classList.add("ROOM-LOCK");
   //} else {
-  //  avat_dv.classList.remove("ROOM-LOCK");
+  //  avat_fi.classList.remove("ROOM-LOCK");
   //}
 }
 
@@ -986,8 +986,11 @@ function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
   // Occupant JID (lock) may be null, undefined or empty string
   inst.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
   // Set proper class for avatar
+  const avat_fi = inst.querySelector("FIGURE");
+  if(full) avat_fi.name = xows_jid_to_bare(full); //< FIXME: Is this suitable for MUC ?
   xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
-  inst.querySelector("FIGURE").className = "h-"+avat;
+  avat_fi.className = "h-"+avat;
+  
 
   return inst;
 }
@@ -1060,8 +1063,10 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
     // Add author name
     inst.querySelector(".MESG-FROM").innerText = sndr.name;
     // Set proper class for avatar
+    const avat_fi = inst.querySelector("FIGURE");
+    avat_fi.name = xows_jid_to_bare(from);
     xows_tpl_spawn_avat_cls(sndr.avat); //< Add avatar CSS class
-    inst.querySelector("FIGURE").className = "h-"+sndr.avat;
+    avat_fi.className = "h-"+sndr.avat;
   } else {
     // Add hour
     inst.querySelector(".MESG-HOUR").innerText = xows_l10n_houre(time);

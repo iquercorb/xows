@@ -95,7 +95,7 @@ function xows_cli_feat_srv_has(feat)
  * Store the URL of available server items such as Http Upload or MUC
  * services.
  */
-const xows_cli_svc_url = {};
+const xows_cli_svc_url = new Map();
 
 /**
  * Check whether server item (service) is available
@@ -104,7 +104,7 @@ const xows_cli_svc_url = {};
  */
 function xows_cli_svc_exist(xmlns)
 {
-  return (xmlns in xows_cli_svc_url);
+  return (xows_cli_svc_url.has(xmlns));
 }
 
 /**
@@ -736,8 +736,7 @@ function xows_cli_connect(url, jid, password, register)
   xows_cli_room.length = 0;
   xows_cli_feat_own.length = 0;
   xows_cli_feat_srv.length = 0;
-  for(const k in xows_cli_svc_url)
-    delete xows_cli_svc_url[k];
+  xows_cli_svc_url.clear();
 
   // Reset client user entity
   xows_cli_self.jid  = null;
@@ -1015,7 +1014,7 @@ function xows_cli_srv_item_info_parse(from, iden, feat)
         if(feat[i].includes(XOWS_NS_HTTPUPLOAD)) {
           // Set XEP xmlns (version) to use for this session
           xows_xmp_use_xep(feat[i]);
-          xows_cli_svc_url[XOWS_NS_HTTPUPLOAD] = from;
+          xows_cli_svc_url.set(XOWS_NS_HTTPUPLOAD, from);
           xows_log(2,"cli_srv_item_info_parse","use service for Http-Upload",from);
         }
       }
@@ -1026,7 +1025,7 @@ function xows_cli_srv_item_info_parse(from, iden, feat)
       i = feat.length;
       while(i--) {
         if(feat[i] === XOWS_NS_MUC) {
-          xows_cli_svc_url[XOWS_NS_MUC] = from;
+          xows_cli_svc_url.set(XOWS_NS_MUC, from);
           xows_log(2,"cli_srv_item_info_parse","use service for Multi-User Chat",from);
         }
       }
@@ -1342,7 +1341,7 @@ function xows_cli_avat_data_parse(from, id, data)
     xows_log(2,"cli_avat_data_handle","handle received Avatar-Data",id);
     // Get stored (we hope so) received data type for this hash
 
-    if(!(id in xows_cli_avat_meta_queue)) {
+    if(!xows_cli_avat_meta_queue.hasOwnProperty(id)) {
       xows_log(1,"cli_avat_data_handle","received Avatar-Data without Metadata",id);
       return;
     }
@@ -2329,7 +2328,7 @@ function xows_cli_muc_items_query()
   }
 
   // Send Item discovery to the MUC service URL
-  xows_xmp_discoitems_query(xows_cli_svc_url[XOWS_NS_MUC],
+  xows_xmp_discoitems_query(xows_cli_svc_url.get(XOWS_NS_MUC),
                         xows_cli_muc_items_parse);
 }
 
@@ -2595,7 +2594,7 @@ function xows_cli_upld_query(file, onerror, onsuccess, onprogress, onabort)
   xows_cli_upld_fw_abort = onabort;
 
   // Query an upload slot to XMPP service
-  xows_xmp_upload_query(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD],
+  xows_xmp_upload_query(xows_cli_svc_url.get(XOWS_NS_HTTPUPLOAD),
                         file.name, file.size, file.type, xows_cli_upld_handle);
 }
 
@@ -2836,7 +2835,7 @@ function xows_cli_room_join(room, name, nick, pass)
     bare = room.bare; //< get room JID
   } else {
     // compose room JID
-    bare = name.toLowerCase()+"@"+xows_cli_svc_url[XOWS_NS_MUC];
+    bare = name.toLowerCase()+"@"+xows_cli_svc_url.get(XOWS_NS_MUC);
   }
 
   xows_log(2,"cli_room_join","request join",name+" ("+bare+")");
@@ -3241,7 +3240,8 @@ function xows_cli_call_clear()
   }
 
   // Reset peer associaled call full JID
-  xows_cli_call_peer.call = null;
+  if(xows_cli_call_peer)
+    xows_cli_call_peer.call = null;
 
   // Reset call parameters
   xows_cli_call_ssid = null;
@@ -3537,6 +3537,8 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
 
     // Create new RTC Peer Connection object
     xows_cli_webrtc_create();
+
+    console.log(mesg);
 
     // Set the Remote description
     const description = new RTCSessionDescription({"type":"offer","sdp":mesg});
