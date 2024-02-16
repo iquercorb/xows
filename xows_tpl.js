@@ -784,31 +784,35 @@ function xows_tpl_format_embed(urls)
 /**
  * Stores the dynamically created CSS classes for avatars DataURL
  */
-let xows_tpl_avat_cls_db = {};
+let xows_tpl_avat_cls_db = new Map();
 
 /**
  * Create a new CSS class with data-url as background-image style to
  * be used as avatar
  *
- * @param   {string}    hash      Avatar data hash (class name)
+ * @param   {string}    hash      Avatar data hash
+ *
+ * @return  {string}    CSS class name corresponding to Avatar data hash
  */
 function xows_tpl_spawn_avat_cls(hash)
 {
   if(hash) {
-    if(!xows_tpl_avat_cls_db.hasOwnProperty(hash)) {
-      // Compose the CSS class string
-      const cls = ".h-"+hash+" {background-image:url(\""+xows_cach_avat_get(hash)+"\");}\r\n";
+    if(!xows_tpl_avat_cls_db.has(hash)) {
+      // Compose the CSS class name
+      const cls = "h-" + hash;
 
-      // Add this to local DB to keep track of added classes
-      xows_tpl_avat_cls_db[hash] = cls;
-
-      // Add new style sheet with class
+      // Add new style sheet with class definition
       const style = document.createElement('style');
       style.type = 'text/css';
-      style.innerText = cls;
+      style.innerText = "."+cls+" {background-image:url(\""+xows_cach_avat_get(hash)+"\");}\r\n";
       document.head.appendChild(style);
+
+      // Add this to local DB to keep track of added classes
+      xows_tpl_avat_cls_db.set(hash, cls);
     }
+    return xows_tpl_avat_cls_db.get(hash);
   }
+  return "";
 }
 
 /**
@@ -843,10 +847,8 @@ function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
     subs_bt.classList.remove("HIDDEN");
   } else {
     show_dv.setAttribute("show",(show!==null)?show:-1);
-    // Set proper class for avatar
-    xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
-    avat_fi.className = "h-"+avat;
-    avat_fi.name = bare;
+    avat_fi.setAttribute("name",bare);
+    avat_fi.className = xows_tpl_spawn_avat_cls(avat);
   }
 
   return inst;
@@ -881,8 +883,7 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
     show_dv.setAttribute("show",(show!==null)?show:-1);
     subs_bt.classList.add("HIDDEN");
     // Set proper class for avatar
-    xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
-    avat_fi.className = "h-"+avat;
+    avat_fi.className = xows_tpl_spawn_avat_cls(avat);
   }
 }
 
@@ -987,10 +988,8 @@ function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
   inst.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
   // Set proper class for avatar
   const avat_fi = inst.querySelector("FIGURE");
-  if(full) avat_fi.name = xows_jid_to_bare(full); //< FIXME: Is this suitable for MUC ?
-  xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
-  avat_fi.className = "h-"+avat;
-  
+  avat_fi.setAttribute("name",ojid);
+  avat_fi.className = xows_tpl_spawn_avat_cls(avat);
 
   return inst;
 }
@@ -1016,8 +1015,7 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
   // Occupant JID (lock) may be null, undefined or empty string
   li.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
   // Set proper class for avatar
-  xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
-  li.querySelector("FIGURE").className = "h-"+avat;
+  li.querySelector("FIGURE").className = xows_tpl_spawn_avat_cls(avat);
 }
 
 /**
@@ -1061,12 +1059,13 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
     // Add time text
     inst.querySelector(".MESG-DATE").innerText = xows_l10n_date(time);
     // Add author name
-    inst.querySelector(".MESG-FROM").innerText = sndr.name;
+    const nick_sp = inst.querySelector(".MESG-FROM");
+    nick_sp.setAttribute("name",xows_jid_to_bare(from));
+    nick_sp.innerText = sndr.name;
     // Set proper class for avatar
     const avat_fi = inst.querySelector("FIGURE");
-    avat_fi.name = xows_jid_to_bare(from);
-    xows_tpl_spawn_avat_cls(sndr.avat); //< Add avatar CSS class
-    avat_fi.className = "h-"+sndr.avat;
+    avat_fi.setAttribute("name",xows_jid_to_bare(from));
+    avat_fi.className = xows_tpl_spawn_avat_cls(sndr.avat);
   } else {
     // Add hour
     inst.querySelector(".MESG-HOUR").innerText = xows_l10n_houre(time);
@@ -1094,8 +1093,9 @@ function xows_tpl_spawn_stream_audio(jid, nick, avat)
   // Set content to proper elements
   inst.setAttribute("jid", jid);
   inst.setAttribute("name", nick);
-  xows_tpl_spawn_avat_cls(avat); //< Add avatar CSS class
-  inst.querySelector("FIGURE").className = "h-"+avat;
+  const avat_fi = inst.querySelector("FIGURE");
+  avat_fi.setAttribute("name",jid);
+  avat_fi.className = xows_tpl_spawn_avat_cls(avat);
 
   return inst;
 }

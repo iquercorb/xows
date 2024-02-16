@@ -1662,6 +1662,8 @@ function xows_gui_cli_oncontpush(cont)
       xows_tpl_update_rost_cont(li, cont.name, cont.avat, cont.subs, cont.show, cont.stat);
       // Update chat title bar
       xows_gui_chat_head_update(cont);
+      // Update message history
+      xows_gui_hist_update(cont, cont.bare, cont.name, cont.avat);
 
       // Return now since we DO NOT append new <li> element
       return;
@@ -1911,6 +1913,12 @@ function xows_gui_cli_onselfchange(user)
   // Update avatar
   xows_tpl_spawn_avat_cls(user.avat); //< Add avatar CSS class
   xows_doc("user_avat").className = "h-"+user.avat;
+
+  // Update all opened chat history
+  let i = xows_cli_cont.length;
+  while(i--) xows_gui_hist_update(xows_cli_cont[i], user.bare, user.name, user.avat);
+  i = xows_cli_room.length;
+  while(i--) xows_gui_hist_update(xows_cli_room[i], user.bare, user.name, user.avat);
 }
 
 /**
@@ -3072,29 +3080,39 @@ function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr)
 }
 
 /**
- * Update avatar for chat history messages. Should be used carefully
- * to preserve resources
+ * Update chat history messages avatar and nickname of the specified
+ * author.
  *
- * @param   {object}    peer      Peer object
- * @param   {string}    from      Message author JID to search
- * @param   {string}    hash      Replacement avatar hash to set
+ * @param   {object}    peer      Chat history Peer, Room or Contact
+ * @param   {string}    bare      Message author Bare JID to search
+ * @param   {string}    nick      Replacement nickname to set
+ * @param   {string}    avat      Replacement avatar hash to set
  */
-function xows_gui_hist_avat_upd(peer, from, hash)
+function xows_gui_hist_update(peer, bare, nick, avat)
 {
-  if(!hash) return;
-
   // If incoming message is off-screen we get history <div> and <ul> of
   // fragment history corresponding to contact
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
-  const cls = "h-"+hash;
+  if(!hist_ul || !hist_ul.childNodes.length)
+    return;
 
-  const mesg = hist_ul.querySelectorAll("LI[from='"+from+"']");
-  let figure, i = mesg.length;
-  while(i--) {
-    if(figure = mesg[i].querySelector("FIGURE"))
-      figure.className = cls;
-  }
+  let i;
+
+  // Set new CSS class to all corresponding figures
+  const spn = hist_ul.querySelectorAll("SPAN[name='"+bare+"']");
+  i = spn.length;
+  while(i--) if(nick != spn[i].innerText) spn[i].innerText = nick;
+
+  if(!avat) return;
+
+  // Retrieve or generate avatar CSS class
+  const cls = xows_tpl_spawn_avat_cls(avat);
+
+  // Set new CSS class to all corresponding figures
+  const fig = hist_ul.querySelectorAll("FIGURE[name='"+bare+"']");
+  i = fig.length;
+  while(i--) if(cls != fig[i].className) fig[i].className = cls;
 }
 
 /**
@@ -3925,8 +3943,8 @@ function xows_gui_cli_onoccupush(room, occu, code)
   if(li) {
     // Update the existing <li> ellement according template
     xows_tpl_update_room_occu(li, occu.name, occu.avat, occu.full, occu.show, occu.stat);
-    // Update message history
-    xows_gui_hist_avat_upd(room, occu.jid, occu.avat);
+    // Update message history avatars
+    xows_gui_hist_update(room, occu.jid, occu.name, occu.avat);
   } else {
     // Create and append new <li> element from template
     const inst = xows_tpl_spawn_room_occu(occu.jid, occu.name, occu.avat, occu.full, occu.show, occu.stat);
