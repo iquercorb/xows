@@ -414,6 +414,11 @@ function xows_tpl_init(onready)
 }
 
 /**
+ * Regular expression to match HTTP url
+ */
+const xows_tpl_reg_urls = /(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\]*)/g;
+
+/**
  * Function to create HTML embeding wrapper element
  *
  * If the href parameter is not null, an HTML hyperlink is prepended to
@@ -495,7 +500,7 @@ function xows_tpl_embed_audio(href, ext)
  */
 function xows_tpl_embed_youtube(href, match)
 {
-  const parse = href.match(/(v=|embed\/|shorts\/|youtu\.be\/)([\w\d]+)(&.+)?/);
+  const parse = href.match(/(v=|embed\/|shorts\/|youtu\.be\/)([\w\d-]+)(&.+)?/);
   let ref = parse[2];
   // add options and replace the potential t= by start=
   if(parse[3]) ref += parse[3].replace(/t=/,"start=");
@@ -695,6 +700,7 @@ let xows_tpl_format_urls = null;
  */
 function xows_tpl_replace_url(href)
 {
+  /*
   // Add found URL to stack
   if(xows_tpl_format_urls) xows_tpl_format_urls.push(href);
 
@@ -705,7 +711,7 @@ function xows_tpl_replace_url(href)
       return ""; //< Delete the written URL
     }
   }
-
+  */
   // Return link to URL
   return "<a href=\""+href+"\" title=\""+href+"\" target=\"_blank\">"+href+"</a>";
 }
@@ -733,52 +739,60 @@ function xows_tpl_format_body(body, urls)
   // Search for known and common ASCII emots to replace
   body = body.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
 
-  // Assign URLs array to be filled with found URLs
-  xows_tpl_format_urls = urls;
-
-  // Search for URLs to create links and add to embed stack
-  return body.replace(/(http|https|ftp|ftps):\/\/(\S[^*"'()<>|\[\]\\]*)/g, xows_tpl_replace_url);
+  // Finaly format URL and add embeded media
+  return xows_tpl_format_embed(body);
 }
 
 /**
- * Created embeded medias from the given URL list
+ * Created embeded medias and formated links from found raw URL
  *
- * @param   {string[]}  urls      List of URLs to created embeded medias
+ * @param   {string}    body      Message to parse and modify
  *
- * @return  {string}    Embeded medias HTML elements
+ * @return  {string}    Formated message with links and embedded medias
  */
-function xows_tpl_format_embed(urls)
+function xows_tpl_format_embed(body)
 {
-  let match, k, href, embd, embeds = "";
+  const urls = body.match(xows_tpl_reg_urls);
+  if(!urls) return body;
+
+  let match, k, href, media, embeds = "";
 
   for(let i = 0, n = urls.length; i < n; ++i) {
 
     href = urls[i];
-    embd = null;
+    media = null;
 
     // Check whether we found a known and supported file extension
     match = href.match(/\.([\w\d]+)(\?|$)/);
     if(match) {
       k = match[1].toUpperCase(); //< always compare with uppercase
-      if(xows_tpl_embed_files[k]) embd = xows_tpl_embed_files[k](href,k);
+      if(xows_tpl_embed_files[k]) media = xows_tpl_embed_files[k](href,k);
     }
 
-    if(!embd) {
+    if(!media) {
       // Check whether we found a known and supported plateform/site
       match = href.match(/\/\/(.*?[\w\d\-_]+\.\w+)\//);
       if(match) {
         k = match[1].toLowerCase(); //< always compare with lowercase
         // check for externam plateforms
-        if(xows_tpl_embed_sites[k]) embd = xows_tpl_embed_sites[k](href,k);
+        if(xows_tpl_embed_sites[k]) media = xows_tpl_embed_sites[k](href,k);
         // check for internal services (HTTP-Upload)
-        if(xows_tpl_embed_uplds[k]) embd = xows_tpl_embed_uplds[k](href,k);
+        if(xows_tpl_embed_uplds[k]) media = xows_tpl_embed_uplds[k](href,k);
       }
     }
-
-    if(embd) embeds += embd;
+    // Append embedded media string
+    if(media) embeds += media;
   }
 
-  return embeds;
+  // If message is only a single URL that was embedded we delete the body
+  if(embeds.length && (body.search(/^\s*(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
+    body = "";
+
+  // Search for remaining URLs to create HTML links from raw URL
+  body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
+
+  // Finaly return the composite
+  return body + embeds;
 }
 
 /**
@@ -1049,11 +1063,7 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
   inst.setAttribute("time", time);
 
   // Add formated body
-  const urls = []; //< list of found URLs in body
-  inst.querySelector("P").innerHTML = xows_tpl_format_body(body, urls);
-  // Add embeded medias from found URLs
-  if(urls.length)
-    inst.querySelector("FOOTER").innerHTML = xows_tpl_format_embed(urls);
+  inst.querySelector("P").innerHTML = xows_tpl_format_body(body);
 
   if(sndr) {
     // Add time text

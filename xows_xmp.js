@@ -233,6 +233,11 @@ const xows_xmp_mam_stack = new Map();
 const xows_xmp_mam_param = new Map();
 
 /**
+ *  Map object to store parameters associated with a HTTP Upload query
+ */
+const xows_xmp_upld_param = new Map();
+
+/**
  * Variable to hold the XMPP server connexion url
  */
 let xows_xmp_url = null;
@@ -1679,11 +1684,6 @@ function xows_xmp_register_set_query(to, user, pass, mail, form, onparse)
 }
 
 /**
- * Variable to store contextual parameters for archives query
- */
-//const xows_xmp_mam_query_param = {};
-
-/**
  * Archive result parsing function called when archive query result
  * is received.
  *
@@ -1848,39 +1848,43 @@ function xows_xmp_mam_query(to, max, peer, start, end, before, onparse)
  * @param   {object}    stanza    Received query response stanza
  * @param   {function}  onparse   Callback to forward parse result
  */
-function xows_xmp_upload_parse(stanza, onparse)
+function xows_xmp_upld_parse(stanza, onparse)
 {
-  if(stanza.getAttribute("type") === "error") {
-    const err_msg = xows_xmp_error_str(stanza);
-    xows_log(1,"xmp_upload_parse","HTTP-Upload query error",err_msg);
-    // Forward parse result
-    if(xows_isfunc(onparse))
-      onparse(null, null, null, err_msg);
+  const id = stanza.getAttribute("id");
+
+  // Retrieve query parameters
+  if(!xows_xmp_upld_param.has(id)) {
+    xows_log(1,"xmp_upld_parse","query parameters not found");
     return;
   }
-  // Get the <slot> node in the stanza
-  const slot = stanza.querySelector("slot");
-  if(slot) {
-    // Variable we need
-    let put_url, get_url, headers;
-    // Get <put> node
-    const put = slot.querySelector("put");
-    if(put) {
-      // Retreive the URL for HTTP PUT
-      put_url = put.getAttribute("url");
-      // Retreive header data for HTTP PUT
-      headers = put.getElementsByTagName("header");
-    }
-    // Get the URL for HTTP GET
-    const _get = slot.querySelector("get");
-    if(_get) get_url = _get.getAttribute("url");
+  const param = xows_xmp_upld_param.get(id);
+  xows_xmp_upld_param.delete(id);
 
-    xows_log(2,"xmp_upload_parse","accepted HTTP-Upload slot",put_url);
-
+  if(stanza.getAttribute("type") === "error") {
+    const err_msg = xows_xmp_error_str(stanza);
+    xows_log(1,"xmp_upld_parse","HTTP-Upload query error",err_msg);
     // Forward parse result
     if(xows_isfunc(onparse))
-      onparse(put_url, headers, get_url);
+      onparse(param.name, null, null, null, err_msg);
+    return;
   }
+
+  // Get the <slot> node in the stanza
+  const slot = stanza.querySelector("slot");
+  // Get <put> node
+  const put = slot.querySelector("put");
+  // Retreive the URL for HTTP PUT
+  const puturl = put.getAttribute("url");
+  // Retreive header data for HTTP PUT
+  const header = put.getElementsByTagName("header");
+  // Get the URL for HTTP GET
+  const geturl = slot.querySelector("get").getAttribute("url");
+
+  xows_log(2,"xmp_upld_parse","accepted HTTP-Upload slot",puturl);
+
+  // Forward parse result
+  if(xows_isfunc(onparse))
+    onparse(param.name, puturl, header, geturl);
 }
 
 /**
@@ -1888,29 +1892,32 @@ function xows_xmp_upload_parse(stanza, onparse)
  * HTTP Upload service
  *
  * @param   {string}    url       Http-Upload service URL
- * @param   {string}    filename  Upload filename
- * @param   {number}    size      Upload size in bytes
- * @param   {string}    type      Optional upload file MIM type
+ * @param   {string}    name      Upload file name
+ * @param   {number}    size      Upload file size in bytes
+ * @param   {string}    type      Upload file MIM type
  * @param   {function}  onparse   Callback to forward parse result
  */
-function xows_xmp_upload_query(url, filename, size, type, onparse)
+function xows_xmp_upld_query(url, name, size, type, onparse)
 {
   // Get the proper XMLNS
   const xmlns_httpupload = xows_xmp_get_xep(XOWS_NS_HTTPUPLOAD);
   if(!xmlns_httpupload) {
-    xows_log(1,"xmp_upload_query","HTTP File Upload (XEP-0363) is unvailable");
+    xows_log(1,"xmp_upld_query","HTTP File Upload (XEP-0363) is unvailable");
     return;
   }
 
-  xows_log(2,"xmp_upload_query","send HTTP-Upload query",size+" bytes required");
+  xows_log(2,"xmp_upld_query","send HTTP-Upload query",size+" bytes required");
 
-  let attr = {"xmlns":xmlns_httpupload,"filename":filename,"size":size};
+  let attr = {"xmlns":xmlns_httpupload,"filename":name,"size":size};
   if(type) attr.type = type;
 
-  const iq =  xows_xml_node("iq",{"to":url,"type":"get"},
+  const id = xows_gen_uuid();
+  const iq =  xows_xml_node("iq",{"id":id,"to":url,"type":"get"},
                 xows_xml_node("request",attr));
 
-  xows_xmp_send(iq, xows_xmp_upload_parse, onparse);
+  xows_xmp_upld_param.set(id,{"name":name});
+
+  xows_xmp_send(iq, xows_xmp_upld_parse, onparse);
 }
 
 /**
