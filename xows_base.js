@@ -49,7 +49,7 @@
  * Global application (client) constants
  */
 const XOWS_APP_NAME = "Xows";
-const XOWS_APP_VERS = "0.9.1";
+const XOWS_APP_VERS = "0.9.2";
 const XOWS_APP_NODE = "https://github.com/sedenion/xows";
 
 /**
