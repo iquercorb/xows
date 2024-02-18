@@ -546,9 +546,8 @@ function xows_doc_media_onload(media)
  *
  * @param   {object}    media     Media object that loaded
  */
-function xows_doc_media_onerror(event)
+function xows_doc_media_onerror(media)
 {
-  const media = event.target;
   // Remove the loading style
   media.parentNode.classList.remove("LOADING");
   // Add loading error style
