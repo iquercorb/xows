@@ -2539,106 +2539,53 @@ function xows_cli_room_cfg_cancel(room, onresult)
 /**
  * Object used to store Current Http Upload query related data
  */
-let xows_cli_upld_param = null;
-
-/**
- * Callback function for HTTP Upload Rrror
- */
-let xows_cli_upld_fw_error = function() {};
-
-/**
- * Callback function for HTTP Upload Success
- */
-let xows_cli_upld_fw_success = function() {};
-
-/**
- * Callback function for HTTP Upload Progress
- */
-let xows_cli_upld_fw_progress = function() {};
-
-/**
- * Callback function for HTTP Upload Abort
- */
-let xows_cli_upld_fw_abort = function() {};
-
-/**
- * Function to query an Http upload slot
- *
- * @param   {object}    file        File object to upload
- * @param   {object}    onerror     On upload error callback
- * @param   {object}    onsuccess   On upload success callback
- * @param   {object}    onprogress  On upload progress callback
- * @param   {object}    onabort     On upload aborted callback
- */
-function xows_cli_upld_query(file, onerror, onsuccess, onprogress, onabort)
-{
-  // No upload until another is pending
-  if(xows_cli_upld_param)
-    return;
-
-  if(!xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
-    xows_log(1,"cli_user_upload_query","service not found",
-                "the server does not provide "+XOWS_NS_HTTPUPLOAD+"(:0) service");
-    xows_cli_fw_onerror(XOWS_SIG_ERR,"HTTP File Upload (XEP-0363) service is unavailable");
-    return;
-  }
-
-  xows_log(2,"cli_user_upload_query","Upload query for",file.name);
-
-  // Create a new param object to store query data
-  xows_cli_upld_param = {"file":file,"url":""};
-
-  xows_cli_upld_fw_error = onerror;
-  xows_cli_upld_fw_success = onsuccess;
-  xows_cli_upld_fw_progress = onprogress;
-  xows_cli_upld_fw_abort = onabort;
-
-  // Query an upload slot to XMPP service
-  xows_xmp_upload_query(xows_cli_svc_url.get(XOWS_NS_HTTPUPLOAD),
-                        file.name, file.size, file.type, xows_cli_upld_handle);
-}
+const xows_cli_upld_param = new Map();
 
 /**
  * Abort the current progressing file upload if any
+ *
+ * @param   {string}     name     Progress event object
  */
-function xows_cli_upld_abort()
+function xows_cli_upld_abort(name)
 {
-  xows_log(2,"cli_user_upload_abort","upload abort requested");
-  if(xows_cli_upld_xhr) {
-    xows_cli_upld_xhr.abort();
-  }
-}
+  xows_log(2,"cli_upld_abort","abort requested",name);
 
-/**
- * Reference to the XMLHttpRequest object created to upload file using
- * PUT request in Http upload context
- */
-let xows_cli_upld_xhr = null;
+  // Retrieve initial query parameters
+  const param = xows_cli_upld_param.get(name);
+  if(param.xhr)
+    param.xhr.abort();
+
+  xows_cli_upld_param.delete(name);
+}
 
 /**
  * Http Upload query XMLHttpRequest.upload "progress" callback function
  *
  * @param   {object}    event     Progress event object
  */
-function xows_cli_upld_xhr_progress(event)
+function xows_cli_upld_put_progress(event)
 {
-  // Forward loading percent
-  if(xows_isfunc(xows_cli_upld_fw_progress))
-    xows_cli_upld_fw_progress((event.loaded / event.total) * 100);
+  const name = event.target.name;
+  // Retrieve initial query parameters
+  const param = xows_cli_upld_param.get(name);
+  if(xows_isfunc(param.onprogress))
+    param.onprogress(name, (event.loaded / event.total) * 100);
 }
 
 /**
  * Http Upload query XMLHttpRequest.upload "load" callback function
  */
-function xows_cli_upld_xhr_success()
+function xows_cli_upld_put_load(event)
 {
+  const name = event.target.name;
+  // Retrieve initial query parameters
+  const param = xows_cli_upld_param.get(name);
   // Forward file download URL with some delay to let the HTTP server
   // to refresh and be able to provide correct GET access to file
-  if(xows_isfunc(xows_cli_upld_fw_success))
-    setTimeout(xows_cli_upld_fw_success, 800, xows_cli_upld_param.url);
+  if(xows_isfunc(param.onload))
+    setTimeout(param.onload, 1000, name, param.url);
 
-  xows_cli_upld_param = null; //< Reset query data
-  xows_cli_upld_xhr = null;
+  xows_cli_upld_param.delete(name);
 }
 
 /**
@@ -2646,18 +2593,21 @@ function xows_cli_upld_xhr_success()
  *
  * @param   {object}    event     Error event object
  */
-function xows_cli_upld_xhr_error(event)
+function xows_cli_upld_put_error(event)
 {
-  const err_msg = "HTTP PUT request failed";
+  const name = event.target.name;
 
-  xows_log(1,"cli_upld_xhr_error",err_msg);
+  console.log(event);
 
-  // Forward the error event
-  if(xows_isfunc(xows_cli_upld_fw_error))
-    xows_cli_upld_fw_error(err_msg);
+  const mesg = "HTTP PUT failed";
+  xows_log(1,"cli_upld_put_error",mesg,name);
 
-  xows_cli_upld_param = null; //< Reset query data
-  xows_cli_upld_xhr = null;
+  // Retrieve initial query parameters
+  const param = xows_cli_upld_param.get(name);
+  if(xows_isfunc(param.onerror))
+    param.onerror(name, mesg);
+
+  xows_cli_upld_param.delete(name);
 }
 
 /**
@@ -2665,58 +2615,105 @@ function xows_cli_upld_xhr_error(event)
  *
  * @param   {object}    event     Error event object
  */
-function xows_cli_upld_xhr_abort(event)
+function xows_cli_upld_put_abort(event)
 {
-  xows_log(1,"cli_upld_xhr_error","http PUT request aborted by user");
-  xows_cli_upld_param = null; //< Reset query data
-  xows_cli_upld_xhr = null;
-  // Forward Uploard aborted
-  if(xows_isfunc(xows_cli_upld_fw_abort))
-    xows_cli_upld_fw_abort();
+  const name = event.target.name;
+
+  xows_log(1,"cli_upld_xhr_error","HTTP PUT aborted by user",name);
+
+  // Retrieve initial query parameters
+  const param = xows_cli_upld_param.get(name);
+  if(xows_isfunc(param.onabort))
+    param.onabort(name);
+
+  xows_cli_upld_param.delete(name);
 }
 
 /**
  * Function to handle an Http Upload query result, then start upload
  * if slot was given
  *
- * @param   {string}    put_url   URL for HTTP PUT request or null if denied
- * @param   {string}    head_list Additionnal <header> elements list for PUT request
- * @param   {string}    get_url   URL to donwload file once uploaded
+ * @param   {string}    name      Initial query file name
+ * @param   {string}    puturl    URL for HTTP PUT request or null if denied
+ * @param   {object[]}  headers   Additionnal <header> elements list for PUT request
+ * @param   {string}    geturl    URL to donwload file once uploaded
  * @param   {string}    error     Optional error message if denied
  */
-function xows_cli_upld_handle(put_url, head_list, get_url, error)
+function xows_cli_upld_result(name, puturl, headers, geturl, error)
 {
+  // Retrieve initial query parameters
+  const param = xows_cli_upld_param.get(name);
+
   // Check if we got an error
-  if(!put_url) {
-    xows_cli_upld_param = null; //< Reset query data
-    if(xows_isfunc(xows_cli_upld_fw_error))
-      xows_cli_upld_fw_error(error);
+  if(!puturl) {
+    const mesg = "upload denied: "+error;
+    xows_log(1,"cli_upld_result",mesg,name);
+    if(xows_isfunc(param.onerror))
+      param.onerror(name, mesg);
+    xows_cli_upld_param.delete(name);
     return;
   }
+
   // Store the URL to download the file once uploaded
-  xows_cli_upld_param.url = get_url;
-  // Retreive file object and create formdata
-  const file = xows_cli_upld_param.file;
-  const data = new FormData();
-  data.append(file.name, file);
+  param.url = geturl;
+
   // Open new HTTP request for PUT form-data
   const xhr = new XMLHttpRequest();
-  // Set proper callbacks to Xhr object
-  xhr.upload.addEventListener("progress", xows_cli_upld_xhr_progress, false);
-  xhr.upload.addEventListener("load", xows_cli_upld_xhr_success, false);
-  xhr.upload.addEventListener("error", xows_cli_upld_xhr_error, false);
-  xhr.upload.addEventListener("abort", xows_cli_upld_xhr_abort, false);
-  // Create PUT request with proper headers
-  xhr.open("PUT", put_url, true);
-  xhr.setRequestHeader("Content-Type","main_menucation/octet-stream");
-  for(let i = 0; i < head_list.length; ++i)
-    xhr.setRequestHeader(head_list[i].getAttribute("name"),head_list[i].innerHTML);
+  param.xhr = xhr;
 
-  xows_log(2,"cli_upload_handle","send PUT http request",put_url);
-  // Store reference to XMLHttpRequest
-  xows_cli_upld_xhr = xhr;
+  // Create PUT request with proper headers
+  xhr.open("PUT", puturl, true);
+
+  xhr.setRequestHeader("Content-Type","main_menucation/octet-stream");
+  for(let i = 0; i < headers.length; ++i)
+    xhr.setRequestHeader(headers[i].getAttribute("name"),headers[i].innerHTML);
+
+  xows_log(2,"cli_upld_result","sending HTTP PUT request",puturl);
+
+  // Set proper callbacks to Xhr object
+  xhr.upload.onprogress = xows_cli_upld_put_progress;
+  xhr.upload.onload = xows_cli_upld_put_load;
+  xhr.upload.onerror = xows_cli_upld_put_error;
+  xhr.upload.onabort = xows_cli_upld_put_abort;
+  xhr.upload.name = name; //< Custom parameter
+
   // Here we go...
-  xhr.send(file);
+  xhr.send(param.file);
+}
+
+/**
+ * Function to query an Http upload slot
+ *
+ * @param   {object}    file        File object to upload
+ * @param   {object}    onerror     On upload error callback
+ * @param   {object}    onload      On upload load callback
+ * @param   {object}    onprogress  On upload progress callback
+ * @param   {object}    onabort     On upload aborted callback
+ */
+function xows_cli_upld_query(file, onerror, onload, onprogress, onabort)
+{
+  if(xows_cli_upld_param.has(file.name))
+    return;
+
+  if(!xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
+    const mesg = "HTTP File Upload (XEP-0363) service is unavailable";
+    xows_log(1,"cli_upld_query",mesg);
+    xows_cli_fw_onerror(XOWS_SIG_ERR, mesg);
+    return;
+  }
+
+  xows_log(2,"cli_upld_query","HTTP-Upload query",file.name);
+
+  // Create a new param object to store query data
+  xows_cli_upld_param.set(file.name,{ "file":file,
+                                      "onerror":onerror,
+                                      "onload":onload,
+                                      "onprogress":onprogress,
+                                      "onabort":onabort});
+
+  // Query an upload slot to XMPP service
+  xows_xmp_upld_query(xows_cli_svc_url.get(XOWS_NS_HTTPUPLOAD),
+                      file.name, file.size, file.type, xows_cli_upld_result);
 }
 
 /**
