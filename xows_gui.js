@@ -3508,11 +3508,11 @@ function xows_gui_chat_panl_onkeyp(event)
         if(edit_mesg.innerText.length) {
 
           // Send message
-          xows_cli_send_message(xows_gui_peer, edit_mesg.innerText);
+          xows_cli_send_message(xows_gui_peer, edit_mesg.innerText.trimEnd());
+          edit_mesg.innerText = ""; //< Empty any residual <br>
 
           // Add CSS class to show placeholder
           edit_mesg.classList.add("PLACEHOLD");
-          edit_mesg.innerText = ""; //< Empty any residual <br>
         }
 
         // Reset chatsate to active
