@@ -214,11 +214,10 @@ button:disabled {
   height: 0px !important;
 }
 .LOADERR {
-  background-size: 32px;
+  background-size: 40%;
   background-repeat: no-repeat;
   background-position: center;
-  background-image: url("images/delete.svg");
-  opacity: .5;
+  background-image: url("images/logo_404.svg");
 }
 @keyframes ring-dialog-anim {
   0% {
@@ -1856,7 +1855,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   padding: 0 10px;
   background-color: var(--base-tone4);
   scrollbar-color: var(--base-tone1) transparent;
-  scroll-snap-type: y mandatory;
+  /*scroll-snap-type: y mandatory;*/
 }
 @media (max-width: 824px) {
   .chat-main {
@@ -2063,9 +2062,13 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* Main Page - Center Col - Main Frame - Chat History */
 /* ------------------------------------------------------------------ */
 .chat-hist {
+  display: flex;
+  flex-direction: column;
+  align-content: end;
   margin: 0;
   padding: 0;
   width: 100%;
+  min-height: 100%;
 }
 .chat-hist ul {
   list-style: none;
@@ -2209,24 +2212,25 @@ div[show="4"]  { background-color: var(--show-chat); }
 /* Main Page - Center Col - Foot Frame - Unread Chat message notifier */
 /* ------------------------------------------------------------------ */
 .hist-bot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: -webkit-sticky;
   position: sticky;
-  height: 22px;
+  height: 26px;
   bottom: 0;
-  padding: 3px 15px;
-  border-radius: 10px 10px 2px 2px;
-  text-align: center;
-  font-size: 0.8em;
-  font-weight: bold;
+  border-radius: 8px 8px 3px 3px;
+  font-size: .9em;
   color: var(--back-text);
   background-color: var(--back-base);
   opacity: 0.9;
   cursor:pointer;
   transition: background-color 200ms ease;
+  margin: 0 2px;
 }
 .hist-bot::before, .hist-bot::after {
-  content:"\25BE";
-  padding: 0 10px;
+  content:"\25BF";
+  padding: 0 20px;
 }
 @media (max-width: 824px) {
   .hist-bot {
@@ -2342,6 +2346,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 .mesg-body footer,
 .mesg-body aside {
   line-height: 0;
+  margin-top: 6px;
 }
 .mesg-body aside {
   display: flex;
@@ -2354,7 +2359,7 @@ div[show="4"]  { background-color: var(--show-chat); }
   font-size: 14px;
   text-decoration: none;
   color: var(--text-tone2);
-  padding: 8px 0 15px 0;
+  margin-bottom: 10px;
 }
 .mesg-body aside a:hover {
   color: var(--link-text-hover);
@@ -2363,7 +2368,8 @@ div[show="4"]  { background-color: var(--show-chat); }
 .mesg-body .LOADERR {
   align-items: center;
   justify-content: center;
-  width: 192px; height: 108px;
+  width: 426px; height: 240px;
+  border-radius: 10px;
 }
 .mesg-body .LOADING a,
 .mesg-body .LOADERR a{
@@ -2384,7 +2390,7 @@ div[show="4"]  { background-color: var(--show-chat); }
 .EMBD-IMG img {
   max-width: 480px; max-height: 300px;
   width: auto;
-  border-radius: 6px;
+  border-radius: 10px;
   border: none;
 }
 .EMBD-IMG iframe {
@@ -2396,9 +2402,8 @@ div[show="4"]  { background-color: var(--show-chat); }
 .EMBD-STR.LOADING,
 .EMBD-STR.LOADERR {
   flex-direction: column;
-  width: 452px; height: 300px;
-  margin: 0;
-  padding: 10px;
+  width: 450px; height: 284px;
+  padding: 10px 10px 10px 9px;
   border-radius: 5px 10px 10px 5px;
   background-color: var(--base-tone3);
   border-left: 5px solid var(--link-base);
