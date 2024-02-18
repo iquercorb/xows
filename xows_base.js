@@ -149,36 +149,36 @@ function xows_random(seed)
  */
 function xows_log(level, scope, message, details, color)
 {
-  if(level <= xows_options.verbose) {
+  if(level > xows_options.verbose)
+    return;
 
-    let style, body = "";
+  let style, body = "";
 
-    if(level > 1 && color) {
-      body += "%c";
-      style = "color:"+color;
+  if(level > 1 && color) {
+    body += "%c";
+    style = "color:"+color;
+  }
+
+  body += message;
+  if(details) body += ": " + details;
+
+  const output = scope + ": " + body;
+
+  // Output log to console
+  switch(level)  {
+  case 0:
+    console.warn(output);
+    break;
+  case 1:
+    console.warn(output);
+    break;
+  default:
+    if(style) {
+      console.log(output, style);
+    } else {
+      console.log(output);
     }
-
-    body += message;
-    if(details) body += ": " + details;
-
-    const output = scope + ": " + body;
-
-    // Output log to console
-    switch(level)  {
-    case 0:
-      console.warn(output);
-      break;
-    case 1:
-      console.warn(output);
-      break;
-    default:
-      if(style) {
-        console.log(output, style);
-      } else {
-        console.log(output);
-      }
-      break;
-    }
+    break;
   }
 }
 
@@ -1125,29 +1125,29 @@ function xows_sdp_parse(raw)
     switch(entry.charAt(0))
     {
     case 'v':   //< v=0
-      sdpout.version = entry.substr(2);
+      sdpout.version = entry.substring(2);
       break;
     case 'o': { //< o=tartempion-5.24 5832058394281212273 0 IN IP4 0.0.0.0
-      const v = entry.substr(2).split(' ');
+      const v = entry.substring(2).split(' ');
       sdpout.origin = { username:v[0],sessionId:v[1],sessionVersion:v[2],
                         netType:v[3],ipVer:parseInt(v[4].charAt(2)),address:v[5] };
       break; }
     case 's':   //< s=-
-      sdpout.name = entry.substr(2);
+      sdpout.name = entry.substring(2);
       break;
     case 't': { //< t=0 0
-      const v = entry.substr(2).split(' ');
+      const v = entry.substring(2).split(' ');
       sdpout.timing = {start:v[0],stop:v[1]};
       break; }
     case 'm': { //< m=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101
       if(!sdpout.media) sdpout.media = [];
-      const v = entry.substr(2).split(' ');
+      const v = entry.substring(2).split(' ');
       sdpout.media.push({type:v[0],port:parseInt(v[1]),protocols:v[2],payloads:v.slice(3)});
       break; }
     case 'c':  //< c=IN IP4 0.0.0.0
       if(sdpout.media) {
         const m = sdpout.media[sdpout.media.length - 1];
-        const v = entry.substr(2).split(' ');
+        const v = entry.substring(2).split(' ');
         m.connection = {type:v[0],version:parseInt(v[1].charAt(2)),ip:v[2]};
       }
       break;
@@ -1155,8 +1155,8 @@ function xows_sdp_parse(raw)
       //xows_sdp_parse_a(sdpout.media ? sdpout.media[sdpout.media.length - 1] : sdpout, entry);
       const parent = sdpout.media ? sdpout.media[sdpout.media.length - 1] : sdpout;
       const c = entry.indexOf(':'); //< Semicolon position
-      const v = (c > 0) ? entry.substr(c + 1).split(' ') : null; //< Attributes values
-      const n = (c > 0) ? entry.substr(2,c - 2) : entry.substr(2); //< Attribute name
+      const v = (c > 0) ? entry.substring(c + 1).split(' ') : null; //< Attributes values
+      const n = (c > 0) ? entry.substring(2,c - 2) : entry.substring(2); //< Attribute name
 
       switch(n)
       {
@@ -1275,7 +1275,7 @@ function xows_sdp_get_medias(raw)
 
     m += 2;
 
-    const media = raw.substr(m).split(' ')[0];
+    const media = raw.substring(m).split(' ')[0];
 
     if(media === "audio" && !constraints.audio)
       constraints.audio = true;
