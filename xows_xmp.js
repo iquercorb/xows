@@ -53,6 +53,7 @@ const XOWS_NS_DELAY        = "urn:xmpp:delay";
 const XOWS_NS_CARBONS      = "urn:xmpp:carbons";
 const XOWS_NS_CARBONS_RUL  = "urn:xmpp:carbons:rules";
 const XOWS_NS_RECEIPTS     = "urn:xmpp:receipts";
+const XOWS_NS_CORRECT      = "urn:xmpp:message-correct:0";
 const XOWS_NS_MAM          = "urn:xmpp:mam";
 const XOWS_NS_VCARD4       = "urn:xmpp:vcard4";
 const XOWS_NS_AVATAR_DATA  = "urn:xmpp:avatar:data";
@@ -386,6 +387,7 @@ function xows_xmp_get_caps()
     xows_xml_node("feature",{"var":XOWS_NS_VERSION}),
     xows_xml_node("feature",{"var":XOWS_NS_CHATSTATES}),
     xows_xml_node("feature",{"var":XOWS_NS_RECEIPTS}),
+    xows_xml_node("feature",{"var":XOWS_NS_CORRECT}),
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
     xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
     xows_xml_node("feature",{"var":vcard4}),
@@ -2984,7 +2986,7 @@ function xows_xmp_recv_mam_result(result)
   const forward = result.querySelector("forwarded");
   if(!forward) return false;
 
-  let id, from, to, time, body, stat;
+  let id, from, to, time, body, corr;
 
   // We should found a <delay> node
   const delay = forward.querySelector("delay");
@@ -2997,21 +2999,20 @@ function xows_xmp_recv_mam_result(result)
     from = message.getAttribute("from");
     to = message.getAttribute("to");
     // Loop over children
-    let child, xmlns, tag, i = message.childNodes.length;
+    let node, i = message.childNodes.length;
     while(i--) {
-      child = message.childNodes[i];
+      node = message.childNodes[i];
       // Skip the non-object nodes
-      if(child.nodeType !== 1)  continue;
-
-      xmlns = child.getAttribute("xmlns");
-      tag = child.tagName;
-      // Check for.chate
-      if(xmlns === XOWS_NS_CHATSTATES) {
-        stat = tag; continue;
+      if(node.nodeType !== 1)
+        continue;
+      // Check for correction
+      if(node.getAttribute("xmlns") === XOWS_NS_CORRECT) {
+        corr = node.getAttribute("id");
+        continue;
       }
       // Check for <body> node
-      if(child.tagName === "body") {
-        body = child.hasChildNodes() ? xows_xml_get_text(child) : "";
+      if(node.tagName === "body") {
+        body = node.hasChildNodes() ? xows_xml_get_text(node) : "";
       }
     }
 
@@ -3019,7 +3020,7 @@ function xows_xmp_recv_mam_result(result)
     if(!time) time = new Date(0).getTime();
 
     // Add archived message to stack
-    xows_xmp_mam_stack.get(queryid).push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body});
+    xows_xmp_mam_stack.get(queryid).push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body,"corr":corr});
 
     xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
     return true; //< stanza processed
@@ -3068,7 +3069,7 @@ function xows_xmp_recv_message(stanza)
   const from = stanza.getAttribute("from");
   const to = stanza.getAttribute("to");
 
-  let body, subj, time, chat, rcid;
+  let body, subj, time, chat, corr, rcid;
 
   let xmlns, tag, node, i = stanza.childNodes.length;
   while(i--) {
@@ -3115,6 +3116,11 @@ function xows_xmp_recv_message(stanza)
       time = new Date(node.getAttribute("stamp")).getTime();
       continue;
     }
+    // Check for <replace> node, meaning of replacement
+    if(xmlns === XOWS_NS_CORRECT) {
+      corr = node.getAttribute("id");
+      continue;
+    }
     // Check for <body> node
     if(tag === "body") {
       body = xows_xml_get_text(node);
@@ -3134,7 +3140,7 @@ function xows_xmp_recv_message(stanza)
     handled = true;
   }
   if(body !== undefined) {
-    xows_xmp_fw_onmessage(id, type, from, to, body, time);
+    xows_xmp_fw_onmessage(id, type, from, to, body, time, corr);
     handled = true;
   }
   if(rcid !== undefined) {
@@ -3306,10 +3312,11 @@ function xows_xmp_send_chatstate(to, type, chat)
  * @param   {string}    to        JID of the recipient
  * @param   {string}    body      Message content
  * @param   {boolean}   recp      Request message receipt
+ * @param   {string}   [corr]     Optionnal message ID this one replace
  *
  * @return  {string}    Sent message ID
  */
-function xows_xmp_send_message(type, to, body, recp)
+function xows_xmp_send_message(type, to, body, recp, corr)
 {
   // Generate 'custom' id to allow sender to track message
   const id = xows_gen_uuid();
@@ -3320,6 +3327,9 @@ function xows_xmp_send_message(type, to, body, recp)
 
   // Add receipt request
   if(recp) xows_xml_parent(stanza, xows_xml_node("request",{"xmlns":XOWS_NS_RECEIPTS}));
+
+  // Add replace
+  if(corr) xows_xml_parent(stanza, xows_xml_node("replace",{"id":corr,"xmlns":XOWS_NS_CORRECT}));
 
   xows_log(2,"xmp_send_message","send message","type "+type+" to "+to);
 

@@ -27,13 +27,13 @@
     <div class="col-frame">
       <!-- Head Frame (Roster Title bar) -->
       <div id="rost_head" class="row-head rost-head">
-        <div id="rost_titl" class="head-info">${'Contacts'}</div>
-        <div class="head-meta"></div>
-        <div class="head-acts">
+        <head-info id="rost_titl">${'Contacts'}</head-info>
+        <head-meta></head-meta>
+        <head-acts>
           <button id="room_upd" class="room-upd HIDDEN" title="${'Query public chatrooms list'}"></button>
           <button id="room_add" class="room-add HIDDEN" title="${'Join a chatroom'}"></button>
           <button id="cont_add" class="peer-add" title="${'Add a contact'}"></button>
-        </div>
+        </head-acts>
       </div>
       <!-- Main Frame (Roster Lists) -->
       <div id="user_rost" class="row-main user-rost">
@@ -66,7 +66,7 @@
         <div class="user-cont">
           <div id="menu_show" class="peer-icon">
             <figure id="user_avat">
-              <div id="user_show" class="PEER-SHOW" show="-1"></div>
+              <peer-show id="user_show" show="-1"></peer-show>
             </figure>
           </div>
           <div class="peer-info">
@@ -77,10 +77,8 @@
             <button id="menu_user" class="user-edit"  title="${'Edit user profile'}"></button>
           </div>
         </div>
-        <!-- <div class="user-stat"> -->
-          <input id="user_stat" class="user-stat" placeholder="${'No status defined'}"></input>
-          <!-- <button></button> -->
-        <!-- </div> -->
+        <stat-inpt id="stat_inpt" class="PLACEHOLD" contenteditable="true" placeholder="${'No status defined'}"></stat-inpt>
+        <!-- <button></button> -->
       </div>
     </div>
     <!-- Left Handle -->
@@ -90,22 +88,22 @@
   <div id="main_colc" class="col-cntr">
     <div id="chat_fram" class="col-frame HIDDEN">
       <!-- Head Frame (Chat Title bar) -->
-      <div id="chat_head" class="row-head chat-head">
-        <div class="head-info">
-          <div id="chat_titl" class="chat-titl"></div>
-          <div id="chat_addr" class="chat-addr"></div>
-          <div id="chat_show" class="chat-show HIDDEN" show="-1"></div>
-        </div>
-        <div id="chat_meta" class="head-meta"></div>
-        <div class="head-acts">
+      <chat-head id="chat_head" class="row-head">
+        <head-info>
+          <chat-titl id="chat_titl"></chat-titl>
+          <chat-addr id="chat_addr"></chat-addr>
+          <peer-show id="chat_show" class="HIDDEN" show="-1"></peer-show>
+        </head-info>
+        <head-meta id="meta_inpt" placeholder="${'Set Room topic ...'}"></head-meta>
+        <head-acts>
           <button id="chat_rtcv" class="chat-rtcv HIDDEN" title="${'Video call'}"></button>
           <button id="chat_rtca" class="chat-rtca HIDDEN" title="${'Audio call'}"></button>
           <button id="chat_conf" class="chat-conf HIDDEN" title="${'Room configuration'}"></button>
           <button id="chat_book" class="chat-book HIDDEN" title="${'Add Room to Bookmarks'}"></button>
           <button id="chat_noti" class="CHAT-NOTI" title="${'Enable notifications'}"></button>
           <button id="chat_occu" class="chat-occu HIDDEN" title="${'Room occupants list'}"></button>
-        </div>
-      </div>
+        </head-acts>
+      </chat-head>
       <!-- Half Frame (Chat Multimedia session) -->
       <div id="chat_call" class="chat-call">
         <div class="call-view">
@@ -178,7 +176,7 @@
         <div id="chat_panl" class="chat-panl">
           <div id="chat_edit" class="chat-edit">
             <button id="edit_upld" class="edit-upld" title="${'Upload a file'}"></button>
-            <div id="edit_mesg" class="edit-mesg PLACEHOLD" placeholder="${'Send a message'}" contenteditable spellcheck></div>
+            <chat-inpt id="chat_inpt" class="PLACEHOLD" placeholder="${'Send a message'}" contenteditable="true" spellcheck="true"></chat-inpt>
             <button id="edit_emoj" class="edit-emoj" title="${'Add an emoji'}"> </button>
           </div>
           <div class="chat-info">
@@ -198,13 +196,13 @@
     <div class="col-frame">
       <!-- Head Frame (Room Title bar) -->
       <div id="room_head" class="row-head room-head">
-        <div class="head-info">${'Occupants'}</div>
-        <div class="head-meta"></div>
-        <div class="head-acts">
+        <head-info>${'Occupants'}</head-info>
+        <head-meta></head-meta>
+        <head-acts>
           <button id="occu_conf" class="occu-conf HIDDEN" title="${'Manage occupant'}" disabled="1"></button>
           <button id="occu_kick" class="occu-kick HIDDEN" title="${'Kick occupant'}" disabled="1"></button>
           <!-- <button id="occu_kban" class="occu-kban HIDDEN" title="${'Ban occupant'}"></button> -->
-        </div>
+        </head-acts>
       </div>
       <!-- Main Frame (Room Occupants List) -->
       <div id="occu_list" class="row-main occu-list list-scroll">

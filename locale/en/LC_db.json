@@ -158,7 +158,7 @@
   "Disconnect":
   "",
 
-  "Change Room topic":
+  "Set Room topic ...":
   "",
 
   "Video call":
@@ -462,5 +462,8 @@
   "",
 
   "You missed a call":
+  "",
+  
+  "modified":
   ""
 }

@@ -1989,8 +1989,9 @@ function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
  * @param   {string}    to        Recipient JID
  * @param   {string}    body      Message content
  * @param   {number}   [time]     Optional provided time (Unix epoch)
+ * @param   {string}   [corr]     Optional message ID to replace
  */
-function xows_cli_xmp_onmessage(id, type, from, to, body, time)
+function xows_cli_xmp_onmessage(id, type, from, to, body, time, corr)
 {
   if(type !== "chat" && type !== "groupchat") {
     xows_log(1,"cli_xmp_onmessage","invalid message type",type);
@@ -2032,7 +2033,7 @@ function xows_cli_xmp_onmessage(id, type, from, to, body, time)
   xows_log(2,"cli_xmp_onmessage","chat message",from+" \""+body+"\"");
 
   // Forward received message
-  xows_cli_fw_onmessage(peer, id, from, body, time, sent, true, sndr);
+  xows_cli_fw_onmessage(peer, id, from, body, time, sent, true, sndr, corr);
 }
 
 /**
@@ -2227,8 +2228,9 @@ function xows_cli_mam_query(peer, max, start, end, onresult)
  *
  * @param   {string}    peer      Recipient peer (Room or Contact)
  * @param   {string}    body      Message content
+ * @param   {string}   [corr]     Optionnal message ID this one replace
  */
-function xows_cli_send_message(peer, body)
+function xows_cli_send_message(peer, body, corr)
 {
   // Message with empty body are devil
   if(!body.length) {
@@ -2265,10 +2267,10 @@ function xows_cli_send_message(peer, body)
   xows_log(2,"cli_user_send_message","send "+type+" message",to+" \""+body+"\"");
 
   // Send message with body
-  const id = xows_xmp_send_message(type, to, body, use_recp);
+  const id = xows_xmp_send_message(type, to, body, use_recp, corr);
 
   // Forward sent message
-  xows_cli_fw_onmessage(peer, id, from, body, new Date().getTime(), true, !use_recp, xows_cli_self);
+  xows_cli_fw_onmessage(peer, id, from, body, new Date().getTime(), true, !use_recp, xows_cli_self, corr);
 }
 
 /**

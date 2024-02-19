@@ -440,14 +440,14 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("menu_show"),  "click",    xows_gui_menu_show_onclick);
   xows_doc_listener_add(xows_doc("drop_show"),  "click",    xows_gui_menu_show_onclick);
   xows_doc_listener_add(xows_doc("menu_user"),  "click",    xows_gui_page_user_open);
-  xows_doc_listener_add(xows_doc("user_stat"),  "keypress", xows_gui_user_stat_onkeyp);
-  xows_doc_listener_add(xows_doc("user_stat"),  "blur",     xows_gui_user_stat_onblur);
+  xows_doc_listener_add(xows_doc("stat_inpt"),  "input",    xows_gui_stat_inpt_oninput);
+  xows_doc_listener_add(xows_doc("stat_inpt"),  "blur",     xows_gui_stat_inpt_onblur);
 
   // Chat header
   const chat_head = xows_doc("chat_head");
-  xows_doc_listener_add(chat_head,              "keypress", xows_gui_chat_head_onkeyp);
-  xows_doc_listener_add(chat_head,              "focusout", xows_gui_chat_head_onfocus);
   xows_doc_listener_add(chat_head,              "click",    xows_gui_chat_head_onclick);
+  xows_doc_listener_add(chat_head,              "focusout", xows_gui_chat_head_onfocus);
+  xows_doc_listener_add(chat_head,              "input",    xows_gui_chat_head_oninput);
 
   // Chat main
   const chat_main = xows_doc("chat_main");
@@ -462,8 +462,6 @@ function xows_doc_init(onready)
   const chat_panl = xows_doc("chat_panl");
   xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
   xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
-  xows_doc_listener_add(chat_panl,              "keydown",  xows_gui_chat_panl_onkeyp, false); //< need preventDefault()
-  xows_doc_listener_add(chat_panl,              "keyup",    xows_gui_chat_panl_onkeyp);
   xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_panl_oninput);
   xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
 
@@ -495,6 +493,10 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("mbox_abort"), "click",    xows_doc_mbox_onabort);
   xows_doc_listener_add(xows_doc("mbox_valid"), "click",    xows_doc_mbox_onvalid);
 
+  // Set event listener to handle user keyboard
+  xows_doc_listener_add(document,   "keydown",            xows_gui_wnd_onkey, false); //< need preventDefault()
+  xows_doc_listener_add(document,   "keyup",              xows_gui_wnd_onkey);
+
   // Set event listener to handle user presence and GUI focus
   xows_doc_listener_add(document,   "visibilitychange",   xows_gui_wnd_onfocus);
   xows_doc_listener_add(window,     "focus",              xows_gui_wnd_onfocus);
@@ -522,7 +524,6 @@ function xows_doc_init(onready)
   // Set template callback
   xows_tpl_set_callback("embload", xows_doc_media_onload);
   xows_tpl_set_callback("emberror", xows_doc_media_onerror);
-  xows_tpl_set_callback("embclick", xows_doc_view_open);
 
   xows_log(2,"doc_init","document ready");
 

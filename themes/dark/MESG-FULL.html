@@ -1,12 +1,21 @@
 <li class="MESG-FULL" id="" time="">
-  <div class="mesg-marg">
-    <figure name="" class=""></figure>
-  </div>
-  <div class="mesg-body">
-    <div class="mesg-info">
-      <span name="" class="MESG-FROM"></span>
-      <span class="MESG-DATE"></span>
-    </div>
-    <p></p>
-  </div>
+  <mesg-marg>
+    <figure class="" name=""></figure>
+  </mesg-marg>
+  <mesg-body>
+    <mesg-info>
+      <mesg-from name=""></mesg-from>
+      <mesg-time></mesg-time>
+    </mesg-info>
+    <mesg-inpt contenteditable="true" spellcheck="true"></mesg-inpt>
+    <mesg-dial>
+      <button class="btn-save"></button>
+      <button class="btn-cncl"></button>
+    </mesg-dial>
+    <p data-after="(${'modified'})"></p>
+    <mesg-embd></mesg-embd>
+  </mesg-body>
+  <mesg-acts>
+    <button class="btn-edit"></button>
+  </mesg-acts>
 </li>

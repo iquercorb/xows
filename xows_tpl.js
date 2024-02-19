@@ -172,11 +172,6 @@ let xows_tpl_fw_onembload = function() {};
 let xows_tpl_fw_onemberror = function() {};
 
 /**
- * Callback function for  embeded media click
- */
-let xows_tpl_fw_onembclick = function() {};
-
-/**
  * Set callback functions for common client events
  *
  * Possibles slot parameter value are the following:
@@ -195,7 +190,6 @@ function xows_tpl_set_callback(type, callback)
   switch(type.toLowerCase()) {
     case "embload":     xows_tpl_fw_onembload = callback; break;
     case "emberror":    xows_tpl_fw_onemberror = callback; break;
-    case "embclick":    xows_tpl_fw_onembclick = callback; break;
   }
 }
 
@@ -212,13 +206,6 @@ function xows_tpl_emld(media) {xows_tpl_fw_onembload(media);};
  * this function is used to keep event binding consistent after minification
  */
 function xows_tpl_emer(event) {xows_tpl_fw_onemberror(event);};
-
-/**
- * Callback function for embeded media
- *
- * this function is used to keep event binding consistent after minification
- */
-function xows_tpl_emck(event) {xows_tpl_fw_onembclick(event);};
 
 /**
  * Launch the download of the specified template file
@@ -435,7 +422,7 @@ const xows_tpl_reg_urls = /(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\]*)/g;
 function xows_tpl_embed_wrap(href, media, style, title)
 {
   let wrap = "<aside class=\""; if(style) wrap += style;
-  wrap += "\" onclick=\"xows_tpl_emck(this.firstChild)\">";
+  wrap += "\">";
 
   if(title) wrap += "<a href=\""+href+"\" target=\"_blank\">"+title+"</a>";
 
@@ -700,18 +687,6 @@ let xows_tpl_format_urls = null;
  */
 function xows_tpl_replace_url(href)
 {
-  /*
-  // Add found URL to stack
-  if(xows_tpl_format_urls) xows_tpl_format_urls.push(href);
-
-  // Check whether URL is any of upload/internal service URL
-  const match = href.match(/\/\/(.*?[\w\d_-]+\.\w+)\//);
-  if(match) {
-    if(xows_tpl_embed_uplds[match[1].toLowerCase()]) { //< always compare with lowercase
-      return ""; //< Delete the written URL
-    }
-  }
-  */
   // Return link to URL
   return "<a href=\""+href+"\" title=\""+href+"\" target=\"_blank\">"+href+"</a>";
 }
@@ -721,11 +696,10 @@ function xows_tpl_replace_url(href)
  * emoticons and URLs to properly format them as HTML
  *
  * @param   {string}    body      Original text to parse
- * @param   {string[]}  urls      Optional array that receive found URLs
  *
- * @return  {string}    Enhanced body with HTML inclusions
+ * @return  {object}    Object containing enhanced body and embeded medias
  */
-function xows_tpl_format_body(body, urls)
+function xows_tpl_format_body(body)
 {
   // Escape HTML characters for correct display
   body = xows_html_escape(body);
@@ -739,8 +713,18 @@ function xows_tpl_format_body(body, urls)
   // Search for known and common ASCII emots to replace
   body = body.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
 
+  // Create embded medias from found urls
+  const embeds = xows_tpl_format_embed(body);
+
+  // If message is only a single URL that was embedded we delete the body
+  if(embeds && (body.search(/^\s*(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
+    body = "";
+
+  // Search for remaining URLs to create HTML links from raw URL
+  body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
+
   // Finaly format URL and add embeded media
-  return xows_tpl_format_embed(body);
+  return {"body":body,"embeds":embeds};
 }
 
 /**
@@ -748,12 +732,12 @@ function xows_tpl_format_body(body, urls)
  *
  * @param   {string}    body      Message to parse and modify
  *
- * @return  {string}    Formated message with links and embedded medias
+ * @return  {string}    Formated HTML data of embedded medias
  */
 function xows_tpl_format_embed(body)
 {
   const urls = body.match(xows_tpl_reg_urls);
-  if(!urls) return body;
+  if(!urls) return null;
 
   let match, k, href, media, embeds = "";
 
@@ -784,15 +768,7 @@ function xows_tpl_format_embed(body)
     if(media) embeds += media;
   }
 
-  // If message is only a single URL that was embedded we delete the body
-  if(embeds.length && (body.search(/^\s*(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
-    body = "";
-
-  // Search for remaining URLs to create HTML links from raw URL
-  body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
-
-  // Finaly return the composite
-  return body + embeds;
+  return embeds.length ? embeds : null;
 }
 
 /**
@@ -852,7 +828,7 @@ function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
   inst.title = name+" ("+bare+")";
   inst.querySelector("H3").innerText = name;
   inst.querySelector("P").innerText = stat?stat:"";
-  const show_dv = inst.querySelector(".PEER-SHOW");
+  const show_dv = inst.querySelector("PEER-SHOW");
   const subs_bt = inst.querySelector(".PEER-SUBS");
   const avat_fi = inst.querySelector("FIGURE");
   if(subs < XOWS_SUBS_TO) {
@@ -884,7 +860,7 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
   li.title = name+" ("+li.id+")";
   li.querySelector("H3").innerText = name;
   li.querySelector("P").innerText = stat?stat:"";
-  const show_dv = li.querySelector(".PEER-SHOW");
+  const show_dv = li.querySelector("PEER-SHOW");
   const subs_bt = li.querySelector(".PEER-SUBS");
   const avat_fi = li.querySelector("FIGURE");
   if(subs < XOWS_SUBS_TO) {
@@ -997,7 +973,7 @@ function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
   if(full) inst.setAttribute("jid", full);
   inst.querySelector("H3").innerText = nick;
   inst.querySelector("P").innerText = stat?stat:"";
-  inst.querySelector(".PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
+  inst.querySelector("PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
   // Occupant JID (lock) may be null, undefined or empty string
   inst.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
   // Set proper class for avatar
@@ -1025,7 +1001,7 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
   li.setAttribute("jid", full);
   li.querySelector("H3").innerText = nick;
   li.querySelector("P").innerText = stat?stat:"";
-  li.querySelector(".PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
+  li.querySelector("PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
   // Occupant JID (lock) may be null, undefined or empty string
   li.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
   // Set proper class for avatar
@@ -1043,10 +1019,11 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
  * @param   {boolean}   sent      Marks message as sent by client
  * @param   {boolean}   recp      Marks message as receipt received
  * @param   {object}   [sndr]     Message sender Peer object or null
+ * @param   {boolean}  [repl]     Message is replacement (marks as modified)
  *
  * @return  {object}    History message <li> HTML Elements
  */
-function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
+function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
 {
   // Select message model, either full with name and avar or
   // simple aggregate.
@@ -1058,27 +1035,31 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr)
   // Set proper value to message elements
   inst.classList.add(sent ? "MESG-SENT" : "MESG-RECV");
   if(recp) inst.classList.add("MESG-RECP");
+  if(repl) inst.classList.add("MESG-REPL");
   inst.setAttribute("id", id);
   inst.setAttribute("from", from);
   inst.setAttribute("time", time);
 
-  // Add formated body
-  inst.querySelector("P").innerHTML = xows_tpl_format_body(body);
+  // Add raw body
+  inst.querySelector("MESG-INPT").innerHTML = xows_html_escape(body);
 
+  // Add formated body
+  const format = xows_tpl_format_body(body);
+  inst.querySelector("P").innerHTML = format.body;
+  if(format.embeds)
+    inst.querySelector("MESG-EMBD").innerHTML = format.embeds;
+
+  // Add time or date
+  inst.querySelector("MESG-TIME").innerText = sndr ? xows_l10n_date(time) : xows_l10n_houre(time);
   if(sndr) {
-    // Add time text
-    inst.querySelector(".MESG-DATE").innerText = xows_l10n_date(time);
     // Add author name
-    const nick_sp = inst.querySelector(".MESG-FROM");
+    const nick_sp = inst.querySelector("MESG-FROM");
     nick_sp.setAttribute("name",xows_jid_to_bare(from));
     nick_sp.innerText = sndr.name;
     // Set proper class for avatar
     const avat_fi = inst.querySelector("FIGURE");
     avat_fi.setAttribute("name",xows_jid_to_bare(from));
     avat_fi.className = xows_tpl_spawn_avat_cls(sndr.avat);
-  } else {
-    // Add hour
-    inst.querySelector(".MESG-HOUR").innerText = xows_l10n_houre(time);
   }
 
   // Return final tree

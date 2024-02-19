@@ -172,7 +172,7 @@ function xows_gui_peer_doc_init(peer)
    // set chat title bar informations
   const chat_show = xows_doc_frag_element_find(peer.bare,"chat_head","chat_show");
   const chat_addr = xows_doc_frag_element_find(peer.bare,"chat_head","chat_addr");
-  const chat_meta = xows_doc_frag_element_find(peer.bare,"chat_head","chat_meta");
+  const meta_inpt = xows_doc_frag_element_find(peer.bare,"chat_head","meta_inpt");
   const chat_book = xows_doc_frag_element_find(peer.bare,"chat_head","chat_book");
 
   xows_doc_frag_element_find(peer.bare,"chat_head","chat_titl").innerText = peer.name;
@@ -182,19 +182,20 @@ function xows_gui_peer_doc_init(peer)
   xows_doc_frag_element_find(peer.bare,"chat_head","chat_occu").classList.toggle("HIDDEN",!is_room);
 
   if(is_room) {                               //< XOWS_PEER_ROOM
-    chat_meta.innerText = peer.subj;
+    meta_inpt.innerText = peer.subj ? peer.subj : "";
+    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
     // Cannot bookmark public rooms or already bookmarked
     chat_book.classList.toggle("HIDDEN", (peer.book || peer.publ));
   } else {                                    //< XOWS_PEER_CONT
-    chat_meta.innerText = peer.stat ? peer.stat : "";
+    meta_inpt.innerText = peer.stat ? peer.stat : "";
     chat_show.setAttribute("show", peer.show);
     chat_addr.innerText = "("+peer.bare+")";
     chat_book.classList.add("HIDDEN");
   }
 
   // set chat editor placeholder
-  const edit_mesg = xows_doc_frag_element_find(peer.bare,"chat_panl","edit_mesg");
-  edit_mesg.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
+  const chat_inpt = xows_doc_frag_element_find(peer.bare,"chat_panl","chat_inpt");
+  chat_inpt.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
 
   // Initialize scroll parameters
   xows_gui_peer_scroll_db.set(peer.bare,{scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0});
@@ -897,6 +898,63 @@ function xows_gui_title_pop()
 
 /* -------------------------------------------------------------------
  *
+ * Browser Window - Input Handling
+ *
+ * -------------------------------------------------------------------*/
+
+/**
+ * Chat Editor table to store current pressed (down) key
+ */
+const xows_gui_keyd = new Array(256);
+
+function xows_gui_wnd_onkey(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  // Enable key down according received event
+  xows_gui_keyd[event.keyCode] = (event.type === "keydown");
+
+  // Check for key down event
+  if(event.type === "keydown") {
+
+    // Check for pressed Esc
+    if(event.keyCode === 27) {
+      // Cancel any message correction
+      xows_gui_mesg_inpt_cancel(event.target);
+    }
+
+    // Check for pressed Enter
+    if(event.keyCode === 13) {
+
+      // Check whether shift key is press, meaning escaping to
+      // add new line in input instead of send message.
+      if(xows_gui_keyd[16])
+        return;
+
+      // Prevent browser to append the new-line in the text-area
+      event.preventDefault();
+
+      switch(event.target.tagName)
+      {
+      case "CHAT-INPT":
+        xows_gui_chat_inpt_enter(event.target);
+        break;
+      case "STAT-INPT":
+        xows_gui_stat_inpt_enter(event.target);
+        break;
+      case "HEAD-META":
+        xows_gui_meta_inpt_enter(event.target);
+        break;
+      case "MESG-INPT":
+        xows_gui_mesg_inpt_enter(event.target);
+        break;
+      }
+    }
+  }
+}
+
+/* -------------------------------------------------------------------
+ *
  * Main Interactive Elements
  *
  * -------------------------------------------------------------------*/
@@ -922,8 +980,8 @@ function xows_gui_reset()
   xows_gui_switch_peer(null);
 
   // Reset chat editor
-  xows_doc_cls_add("edit_mesg", "PLACEHOLD");
-  xows_doc("edit_mesg").innerText = "";
+  xows_doc_cls_add("chat_inpt", "PLACEHOLD");
+  xows_doc("chat_inpt").innerText = "";
 
   // clean roster lists
   xows_doc_list_clean("subs_ul");
@@ -936,7 +994,7 @@ function xows_gui_reset()
   xows_doc("user_show").setAttribute("show",XOWS_SHOW_OFF);
   xows_doc("user_name").innerText = "";
   xows_doc("user_addr").innerText = "";
-  xows_doc("user_stat").value = "";
+  xows_doc("stat_inpt").innerText = "";
   xows_doc("user_avat").className = "";
 
   // Reset roster tabs
@@ -1895,7 +1953,11 @@ function xows_gui_cli_onroomrem(bare)
 function xows_gui_cli_onselfchange(user)
 {
   // Compose status string
-  xows_doc("user_stat").value = user.stat ? user.stat : "";
+  if(user.stat) {
+    const stat_inpt = xows_doc("stat_inpt");
+    stat_inpt.innerText = user.stat;
+    stat_inpt.className = "";
+  }
   // Change Show Status displays
   xows_doc("user_show").setAttribute("show", user.show);
   xows_doc("user_name").innerText = user.name;
@@ -1919,7 +1981,7 @@ function xows_gui_cli_onselfchange(user)
 function xows_gui_menu_show_onclick(event)
 {
   // Retreive the parent <li> element of the event target
-  const li = event.target.closest("li");
+  const li = event.target.closest("LI");
 
   // Set presence as selected level
   if(li) {
@@ -1990,10 +2052,9 @@ function xows_gui_chat_conf_update(room)
   const topic = (room.role > XOWS_ROLE_PART);
 
   // Room topic edition
-  const chat_meta = xows_gui_peer_doc(room,"chat_meta");
-  chat_meta.classList.toggle("ENABLED", topic);
-  chat_meta.setAttribute("contenteditable", topic);
-  chat_meta.title = topic ? xows_l10n_get("Change Room topic") : "";
+  const meta_inpt = xows_gui_peer_doc(room,"meta_inpt");
+  meta_inpt.setAttribute("contenteditable", topic);
+  meta_inpt.setAttribute("spellcheck", topic);
 
   // Room configuration button
   const chat_conf = xows_gui_peer_doc(room,"chat_conf");
@@ -2030,10 +2091,10 @@ function xows_gui_chat_head_update(peer)
   // Update chat title bar
   xows_gui_peer_doc(peer,"chat_titl").innerText = peer.name;
 
-  const chat_meta = xows_gui_peer_doc(peer,"chat_meta");
+  const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
 
   if(peer.type === XOWS_PEER_CONT) {  //< XOWS_PEER_CONT
-    chat_meta.innerText = peer.stat;
+    meta_inpt.innerText = peer.stat;
     xows_gui_peer_doc(peer,"chat_show").setAttribute("show",peer.show);
 
     let audio_call = false;
@@ -2049,7 +2110,8 @@ function xows_gui_chat_head_update(peer)
     xows_gui_peer_doc(peer,"chat_rtcv").classList.toggle("HIDDEN",!video_call);
 
   } else {                            //< XOWS_PEER_ROOM
-    chat_meta.innerText = peer.subj;
+    meta_inpt.innerText = peer.subj;
+    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
     xows_gui_peer_doc(peer,"chat_book").classList.toggle("HIDDEN",(peer.book || peer.publ));
   }
 }
@@ -2126,34 +2188,61 @@ function xows_gui_chat_head_onclick(event)
  * -------------------------------------------------------------------*/
 
 /**
+ * Chat Panel on-input callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_chat_head_oninput(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  const meta_inpt = xows_doc("meta_inpt");
+
+  // Check inner text content to show placeholder
+  if(meta_inpt.innerText.length < 2) {
+
+    if(meta_inpt.innerText.trim().length === 0) {
+
+      // Add CSS class to show placeholder
+      meta_inpt.className = "PLACEHOLD";
+      meta_inpt.innerText = ""; //< Empty any residual <br>
+
+      return; //< Return now
+    }
+  }
+
+  // Hide the placeholder text
+  meta_inpt.className = "";
+}
+
+/**
  * Chat Meta (Room Topic) on-focus(out) callback function
  *
  * @param   {object}    event     Event object associated with trigger
  */
 function xows_gui_chat_head_onfocus(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  // Set or reset saved subject
+  document.getElementById("meta_inpt").innerText = xows_gui_peer.subj;
+}
 
-  // Get content
-  const subj = document.getElementById("chat_meta").innerText;
+/**
+ * Chat Meta (Room Topic) validation (enter) function, called when user
+ * press the Enter key (see xows_gui_wnd_onkey() function).
+ *
+ * @param   {object}    input     Input object to validate
+ */
+function xows_gui_meta_inpt_enter(input)
+{
+  // Get entered subject
+  const subj = input.innerText.trimEnd();
 
   // If changed, inform of the new room topic
   if(xows_gui_peer.type === XOWS_PEER_ROOM && subj != xows_gui_peer.subj)
     xows_cli_send_subject(xows_gui_peer, subj);
-}
 
-/**
- * Chat Meta (Room Topic) on-keypress callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_chat_head_onkeyp(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  if(event.keyCode === 13)  //< Return key
-    // Unfocus input, this will throw blur event
-    document.getElementById("chat_meta").blur();
+  // Unfocus input, this will throw blur event
+  input.blur();
 }
 
 /**
@@ -2164,8 +2253,9 @@ function xows_gui_chat_head_onkeyp(event)
  */
 function xows_gui_cli_onsubject(peer, subj)
 {
-  if(peer === xows_gui_peer)
-    xows_gui_peer_doc(peer,"chat_meta").innerText = subj?subj:"";
+  const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
+  meta_inpt.innerText = subj ? subj : "";
+  meta_inpt.className = subj ? "" : "PLACEHOLD";
 }
 
 /* -------------------------------------------------------------------
@@ -2967,6 +3057,38 @@ function xows_gui_chat_main_onscroll(event)
  */
 function xows_gui_chat_main_onclick(event)
 {
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  // Check for click on New Message notification banner
+  if(event.target.tagName === "IMG") {
+    // Open image viewer
+    xows_doc_view_open(event.target);
+    return;
+  }
+
+  // Check for click on New Message notification banner
+  if(event.target.tagName === "BUTTON") {
+
+    // Retrieve the parent <li> element
+    const li = event.target.closest("LI");
+    const inpt = li.querySelector("MESG-INPT");
+
+    switch(event.target.className)
+    {
+    case "btn-edit":
+      xows_gui_mesg_inpt_enable(inpt);
+      break;
+    case "btn-save":
+      xows_gui_mesg_inpt_enter(inpt);
+      break;
+    case "btn-cncl":
+      xows_gui_mesg_inpt_cancel(inpt);
+      break;
+    }
+
+    return;
+  }
+
   // Check for click on New Message notification banner
   if(event.target.id === "hist_bot") {
 
@@ -2976,6 +3098,77 @@ function xows_gui_chat_main_onclick(event)
     // Go to end of history (last messages)
     xows_gui_peer_scroll_down(xows_gui_peer);
   }
+}
+
+/**
+ * History message correction parameters
+ */
+let xows_gui_mesg_corr_raw = "";
+
+/**
+ * History message correction Cancel function
+ *
+ * @param   {object}    input     Input element to validate
+ */
+function xows_gui_mesg_inpt_cancel(input)
+{
+  // Check whether event directely reference object
+  if(input && input.tagName === "MESG-INPT") {
+    // Retrieve the parent <li> element
+    const li = input.closest("LI").classList.remove("MESG-EDIT");
+    return;
+  }
+
+  // We need to search any message in edit mode
+  const chat_hist = xows_doc("chat_hist");
+  const li = chat_hist.querySelector(".MESG-EDIT");
+  if(li) li.classList.remove("MESG-EDIT");
+}
+
+/**
+ * History message correction Enable function
+ *
+ * @param   {object}    input     Input element to validate
+ */
+function xows_gui_mesg_inpt_enable(input)
+{
+  // Cancel any previousely enabled edition
+  xows_gui_mesg_inpt_cancel();
+
+  // Retrieve the parent <li> element
+  const li = input.closest("LI");
+
+  // Save message content for reference
+  xows_gui_mesg_corr_raw = input.innerText.trimEnd();
+
+  // Enable eidition for this message
+  li.classList.add("MESG-EDIT");
+
+  // Set caret
+  xows_doc_caret_at(input);
+}
+
+/**
+ * History message correction validation (enter) function, called when
+ * user press the Enter key (see xows_gui_wnd_onkey() function).
+ *
+ * @param   {object}    input     Input element to validate
+ */
+function xows_gui_mesg_inpt_enter(input)
+{
+  // Retrieve the parent <li> element
+  const li = input.closest("LI");
+
+  // Check for difference to prevent useless correction
+  if(input.innerText.trimEnd() === xows_gui_mesg_corr_raw) {
+    // Cancel edition and return
+    xows_gui_mesg_inpt_cancel(input);
+    return;
+  }
+
+  // Send message correction
+  xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd(), li.getAttribute("id"));
+  li.classList.remove("MESG-EDIT");
 }
 
 /**
@@ -3050,16 +3243,23 @@ function xows_gui_hist_back_recent_new(peer)
  * @param   {boolean}   sent      Marks message as sent by client
  * @param   {boolean}   recp      Marks message as receipt received
  * @param   {object}    sndr      Message sender Peer object
+ * @param   {object}   [disc]     Optionnal discarded message
  */
-function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr)
+function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr, disc)
 {
   // Default is to add a simple aggregated message without author
   // name and avatar
   let aggregate = true;
+  let replace = false;
 
-  // If previous message sender is different or if elapsed time is
-  // greater than 1 houre, we create a new full message block
-  if(prev) {
+  // If this sis a correction message, we kee the same style as the
+  // discarded one
+  if(disc) {
+    replace = true;
+    aggregate = disc.classList.contains("MESG-AGGR");
+  } else if(prev) {
+    // If previous message sender is different or if elapsed time is
+    // greater than 1 houre, we create a new full message block
     const d = time - prev.getAttribute("time");
     if(d > XOWS_MESG_AGGR_THRESHOLD || prev.getAttribute("from") !== from)
       aggregate = false;
@@ -3068,7 +3268,27 @@ function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr)
   }
 
   // Create a simple aggregated message
-  return xows_tpl_mesg_spawn(id, from, body, time, sent, recp, aggregate ? null : sndr);
+  return xows_tpl_mesg_spawn(id, from, body, time, sent, recp, aggregate ? null : sndr, replace);
+}
+
+/**
+ * Discard history message with the specified ID
+ *
+ * @param   {object}    peer      Chat history Peer, Room or Contact
+ * @param   {string}    id        Message ID
+ *
+ * @return  {object}    Discarded message element or null if not found
+ */
+function xows_gui_hist_discard(peer, id)
+{
+  const li = xows_gui_peer_mesg_li(peer, id);
+  if(li) {
+    li.classList.add("DISCARD");
+    li.innerHtml = "";
+    return li;
+  }
+
+  return null;
 }
 
 /**
@@ -3119,12 +3339,17 @@ function xows_gui_hist_update(peer, bare, nick, avat)
  * @param   {boolean}   sent      Marks message as sent by client
  * @param   {boolean}   recp      Marks message as receipt received
  * @param   {object}    sndr      Message sender Peer object
+ * @param   {string}   [corr]     Optionnal message ID to replace
  */
-function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
+function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, corr)
 {
   // If message with id alread exists, return now to prevent double
   if(xows_gui_peer_mesg_li(peer, id))
     return;
+
+  // Search for corrected message to be discarded
+  let dsc_li = null;
+  if(corr) dsc_li = xows_gui_hist_discard(peer, corr);
 
   // If off screen, add unread message badge to the roster contact
   if(peer !== xows_gui_peer)
@@ -3136,7 +3361,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
 
   // Check whether end of history is croped, in this case the new message
   //  must not be appended, we will show it by querying archives
-  if(xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
+  if(xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN") || dsc_li) {
 
     const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
@@ -3147,8 +3372,14 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr)
       xows_gui_peer_doc(peer,"hist_beg").innerText = ""; //< Allow query history
     }
 
-    // Append message to history <ul>
-    hist_ul.appendChild(xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr));
+    const msg_li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr, dsc_li);
+
+    // Insert or append message, depending whether ref_li is null
+    if(dsc_li) {
+      pre_li = hist_ul.insertBefore(msg_li, dsc_li.nextSibling);
+    } else {
+      pre_li = hist_ul.appendChild(msg_li);
+    }
   }
 
   if(!sent && xows_gui_peer_scroll_get(peer) >= 50) {
@@ -3301,21 +3532,32 @@ function xows_gui_mam_parse(peer, result, complete)
     xows_gui_peer_scroll_adjust(peer);
   }
 
-  let pre_li, added = 0;
+  let dsc_li, pre_li, added = 0;
 
   for(let i = 0, n = result.length; i < n; ++i) {
 
+    const mesg = result[i];
+
     // If message with id alread exists, skip to prevent double
-    if(xows_gui_peer_mesg_li(peer, result[i].id))
+    if(xows_gui_peer_mesg_li(peer, mesg.id))
       continue;
 
+    // Search for corrected message to be discarded
+    if(mesg.corr) {
+      dsc_li = xows_gui_hist_discard(peer, mesg.corr);
+    } else {
+      dsc_li = null;
+    }
+
     // Create new message
-    const new_li = xows_gui_hist_gen_mesg(  pre_li, result[i].id, result[i].from,
-                                            result[i].body, result[i].time,
-                                            result[i].sent, true, result[i].sndr, true);
+    const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,true,mesg.sndr,dsc_li);
 
     // Insert or append message, depending whether ref_li is null
-    pre_li = hist_ul.insertBefore(new_li, ref_li);
+    if(dsc_li) {
+      pre_li = hist_ul.insertBefore(new_li, dsc_li.nextSibling);
+    } else {
+      pre_li = hist_ul.insertBefore(new_li, ref_li);
+    }
 
     // Increase added message count
     added++;
@@ -3472,13 +3714,14 @@ function xows_gui_chat_file_onchange(event)
 /**
  * Chat Editor table to store current pressed (down) key
  */
-const xows_gui_edit_mesg_keyd = new Array(256);
+//const xows_gui_edit_mesg_keyd = new Array(256);
 
 /**
  * Chat Panel on-keydown / on-keyup callback function
  *
  * @param   {object}    event     Event object associated with trigger
  */
+/*
 function xows_gui_chat_panl_onkeyp(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
@@ -3520,18 +3763,45 @@ function xows_gui_chat_panl_onkeyp(event)
       }
 
     } else {
-
       // Set composing
       if(xows_gui_peer)
         xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_COMP);
     }
   }
 }
+*/
+
+/**
+ * Chat Message Edition validation (enter) function, called when user
+ * press the Enter key (see xows_gui_wnd_onkey() function).
+ *
+ * @param   {object}    input     Input object to validate
+ */
+function xows_gui_chat_inpt_enter(input)
+{
+  // Send message
+  if(xows_gui_peer) {
+
+    if(input.innerText.length) {
+
+      // Send message
+      xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd());
+      input.innerText = ""; //< Empty any residual <br>
+
+      // Add CSS class to show placeholder
+      input.className = "PLACEHOLD";
+
+    }
+
+    // Reset chatsate to active
+    xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_ACTI);
+  }
+}
 
 /**
  * Chat Editor reference to last selection Range object
  */
-let xows_gui_edit_mesg_rng = null;
+let xows_gui_chat_inpt_rng = null;
 
 /**
  * Chat Panel on-input callback function
@@ -3540,26 +3810,32 @@ let xows_gui_edit_mesg_rng = null;
  */
 function xows_gui_chat_panl_oninput(event)
 {
-  // Store selection range
-  xows_gui_edit_mesg_rng = xows_doc_sel_rng(0);
+  xows_cli_activity_wakeup(); //< Wakeup presence
 
-  const edit_mesg = document.getElementById("edit_mesg");
+  // Set composing
+  if(xows_gui_peer)
+    xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_COMP);
+
+  // Store selection range
+  xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
+
+  const chat_inpt = document.getElementById("chat_inpt");
 
   // Check inner text content to show placeholder
-  if(edit_mesg.innerText.length < 2) {
+  if(chat_inpt.innerText.length < 2) {
 
-    if(edit_mesg.innerText.trim().length === 0) {
+    if(chat_inpt.innerText.trim().length === 0) {
 
       // Add CSS class to show placeholder
-      edit_mesg.classList.add("PLACEHOLD");
-      edit_mesg.innerText = ""; //< Empty any residual <br>
+      chat_inpt.className = "PLACEHOLD";
+      chat_inpt.innerText = ""; //< Empty any residual <br>
 
       return; //< Return now
     }
   }
 
   // Hide the placeholder text
-  edit_mesg.classList.remove("PLACEHOLD");
+  chat_inpt.className = "";
 }
 
 /**
@@ -3574,17 +3850,17 @@ function xows_gui_chat_panl_onclick(event)
   switch(event.target.id)
   {
     case "chat_edit": {
-      const edit_mesg = xows_doc("edit_mesg");
+      const chat_inpt = xows_doc("chat_inpt");
       // Set input focus to message edit area
-      edit_mesg.focus();
+      chat_inpt.focus();
       // move edit caret to end of content
       const rng = xows_doc_sel_rng(0);
-      if(rng.endContainer != edit_mesg)
+      if(rng.endContainer != chat_inpt)
         xows_doc_caret_around(rng.endContainer);
       break;
     }
 
-    case "edit_mesg": {
+    case "chat_inpt": {
       // Get selection range
       const rng = xows_doc_sel_rng(0);
       if(rng.collapsed) {
@@ -3597,7 +3873,7 @@ function xows_gui_chat_panl_onclick(event)
         }
       }
       // Store selection
-      xows_gui_edit_mesg_rng = rng;
+      xows_gui_chat_inpt_rng = rng;
       break;
     }
 
@@ -3624,18 +3900,18 @@ function xows_gui_chat_panl_onclick(event)
  * @param   {string}    text      Text to insert
  * @param   {string}   [tagname]  Optional wrapper node tagname
  */
-function xows_gui_edit_mesg_insert(text, tagname)
+function xows_gui_chat_inpt_insert(text, tagname)
 {
-  const edit_mesg = document.getElementById("edit_mesg");
+  const chat_inpt = document.getElementById("chat_inpt");
 
   // set default carret position if none saved
-  if(!xows_gui_edit_mesg_rng) {
-    xows_doc_caret_at(edit_mesg, true);
-    xows_gui_edit_mesg_rng = xows_doc_sel_rng(0);
+  if(!xows_gui_chat_inpt_rng) {
+    xows_doc_caret_at(chat_inpt, true);
+    xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
   }
 
   // Get the last saved selection range (caret position)
-  const rng = xows_gui_edit_mesg_rng;
+  const rng = xows_gui_chat_inpt_rng;
 
   // Delete content of selection if any
   if(rng && !rng.collapsed)
@@ -3656,16 +3932,16 @@ function xows_gui_edit_mesg_insert(text, tagname)
 
 
   // Hide the placeholder text
-  edit_mesg.classList.remove("PLACEHOLD");
+  chat_inpt.classList.remove("PLACEHOLD");
 
   // Focus on input
-  edit_mesg.focus();
+  chat_inpt.focus();
 
   // Move caret after the created node
   xows_doc_caret_around(node);
 
   // Store selection
-  xows_gui_edit_mesg_rng = xows_doc_sel_rng(0);
+  xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
 }
 
 /* -------------------------------------------------------------------
@@ -3684,7 +3960,7 @@ function xows_gui_drop_emoj_onclick(event)
   const li = event.target.closest("LI");
 
   // Check whether we got click from drop or button
-  if(li) xows_gui_edit_mesg_insert(li.childNodes[0].nodeValue, "emoj"); //< Insert selected Emoji
+  if(li) xows_gui_chat_inpt_insert(li.childNodes[0].nodeValue, "emoj"); //< Insert selected Emoji
 }
 
 /* -------------------------------------------------------------------
@@ -4028,28 +4304,59 @@ function xows_gui_occu_list_onclick(event)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_user_stat_onblur(event)
+function xows_gui_stat_inpt_onblur(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
+  // Set value to current stat
+  xows_doc("stat_inpt").innerText = xows_cli_self.stat;
+}
+
+/**
+ * Chat Panel on-input callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_stat_inpt_oninput(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  const stat_inpt = xows_doc("stat_inpt");
+
+  // Check inner text content to show placeholder
+  if(stat_inpt.innerText.length < 2) {
+
+    if(stat_inpt.innerText.trim().length === 0) {
+
+      // Add CSS class to show placeholder
+      stat_inpt.className = "PLACEHOLD";
+      stat_inpt.innerText = ""; //< Empty any residual <br>
+
+      return; //< Return now
+    }
+  }
+
+  // Hide the placeholder text
+  stat_inpt.className = "";
+}
+
+/**
+ * User Presence Status validation (enter) function, called when user
+ * press the Enter key (see xows_gui_wnd_onkey() function).
+ *
+ * @param   {object}    input     Input object to validate
+ */
+function xows_gui_stat_inpt_enter(input)
+{
   // Get and reset value
-  const stat = xows_doc("user_stat").value;
+  const stat = input.innerText;
 
   // If changed, inform of the new status
   if(stat != xows_cli_self.stat)
     xows_cli_change_status(stat);
-}
 
-/**
- * User Presence Status on-keypress callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_user_stat_onkeyp(event)
-{
-  if(event.keyCode === 13)  //< Return key
-    // Unfocus input, this will throw blur event
-    xows_doc("user_stat").blur();
+  // Unfocus input, this will throw blur event
+  input.blur();
 }
 
 /* -------------------------------------------------------------------

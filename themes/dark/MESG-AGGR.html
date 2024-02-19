@@ -1,8 +1,17 @@
 <li class="MESG-AGGR" id="" time="">
-  <div class="mesg-marg">
-    <div class="MESG-HOUR"></div>
-  </div>
-  <div class="mesg-body">
-    <p></p>
-  </div>
+  <mesg-marg>
+    <mesg-time></mesg-time>
+  </mesg-marg>
+  <mesg-body>
+    <mesg-inpt contenteditable="true" spellcheck="true"></mesg-inpt>
+    <mesg-dial>
+      <button class="btn-save"></button>
+      <button class="btn-cncl"></button>
+    </mesg-dial>
+    <p data-after="(${'modified'})" spellcheck="true"></p>
+    <mesg-embd></mesg-embd>
+  </mesg-body>
+  <mesg-acts>
+    <button class="btn-edit"></button>
+  </mesg-acts>
 </li>

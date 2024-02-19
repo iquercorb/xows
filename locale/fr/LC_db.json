@@ -158,8 +158,8 @@
   "Disconnect":
   "Se déconnecter",
 
-  "Change Room topic":
-  "Changer le sujet du Salon",
+  "Set Room topic ...":
+  "Définir le sujet du Salon ...",
 
   "Video call":
   "Appel vidéo",
@@ -459,5 +459,8 @@
   "Appel en cours...",
 
   "You missed a call":
-  "Vous avez manqué un appel"
+  "Vous avez manqué un appel",
+  
+  "modified":
+  "modifié"
 }
