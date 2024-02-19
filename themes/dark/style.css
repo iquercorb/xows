@@ -2081,11 +2081,18 @@ head-info peer-show {
   margin: 0;
   padding: 0;
 }
-.chat-hist li  {
-  border-radius: 6px;
+.chat-hist li {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  border-radius: 8px;
+  padding: 3px 0 2px 0;
 }
 .chat-hist li:hover {
   background-color: var(--base-tone7);
+}
+.chat-hist .MESG-FULL {
+  margin-top: 20px;
 }
 .hist-bound {
   height: 230px;
@@ -2264,19 +2271,6 @@ head-info peer-show {
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - History Message */
 /* ------------------------------------------------------------------ */
-.MESG-FULL {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  margin: 20px 0 0 0;
-  padding: 5px 0 0 0;
-}
-.MESG-AGGR {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-}
-
 mesg-marg {
   flex: 0 0 60px;
   text-align: left;
@@ -2288,7 +2282,10 @@ mesg-time {
   font-size: 0.7em;
   color: var(--text-tone3);
   margin-left: 11px;
-  padding: 7px 0;
+  vertical-align: middle;
+}
+mesg-marg mesg-time {
+  vertical-align: bottom;
 }
 mesg-body {
   flex: 1 0 auto;
@@ -2374,6 +2371,7 @@ mesg-body p::after {
   font-size: .7em;
   color: var(--text-tone3);
   margin-left: 5px;
+  vertical-align: bottom;
 }
 .MESG-EDIT {
   background-color: var(--base-tone7);
@@ -2400,9 +2398,7 @@ mesg-body p::after {
 .MESG-SENT .btn-edit {
   display: block;
 }
-.MESG-RECV mesg-body p {
-  color: var(--text-tone2);
-}
+.MESG-RECV mesg-body p,
 .MESG-RECP mesg-body p {
   color: var(--text-tone1);
 }
@@ -2430,17 +2426,19 @@ mesg-body p::after {
 /* ------------------------------------------------------------------ */
 /* Main Page - Message Embeded Medias/Elements */
 /* ------------------------------------------------------------------ */
-mesg-embd,
-mesg-embd aside {
+mesg-embd {
+  display: block;
   line-height: 0;
 }
 mesg-embd aside {
   display: flex;
+  line-height: 0;
   background-color: var(--base-tone3);
   border-radius: 6px;
   margin-top: 6px;
 }
-mesg-embd aside a {
+mesg-embd aside a,
+mesg-embd aside a:visited {
   display: block;
   line-height: 14px;
   font-size: 14px;

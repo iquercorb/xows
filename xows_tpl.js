@@ -1032,23 +1032,6 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
   // Clone DOM tree from template
   const inst = xows_tpl_model[model].firstChild.cloneNode(true);
 
-  // Set proper value to message elements
-  inst.classList.add(sent ? "MESG-SENT" : "MESG-RECV");
-  if(recp) inst.classList.add("MESG-RECP");
-  if(repl) inst.classList.add("MESG-REPL");
-  inst.setAttribute("id", id);
-  inst.setAttribute("from", from);
-  inst.setAttribute("time", time);
-
-  // Add raw body
-  inst.querySelector("MESG-INPT").innerHTML = xows_html_escape(body);
-
-  // Add formated body
-  const format = xows_tpl_format_body(body);
-  inst.querySelector("P").innerHTML = format.body;
-  if(format.embeds)
-    inst.querySelector("MESG-EMBD").innerHTML = format.embeds;
-
   // Add time or date
   inst.querySelector("MESG-TIME").innerText = sndr ? xows_l10n_date(time) : xows_l10n_houre(time);
   if(sndr) {
@@ -1061,6 +1044,32 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
     avat_fi.setAttribute("name",xows_jid_to_bare(from));
     avat_fi.className = xows_tpl_spawn_avat_cls(sndr.avat);
   }
+
+  // Set proper value to message elements
+  if(sent) {
+    inst.classList.add("MESG-SENT");
+    // Add raw body for message edition
+    inst.querySelector("MESG-INPT").innerHTML = xows_html_escape(body);
+  } else {
+    inst.classList.add("MESG-RECV");
+    // Remove unused nodes
+    const mesg_body = inst.querySelector("MESG-BODY");
+    mesg_body.removeChild(inst.querySelector("MESG-INPT"));
+    mesg_body.removeChild(inst.querySelector("MESG-DIAL"));
+  }
+  if(recp) inst.classList.add("MESG-RECP");
+  if(repl) inst.classList.add("MESG-REPL");
+  inst.id = id;
+  inst.dataset.from = from;
+  inst.dataset.time = time;
+
+  // Add formated body
+  const format = xows_tpl_format_body(body);
+  inst.querySelector("P").innerHTML = format.body;
+  if(format.embeds)
+    inst.querySelector("MESG-EMBD").innerHTML = format.embeds;
+
+
 
   // Return final tree
   return inst;

@@ -3144,8 +3144,9 @@ function xows_gui_mesg_inpt_enable(input)
   // Enable eidition for this message
   li.classList.add("MESG-EDIT");
 
-  // Set caret
+  // Set caret and focus
   xows_doc_caret_at(input);
+  input.focus();
 }
 
 /**
@@ -3256,12 +3257,12 @@ function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr, di
   // discarded one
   if(disc) {
     replace = true;
-    aggregate = disc.classList.contains("MESG-AGGR");
+    aggregate = !disc.classList.contains("MESG-FULL");
   } else if(prev) {
     // If previous message sender is different or if elapsed time is
-    // greater than 1 houre, we create a new full message block
-    const d = time - prev.getAttribute("time");
-    if(d > XOWS_MESG_AGGR_THRESHOLD || prev.getAttribute("from") !== from)
+    // greater than # minutes, we create a new full message block
+    const d = time - prev.dataset.time;
+    if(d > XOWS_MESG_AGGR_THRESHOLD || prev.dataset.from !== from)
       aggregate = false;
   } else {
     aggregate = false;
@@ -3283,8 +3284,9 @@ function xows_gui_hist_discard(peer, id)
 {
   const li = xows_gui_peer_mesg_li(peer, id);
   if(li) {
+    //li.className = "DISCARD";
     li.classList.add("DISCARD");
-    li.innerHtml = "";
+    li.innerHTML = "";
     return li;
   }
 
@@ -3376,9 +3378,9 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, co
 
     // Insert or append message, depending whether ref_li is null
     if(dsc_li) {
-      pre_li = hist_ul.insertBefore(msg_li, dsc_li.nextSibling);
+      hist_ul.insertBefore(msg_li, dsc_li.nextSibling);
     } else {
-      pre_li = hist_ul.appendChild(msg_li);
+      hist_ul.appendChild(msg_li);
     }
   }
 
@@ -3490,7 +3492,7 @@ function xows_gui_mam_parse(peer, result, complete)
   if(result.length && hist_ul.childNodes.length) {
     // We compare time (unix epoch) to ensure last archived message is
     // older (or equal) than the first history message.
-    if(hist_ul.firstChild.getAttribute("time") >= result[result.length-1].time) {
+    if(hist_ul.firstChild.dataset.time >= result[result.length-1].time) {
       ref_li = hist_ul.firstChild; //< node to insert messages before
     } else {
       prepend = false;
@@ -3550,7 +3552,7 @@ function xows_gui_mam_parse(peer, result, complete)
     }
 
     // Create new message
-    const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,true,mesg.sndr,dsc_li);
+    const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,mesg.sent,mesg.sndr,dsc_li);
 
     // Insert or append message, depending whether ref_li is null
     if(dsc_li) {

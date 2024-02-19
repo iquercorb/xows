@@ -2033,7 +2033,7 @@ function xows_cli_xmp_onmessage(id, type, from, to, body, time, corr)
   xows_log(2,"cli_xmp_onmessage","chat message",from+" \""+body+"\"");
 
   // Forward received message
-  xows_cli_fw_onmessage(peer, id, from, body, time, sent, true, sndr, corr);
+  xows_cli_fw_onmessage(peer, id, from, body, time, sent, false, sndr, corr);
 }
 
 /**
