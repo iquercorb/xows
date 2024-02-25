@@ -113,8 +113,11 @@
   "Remove contact":
   "Supprimer le contact",
 
-  "Awaiting authorization":
+  "Waiting for authorization":
   "En attente d'autorisation",
+
+  "Authorization pending":
+  "Autorisation en attente",
 
   "Chatrooms":
   "Salons",

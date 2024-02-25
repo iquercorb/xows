@@ -1606,16 +1606,20 @@ peer-acts button:disabled {
 li-peer.PEER-CONT button:disabled {
   display: none;
 }
-li-peer.PEER-CONT.PEER-DENY figure {
+li-peer.PEER-CONT.PEER-DENY peer-avat {
   background-color: inherit;
   background-size: 30px;
   background-position: center;
   background-repeat: no-repeat;
   background-image: url("images/forbiden.svg");
-  opacity: .6;
+  opacity: .8;
 }
 li-peer.PEER-CONT.PEER-DENY peer-name {
+  color: var(--text-tone2);
+}
+li-peer.PEER-CONT.PEER-DENY peer-meta::before {
   color: var(--text-error);
+  content: attr(data-deny);
 }
 /* ------------------------------------------------------------------ */
 /* Roster Contacts - <li-peer> Subscribe Request instance */

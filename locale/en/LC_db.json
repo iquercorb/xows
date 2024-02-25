@@ -113,7 +113,10 @@
   "Remove contact":
   "",
 
-  "Awaiting authorization":
+  "Waiting for authorization":
+  "",
+
+  "Authorization pending":
   "",
 
   "Chatrooms":
