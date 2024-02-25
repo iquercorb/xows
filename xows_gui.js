@@ -366,7 +366,7 @@ function xows_gui_peer_doc_init(peer)
   xows_gui_peer_scroll_db.set(peer.bare,{scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0});
 
   // set notification button
-  xows_gui_chat_bt_noti_update(peer);
+  xows_gui_chat_noti_update(peer);
 }
 
 /**
@@ -770,7 +770,7 @@ function xows_gui_notify_query_handle(permit)
   let peer;
   for(const bare in xows_doc_frag_db) {
     peer = xows_cli_peer_get(bare);
-    if(peer) xows_gui_chat_bt_noti_update(peer); //< update notify button
+    if(peer) xows_gui_chat_noti_update(peer); //< update notify button
   }
 
   // If user allowed notifications, then enable
@@ -1055,6 +1055,8 @@ function xows_gui_switch_peer(jid)
     const is_room = (next.type === XOWS_PEER_ROOM);
     // Add highlight class to new <li> element
     document.getElementById(next.bare).classList.add("SELECTED");
+    // Update chat header bar before showing it
+    xows_gui_chat_head_update(next);
     // Bring back Peer document elements from offscreen
     xows_gui_peer_doc_import(next);
     // Set the current contact
@@ -2075,7 +2077,7 @@ function xows_gui_stat_inpt_enter(input)
  *
  * @param   {object}    room      Room object
  */
-function xows_gui_chat_bt_cnfg_update(room)
+function xows_gui_chat_cnfg_update(room)
 {
   /*
    * Privilege                  None      Visitor   Participant  Moderator
@@ -2120,7 +2122,7 @@ function xows_gui_chat_bt_cnfg_update(room)
  *
  * @param   {object}    peer      Peer object
  */
-function xows_gui_chat_bt_noti_update(peer)
+function xows_gui_chat_noti_update(peer)
 {
   const chat_bt_noti = xows_gui_peer_doc(peer,"chat_bt_noti");
 
@@ -2152,15 +2154,13 @@ function xows_gui_chat_head_update(peer)
     meta_inpt.innerText = peer.stat;
     xows_gui_peer_doc(peer,"chat_show").dataset.show = peer.show;
 
+    // Show or hide Multimedia Call buttons
     let audio_call = false;
     let video_call = false;
-
-    // Enable or disable multimedia call buttons
     if(peer.show > XOWS_SHOW_DND && xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn")) {
       audio_call = xows_gui_medias_has("audioinput");
       video_call = xows_gui_medias_has("videoinput");
     }
-
     chat_bt_cala.hidden = !audio_call;
     chat_bt_calv.hidden = !video_call;
 
@@ -2170,10 +2170,10 @@ function xows_gui_chat_head_update(peer)
     xows_gui_peer_doc(peer,"chat_bt_bkmk").hidden = (peer.book || peer.publ);
   }
 
-  // Enable or disable Call buttons
-  const in_call = (peer === xows_cli_call_peer);
-  chat_bt_cala.disabled = in_call;
-  chat_bt_cala.disabled = in_call;
+  // Enable or disable Multimedia Call buttons
+  const in_call = (xows_cli_call_stat > 1); // < XOWS_CALL_RING
+  xows_gui_peer_doc(peer,"chat_bt_cala").disabled = in_call;
+  xows_gui_peer_doc(peer,"chat_bt_calv").disabled = in_call;
 }
 
  /* -------------------------------------------------------------------
@@ -2208,7 +2208,7 @@ function xows_gui_chat_head_onclick(event)
       xows_cach_peer_save(xows_gui_peer.bare, null, null, null, xows_gui_peer.noti);
       // Check for browser notification permission
       if(xows_gui_notify_permi("granted")) {
-        xows_gui_chat_bt_noti_update(xows_gui_peer); //< update notify button
+        xows_gui_chat_noti_update(xows_gui_peer); //< update notify button
       } else {
         xows_gui_notify_query(); //< request permission
       }
@@ -4055,7 +4055,7 @@ function xows_gui_cli_onchatstate(peer, chat)
  * @param   {object}    room      Room object
  * @param   {object}   [occu]     Optional Occupant object
  */
-function xows_gui_room_conf_update(room, occu)
+function xows_gui_room_cnfg_update(room, occu)
 {
   /*
    * Privilege                  None      Visitor   Participant  Moderator
@@ -4128,7 +4128,7 @@ function xows_gui_occu_switch(jid)
   document.getElementById(jid).classList.add("SELECTED");
 
   const occu = xows_cli_occu_get(xows_gui_peer, jid);
-  xows_gui_room_conf_update(xows_gui_peer, occu);
+  xows_gui_room_cnfg_update(xows_gui_peer, occu);
 }
 
 /* -------------------------------------------------------------------
@@ -4182,8 +4182,8 @@ function xows_gui_cli_onoccupush(room, occu, code)
     // Code 201 mean initial room config
     xows_gui_page_join_onjoind(room, null, code.includes(201));
     // Update privileges related GUI elements
-    xows_gui_chat_bt_cnfg_update(room);
-    xows_gui_room_conf_update(room);
+    xows_gui_chat_cnfg_update(room);
+    xows_gui_room_cnfg_update(room);
   }
 
   // Search for existing occupant <li> element for this Room

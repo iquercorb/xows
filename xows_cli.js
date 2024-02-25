@@ -3281,7 +3281,7 @@ function xows_cli_reconnect(attempt)
 /**
  * Global constants for Jingle/WebRTC call status
  */
-const XOWS_call_bt_hup = 0;
+const XOWS_CALL_HGUP = 0;
 const XOWS_CALL_RING = 1;
 const XOWS_CALL_INIT = 2;
 const XOWS_CALL_LINK = 3;
