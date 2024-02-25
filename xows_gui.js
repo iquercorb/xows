@@ -46,7 +46,7 @@ const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
 /**
  * Maximum count of message the history can contain
  */
-let xows_gui_hist_size = 128; //< size of the history 'window'
+let xows_gui_history_size = 128; //< size of the history 'window'
 
 /**
  * Count of messages to gather for each history pull request
@@ -459,8 +459,8 @@ function xows_gui_init()
   xows_gui_sound_load("hangup",   "hangup.ogg");
   
   // Store MAM parameters from options
-  xows_gui_hist_size = xows_options.hist_size;
-  xows_gui_hist_pull = xows_gui_hist_size / 2;
+  xows_gui_history_size = xows_options.history_size;
+  xows_gui_hist_pull = xows_gui_history_size / 2;
 }
 
 /* -------------------------------------------------------------------
@@ -3322,7 +3322,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, rp
 
     // To prevent history to inflate infinitely we keep it to a maximum
     // count of message and let user ability to query for archives
-    if((hist_ul.childNodes.length + 1) > xows_gui_hist_size) {
+    if((hist_ul.childNodes.length + 1) > xows_gui_history_size) {
       hist_ul.removeChild(hist_ul.firstChild);
       xows_gui_peer_doc(peer,"hist_beg").innerText = ""; //< Allow query history
     }
@@ -3330,7 +3330,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, rp
     const msg_li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr, rpl_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(corr) {
+    if(rpid) {
       hist_ul.insertBefore(msg_li, rpl_li.nextSibling);
     } else {
       hist_ul.appendChild(msg_li);
@@ -3464,7 +3464,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   // count of message and let user ability to query for archives
   // Here we preventively cut the history as needed, either at top
   // or bottom, depending the "direction" of the archive result.
-  let crop = (hist_ul.childNodes.length - xows_gui_hist_size) + count;
+  let crop = (hist_ul.childNodes.length - xows_gui_history_size) + count;
   if(crop > 0) {
     if(prepend) {
       // Result are older messages, we delete messages at bottom of history
@@ -3513,7 +3513,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,mesg.sent,mesg.sndr,rpl_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(mesg.corr) {
+    if(mesg.rpid) {
       hist_ul.insertBefore(new_li, rpl_li.nextSibling);
     } else {
       pre_li = hist_ul.insertBefore(new_li, ref_li);

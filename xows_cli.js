@@ -744,7 +744,7 @@ function xows_cli_connect(url, jid, password, register)
   xows_cli_svc_url.clear();
   
   // Store MAM parameter from options
-  xows_cli_mam_max = xows_options.hist_size / 2;
+  xows_cli_mam_max = xows_options.history_size / 2;
 
   // Reset client user entity
   xows_cli_self.jid  = null;
