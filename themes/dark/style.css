@@ -2017,11 +2017,11 @@ hist-bound {
   font-weight: bold;
   color: var(--text-tone3);
 }
-#hist_beg {
-  border-bottom: 1px solid var(--base-tone5);
+#hist_beg.HIST-START {
+  border-bottom: 2px solid var(--base-tone5);
 }
-#hist_end {
-  border-top: 1px solid var(--base-tone5);
+#hist_beg.HIST-START::before {
+  content: attr(data-text);
 }
 /* ------------------------------------------------------------------ */
 /* Chat history - Incoming call dialog */

@@ -46,7 +46,7 @@ const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
 /**
  * Maximum count of message the history can contain
  */
-let xows_gui_history_size = 128; //< size of the history 'window'
+let xows_gui_hist_size = 128; //< size of the history 'window'
 
 /**
  * Count of messages to gather for each history pull request
@@ -248,7 +248,7 @@ function xows_gui_peer_hist_reload(peer)
   obj.scrollSaved = 0;
 
   // Reset the chat history to initial stat
-  xows_gui_peer_doc(peer, "hist_beg").innerText = "";
+  xows_gui_peer_doc(peer, "hist_beg").className = "";
   xows_gui_peer_doc(peer, "hist_ul").innerText = "";
   xows_gui_peer_doc(peer, "hist_end").hidden = true;
 
@@ -459,8 +459,8 @@ function xows_gui_init()
   xows_gui_sound_load("hangup",   "hangup.ogg");
   
   // Store MAM parameters from options
-  xows_gui_history_size = xows_options.history_size;
-  xows_gui_hist_pull = xows_gui_history_size / 2;
+  xows_gui_hist_size = xows_options.history_size;
+  xows_gui_hist_pull = xows_gui_hist_size / 2;
 }
 
 /* -------------------------------------------------------------------
@@ -3288,9 +3288,9 @@ function xows_gui_hist_update(peer, bare, nick, avat)
  * @param   {boolean}   sent      Marks message as sent by client
  * @param   {boolean}   recp      Marks message as receipt received
  * @param   {object}    sndr      Message sender Peer object
- * @param   {string}   [rpid]     Optionnal message ID to replace
+ * @param   {string}   [repl]     Optionnal message ID to replace
  */
-function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, rpid)
+function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, repl)
 {
   // If message with id alread exists, return now to prevent double
   if(xows_gui_peer_mesg_li(peer, id))
@@ -3298,13 +3298,13 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, rp
 
   // Search for corrected message to be discarded
   let rpl_li = null;
-  if(rpid) {
-    rpl_li = xows_gui_hist_discard(peer, rpid);
+  if(repl) {
+    rpl_li = xows_gui_hist_discard(peer, repl);
     if(!rpl_li) return; //< ignore correction which are not in visible history
   }
 
   // Avoid notifications for correction messages
-  if(!rpid) {
+  if(!repl) {
     // If off screen, add unread message badge to the roster contact
     if(peer !== xows_gui_peer)
       xows_gui_unread_add(peer, id);
@@ -3322,15 +3322,15 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, rp
 
     // To prevent history to inflate infinitely we keep it to a maximum
     // count of message and let user ability to query for archives
-    if((hist_ul.childNodes.length + 1) > xows_gui_history_size) {
+    if((hist_ul.childNodes.length + 1) > xows_gui_hist_size) {
       hist_ul.removeChild(hist_ul.firstChild);
-      xows_gui_peer_doc(peer,"hist_beg").innerText = ""; //< Allow query history
+      xows_gui_peer_doc(peer,"hist_beg").className = ""; //< Allow query history
     }
 
     const msg_li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr, rpl_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(rpid) {
+    if(repl) {
       hist_ul.insertBefore(msg_li, rpl_li.nextSibling);
     } else {
       hist_ul.appendChild(msg_li);
@@ -3380,10 +3380,10 @@ let xows_gui_mam_query_to = new Map();
  * messages.
  *
  * @param   {boolean}   after     Get archives beyond first of after last message
- * @param   {number}    max       Maximum result to get, default is 20
+ * @param   {number}    count     Desired count of message to gather, default is 20
  * @param   {boolean}   delay     Delay to temporize query, default is 100 MS
  */
-function xows_gui_mam_query(peer, after, max = 20, delay = 100)
+function xows_gui_mam_query(peer, after, count = 20, delay = 100)
 {
   if(xows_gui_mam_query_to.has(peer.bare))  //< Query already pending
     return;
@@ -3414,18 +3414,18 @@ function xows_gui_mam_query(peer, after, max = 20, delay = 100)
     const hist_beg = xows_doc("hist_beg");
 
     // Check whether we already reached the first archived message
-    if(hist_beg.innerText.length)
+    if(hist_beg.className.length)
       return;
 
     if(hist_ul.childNodes.length)
       end = parseInt(hist_ul.firstChild.dataset.time) - 25;
 
-    hist_beg.classList.add("LOADING");
+    hist_beg.className = "LOADING";
   }
 
   // To prevent flood and increase ergonomy the archive query is
   // temporised with a fake loading time.
-  xows_gui_mam_query_to.set(peer.bare, setTimeout(xows_cli_pull_history, delay, peer, max, start, end, xows_gui_mam_parse));
+  xows_gui_mam_query_to.set(peer.bare, setTimeout(xows_cli_pull_history, delay, peer, count, start, end, xows_gui_mam_parse));
 }
 
 /**
@@ -3457,14 +3457,14 @@ function xows_gui_mam_parse(peer, result, count, complete)
   const hist_end = xows_gui_peer_doc(peer,"hist_end");
 
   // Disable all spin loader
-  hist_beg.classList.remove("LOADING");
-  hist_end.classList.remove("LOADING");
+  hist_beg.className = "";
+  hist_end.className = "";
 
   // To prevent history to inflate infinitely we keep it to a maximum
   // count of message and let user ability to query for archives
   // Here we preventively cut the history as needed, either at top
   // or bottom, depending the "direction" of the archive result.
-  let crop = (hist_ul.childNodes.length - xows_gui_history_size) + count;
+  let crop = (hist_ul.childNodes.length - xows_gui_hist_size) + count;
   if(crop > 0) {
     if(prepend) {
       // Result are older messages, we delete messages at bottom of history
@@ -3473,7 +3473,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     } else {
       // Result are newer messages, we delete messages at top of history
       while(crop--) hist_ul.removeChild(hist_ul.firstChild);
-      hist_beg.innerText = ""; //< Allow query history
+      hist_beg.className = ""; //< Allow query history
     }
   }
 
@@ -3502,8 +3502,8 @@ function xows_gui_mam_parse(peer, result, count, complete)
       continue;
 
     // Search for corrected message to be discarded
-    if(mesg.rpid) {
-      rpl_li = xows_gui_hist_discard(peer, mesg.rpid);
+    if(mesg.repl) {
+      rpl_li = xows_gui_hist_discard(peer, mesg.repl);
       if(!rpl_li) continue; //< ignore correction which are not in visible history
     } else {
       rpl_li = null;
@@ -3537,7 +3537,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     }
     if(prepend) {
       // We reached the oldest history message
-      hist_beg.innerText = xows_l10n_get("Start of history"); //< Disallow reaching history
+      hist_beg.className = "HIST-START";
     } else {
       // We reached the most recent history message
       hist_end.hidden = true; //< Disallow reaching history
