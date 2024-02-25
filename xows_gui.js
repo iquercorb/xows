@@ -52,7 +52,7 @@ let xows_gui_hist_size = 128; //< size of the history 'window'
  * Count of messages to gather for each history pull request
  */
 let xows_gui_hist_pull = 64;
-  
+
 /**
  * Current selected GUI locale code
  */
@@ -447,7 +447,7 @@ function xows_gui_init()
     navigator.mediaDevices.enumerateDevices().then(xows_gui_ondevicesinfos);
     navigator.mediaDevices.ondevicechange = xows_gui_ondevicechange;
   }
-  
+
   // Load sound effects
   xows_gui_sound_load("notify",   "notify.ogg");
   xows_gui_sound_load("disable",  "disable.ogg");
@@ -457,7 +457,7 @@ function xows_gui_init()
   xows_gui_sound_load("ringtone", "ringtone.ogg", true);
   xows_gui_sound_load("ringbell", "ringbell.ogg", true);
   xows_gui_sound_load("hangup",   "hangup.ogg");
-  
+
   // Store MAM parameters from options
   xows_gui_hist_size = xows_options.history_size;
   xows_gui_hist_pull = xows_gui_hist_size / 2;
@@ -954,14 +954,14 @@ function xows_gui_reset()
   xows_doc_cls_rem("main_wrap", "COLR-WIDE");
   xows_doc_cls_rem("main_wrap", "COLL-WIDE");
   xows_doc_cls_add("main_colr", "COL-HIDE");
-  
+
   // clean roster lists
   xows_doc("subs_ul").innerHTML = "";
   xows_doc("cont_ul").innerHTML = "";
   xows_doc("book_ul").innerHTML = "";
   xows_doc("room_ul").innerHTML = "";
   xows_doc("priv_ul").innerHTML = "";
-  
+
   // Reset roster tabs
   xows_doc("tab_room").disabled = true;
   xows_gui_rost_switch("tab_cont");
@@ -1328,9 +1328,9 @@ function xows_gui_mbox_bookmark_open(room)
 }
 
 /* -------------------------------------------------------------------
- * 
+ *
  * Main screen - Commons routines
- * 
+ *
  * -------------------------------------------------------------------*/
 
 /* -------------------------------------------------------------------
@@ -1415,7 +1415,7 @@ function xows_gui_rost_switch(id)
   // Search any SELECTED peer in the list to switch to
   let selected;
   if(list) selected = list.querySelector(".SELECTED");
-  
+
   // Swicht to selected Peer
   xows_gui_switch_peer(selected ? selected.id : null);
 }
@@ -1597,11 +1597,11 @@ function xows_gui_rost_head_onclick(event)
 
   switch(event.target.id)
   {
-  case "cont_bt_add": 
+  case "cont_bt_add":
     // Open contact Add page
     xows_gui_page_cont_open();
     break;
-  case "room_bt_add": 
+  case "room_bt_add":
     // Open Join Room page
     xows_gui_page_join_open();
     break;
@@ -1620,12 +1620,12 @@ function xows_gui_rost_head_onclick(event)
 function xows_gui_rost_list_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-  
+
   // Search for <li-peer> parent element
   const li_peer = event.target.closest("LI-PEER");
-  
+
   if(event.target.tagName === "BUTTON") {
-    
+
     switch(event.target.name)
     {
     case "cont_bt_rtry": //< Retry request subscribe permission
@@ -1637,16 +1637,16 @@ function xows_gui_rost_list_onclick(event)
       return;
     }
   }
-  
+
   if(li_peer.className === "PEER-PEND") {
     // Open Subscription Allow/Deny dialog
     xows_gui_mbox_subs_auth_open(li_peer.id, li_peer.name);
     return;
   }
-  
+
   // Select peer
   xows_gui_switch_peer(li_peer.id);
-  
+
   // Close panel in case we are in narrow-screen with wide panel
   xows_gui_panel_close();
 }
@@ -1957,7 +1957,7 @@ function xows_gui_menu_show_onclick(event)
 {
   // Retreive the parent <li> element of the event target
   const li = event.target.closest("LI");
-  
+
   // Set presence as selected level
   if(li) {
     const show = parseInt(li.value);
@@ -2314,7 +2314,7 @@ function xows_gui_call_menu_onclick(event)
 
   if(event.target.tagName !== "BUTTON")
     return;
-  
+
   let mutted;
 
   switch(event.target.id)
@@ -2459,7 +2459,7 @@ function xows_gui_chat_call_open()
     const call_bt_cam = xows_doc("call_bt_cam");
     call_bt_mic.classList.remove("MUTTED");
   }
-  
+
   xows_doc("call_bt_cam").hidden = !use_video;
 
   // Add event listeners
@@ -2631,7 +2631,7 @@ function xows_gui_hist_ring_open(peer, reason)
   xows_gui_peer_doc(peer, "ring_bt_deny").hidden = !ringing;
   xows_gui_peer_doc(peer, "ring_bt_pkup").hidden = !incall;
   xows_gui_peer_doc(peer, "ring_bt_clos").hidden = ringing; //< Ringing, no Close button
-  
+
   hist_ring.classList.toggle("RINGING", ringing);
 
   // Show the incoming call dialog
@@ -2948,7 +2948,6 @@ function xows_gui_cli_oncallended(code, mesg)
  */
 function xows_gui_chat_main_onscroll(event)
 {
-  // Shortcut to chat history <div>
   const chat_main = xows_doc("chat_main");
 
   // Switch from full to empty chat frame can generate a scroll equal
@@ -2960,7 +2959,7 @@ function xows_gui_chat_main_onscroll(event)
   xows_gui_peer_scroll_save(xows_gui_peer);
 
   // Check whether the scroll is at top of frame
-  if(chat_main.scrollTop < 50) {
+  if(chat_main.scrollTop < xows_doc("hist_beg").offsetHeight * 0.8) {
     // Query archive for current chat contact
     xows_gui_mam_query(xows_gui_peer, false, xows_gui_hist_pull);
   }
@@ -2969,10 +2968,12 @@ function xows_gui_chat_main_onscroll(event)
   if(chat_main.scrollSaved > chat_main.clientHeight)
     xows_gui_hist_nav_open(xows_gui_peer);
 
+  const hist_end = xows_doc("hist_end");
+
   // Check whether the scroll is at bottom of frame
-  if(chat_main.scrollSaved < 50) {
+  if(chat_main.scrollSaved < hist_end.offsetHeight * 0.8) {
     // Check whether we have cropped history
-    if(!xows_doc_hidden("hist_end")) {
+    if(!hist_end.hidden) {
       // Query archive for current chat contact
       xows_gui_mam_query(xows_gui_peer, true, xows_gui_hist_pull);
     } else {
@@ -3000,10 +3001,10 @@ function xows_gui_chat_hist_onclick(event)
 
   // Check for click on <button> element
   if(event.target.tagName === "BUTTON") {
-     
+
      // If button has a valid name, this is history message button
      if(event.target.name) {
-       
+
       const mesg = event.target.closest("LI-MESG");
 
       switch(event.target.name)
@@ -3018,21 +3019,21 @@ function xows_gui_chat_hist_onclick(event)
         xows_gui_mesg_edit_valid(event.target.closest("MESG-INPT"));
         break;
       }
-      
+
       return;
     }
   }
-    
+
   if(event.target.id) {
 
     // Check for history Ringing dialog
     if(event.target.id.startsWith("ring")) {
-      
+
       //< Close the Signaling Call dialog
-      xows_gui_hist_ring_bt_close(); 
+      xows_gui_hist_ring_bt_close();
       // Stop Ring Bell sound
       xows_gui_sound_stop("ringbell");
-      
+
       switch(event.target.id)
       {
       case "ring_bt_pkup":
@@ -3044,10 +3045,10 @@ function xows_gui_chat_hist_onclick(event)
         xows_gui_call_terminate();
         break;
       }
-      
+
       return;
     }
-    
+
     // Check History Navigation banner
     if(event.target.id === "hist_nav") {
       // Close navigation banner
@@ -3071,7 +3072,7 @@ let xows_gui_mesg_corr_raw = "";
 function xows_gui_mesg_edit_close(mesg)
 {
   let li_mesg;
-  
+
   // Check whether event directely reference object
   if(mesg && mesg.tagName === "LI-MESG") {
     // We got message directly
@@ -3081,7 +3082,7 @@ function xows_gui_mesg_edit_close(mesg)
     li_mesg = xows_doc("chat_hist").querySelector(".MESG-EDITOR");
   }
 
-  if(li_mesg) 
+  if(li_mesg)
     xows_tpl_mesg_edit_remove(li_mesg);
 }
 
@@ -3114,7 +3115,7 @@ function xows_gui_mesg_edit_valid(inpt)
 {
   // Retrieve the parent <li-mesg> element
   const li_mesg = inpt.closest("LI-MESG");
-  
+
   // Get input text
   const inpt_text = inpt.innerText.trimEnd();
 
@@ -3157,12 +3158,12 @@ function xows_gui_hist_nav_open(peer, alert = false)
   const hist_nav = xows_gui_peer_doc(peer,"hist_nav");
 
   // Set text
-  hist_nav.innerText = alert ?  xows_l10n_get("New unread messages") : 
+  hist_nav.innerText = alert ?  xows_l10n_get("New unread messages") :
                                 xows_l10n_get("Back to recent messages");
-  
+
   // Set Unread Alert class
   hist_nav.classList.toggle("UNDREAD", alert);
-  
+
   // Show or hide element
   hist_nav.hidden = false;
 }
@@ -3317,7 +3318,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, re
   // Check whether end of history is croped, in this case the new message
   //  must not be appended, we will show it by querying archives
   if(xows_gui_peer_doc(peer,"hist_end").hidden || rpl_li) {
-  
+
     const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
     // To prevent history to inflate infinitely we keep it to a maximum
@@ -3493,7 +3494,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   for(let i = 0, n = result.length; i < n; ++i) {
 
     const mesg = result[i];
-    
+
     // Check whether message has body (this may be reciept or chatstate)
     if(!mesg.body) continue;
 

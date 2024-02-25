@@ -187,7 +187,7 @@ function xows_tpl_set_callback(type, callback)
   if(!xows_isfunc(callback))
     return;
 
-  switch(type.toLowerCase()) 
+  switch(type.toLowerCase())
   {
     case "embload":    xows_tpl_fw_onembload = callback; break;
     case "emberror":   xows_tpl_fw_onemberror = callback; break;
@@ -333,7 +333,7 @@ function xows_tpl_template_parse(html, path, isinst, isinst2)
     inst_load.push(nodes[i].id); //< id is template file name
     nodes[i].parentNode.removeChild(nodes[i]); //< Remove the example object
   }
-  
+
   // Extract file name from path
   let name = path.substring(path.lastIndexOf("/")+1).split(".")[0];
 
@@ -438,7 +438,7 @@ function xows_tpl_embed_wrap(href, media, style, title)
 {
   let wrap = "<mesg-embd class='"; if(style) wrap += style; wrap += "'>";
   if(title) wrap += "<a href='"+href+"' target='_blank'>"+title+"</a>";
-  
+
   // Add envent callback and common attributes
   wrap += media.replace(/src=/g,"loading='lazy' onload='xows_tpl_emld(this)' onerror='xows_tpl_emer(this)' src=");
   wrap += "</mesg-embd>";
@@ -740,7 +740,7 @@ function xows_tpl_format_body(body)
 
   // Search for remaining URLs to create HTML links from raw URL
   body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
-  
+
   // Append embededed stuff
   if(embeds) body += embeds;
 
@@ -1028,7 +1028,7 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
 }
 
 /**
- * Build and returns a new instance of history Message <hist-mesg> 
+ * Build and returns a new instance of history Message <hist-mesg>
  * object from template to be added in the chat history list <ul>
  *
  * @param   {string}    id        Message ID
@@ -1046,19 +1046,19 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
-  
+
   inst.id = id;
   inst.dataset.from = from;
   inst.dataset.time = time;
-  
-  // Set proper value to message elements  
+
+  // Set proper value to message elements
   if(sent) {
     inst.classList.add("MESG-SENT");
     if(recp) inst.classList.add("MESG-RECP");
     // Add raw body for message edition
     inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(body);
   }
-  
+
   // Add time or date
   if(sndr) {
     inst.querySelector("MESG-DATE").innerText = xows_l10n_date(time);
@@ -1077,15 +1077,15 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
   }
 
   if(repl) inst.classList.add("MESG-MODIFY");
-  
+
   inst.querySelector("MESG-BODY").innerHTML = xows_tpl_format_body(body);
-  
+
   // Return final tree
   return inst;
 }
 
 /**
- * Build and insert new <mesg-edit> element instance into the given 
+ * Build and insert new <mesg-edit> element instance into the given
  * <hist-mesg> element. The newly inserted element is returned.
  *
  * @param   {object}    mesg      History message element <hist-mesg>
@@ -1096,22 +1096,22 @@ function xows_tpl_mesg_edit_insert(mesg)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["mesg-edit"].firstChild.cloneNode(true);
-  
+
   inst.dataset.id = mesg.id;
-  
+
   const mesg_body = mesg.querySelector("MESG-BODY");
 
   inst.querySelector("MESG-INPT").innerHTML = mesg_body.dataset.raw;
   mesg_body.parentNode.insertBefore(inst, mesg_body);
-  
+
   // Add the EDIT class
   mesg.classList.add("MESG-EDITOR");
-    
+
   return inst;
 }
 
 /**
- * Remove <mesg-edit> element instance from the given <hist-mesg> 
+ * Remove <mesg-edit> element instance from the given <hist-mesg>
  * element.
  *
  * @param   {object}    mesg      History message element <hist-mesg>
@@ -1120,12 +1120,12 @@ function xows_tpl_mesg_edit_remove(mesg)
 {
   // Remove the <mesg-edit> element
   const mesg_main = mesg.querySelector("MESG-MAIN");
-  
-  // It may happen that message is already empty du to DISCARD after 
+
+  // It may happen that message is already empty du to DISCARD after
   // correction, so we prevent Uncaught Error...
-  if(mesg_main) 
+  if(mesg_main)
     mesg_main.removeChild(mesg_main.querySelector("MESG-EDIT"));
-  
+
   // Remove the EDIT class
   mesg.classList.remove("MESG-EDITOR");
 }
