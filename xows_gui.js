@@ -1440,7 +1440,7 @@ function xows_gui_calling_set(peer, enable)
 
   // Increase the current unread count
   badg_call.hidden = !enable;
-  
+
   // Enable Call badge depending peer type
   if(peer.type === XOWS_PEER_CONT) {
     xows_doc("cont_call").hidden = !enable;
@@ -1493,14 +1493,14 @@ function xows_gui_unread_tab_update(peer, mesg, call, ring)
     remain_ring += ring;
     badg_noti.dataset.ring = remain_ring;
   }
-  
+
   // Update ringing animation class
   tab_rost.classList.toggle("RINGING", remain_ring > 0);
-  
+
   // Update notification classes
   //badg_noti.classList.toggle("RINGING", remain_ring > 0);
   //badg_noti.classList.toggle("BADG-CALL", remain_call > 0);
-  
+
   // Show or hide notification spot
   let has_notif = (remain_mesg > 0 || remain_call > 0 || remain_ring > 0);
   badg_noti.hidden = !has_notif;
@@ -1548,7 +1548,7 @@ function xows_gui_unread_call(peer, ring)
 
   // Inside the <li-peer> search for the <badg-noti>
   const badg_noti = li_peer.querySelector("BADG-NOTI");
-  
+
   //const had_ring = badg_noti.classList.contains("RINGING");
   const had_ring = (parseInt(badg_noti.dataset.ring) > 0);
   badg_noti.dataset.ring = ring ? 1 : 0;
@@ -1592,7 +1592,7 @@ function xows_gui_unread_reset(peer)
   badg_noti.dataset.call = 0;
   //badg_noti.classList.remove("RINGING");
   //badg_noti.classList.remove("BADG-CALL");
-  
+
   badg_noti.hidden = true; //< hide
 
   // Update tab button class and animation according new state
@@ -1800,7 +1800,7 @@ function xows_gui_cli_onsubspush(bare, nick)
 
   // Show the subscribes <ul>
   subs_ul.hidden = !pendning_count;
-  
+
   // Update or disable the notification badge
   xows_doc("cont_noti").dataset.subs = pendning_count;
 
@@ -1827,10 +1827,10 @@ function xows_gui_cli_onsubsrem(bare)
 
     // Get count of pending authorization (<ul> children minus title)
     const pendning_count = subs_ul.childElementCount;
-    
+
     // Show or hide list depending content
     subs_ul.hidden = !pendning_count;
-    
+
     // Update or disable the notification badge
     xows_doc("cont_noti").dataset.subs = pendning_count;
   }
@@ -2145,6 +2145,8 @@ function xows_gui_chat_head_update(peer)
   xows_gui_peer_doc(peer,"chat_titl").innerText = peer.name;
 
   const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
+  const chat_bt_cala = xows_gui_peer_doc(peer,"chat_bt_cala");
+  const chat_bt_calv = xows_gui_peer_doc(peer,"chat_bt_calv");
 
   if(peer.type === XOWS_PEER_CONT) {  //< XOWS_PEER_CONT
     meta_inpt.innerText = peer.stat;
@@ -2159,9 +2161,6 @@ function xows_gui_chat_head_update(peer)
       video_call = xows_gui_medias_has("videoinput");
     }
 
-    const chat_bt_cala = xows_gui_peer_doc(peer,"chat_bt_cala");
-    const chat_bt_calv = xows_gui_peer_doc(peer,"chat_bt_calv");
-    
     chat_bt_cala.hidden = !audio_call;
     chat_bt_calv.hidden = !video_call;
 
@@ -2170,6 +2169,11 @@ function xows_gui_chat_head_update(peer)
     meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
     xows_gui_peer_doc(peer,"chat_bt_bkmk").hidden = (peer.book || peer.publ);
   }
+
+  // Enable or disable Call buttons
+  const in_call = (peer === xows_cli_call_peer);
+  chat_bt_cala.disabled = in_call;
+  chat_bt_cala.disabled = in_call;
 }
 
  /* -------------------------------------------------------------------
@@ -2518,9 +2522,9 @@ function xows_gui_chat_call_close()
   xows_doc("call_grid").innerHTML = "";
 
   // Remove calling badge to roster contact
-  if(xows_gui_chat_call_peer) 
+  if(xows_gui_chat_call_peer)
     xows_gui_calling_set(xows_gui_chat_call_peer, false);
-  
+
   // Session closed, reset call peer
   xows_gui_chat_call_peer = null;
 }
@@ -2810,11 +2814,11 @@ function xows_gui_call_clear()
 {
   // Close the Media Call view frame
   xows_gui_chat_call_close();
-  
+
   // Enable Call buttons
   xows_gui_peer_doc(xows_cli_call_peer,"chat_bt_cala").disabled = false;
   xows_gui_peer_doc(xows_cli_call_peer,"chat_bt_calv").disabled = false;
-  
+
   // Stops and release aquired Media Streams
   let tracks = [];
 
