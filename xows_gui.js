@@ -1703,23 +1703,27 @@ function xows_gui_cli_oncontpush(cont)
     return;
   }
 
-  // Search for existing contact <li> element
-  const li = document.getElementById(cont.bare);
-  if(li) {
+  // Search for existing contact <li_peer> element
+  const li_peer = document.getElementById(cont.bare);
+  if(li_peer) {
 
     // Check whether this is a subscribing contact
-    if(li.classList.contains("PEER-PEND")) {
+    if(li_peer.classList.contains("PEER-PEND")) {
 
       const subs_ul = xows_doc("subs_ul");
-      // Remove the subscribe <li> element
-      subs_ul.removeChild(li);
-      // Hide subscribes <ul> if required
-      subs_ul.hidden = !subs_ul.childElementCount;
+      // Remove the subscribe <li_peer> element
+      subs_ul.removeChild(li_peer);
+      // Get count of pending authorization (<ul> children minus title)
+      const pendning_count = subs_ul.childElementCount;
+      // Show or hide list depending content
+      subs_ul.hidden = !pendning_count;
+      // Update the notification badge
+      xows_doc("cont_noti").dataset.subs = pendning_count;
 
     } else {
 
-      // Update the existing contact <li> element according template
-      xows_tpl_update_rost_cont(li, cont.name, cont.avat, cont.subs, cont.show, cont.stat);
+      // Update the existing contact <li_peer> element according template
+      xows_tpl_update_rost_cont(li_peer, cont.name, cont.avat, cont.subs, cont.show, cont.stat);
       // Update chat title bar
       xows_gui_chat_head_update(cont);
       // Update message history
@@ -1727,12 +1731,12 @@ function xows_gui_cli_oncontpush(cont)
       // If contact goes offline, ensure chatstat resets
       if(cont.show < 1) xows_gui_cli_onchatstate(cont, 0);
 
-      // Return now since we DO NOT append new <li> element
+      // Return now since we DO NOT append new <li_peer> element
       return;
     }
   }
 
-  // Create and add new Contact <li> element
+  // Create and add new Contact <li_peer> element
   const cont_ul = xows_doc("cont_ul");
 
   // Show Contact <ul> if required
@@ -1741,7 +1745,7 @@ function xows_gui_cli_oncontpush(cont)
     cont_ul.hidden = false; //< Show the contacts <ul>
   }
 
-  // Append new instance of contact <li> from template to roster <ul>
+  // Append new instance of contact <li_peer> from template to roster <ul>
   cont_ul.appendChild(xows_tpl_spawn_rost_cont(cont.bare, cont.name, cont.avat, cont.subs, cont.show, cont.stat));
 
   // Create new Peer offscreen elements with initial state
@@ -2619,7 +2623,7 @@ function xows_gui_hist_ring_open(peer, reason)
   const video = xows_gui_call_constraints.video;
 
   let icon, text, ringing, incall;
-  
+
   switch(reason)
   {
   case "decline": {   //< peer declined call
