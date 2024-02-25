@@ -908,8 +908,6 @@ function xows_gui_wnd_onkey(event)
       // Prevent browser to append the new-line in the text-area
       event.preventDefault();
 
-      console.log(event.target);
-
       switch(event.target.tagName)
       {
       case "CHAT-INPT":
