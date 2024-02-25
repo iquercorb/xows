@@ -137,8 +137,8 @@
   "Edit user profile":
   "Modifier le profil utilisateur",
 
-  "Define a Status ...":
-  "Définir un Statu ...",
+  "Define a status ...":
+  "Définir un état ...",
 
   "Available For Chat":
   "Disponible pour discuter",
@@ -410,23 +410,14 @@
   "Retry":
   "Réessayer",
 
-  "Enable camera":
-  "Activer la caméra",
+  "Enable or disable the camera":
+  "Activer ou désactiver la caméra",
 
-  "Disable camera":
-  "Désactiver la caméra",
+  "Mute or unmute the microphone":
+  "Désactiver ou activer le microphone",
 
-  "Enable microphone":
-  "Activer le microphone",
-
-  "Disable microphone":
-  "Désactiver le microphone",
-
-  "Disable sound":
-  "Désactiver le son",
-
-  "Enable sound":
-  "Activer le son",
+  "Mute or unmute sound":
+  "Désactiver ou réactive le son",
 
   "Volume":
   "Volume",
@@ -434,11 +425,8 @@
   "Hang up":
   "Raccrocher",
 
-  "Expand":
-  "Etendre",
-
-  "Reduce":
-  "Réduire",
+  "Expand/Reduce":
+  "Etendre/Réduire",
 
   "Incoming call...":
   "Appel entrant...",

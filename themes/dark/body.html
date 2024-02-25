@@ -1,56 +1,44 @@
-<div id="scr_main" class="scr-main HIDDEN" has_template>
+<div hidden id="scr_main" XOWS_TPL_IMPORT>
   <!-- main interface frame, defined in scr_main.html -->
 </div>
 
-<div id="scr_page" class="scr-page HIDDEN">
-
-  <div class="page-wrap">
-    <div class="col-padd">
-    </div>
+<div hidden id="scr_page">
+  <page-wrap>
+    <col-padd></col-padd>
     <!-- Middle Collumn -->
-    <div class="col-page">
-      <div id="page_cont" title="Add Contact" class="page page-back page-cont HIDDEN" has_template>
-      </div>
-      <div id="page_user" title="User Parameters" class="page page-back page-user HIDDEN" has_template>
-      </div>
-      <div id="page_join" title="Join Chatroom" class="page page-back page-join HIDDEN" has_template>
-      </div>
-      <div id="page_room" title="Chatroom Parameters" class="page page-back page-room HIDDEN" has_template>
-      </div>
-      <div id="page_auth" title="Login" class="page page-back page-auth HIDDEN" has_template>
-      </div>
-      <div id="page_regi" title="Register" class="page page-back page-regi HIDDEN" has_template>
-      </div>
-      <div id="page_wait" title="Connecting" class="page page-wait HIDDEN" has_template>
-      </div>
-    </div>
+    <col-page>
+      <page-inner hidden id="page_cont" title="Add Contact" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_user" title="User Parameters" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_join" title="Join Chatroom" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_room" title="Chatroom Parameters" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_auth" title="Login" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_regi" title="Register" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_wait" title="Connecting" XOWS_TPL_IMPORT></page-inner>
+    </col-page>
     <!-- Right Collumn -->
-    <div id="colr_exit" class="col-exit HIDDEN">
-      <button id="page_exit" class="btn-close">
-    </div>
-    <div class="col-padd">
-    </div>
-  </div>
-
+    <col-exit hidden id="colr_exit">
+      <btn-close id="page_exit"></btn-close>
+    </col-exit>
+    <col-padd></col-padd>
+  </page-wrap>
 </div>
 
-<div id="scr_void" class="scr-void HIDDEN">
+<div hidden id="scr_void">
   <!-- invisible frame to capture mouse click outside menus or dialogs -->
 </div>
 
-<dialog id="over_view" class="over-view HIDDEN">
+<dialog hidden id="over_view">
   <figure>
     <img id="view_img" src="">
     <a id="view_open" href="" target="_blank">${'Open in new tab'}</a>
   </figure>
-
 </dialog>
 
-<dialog id="over_mbox" class="over-mbox HIDDEN">
-  <p id="mbox_text"></p>
-  <fieldset>
+<dialog hidden id="over_mbox">
+  <mbox-text id="mbox_text"></mbox-text>
+  <mbox-acts>
     <button id="mbox_abort" class="btn-abort"></button>
     <button id="mbox_valid" class="btn-valid"></button>
-    <button id="mbox_close" class="btn-close"></button>
-  </fieldset>
+    <btn-close id="mbox_close"></btn-close>
+  </mbox-acts>
 </dialog>

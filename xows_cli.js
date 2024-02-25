@@ -67,6 +67,11 @@ const xows_cli_feat_own = [];
 const xows_cli_feat_srv = [];
 
 /**
+ * Maximum result to get from one MAM query (please set even number)
+ */
+let xows_cli_mam_max = 32;
+
+/**
  * Check whether own account feature is available
  *
  * @param   {string}    feat      Feature name to search
@@ -279,7 +284,7 @@ let xows_cli_self = {
   "bare": null,   //< bare JID (user@domain)
   "name": null,   //< Nickname / display name
   "avat": null,   //< Avatar picture Hash
-  "show": -1,     //< Presence level
+  "show": 0,      //< Presence level
   "stat": null,   //< Presence Status string
   "vcrd": null    //< vcard (raw data)
 };
@@ -323,7 +328,7 @@ function xows_cli_cont_new(bare, name, subs, avat)
     "name": name?name:bare,     //< Display name
     "subs": subs,               //< Subscription mask
     "avat": avat,               //< Avatar hash string.
-    "show": -1,                 //< Displayed presence show level
+    "show": 0,                  //< Displayed presence show level
     "stat": "",                 //< Displayed presence status string
     "noti": true,               //< Notification Enabled/Mute
     "chat": 0,                  //< Chatstate level
@@ -737,6 +742,9 @@ function xows_cli_connect(url, jid, password, register)
   xows_cli_feat_own.length = 0;
   xows_cli_feat_srv.length = 0;
   xows_cli_svc_url.clear();
+  
+  // Store MAM parameter from options
+  xows_cli_mam_max = xows_options.hist_size / 2;
 
   // Reset client user entity
   xows_cli_self.jid  = null;
@@ -1694,7 +1702,7 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
   let res = xows_jid_to_nick(from);
 
   // Updates presence of the specific resource, delete it if offline
-  if(show >= 0) {
+  if(show > 0) {
     if(!cont.ress[res]) { //< new ressource ? add it
       xows_log(2,"cli_xmp_onpresence","adding Resource for "+cont.bare, res);
       cont.ress[res] = {"show":show,"prio":prio,"stat":stat,"node":null};
@@ -1724,7 +1732,7 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
     xows_cli_fw_onchatstate(cont, cont.bare, 0);
   }
   // Set default show level and status
-  cont.show = -1;
+  cont.show = 0;
   cont.stat = null;
 
   // Select new displayed show level and status according current
@@ -1789,7 +1797,7 @@ function xows_cli_xmp_onoccupant(from, show, stat, muc, photo)
   // Handle special case of room join and creation
   for(let i = 0, n = muc.code.length; i < n; ++i) {
     if(muc.code[i] === 110) { //< own presence in Room
-      if(show >= 0) {
+      if(show > 0) {
         room.join = from; //< we joined the room
         // TODO: Try to register
         //xows_cli_muc_register_query(room);
@@ -1811,7 +1819,7 @@ function xows_cli_xmp_onoccupant(from, show, stat, muc, photo)
   }
 
   // Check wheter the occupant is to be removed
-  if(show < 0) { //< Mean unavailable
+  if(show === 0) {
     // Remove occupant from room
     let i = room.occu.length;
     while(i--) {
@@ -1989,9 +1997,9 @@ function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
  * @param   {string}    to        Recipient JID
  * @param   {string}    body      Message content
  * @param   {number}   [time]     Optional provided time (Unix epoch)
- * @param   {string}   [corr]     Optional message ID to replace
+ * @param   {string}   [rpid]     Optional message ID to replace
  */
-function xows_cli_xmp_onmessage(id, type, from, to, body, time, corr)
+function xows_cli_xmp_onmessage(id, type, from, to, body, time, rpid)
 {
   if(type !== "chat" && type !== "groupchat") {
     xows_log(1,"cli_xmp_onmessage","invalid message type",type);
@@ -2033,7 +2041,7 @@ function xows_cli_xmp_onmessage(id, type, from, to, body, time, corr)
   xows_log(2,"cli_xmp_onmessage","chat message",from+" \""+body+"\"");
 
   // Forward received message
-  xows_cli_fw_onmessage(peer, id, from, body, time, sent, false, sndr, corr);
+  xows_cli_fw_onmessage(peer, id, from, body, time, sent, sent, sndr, rpid);
 }
 
 /**
@@ -2083,7 +2091,9 @@ function xows_cli_xmp_onreceipt(id, from, to, rcid, time)
     xows_log(1,"cli_xmp_onreceipt","unknown/unsubscribed JID",from);
     return;
   }
+
   xows_log(2,"cli_xmp_onreceipt","message receipt received",from+" "+rcid);
+
   // Forward received Receipt
   xows_cli_fw_onreceipt(peer, rcid);
 }
@@ -2135,25 +2145,30 @@ function xows_cli_xmp_onpubsub(from, node, item)
 }
 
 /**
- * User callback to receive MAM query result
+ * Map to store per-peer MAM query params
  */
-let xows_cli_mam_cb = null;
+const xows_cli_mam_param = new Map();
+
+/**
+ * Map to store per-peer MAM query result messages
+ */
+const xows_cli_mam_pool = new Map();
 
 /**
  * Handles the archive query parsed result
  *
  * @param   {string}    from      Archives sender JID, may be Room or Null
- * @param   {string}    with_     With JID used as filter or Null
+ * @param   {string}    bare      With JID bare used as filter or Null
  * @param   {object[]}  result    Received archived messages
  * @param   {number}    count     Total result count
  * @param   {boolean}   complete  Current result set is complete
  */
-function xows_cli_mam_parse(from, with_, result, count, complete)
+function xows_cli_mam_parse(from, bare, result, count, complete)
 {
   // Retreive the contact related to this query
-  const peer = xows_cli_peer_get(from ? from : with_);
+  const peer = xows_cli_peer_get(from ? from : bare);
   if(!peer) {
-    xows_log(1,"cli_mam_parse","unknown/unsubscribed JID",from ? from : with_);
+    xows_log(1,"cli_mam_parse","unknown/unsubscribed JID",from ? from : bare);
     return;
   }
 
@@ -2161,25 +2176,17 @@ function xows_cli_mam_parse(from, with_, result, count, complete)
   let i = result.length;
 
   if(peer.type === XOWS_PEER_CONT) {
-
+    
     while(i--) {
-      // Expurge messages without body (probably receipts)
-      if(!result[i].body) {
-        result.splice(i, 1); continue;
-      }
       result[i].sent = xows_cli_isself(result[i].from);
       result[i].sndr = result[i].sent ? xows_cli_self : peer;
     }
-
+    
   } else { //<  === XOWS_PEER_ROOM
-
+    
     let from, sndr;
-
+    
     while(i--) {
-      // Expurge messages without body (probably receipts)
-      if(!result[i].body) {
-        result.splice(i, 1); continue;
-      }
       from = result[i].from;
       result[i].sent = (from === peer.join);
       // this is chat room, we return self or a Room Cccupant
@@ -2194,33 +2201,104 @@ function xows_cli_mam_parse(from, with_, result, count, complete)
     }
   }
 
-  xows_log(2,"cli_mam_parse","received archives for",peer.bare);
+  // Get history pull params
+  const param = xows_cli_mam_param.get(peer.bar);
 
-  // Forward archive result
-  if(xows_isfunc(xows_cli_mam_cb))
-    xows_cli_mam_cb(peer, result, complete);
+  // Depending query  we add result at front or back to pool
+  if(param.start) {
+    param.pool = param.pool.concat(result);
+  } else {
+    param.pool = result.concat(param.pool);
+  }
+  
+  // Shortcut...
+  const pool = param.pool;
+  
+  // Comput count of visible messages excluding replacements
+  let bodies = 0; 
+  i = pool.length;
+  while(i--) if(pool[i].body && !pool[i].rpid) bodies++;
+
+  if(!complete) {
+    
+    // Send another query until we get enough message
+    if(bodies < param.count) {
+      // Shift time to get more message after/before the last/first
+      // recevied with 25ms time shift to prevent doubling
+      if(param.start) {
+        param.start = pool[pool.length-1].time + 1;
+      } else {
+        param.end = pool[0].time - 1;
+      }
+      
+      // Change the 'max' value to avoid querying too much, but
+      // more than needed since received messages can be receipts
+      const need = (param.count - bodies) * 2;
+      if(need < xows_cli_mam_max) param.max = need;
+      
+      // Send new request after little delay
+      setTimeout(xows_cli_mam_query, 100, peer);
+      return;
+    }
+  }
+  
+  xows_log(2,"cli_mam_parse",bodies+" gathered messages for",peer.bare);
+  
+  if(xows_isfunc(param.onresult))
+    param.onresult(peer, pool, bodies, complete);
+    
+  // Delete history pull params
+  xows_cli_mam_param.delete(peer.bar);
 }
 
 /**
- * Query for archived messages with the specified JID
+ * Send MAM archive query for the specified history pull request, the 
+ * pull request must had been initialized by xows_cli_pull_history()
+ * 
+ * This function is for private usage only.
  *
  * @param   {object}    peer      Peer to get archive
- * @param   {number}    max       Maximum count of message to get
+ */
+function xows_cli_mam_query(peer)
+{
+  if(!xows_cli_mam_param.has(peer.pare)) 
+    return;
+  
+  // Get history pull parameters
+  const param = xows_cli_mam_param.get(peer.pare);
+  
+  // Send new query to XMPP interface
+  if(peer.type === XOWS_PEER_CONT) {
+    xows_xmp_mam_query(null, param.max, peer.bare, param.start, param.end, null, xows_cli_mam_parse);
+  } else {
+    xows_xmp_mam_query(peer.bare, param.max, null, param.start, param.end, null, xows_cli_mam_parse);
+  }
+}
+
+/**
+ * Get archived messages for the specified peer
+ *
+ * @param   {object}    peer      Peer to get archive
+ * @param   {number}    count     Desired minimum count of message to gather
  * @param   {number}    start     Archive start time parameter
  * @param   {number}    end       Archive end time parameter
  * @param   {object}    onresult  Callback to handle received result
  */
-function xows_cli_mam_query(peer, max, start, end, onresult)
+function xows_cli_pull_history(peer, count, start, end, onresult)
 {
-  if(peer.type === XOWS_PEER_CONT) {
-    // Send new query to XMPP interface
-    xows_xmp_mam_query(null, max, peer.bare, start, end, null, xows_cli_mam_parse);
-  } else {
-    // Send new query to XMPP interface
-    xows_xmp_mam_query(peer.bare, max, null, start, end, null, xows_cli_mam_parse);
-  }
-
-  xows_cli_mam_cb = onresult;
+  if(xows_cli_mam_param.has(peer.pare)) 
+    return;
+  
+  xows_log(2,"cli_pull_history","pull history for",peer.bare);
+  
+  // Choose proper "max" value
+  const max = (count > xows_cli_mam_max) ? xows_cli_mam_max : count;
+  
+  // Initialize history pull parameters
+  xows_cli_mam_param.set(peer.pare,{"peer":peer,"count":count,"max":max,"start":start,"end":end,"onresult":onresult,"pool":new Array()});
+  
+  // Send first query
+  xows_cli_mam_query(peer);
 }
 
 /**
@@ -2292,8 +2370,6 @@ function xows_cli_send_chatstate(peer, chat)
     to = peer.lock;
   }
 
-  xows_log(2,"cli_send_chatstate","send chatstat",to+" \""+chat+"\"");
-
   // Send chatstat message
   xows_xmp_send_chatstate(to, type, chat);
 }
@@ -2307,6 +2383,7 @@ function xows_cli_send_chatstate(peer, chat)
 function xows_cli_send_subject(room, subj)
 {
   xows_log(2,"cli_send_subject","send subject",room.bare+" \""+subj+"\"");
+  
   // Send message with subject
   xows_xmp_send_subject(room.bare, subj);
 }
@@ -2891,7 +2968,7 @@ function xows_cli_change_profile(name, url, open)
 /**
  * Presence level as chosen by user
  */
-let xows_cli_chosen_show = -1;
+let xows_cli_chosen_show = 0;
 
 /**
  * Setup and send initial presence
@@ -2901,12 +2978,12 @@ let xows_cli_chosen_show = -1;
  */
 function xows_cli_presence_init()
 {
-  xows_cli_self.show = xows_cli_chosen_show = 3;
+  xows_cli_self.show = xows_cli_chosen_show = XOWS_SHOW_ON;
 
   xows_log(2,"cli_presence_init","send intial presence");
 
   // Send simple initial presence, without avatar advert
-  xows_xmp_send_presence(null, null, 3, xows_cli_self.stat);
+  xows_xmp_send_presence(null, null, XOWS_SHOW_ON, xows_cli_self.stat);
 
   // Initialization can be normal or following connection loss
   if(xows_cli_connect_loss) {
@@ -2960,11 +3037,11 @@ function xows_cli_presence_update()
   // Define values as required
   let type, show, stat, avat;
 
-  if(xows_cli_self.show >= 0) {
+  if(xows_cli_self.show > 0) {
     show = xows_cli_self.show;
     stat = xows_cli_self.stat;
     avat = xows_cli_self.avat;
-  } else { // XOWS_SHOW_OFF === -1
+  } else { 
     type = "unavailable";
   }
 
@@ -3036,7 +3113,7 @@ function xows_cli_activity_sleep()
   if(xows_cli_activity_timeout)
     clearTimeout(xows_cli_activity_timeout);
 
-  if(xows_cli_self.show > 1) {
+  if(xows_cli_self.show > XOWS_SHOW_XA) {
     xows_cli_activity_timeout = setTimeout(xows_cli_activity_sleep, 600000); //< 10 min
     // Decrease the show level
     xows_cli_self.show--;
@@ -3076,8 +3153,8 @@ function xows_cli_activity_stop()
   if(xows_cli_activity_timeout)
     clearTimeout(xows_cli_activity_timeout);
 
-  xows_cli_chosen_show = -1;
-  xows_cli_self.show = -1;
+  xows_cli_chosen_show = 0;
+  xows_cli_self.show = 0;
 }
 
 /**
@@ -3128,12 +3205,15 @@ function xows_cli_disconnect()
     return;
 
   xows_log(2,"cli_disconnect","prepare disconnect");
+  
+  // Terminate call session if any
+  xows_cli_call_terminate();
 
   // No more connection loss
   xows_cli_connect_loss = false;
 
   // Client is now Offline
-  xows_cli_self.show = XOWS_SHOW_OFF;
+  xows_cli_self.show = 0;
 
   // Send presence with updated values
   xows_cli_presence_update();
@@ -3202,7 +3282,7 @@ function xows_cli_reconnect(attempt)
 /**
  * Global constants for Jingle/WebRTC call status
  */
-const XOWS_CALL_HGUP = 0;
+const XOWS_call_bt_hup = 0;
 const XOWS_CALL_RING = 1;
 const XOWS_CALL_INIT = 2;
 const XOWS_CALL_LINK = 3;
@@ -3468,6 +3548,7 @@ function xows_cli_call_accept(stream)
 
   // Request to create an SDP Answer
   xows_cli_webrtc_pc.createAnswer().then(xows_cli_webrtc_setlocaldesc, xows_cli_webrtc_onerror);
+  
   xows_log(2,"cli_call_accept","create SDP answer");
 }
 
@@ -3485,6 +3566,8 @@ function xows_cli_call_terminate(peer)
     const reason = (xows_cli_call_stat === XOWS_CALL_RING) ? "decline" : "success";
 
     xows_log(2,"cli_call_terminate",reason,xows_cli_call_peer.call);
+    
+    // Send Jingle session terminate
     xows_xmp_jingle_terminate(xows_cli_call_peer.call, xows_cli_call_ssid, reason);
 
     // Clear call elements
@@ -3584,3 +3667,22 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
   }
 }
 
+/**
+ * Special function to close session and exit the quickest way 
+ * possible, used to terminate session when browser exit page
+ * 
+ * @param   {string}   [peer]     Optionnal Peer object
+ */
+function xows_cli_flyyoufools(peer)
+{
+  // Send chatsate to current chat peer
+  if(peer) 
+    xows_cli_send_chatstate(peer, 0);
+  
+  // Terminate any pending call
+  if(xows_cli_call_stat > 0)
+    xows_xmp_jingle_terminate(xows_cli_call_peer.call, xows_cli_call_ssid, "failed-application");
+  
+  // Disconnect XMPP session
+  xows_xmp_flyyoufools();
+}

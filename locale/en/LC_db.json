@@ -137,7 +137,7 @@
   "Edit user profile":
   "",
 
-  "Define a Status ...":
+  "Define a status ...":
   "",
 
   "Available For Chat":
@@ -413,22 +413,13 @@
   "Retry":
   "",
 
-  "Enable camera":
+  "Enable or disable camera":
   "",
 
-  "Disable camera":
+  "Mute or unmute the microphone":
   "",
 
-  "Enable microphone":
-  "",
-
-  "Disable microphone":
-  "",
-
-  "Disable sound":
-  "",
-
-  "Enable sound":
+  "Mute or unmute sound":
   "",
 
   "Volume":
@@ -437,10 +428,7 @@
   "Hang up":
   "",
 
-  "Expand":
-  "",
-
-  "Reduce":
+  "Expand/Reduce":
   "",
 
   "Incoming call...":

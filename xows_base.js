@@ -57,8 +57,8 @@ const XOWS_APP_NODE = "https://github.com/sedenion/xows";
  */
 const XOWS_SIG_ERR = -1;
 const XOWS_SIG_HUP = -2; //< used for connect loss
-const XOWS_SIG_WRN = 0;
-const XOWS_SIG_OK  = 1;
+const XOWS_SIG_WRN =  0;
+const XOWS_SIG_OK  =  1;
 
 /**
  * Xows Logo SVG path
@@ -1152,11 +1152,11 @@ function xows_sdp_parse(raw)
       }
       break;
     case 'a': { //< a=attribue:values
-      //xows_sdp_parse_a(sdpout.media ? sdpout.media[sdpout.media.length - 1] : sdpout, entry);
+
       const parent = sdpout.media ? sdpout.media[sdpout.media.length - 1] : sdpout;
       const c = entry.indexOf(':'); //< Semicolon position
       const v = (c > 0) ? entry.substring(c + 1).split(' ') : null; //< Attributes values
-      const n = (c > 0) ? entry.substring(2,c - 2) : entry.substring(2); //< Attribute name
+      const n = (c > 0) ? entry.substring(2, c) : entry.substring(2); //< Attribute name
 
       switch(n)
       {

@@ -187,9 +187,10 @@ function xows_tpl_set_callback(type, callback)
   if(!xows_isfunc(callback))
     return;
 
-  switch(type.toLowerCase()) {
-    case "embload":     xows_tpl_fw_onembload = callback; break;
-    case "emberror":    xows_tpl_fw_onemberror = callback; break;
+  switch(type.toLowerCase()) 
+  {
+    case "embload":    xows_tpl_fw_onembload = callback; break;
+    case "emberror":   xows_tpl_fw_onemberror = callback; break;
   }
 }
 
@@ -283,7 +284,7 @@ function xows_tpl_template_done()
  * @param   {string}    path      File URL/Path the data come from
  * @param   {boolean}   isinst    Indicate whether is instantiable
  */
-function xows_tpl_template_parse(html, path, isinst)
+function xows_tpl_template_parse(html, path, isinst, isinst2)
 {
   xows_log(2,"tpl_template_parse","parsing template",path);
 
@@ -292,10 +293,11 @@ function xows_tpl_template_parse(html, path, isinst)
 
   // Parse the given string as HTML to create the corresponding DOM tree
   // then returns the generated <body>.
+  const temp_plate = xows_tpl_template_parser.parseFromString(html,"text/html");
   const template = xows_clean_dom(xows_tpl_template_parser.parseFromString(html,"text/html").body);
 
   if(!template) {
-    xows_log(0,"tpl_template_parse","template \""+path+"\" parse error");
+    xows_log(0,"tpl_template_parse","template parse error",path);
     return;
   }
 
@@ -304,33 +306,46 @@ function xows_tpl_template_parse(html, path, isinst)
   const inst_load = [];
 
   if(!isinst) {
-    // Search for element with "has_template" attribute, meaning
+    // Search for element with "XOWS_TPL_IMPORT" attribute, meaning
     // its inner content must be loaded from another template file
-    nodes = template.querySelectorAll("[has_template]");
+    nodes = template.querySelectorAll("[XOWS_TPL_IMPORT]");
     i = nodes.length;
     while(i--) {
-      stat_load.push(nodes[i].getAttribute("id")); //< id is template name
-      nodes[i].removeAttribute("has_template"); //< Remove the attribute
+      if(!nodes[i].id) {
+        xows_log(0,"tpl_template_parse","instance declared without id",path);
+        continue;
+      }
+      stat_load.push(nodes[i].id); //< id is template file name
+      nodes[i].removeAttribute("XOWS_TPL_IMPORT"); //< Remove the attribute
     }
   }
 
   // Search for element with "is_instance" attribute, meaning
   // its inner content is made of instantiable (clonable) element
   // and must be loaded from another template file
-  nodes = template.querySelectorAll("[is_instance]");
+  nodes = template.querySelectorAll("[XOWS_TPL_INSTANCED]");
   i = nodes.length;
   while(i--) {
-    inst_load.push(nodes[i].className); //< className si template name
+    if(!nodes[i].id) {
+      xows_log(0,"tpl_template_parse","instance declared without id",path);
+      continue;
+    }
+    inst_load.push(nodes[i].id); //< id is template file name
     nodes[i].parentNode.removeChild(nodes[i]); //< Remove the example object
   }
-
+  
   // Extract file name from path
   let name = path.substring(path.lastIndexOf("/")+1).split(".")[0];
 
   if(isinst) {
-    // Store instantiable data
-    xows_tpl_model[name] = document.createDocumentFragment();
-    xows_tpl_model[name].appendChild(template.firstChild);
+    if(template.firstChild) {
+      // Store instantiable data
+      xows_tpl_model[name] = document.createDocumentFragment();
+      xows_tpl_model[name].appendChild(template.firstChild);
+    } else {
+      console.log(temp_plate.head.firstChild);
+      document.head.appendChild(temp_plate.head.firstChild);
+    }
   } else {
     // Search for an element the id that matches the name to append data
     // if an element is found, we place parsed data within it, otherwise
@@ -403,7 +418,7 @@ function xows_tpl_init(onready)
 /**
  * Regular expression to match HTTP url
  */
-const xows_tpl_reg_urls = /(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\]*)/g;
+const xows_tpl_reg_urls = /(http|https):\/\/(\S[^\s^"'()<>|\[\]\\]*)/g;
 
 /**
  * Function to create HTML embeding wrapper element
@@ -421,14 +436,12 @@ const xows_tpl_reg_urls = /(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\]*)/g;
  */
 function xows_tpl_embed_wrap(href, media, style, title)
 {
-  let wrap = "<aside class=\""; if(style) wrap += style;
-  wrap += "\">";
-
-  if(title) wrap += "<a href=\""+href+"\" target=\"_blank\">"+title+"</a>";
-
+  let wrap = "<mesg-embd class='"; if(style) wrap += style; wrap += "'>";
+  if(title) wrap += "<a href='"+href+"' target='_blank'>"+title+"</a>";
+  
   // Add envent callback and common attributes
-  wrap += media.replace(/src=/g,"loading=\"lazy\" onload=\"xows_tpl_emld(this)\" onerror=\"xows_tpl_emer(this)\" src=");
-  wrap += "</aside>";
+  wrap += media.replace(/src=/g,"loading='lazy' onload='xows_tpl_emld(this)' onerror='xows_tpl_emer(this)' src=");
+  wrap += "</mesg-embd>";
 
   return wrap;
 }
@@ -462,6 +475,7 @@ function xows_tpl_embed_movie(href, ext)
               "<video controls src=\""+href+"\"></video>",
               "EMBD-VID");
 }
+
 /**
  * Function to create HTML embeded audio from url
  *
@@ -481,67 +495,71 @@ function xows_tpl_embed_audio(href, ext)
  * Function to create HTML embeded Youtube movie from url
  *
  * @param   {string}    href      Youtube movie URL
- * @param   {string}    match     Matched substring in the source URL
+ * @param   {string}    domain    Matched domain substring
  *
  * @return  {string}    Replacement HTML sample
  */
-function xows_tpl_embed_youtube(href, match)
+function xows_tpl_embed_youtube(href, domain)
 {
-  const parse = href.match(/(v=|embed\/|shorts\/|youtu\.be\/)([\w\d-]+)(&.+)?/);
-  let ref = parse[2];
+  const match = href.match(/(?:v=|embed\/|shorts\/|youtu\.be\/)([\w\d\-_]+)(&.+)?/);
+  if(!match) return null;
+  let ref = match[1];
   // add options and replace the potential t= by start=
-  if(parse[3]) ref += parse[3].replace(/t=/,"start=");
+  if(match[2]) ref += match[2].replace(/t=/,"start=");
   return xows_tpl_embed_wrap(href,
               "<iframe src=\"https://www.youtube.com/embed/"+ref+"\"/>",
-              "EMBD-STR LOADING","YouTube");
+              "EMBD-IFR LOADING","YouTube");
 }
 
 /**
  * Function to create HTML embeded Dailymotion movie from url
  *
  * @param   {string}    href      Dailymotion movie URL
- * @param   {string}    match     Matched substring in the source URL
+ * @param   {string}    domain    Matched domain substring
  *
  * @return  {string}    Replacement HTML sample
  */
-function xows_tpl_embed_dailymo(href, match)
+function xows_tpl_embed_dailymo(href, domain)
 {
-  const ref = href.match(/(video|dai\.ly)\/([\w\d]+)/)[2];
+  const match = href.match(/(?:video|dai\.ly)\/([\w\d]+)/);
+  if(!match) return null;
   return xows_tpl_embed_wrap(href,
-              "<iframe src=\"https://www.dailymotion.com/embed/video/"+ref+"\"/>",
-              "EMBD-STR LOADING","Dailymotion");
+              "<iframe src=\"https://www.dailymotion.com/embed/video/"+match[1]+"\"/>",
+              "EMBD-IFR LOADING","Dailymotion");
 }
 
 /**
  * Function to create HTML embeded Dailymotion movie from url
  *
  * @param   {string}    href      Dailymotion movie URL
- * @param   {string}    match     Matched substring in the source URL
+ * @param   {string}    domain    Matched domain substring
  *
  * @return  {string}    Replacement HTML sample
  */
-function xows_tpl_embed_vimeo(href, match)
+function xows_tpl_embed_vimeo(href, domain)
 {
-  const ref = href.match(/\/([\d]+)/)[1];
+  const match = href.match(/\/([\d]+)/);
+  if(!match) return null;
   return xows_tpl_embed_wrap(href,
-              "<iframe src=\"https://player.vimeo.com/video/"+ref+"\"></iframe>",
-              "EMBD-STR LOADING","Vimeo");
+              "<iframe src=\"https://player.vimeo.com/video/"+match[1]+"\"></iframe>",
+              "EMBD-IFR LOADING","Vimeo");
 }
 
 /**
  * Function to create HTML embeded Odysee movie from url
  *
  * @param   {string}    href      Odysee movie URL
- * @param   {string}    match     Matched substring in the source URL
+ * @param   {string}    domain    Matched domain substring
  *
  * @return  {string}    Replacement HTML sample
  */
-function xows_tpl_embed_odysee(href, match)
+function xows_tpl_embed_odysee(href, domain)
 {
-  const ref = href.match(/.com\/(.*)/)[1];
+  const match = href.match(/.com\/(.*)/);
+  if(!match) return null;
   return xows_tpl_embed_wrap(href,
-              "<iframe src=\"https://odysee.com/$/embed/"+ref+"\"></iframe>",
-              "EMBD-STR LOADING","Odysee");
+              "<iframe src=\"https://odysee.com/$/embed/"+match[1]+"\"></iframe>",
+              "EMBD-IFR LOADING","Odysee");
 }
 
 /**
@@ -549,11 +567,11 @@ function xows_tpl_embed_odysee(href, match)
  * downloaded.
  *
  * @param   {string}    href      Dailymotion movie URL
- * @param   {string}    match     Matched substring in the source URL
+ * @param   {string}    domain    Matched domain substring
  *
  * @return  {string}    Replacement HTML sample
  */
-function xows_tpl_embed_upld(href, match)
+function xows_tpl_embed_upld(href, domain)
 {
   const file = decodeURI(href.match(/(.+\/)*(.+\..+)/)[2]);
   return xows_tpl_embed_wrap(href,
@@ -717,14 +735,17 @@ function xows_tpl_format_body(body)
   const embeds = xows_tpl_format_embed(body);
 
   // If message is only a single URL that was embedded we delete the body
-  if(embeds && (body.search(/^\s*(http|https):\/\/(\S[^\s*^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
+  if(embeds && (body.search(/^\s*(http|https):\/\/(\S[^\s^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
     body = "";
 
   // Search for remaining URLs to create HTML links from raw URL
   body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
+  
+  // Append embededed stuff
+  if(embeds) body += embeds;
 
   // Finaly format URL and add embeded media
-  return {"body":body,"embeds":embeds};
+  return body;
 }
 
 /**
@@ -821,24 +842,23 @@ function xows_tpl_spawn_avat_cls(hash)
 function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model["ROST-CONT"].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["peer-cont"].firstChild.cloneNode(true);
 
   // Set content to proper elements
   inst.id = bare;
   inst.title = name+" ("+bare+")";
-  inst.querySelector("H3").innerText = name;
-  inst.querySelector("P").innerText = stat?stat:"";
-  const show_dv = inst.querySelector("PEER-SHOW");
-  const subs_bt = inst.querySelector(".PEER-SUBS");
-  const avat_fi = inst.querySelector("FIGURE");
+  inst.querySelector("PEER-NAME").innerText = name;
+  inst.querySelector("PEER-META").innerText = stat?stat:"";
+  const show_dv = inst.querySelector("BADG-SHOW");
   if(subs < XOWS_SUBS_TO) {
     inst.classList.add("PEER-DENY");
-    show_dv.classList.add("HIDDEN");
-    subs_bt.classList.remove("HIDDEN");
+    show_dv.hidden = true;
+    inst.querySelector("[name='cont_bt_rtry']").disabled = false;
   } else {
-    show_dv.setAttribute("show",(show!==null)?show:-1);
-    avat_fi.setAttribute("name",bare);
-    avat_fi.className = xows_tpl_spawn_avat_cls(avat);
+    show_dv.dataset.show = show || 0;
+    const peer_avat = inst.querySelector("PEER-AVAT");
+    peer_avat.dataset.jid = bare;
+    peer_avat.className = xows_tpl_spawn_avat_cls(avat);
   }
 
   return inst;
@@ -858,22 +878,21 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
 {
   // Update content
   li.title = name+" ("+li.id+")";
-  li.querySelector("H3").innerText = name;
-  li.querySelector("P").innerText = stat?stat:"";
-  const show_dv = li.querySelector("PEER-SHOW");
-  const subs_bt = li.querySelector(".PEER-SUBS");
-  const avat_fi = li.querySelector("FIGURE");
+  li.querySelector("PEER-NAME").innerText = name;
+  li.querySelector("PEER-META").innerText = stat?stat:"";
+  const badg_show = li.querySelector("BADG-SHOW");
+  const cont_bt_rtry = li.querySelector("[name='cont_bt_rtry']");
   if(subs < XOWS_SUBS_TO) {
     li.classList.add("PEER-DENY");
-    show_dv.classList.add("HIDDEN");
-    subs_bt.classList.remove("HIDDEN");
+    badg_show.hidden = true;
+    cont_bt_rtry.disabled = false;
   } else {
     li.classList.remove("PEER-DENY");
-    show_dv.classList.remove("HIDDEN");
-    show_dv.setAttribute("show",(show!==null)?show:-1);
-    subs_bt.classList.add("HIDDEN");
+    badg_show.hidden = false;
+    badg_show.dataset.show = show || 0;
+    cont_bt_rtry.disabled = true;
     // Set proper class for avatar
-    avat_fi.className = xows_tpl_spawn_avat_cls(avat);
+    li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(avat);
   }
 }
 
@@ -891,15 +910,15 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
 function xows_tpl_spawn_rost_room(bare, name, desc, lock)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model["ROST-ROOM"].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["peer-room"].firstChild.cloneNode(true);
 
   // Set content to proper elements
   inst.id = bare;
   inst.title = name+" ("+bare+")";
-  inst.querySelector("H3").innerText = name;
-  inst.querySelector("P").innerText = desc;
-  //const avat_fi = inst.querySelector("FIGURE");
-  //if(lock) avat_fi.classList.add("ROOM-LOCK");
+  inst.querySelector("PEER-NAME").innerText = name;
+  inst.querySelector("PEER-META").innerText = desc;
+  //const peer_avat = inst.querySelector("PEER-AVAT");
+  //if(lock) peer_avat.classList.add("ROOM-LOCK");
 
   return inst;
 }
@@ -916,13 +935,13 @@ function xows_tpl_update_rost_room(li, name, desc, lock)
 {
   // Update content
   li.title = name+" ("+li.id+")";
-  li.querySelector("H3").innerText = name;
-  li.querySelector("P").innerText = desc;
-  //const avat_fi = li.querySelector("FIGURE");
+  li.querySelector("PEER-NAME").innerText = name;
+  li.querySelector("PEER-META").innerText = desc;
+  //const peer_avat = li.querySelector("PEER-AVAT");
   //if(lock) {
-  //  avat_fi.classList.add("ROOM-LOCK");
+  //  peer_avat.classList.add("ROOM-LOCK");
   //} else {
-  //  avat_fi.classList.remove("ROOM-LOCK");
+  //  peer_avat.classList.remove("ROOM-LOCK");
   //}
 }
 
@@ -938,13 +957,13 @@ function xows_tpl_update_rost_room(li, name, desc, lock)
 function xows_tpl_spawn_rost_subs(bare, nick)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model["ROST-SUBS"].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["peer-pend"].firstChild.cloneNode(true);
 
   // Set content to proper elements
   inst.id = bare;
   inst.title = nick+" ("+bare+")";
   if(nick) inst.setAttribute("name", nick);
-  inst.querySelector("H3").innerText = nick ? nick : bare;
+  inst.querySelector("PEER-NAME").innerText = nick ? nick : bare;
 
   return inst;
 }
@@ -965,21 +984,21 @@ function xows_tpl_spawn_rost_subs(bare, nick)
 function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model["ROOM-OCCU"].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["peer-occu"].firstChild.cloneNode(true);
 
   // Set content to proper elements
   inst.id = ojid;
   inst.title = nick+" ("+ojid+")";
-  if(full) inst.setAttribute("jid", full);
-  inst.querySelector("H3").innerText = nick;
-  inst.querySelector("P").innerText = stat?stat:"";
-  inst.querySelector("PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
+  inst.dataset.jid = full || "";
+  inst.querySelector("PEER-NAME").innerText = nick;
+  inst.querySelector("PEER-META").innerText = stat?stat:"";
+  inst.querySelector("BADG-SHOW").dataset.show = show || 0;
   // Occupant JID (lock) may be null, undefined or empty string
-  inst.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
+  inst.querySelector("[name='occu_bt_subs']").disabled = !(full && full.length);
   // Set proper class for avatar
-  const avat_fi = inst.querySelector("FIGURE");
-  avat_fi.setAttribute("name",ojid);
-  avat_fi.className = xows_tpl_spawn_avat_cls(avat);
+  const peer_avat = inst.querySelector("PEER-AVAT");
+  peer_avat.dataset.jid = ojid;
+  peer_avat.className = xows_tpl_spawn_avat_cls(avat);
 
   return inst;
 }
@@ -998,19 +1017,19 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
 {
   // Update content
   li.title = nick+" ("+li.id+")";
-  li.setAttribute("jid", full);
-  li.querySelector("H3").innerText = nick;
-  li.querySelector("P").innerText = stat?stat:"";
-  li.querySelector("PEER-SHOW").setAttribute("show",(show!==null)?show:-1);
+  li.dataset.jid = full || "";
+  li.querySelector("PEER-NAME").innerText = nick;
+  li.querySelector("PEER-META").innerText = stat?stat:"";
+  li.querySelector("BADG-SHOW").dataset.show = show || 0;
   // Occupant JID (lock) may be null, undefined or empty string
-  li.querySelector(".OCCU-SUBS").disabled = !(full && full.length);
+  li.querySelector("[name='occu_bt_subs']").disabled = !(full && full.length);
   // Set proper class for avatar
-  li.querySelector("FIGURE").className = xows_tpl_spawn_avat_cls(avat);
+  li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(avat);
 }
 
 /**
- * Build and returns a new instance of history Message <li> object
- * from template to be added in the chat history list <ul>
+ * Build and returns a new instance of history Message <hist-mesg> 
+ * object from template to be added in the chat history list <ul>
  *
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
@@ -1025,54 +1044,90 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
  */
 function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
 {
-  // Select message model, either full with name and avar or
-  // simple aggregate.
-  const model = sndr ? "MESG-FULL" : "MESG-AGGR";
-
   // Clone DOM tree from template
-  const inst = xows_tpl_model[model].firstChild.cloneNode(true);
-
-  // Add time or date
-  inst.querySelector("MESG-TIME").innerText = sndr ? xows_l10n_date(time) : xows_l10n_houre(time);
-  if(sndr) {
-    // Add author name
-    const nick_sp = inst.querySelector("MESG-FROM");
-    nick_sp.setAttribute("name",xows_jid_to_bare(from));
-    nick_sp.innerText = sndr.name;
-    // Set proper class for avatar
-    const avat_fi = inst.querySelector("FIGURE");
-    avat_fi.setAttribute("name",xows_jid_to_bare(from));
-    avat_fi.className = xows_tpl_spawn_avat_cls(sndr.avat);
-  }
-
-  // Set proper value to message elements
-  if(sent) {
-    inst.classList.add("MESG-SENT");
-    // Add raw body for message edition
-    inst.querySelector("MESG-INPT").innerHTML = xows_html_escape(body);
-  } else {
-    inst.classList.add("MESG-RECV");
-    // Remove unused nodes
-    const mesg_body = inst.querySelector("MESG-BODY");
-    mesg_body.removeChild(inst.querySelector("MESG-INPT"));
-    mesg_body.removeChild(inst.querySelector("MESG-DIAL"));
-  }
-  if(recp) inst.classList.add("MESG-RECP");
-  if(repl) inst.classList.add("MESG-REPL");
+  const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
+  
   inst.id = id;
   inst.dataset.from = from;
   inst.dataset.time = time;
+  
+  // Set proper value to message elements  
+  if(sent) {
+    inst.classList.add("MESG-SENT");
+    if(recp) inst.classList.add("MESG-RECP");
+    // Add raw body for message edition
+    inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(body);
+  }
+  
+  // Add time or date
+  if(sndr) {
+    inst.querySelector("MESG-DATE").innerText = xows_l10n_date(time);
+    const jid = xows_jid_to_bare(from);
+    // Set author name with JID data
+    const mesg_from = inst.querySelector("MESG-FROM");
+    mesg_from.dataset.jid = jid;
+    mesg_from.innerText = sndr.name;
+    // Set avatar class with JID data
+    const mesg_avat = inst.querySelector("MESG-AVAT");
+    mesg_avat.dataset.jid = jid;
+    mesg_avat.className = xows_tpl_spawn_avat_cls(sndr.avat);
+  } else {
+    inst.classList.add("MESG-APPEND");
+    inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(time);
+  }
 
-  // Add formated body
-  const format = xows_tpl_format_body(body);
-  inst.querySelector("P").innerHTML = format.body;
-  if(format.embeds)
-    inst.querySelector("MESG-EMBD").innerHTML = format.embeds;
-
-
-
+  if(repl) inst.classList.add("MESG-MODIFY");
+  
+  inst.querySelector("MESG-BODY").innerHTML = xows_tpl_format_body(body);
+  
   // Return final tree
   return inst;
+}
+
+/**
+ * Build and insert new <mesg-edit> element instance into the given 
+ * <hist-mesg> element. The newly inserted element is returned.
+ *
+ * @param   {object}    mesg      History message element <hist-mesg>
+ *
+ * @return  {object}    Message editor <mesg-edit> HTML Elements
+ */
+function xows_tpl_mesg_edit_insert(mesg)
+{
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["mesg-edit"].firstChild.cloneNode(true);
+  
+  inst.dataset.id = mesg.id;
+  
+  const mesg_body = mesg.querySelector("MESG-BODY");
+
+  inst.querySelector("MESG-INPT").innerHTML = mesg_body.dataset.raw;
+  mesg_body.parentNode.insertBefore(inst, mesg_body);
+  
+  // Add the EDIT class
+  mesg.classList.add("MESG-EDITOR");
+    
+  return inst;
+}
+
+/**
+ * Remove <mesg-edit> element instance from the given <hist-mesg> 
+ * element.
+ *
+ * @param   {object}    mesg      History message element <hist-mesg>
+ */
+function xows_tpl_mesg_edit_remove(mesg)
+{
+  // Remove the <mesg-edit> element
+  const mesg_main = mesg.querySelector("MESG-MAIN");
+  
+  // It may happen that message is already empty du to DISCARD after 
+  // correction, so we prevent Uncaught Error...
+  if(mesg_main) 
+    mesg_main.removeChild(mesg_main.querySelector("MESG-EDIT"));
+  
+  // Remove the EDIT class
+  mesg.classList.remove("MESG-EDITOR");
 }
 
 /**
@@ -1088,14 +1143,14 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
 function xows_tpl_spawn_stream_audio(jid, nick, avat)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model["STREAM-AUDIO"].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["strm-audio"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.setAttribute("jid", jid);
-  inst.setAttribute("name", nick);
-  const avat_fi = inst.querySelector("FIGURE");
-  avat_fi.setAttribute("name",jid);
-  avat_fi.className = xows_tpl_spawn_avat_cls(avat);
+  inst.dataset.from = jid;
+  inst.title = nick;
+  const strm_avat = inst.querySelector("STRM-AVAT");
+  strm_avat.dataset.jid = jid;
+  strm_avat.className = xows_tpl_spawn_avat_cls(avat);
 
   return inst;
 }
@@ -1113,11 +1168,11 @@ function xows_tpl_spawn_stream_audio(jid, nick, avat)
 function xows_tpl_spawn_stream_video(jid, nick, avat)
 {
   // Clone DOM tree from template
-  const inst = xows_tpl_model["STREAM-VIDEO"].firstChild.cloneNode(true);
+  const inst = xows_tpl_model["strm-video"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.setAttribute("jid", jid);
-  inst.setAttribute("name", nick);
+  inst.dataset.from = jid;
+  inst.title = nick;
 
   return inst;
 }

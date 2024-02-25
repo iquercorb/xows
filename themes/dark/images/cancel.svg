@@ -1,34 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   viewBox="0 0 1000 1000"
-   version="1.1"
-   id="svg1440"
-   sodipodi:docname="cancel.svg"
-   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs1444" />
-  <sodipodi:namedview
-     id="namedview1442"
-     pagecolor="#ffffff"
-     bordercolor="#000000"
-     borderopacity="0.25"
-     inkscape:showpageshadow="2"
-     inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="true"
-     inkscape:deskcolor="#d1d1d1"
-     showgrid="false"
-     inkscape:zoom="0.472"
-     inkscape:cx="518.00847"
-     inkscape:cy="473.51695"
-     inkscape:current-layer="svg1440" />
-  <path
-     d="m 214.51366,847.69216 c 22.33448,22.43123 35.36843,22.43125 57.702,-0.003 l 228.10256,-228.10382 229.3713,229.37218 c 22.3344,22.43133 34.10393,21.16496 56.4384,-1.26809 l 62.07018,-62.07018 c 22.43392,-22.33538 23.70381,-34.10393 1.27077,-56.44108 L 620.0949,499.8036 848.19899,271.7004 c 22.43484,-22.3327 22.43753,-35.36756 0.003,-57.70112 l -62.0744,-62.07557 c -22.33473,-22.43099 -35.36933,-22.42945 -57.7047,0 L 500.32246,380.02936 272.21659,151.92438 c -22.33723,-22.4312 -35.37381,-22.42946 -57.71008,0.003 l -62.06929,62.0702 c -22.43138,22.33611 -22.43135,35.37189 -1.1e-4,57.70637 L 380.54509,499.80913 152.43946,727.91348 c -22.43327,22.33407 -22.43411,35.36719 -1.8e-4,57.70345 z"
-     fill="#ffffff"
-     id="path1438"
-     sodipodi:nodetypes="ccccccccccccccccccccc"
-     style="stroke-width:0.896174" />
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" viewBox="0 0 1e3 1e3" xmlns="http://www.w3.org/2000/svg">
+ <path d="m214.51 847.69c22.334 22.431 35.368 22.431 57.702-3e-3l228.1-228.1 229.37 229.37c22.334 22.431 34.104 21.165 56.438-1.2681l62.07-62.07c22.434-22.335 23.704-34.104 1.2708-56.441l-229.37-229.37 228.1-228.1c22.435-22.333 22.438-35.368 3e-3 -57.701l-62.074-62.076c-22.335-22.431-35.369-22.429-57.705 0l-228.1 228.11-228.11-228.1c-22.337-22.431-35.374-22.429-57.71 3e-3l-62.069 62.07c-22.431 22.336-22.431 35.372-1.1e-4 57.706l228.11 228.11-228.11 228.1c-22.433 22.334-22.434 35.367-1.8e-4 57.703z" fill="#fff" stroke-width=".89617"/>
 </svg>

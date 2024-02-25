@@ -46,8 +46,13 @@ const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
 /**
  * Maximum count of message the history can contain
  */
-const XOWS_GUI_HIST_SIZE = 100; //< Size of the history "window"
+let xows_gui_hist_size = 128; //< size of the history 'window'
 
+/**
+ * Count of messages to gather for each history pull request
+ */
+let xows_gui_hist_pull = 64;
+  
 /**
  * Current selected GUI locale code
  */
@@ -69,16 +74,44 @@ let xows_gui_peer = null;
 const xows_gui_audio = {ctx:null,vol:null};
 
 /**
- * Sound library
+ * Sound library for audio effects
  */
-const xows_gui_sound = {  notify:null,
-                          disable:null,
-                          enable:null,
-                          mute:null,
-                          unmute:null,
-                          ringtone:null,
-                          ringbell:null,
-                          hangup:null };
+const xows_gui_sound_lib = new Map();
+
+/**
+ * Load sound file to sound library at specified slot
+ *
+ * @param   {string}    name    Sound slot name
+ * @param   {string}    file    Sound file name
+ * @param   {boolean}   loop    Optionnal boolean to enable loop
+ */
+function xows_gui_sound_load(name, file, loop)
+{
+  xows_gui_sound_lib.set(name, new Audio("/"+xows_options.root+"/sounds/"+file));
+  if(loop) xows_gui_sound_lib.get(name).loop = true;
+}
+
+/**
+ * Play the specified sound from sound library
+ *
+ * @param   {string}    name    Sound slot name
+ */
+function xows_gui_sound_play(name)
+{
+  if(xows_gui_sound_lib.has(name))
+    xows_gui_sound_lib.get(name).play();
+}
+
+/**
+ * Stop the specified sound from sound library
+ *
+ * @param   {string}    name    Sound slot name
+ */
+function xows_gui_sound_stop(name)
+{
+  if(xows_gui_sound_lib.has(name))
+    xows_gui_sound_lib.get(name).pause();
+}
 
 /**
  * Current state of browser focus
@@ -154,108 +187,6 @@ const XOWS_GUI_FRAG_INIT = "NULL";
 const xows_gui_peer_scroll_db = new Map();
 
 /**
- * Create new Peer offscreen slot using initial DOM elements
- *
- * @param   {object}    peer      Peer object to initialize offscreen for
- */
-function xows_gui_peer_doc_init(peer)
-{
-  // clone elements from initial offscreen slot
-  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_head");
-  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_hist");
-  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_panl");
-  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "room_head");
-  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "occu_list");
-
-  const is_room = (peer.type === XOWS_PEER_ROOM);
-
-   // set chat title bar informations
-  const chat_show = xows_doc_frag_element_find(peer.bare,"chat_head","chat_show");
-  const chat_addr = xows_doc_frag_element_find(peer.bare,"chat_head","chat_addr");
-  const meta_inpt = xows_doc_frag_element_find(peer.bare,"chat_head","meta_inpt");
-  const chat_book = xows_doc_frag_element_find(peer.bare,"chat_head","chat_book");
-
-  xows_doc_frag_element_find(peer.bare,"chat_head","chat_titl").innerText = peer.name;
-
-  chat_show.classList.toggle("HIDDEN",is_room);
-  chat_addr.classList.toggle("HIDDEN",is_room);
-  xows_doc_frag_element_find(peer.bare,"chat_head","chat_occu").classList.toggle("HIDDEN",!is_room);
-
-  if(is_room) {                               //< XOWS_PEER_ROOM
-    meta_inpt.innerText = peer.subj ? peer.subj : "";
-    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
-    // Cannot bookmark public rooms or already bookmarked
-    chat_book.classList.toggle("HIDDEN", (peer.book || peer.publ));
-  } else {                                    //< XOWS_PEER_CONT
-    meta_inpt.innerText = peer.stat ? peer.stat : "";
-    chat_show.setAttribute("show", peer.show);
-    chat_addr.innerText = "("+peer.bare+")";
-    chat_book.classList.add("HIDDEN");
-  }
-
-  // set chat editor placeholder
-  const chat_inpt = xows_doc_frag_element_find(peer.bare,"chat_panl","chat_inpt");
-  chat_inpt.setAttribute("placeholder",xows_l10n_get("Send a message to")+" "+peer.name+" ...");
-
-  // Initialize scroll parameters
-  xows_gui_peer_scroll_db.set(peer.bare,{scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0});
-
-  // set notification button
-  xows_gui_chat_noti_update(peer);
-}
-
-/**
- * Move and store current document Peer elements to offscreen
- *
- * @param   {object}    peer      Peer object
- */
-function xows_gui_peer_doc_export(peer)
-{
-  // Save chat history scroll parameters
-  const chat_main = xows_doc("chat_main");
-  xows_gui_peer_scroll_db.set(peer.bare, {  scrollTop:chat_main.scrollTop,
-                                            scrollHeight:chat_main.scrollHeight,
-                                            clientHeight:chat_main.clientHeight,
-                                            scrollSaved:chat_main.scrollSaved|0});
-
-  // export document elements to offscreen fragment
-  xows_doc_frag_export(peer.bare, "chat_head");
-  xows_doc_frag_export(peer.bare, "chat_hist");
-  xows_doc_frag_export(peer.bare, "chat_panl");
-  xows_doc_frag_export(peer.bare, "room_head");
-  xows_doc_frag_export(peer.bare, "occu_list");
-}
-
-/**
- * Bring back saved Peer offscreen elements to current document
- *
- * @param   {object}    peer      Peer object
- */
-function xows_gui_peer_doc_import(peer)
-{
-  if(peer) {
-    // import document elements from offscreen fragment
-    xows_doc_frag_import(peer.bare, "occu_list");
-    xows_doc_frag_import(peer.bare, "room_head");
-    xows_doc_frag_import(peer.bare, "chat_panl");
-    xows_doc_frag_import(peer.bare, "chat_hist");
-    xows_doc_frag_import(peer.bare, "chat_head");
-
-    // Restore chat history with compensation in case of frame resize
-    const chat_main = xows_doc("chat_main");
-    chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + xows_gui_peer_scroll_db.get(peer.bare).scrollSaved);
-
-  } else {
-    // restore (clone) from initial (empty) document elements
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_head", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_hist", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_panl", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "room_head", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "occu_list", true);
-  }
-}
-
-/**
  * Get Peer related element by id, either in current document or in
  * offscreen fragment
  *
@@ -319,10 +250,10 @@ function xows_gui_peer_hist_reload(peer)
   // Reset the chat history to initial stat
   xows_gui_peer_doc(peer, "hist_beg").innerText = "";
   xows_gui_peer_doc(peer, "hist_ul").innerText = "";
-  xows_gui_peer_doc(peer, "hist_end").classList.add("HIDDEN");
+  xows_gui_peer_doc(peer, "hist_end").hidden = true;
 
   // Query for the last archives, with no delay
-  xows_gui_mam_query(peer, false, XOWS_GUI_HIST_SIZE/2, 0);
+  xows_gui_mam_query(peer, false, xows_gui_hist_pull, 0);
 }
 
 /**
@@ -366,7 +297,7 @@ function xows_gui_peer_scroll_get(peer)
  */
 function xows_gui_peer_scroll_down(peer)
 {
-  if(xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN")) {
+  if(xows_gui_peer_doc(peer,"hist_end").hidden) {
 
     const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.bare) :
                                             xows_doc("chat_main");
@@ -394,8 +325,101 @@ function xows_gui_peer_scroll_adjust(peer)
   const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.bare) :
                                           xows_doc("chat_main");
 
-  obj.scrollTop = obj.scrollHeight - (obj.clientHeight + (obj.scrollSaved | 0));
+  obj.scrollTop = obj.scrollHeight - (obj.clientHeight + (obj.scrollSaved || 0));
 }
+
+/**
+ * Create new Peer offscreen slot using initial DOM elements
+ *
+ * @param   {object}    peer      Peer object to initialize offscreen for
+ */
+function xows_gui_peer_doc_init(peer)
+{
+  // clone elements from initial offscreen slot
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_head");
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_hist");
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "chat_panl");
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "room_head");
+  xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "occu_list");
+
+   // set chat title bar informations
+  xows_gui_peer_doc(peer,"chat_titl").innerText = peer.name;
+
+  const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
+
+  if((peer.type === XOWS_PEER_ROOM)) {  //< XOWS_PEER_ROOM
+    meta_inpt.innerText = peer.subj ? peer.subj : "";
+    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
+    // Cannot bookmark public rooms or already bookmarked
+    xows_gui_peer_doc(peer,"chat_bt_bkmk").hidden = (peer.book || peer.publ);
+  } else {       //< XOWS_PEER_CONT
+    meta_inpt.innerText = peer.stat ? peer.stat : "";
+    xows_gui_peer_doc(peer,"chat_show").dataset.show = chat_show;
+    xows_gui_peer_doc(peer,"chat_addr").innerText = "("+peer.bare+")";
+  }
+
+  // Set chat input placeholder
+  const placeholder = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
+  xows_gui_peer_doc(peer,"chat_inpt").setAttribute("placeholder",placeholder);
+
+  // Initialize scroll parameters
+  xows_gui_peer_scroll_db.set(peer.bare,{scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0});
+
+  // set notification button
+  xows_gui_chat_bt_noti_update(peer);
+}
+
+/**
+ * Move and store current document Peer elements to offscreen
+ *
+ * @param   {object}    peer      Peer object
+ */
+function xows_gui_peer_doc_export(peer)
+{
+  // Save chat history scroll parameters
+  const chat_main = xows_doc("chat_main");
+  xows_gui_peer_scroll_db.set(peer.bare, {  scrollTop:chat_main.scrollTop,
+                                            scrollHeight:chat_main.scrollHeight,
+                                            clientHeight:chat_main.clientHeight,
+                                            scrollSaved:chat_main.scrollSaved|0});
+
+  // export document elements to offscreen fragment
+  xows_doc_frag_export(peer.bare, "chat_head");
+  xows_doc_frag_export(peer.bare, "chat_hist");
+  xows_doc_frag_export(peer.bare, "chat_panl");
+  xows_doc_frag_export(peer.bare, "room_head");
+  xows_doc_frag_export(peer.bare, "occu_list");
+}
+
+/**
+ * Bring back saved Peer offscreen elements to current document
+ *
+ * @param   {object}    peer      Peer object
+ */
+function xows_gui_peer_doc_import(peer)
+{
+  if(peer) {
+    // import document elements from offscreen fragment
+    xows_doc_frag_import(peer.bare, "chat_head");
+    xows_doc_frag_import(peer.bare, "chat_hist");
+    xows_doc_frag_import(peer.bare, "chat_panl");
+    xows_doc_frag_import(peer.bare, "room_head");
+    xows_doc_frag_import(peer.bare, "occu_list");
+
+    // Restore chat history with compensation in case of frame resize
+    const chat_main = xows_doc("chat_main");
+    chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + xows_gui_peer_scroll_db.get(peer.bare).scrollSaved);
+
+  } else {
+    // restore (clone) from initial (empty) document elements
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_head", true);
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_hist", true);
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_panl", true);
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "room_head", true);
+    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "occu_list", true);
+  }
+}
+
 
 /* -------------------------------------------------------------------
  *
@@ -423,6 +447,20 @@ function xows_gui_init()
     navigator.mediaDevices.enumerateDevices().then(xows_gui_ondevicesinfos);
     navigator.mediaDevices.ondevicechange = xows_gui_ondevicechange;
   }
+  
+  // Load sound effects
+  xows_gui_sound_load("notify",   "notify.ogg");
+  xows_gui_sound_load("disable",  "disable.ogg");
+  xows_gui_sound_load("enable",   "enable.ogg");
+  xows_gui_sound_load("mute",     "mute.ogg");
+  xows_gui_sound_load("unmute",   "unmute.ogg");
+  xows_gui_sound_load("ringtone", "ringtone.ogg", true);
+  xows_gui_sound_load("ringbell", "ringbell.ogg", true);
+  xows_gui_sound_load("hangup",   "hangup.ogg");
+  
+  // Store MAM parameters from options
+  xows_gui_hist_size = xows_options.hist_size;
+  xows_gui_hist_pull = xows_gui_hist_size / 2;
 }
 
 /* -------------------------------------------------------------------
@@ -539,19 +577,16 @@ function xows_gui_cli_onconnect(user)
     xows_gui_peer = null;
 
     // Check whether file Upload is available
-    if(xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
-      xows_doc("edit_upld").disabled = false;
-      // Add embeded download matching http upload service domain
-      xows_tpl_embed_add_upld(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD]);
-    }
-    // Check whether MUC service is available
-    if(xows_cli_svc_exist(XOWS_NS_MUC)) {
-      xows_doc("tab_room").disabled = false;
-      //xows_doc("tab_book").disabled = false; /* alternative Bookmarks implementation */
-    }
+    const upld = xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD);
+    xows_doc("edit_bt_upld").disabled = !upld;
+    // Add embeded download matching http upload service domain
+    if(upld) xows_tpl_embed_add_upld(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD]);
 
+    // Check whether MUC service is available
+    const muc = xows_cli_svc_exist(XOWS_NS_MUC);
+    xows_doc("tab_room").disabled = !muc;
     // Refresh public room list
-    xows_gui_room_list_reload();
+    if(muc) xows_gui_room_list_reload();
   }
 }
 
@@ -560,8 +595,6 @@ function xows_gui_cli_onconnect(user)
  */
 function xows_gui_disconnect()
 {
-  xows_log(2,"gui_disconnect","prepare to disconnect");
-
   // Send chat state to notify current user
   if(xows_gui_peer)
     xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_GONE);
@@ -653,73 +686,15 @@ function xows_gui_cli_onerror(code, mesg)
 
 /* -------------------------------------------------------------------
  *
- * Browser Window - Navigation history emulation
+ * Browser Window - Browser navigation Back handle
  *
  * -------------------------------------------------------------------*/
-
-/**
- * Navigation history stack to supersed browser history
- */
-const xows_gui_nav_stack = [];
-
-/**
- * Navigation history lock, to prevent new entry while back
- */
-let xows_gui_nav_lock = false;
-
-/**
- * Navigation history last popstate index
- */
-let xows_gui_nav_pos = 0;
-
-/**
- * Push item browser navigation history stack
- */
-function xows_gui_nav_push(page, func, ...args)
-{
-  if(xows_gui_nav_lock || !xows_cli_connected())
-    return;
-
-  // Check whether current nav position is back compared to stack size
-  if(xows_gui_nav_pos < xows_gui_nav_stack.length) {
-    // user did some back, then started a new path, we erase the saved
-    // history from the current position and go ahead.
-    xows_gui_nav_stack.splice(xows_gui_nav_pos+1);
-  }
-  // we take current stack length to reteive later
-  const pos = xows_gui_nav_stack.length;
-  // add nav history to browser
-  history.pushState({"pos":pos,"page":page}, "", window.location.pathname+"#"+page);
-  // store nav function and argument to be restored in case
-  xows_gui_nav_stack.push({"func":func,"args":[...args]});
-  // increment current nav position
-  xows_gui_nav_pos++;
-}
 
 /**
  * Process Browser navigation history back
  */
 function xows_gui_nav_onpopstate(event)
 {
-  if(event.state) {
-
-    // get nav position from poped state by browser
-    const pos = event.state.pos;
-    // retreive corresponding saved nav data
-    const nav = xows_gui_nav_stack[pos];
-
-    if(nav && nav.func) {
-      // proceed to history back or forward
-      xows_gui_nav_lock = true;   //< prevent history push
-      nav.func(...nav.args);    //< call function to open page/screen
-      xows_gui_nav_lock = false;  //< can now push history
-      // keep track of the current position in history
-      xows_gui_nav_pos = pos;
-      return; //< return now
-    }
-  }
-
-  // Arriving here mean history is out
   if(xows_cli_connected() && !xows_doc_mbox_modal()) {
     // prevent to go back
     history.forward();
@@ -769,8 +744,8 @@ function xows_gui_wnd_onunload(event)
   // TCP binding as defined in Section 4.4 of [RFC6120], except that a
   // <close/> element is used instead of the ending </stream:stream> tag.
 
-  // Direct and raw XMPP stanza to optimize chances to be sent
-  xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
+  // Call special function for express session close
+  xows_cli_flyyoufools(xows_gui_peer);
 }
 
 /* -------------------------------------------------------------------
@@ -795,12 +770,12 @@ function xows_gui_notify_query_handle(permit)
   let peer;
   for(const bare in xows_doc_frag_db) {
     peer = xows_cli_peer_get(bare);
-    if(peer) xows_gui_chat_noti_update(peer); //< update notify button
+    if(peer) xows_gui_chat_bt_noti_update(peer); //< update notify button
   }
 
   // If user allowed notifications, then enable
   if(permit === "granted") {
-    // Send an reset awaiting notification
+    // Send and reset awaiting notification
     if(xows_gui_notify_await) {
       xows_gui_notify_push(xows_gui_notify_await.peer, xows_gui_notify_await.body);
       xows_gui_notify_await = null;
@@ -852,8 +827,7 @@ function xows_gui_notify_push(peer, body)
       // Push new notification
       const notif = new Notification(peer.name,{"body":body,"icon":(icon?icon:("/"+xows_options.root+"/icon.svg"))});
       // Sound is slower than light...
-      if(xows_gui_sound.notify)
-        xows_gui_sound.notify.play();
+      xows_gui_sound_play("notify");
     }
     break;
 
@@ -934,6 +908,8 @@ function xows_gui_wnd_onkey(event)
       // Prevent browser to append the new-line in the text-area
       event.preventDefault();
 
+      console.log(event.target);
+
       switch(event.target.tagName)
       {
       case "CHAT-INPT":
@@ -946,7 +922,7 @@ function xows_gui_wnd_onkey(event)
         xows_gui_meta_inpt_enter(event.target);
         break;
       case "MESG-INPT":
-        xows_gui_mesg_inpt_enter(event.target);
+        xows_gui_mesg_edit_valid(event.target);
         break;
       }
     }
@@ -966,48 +942,51 @@ function xows_gui_reset()
 {
   xows_log(2,"gui_reset","reset DOM states");
 
+  // hide all screens
+  xows_doc_hide("scr_page");
+  xows_doc_hide("scr_main");
+
   // close any opened page or overlay element
   xows_doc_page_close(true);
   xows_doc_menu_close();
   xows_doc_view_close();
   xows_doc_mbox_close();
 
-  // hide all screens
-  xows_doc_hide("scr_page");
-  xows_doc_hide("scr_main");
-
-  // Reset Peer related elements
-  xows_gui_switch_peer(null);
-
-  // Reset chat editor
-  xows_doc_cls_add("chat_inpt", "PLACEHOLD");
-  xows_doc("chat_inpt").innerText = "";
-
+  // Reset columns setup
+  xows_doc_cls_rem("main_wrap", "COLR-WIDE");
+  xows_doc_cls_rem("main_wrap", "COLL-WIDE");
+  xows_doc_cls_add("main_colr", "COL-HIDE");
+  
   // clean roster lists
-  xows_doc_list_clean("subs_ul");
-  xows_doc_list_clean("cont_ul");
-  xows_doc_list_clean("book_ul");
-  xows_doc_list_clean("room_ul");
-  xows_doc_list_clean("priv_ul");
+  xows_doc("subs_ul").innerHTML = "";
+  xows_doc("cont_ul").innerHTML = "";
+  xows_doc("book_ul").innerHTML = "";
+  xows_doc("room_ul").innerHTML = "";
+  xows_doc("priv_ul").innerHTML = "";
+  
+  // Reset roster tabs
+  xows_doc("tab_room").disabled = true;
+  xows_gui_rost_switch("tab_cont");
+  const room_unrd = xows_doc("room_unrd");
+  room_unrd.dataset.mesg = 0; room_unrd.dataset.call = 0; room_unrd.dataset.ring = 0;
+  room_unrd.innerText = "";
+  const cont_unrd = xows_doc("cont_unrd");
+  cont_unrd.dataset.mesg = 0; cont_unrd.dataset.call = 0; cont_unrd.dataset.ring = 0;
+  cont_unrd.innerText = "";
 
   // clean user frame
-  xows_doc("user_show").setAttribute("show",XOWS_SHOW_OFF);
+  xows_doc("user_show").dataset.show = 0;
   xows_doc("user_name").innerText = "";
   xows_doc("user_addr").innerText = "";
   xows_doc("stat_inpt").innerText = "";
   xows_doc("user_avat").className = "";
 
-  // Reset roster tabs
-  xows_gui_rost_switch("tab_cont");
-  xows_doc("room_unrd").innerText = "";
-  xows_doc_hide("room_unrd");
-  xows_doc("cont_unrd").innerText = "";
-  xows_doc_hide("cont_unrd");
+  // Reset Peer related elements
+  xows_gui_switch_peer(null);
 
-  // Reset columns setup
-  xows_doc_cls_rem("main_wrap", "COLR-WIDE");
-  xows_doc_cls_rem("main_wrap", "COLL-WIDE");
-  xows_doc_cls_add("main_colr", "COL-HIDE");
+  // Reset chat input
+  xows_doc_cls_add("chat_inpt", "PLACEHOLD");
+  xows_doc("chat_inpt").innerText = "";
 
   // Clear all offscreen elements
   xows_doc_frag_clear();
@@ -1062,19 +1041,17 @@ function xows_gui_switch_peer(jid)
     }
   }
 
+  const chat_fram = xows_doc("chat_fram");
+
   // If next contact is valid, show the chat <div>
-  (next === null) ? xows_doc_hide("chat_fram")
-                  : xows_doc_show("chat_fram");
+  chat_fram.hidden = (next === null);
 
   // Open or close Multimedia Call layout
   if(xows_gui_chat_call_peer)
-    xows_doc("chat_fram").classList.toggle("CALL-OPEN",(xows_gui_chat_call_peer === next));
-
-  // flag to push navigation history
-  let push_nav = false;
+    chat_fram.classList.toggle("CALL-OPEN",(xows_gui_chat_call_peer === next));
 
   // Revert window title
-  xows_gui_title_pop();
+  if(prev) xows_gui_title_pop();
 
   if(next) {
     // Add highlight class to new <li> element
@@ -1082,22 +1059,25 @@ function xows_gui_switch_peer(jid)
     // Bring back Peer document elements from offscreen
     xows_gui_peer_doc_import(next);
     // Open or close right panel
-    xows_doc_cls_set("main_colr", "COL-HIDE", (next.type !== XOWS_PEER_ROOM));
+    xows_doc_cls_tog("main_colr","COL-HIDE",(next.type !== XOWS_PEER_ROOM));
     // Set the current contact
     xows_gui_peer = next;
     // Join the room if required
-    if(next.type === XOWS_PEER_ROOM)
+    if(next.type === XOWS_PEER_ROOM) {
+      chat_fram.className = "CHAT-ROOM";
       if(!next.join) xows_cli_room_join(next);
+    } else {
+      chat_fram.className = "CHAT-CONT";
+    }
     // Hidden history mean first "open", so we load a bunch of history
     if(xows_doc_hidden("hist_ul")) {
-      xows_gui_mam_query(next, false, XOWS_GUI_HIST_SIZE/2, 0);
+      xows_gui_mam_query(next, false, xows_gui_hist_pull, 0);
       xows_doc_show("hist_ul");
     }
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
     // Set window title
     xows_gui_title_push("@" + next.name + " - XOWS");
-    push_nav = true; //< we can push nav
     // Some debug log
     xows_log(2,"gui_switch_peer","peer \""+next.bare+"\"","selected");
   } else {
@@ -1109,12 +1089,8 @@ function xows_gui_switch_peer(jid)
       xows_gui_peer_doc_import(null);
       // Close right panel
       xows_doc_cls_add("main_colr", "COL-HIDE");
-      push_nav = true; //< we can push nav
     }
   }
-  // push navigation history
-  if(push_nav)
-    xows_gui_nav_push("switch_peer", xows_gui_switch_peer, jid);
 }
 
 /**
@@ -1155,9 +1131,6 @@ function xows_gui_main_open()
   // Set window title
   if(xows_doc_hidden("chat_fram"))
     xows_gui_title_push(xows_l10n_get("Home")+" - XOWS");
-
-  // Add navigation history
-  xows_gui_nav_push("main_open", xows_gui_main_open);
 }
 
 /* -------------------------------------------------------------------
@@ -1357,11 +1330,37 @@ function xows_gui_mbox_bookmark_open(room)
 }
 
 /* -------------------------------------------------------------------
- *
- * Main screen - Roster
- *
+ * 
+ * Main screen - Commons routines
+ * 
  * -------------------------------------------------------------------*/
 
+/* -------------------------------------------------------------------
+ *
+ * Main screen - Application Frame
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Callback function to handle click event on GUI Roster Tabs <li>
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_rost_tabs_onclick(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  const btn = event.target.closest("ROST-TAB");
+  if(btn) xows_gui_rost_switch(btn.id);
+}
+
+/* -------------------------------------------------------------------
+ *
+ * Main screen - Roster Frame
+ *
+ * -------------------------------------------------------------------*/
+ /* -------------------------------------------------------------------
+ * Main screen - Roster - Geometry / Base interaction
+ * -------------------------------------------------------------------*/
 /**
  * Main Screen widen Roster (right) panel
  */
@@ -1379,9 +1378,6 @@ function xows_gui_rost_widen()
 
       // Widen left panel (Roster)
       xows_doc_cls_add("main_wrap", "COLL-WIDE");
-
-      // Add navigation history
-      xows_gui_nav_push("panel_open", xows_gui_rost_widen);
     }
   }
 }
@@ -1395,107 +1391,40 @@ function xows_gui_rost_switch(id)
 {
   let list, toggle = false;
 
-  const tab_room = id === "tab_room";
+  const tab_room = (id === "tab_room");
 
-  if(tab_room && !xows_doc_cls_has("tab_room","ENABLED")) {
+  if(tab_room && !xows_doc_cls_has("tab_room","SELECTED")) {
     toggle = true;
-    xows_doc("rost_titl").innerText = xows_l10n_get("Chatrooms");
     list = xows_doc("room_list");
   }
 
-  const tab_cont = id === "tab_cont";
+  const tab_cont = (id === "tab_cont");
 
-  if(tab_cont && !xows_doc_cls_has("tab_cont","ENABLED")) {
+  if(tab_cont && !xows_doc_cls_has("tab_cont","SELECTED")) {
     toggle = true;
-    xows_doc("rost_titl").innerText = xows_l10n_get("Contacts");
     list = xows_doc("cont_list");
   }
 
   // If nothing changed, return now
-  if(!toggle)
-    return;
+  if(!toggle) return;
 
-  // Toggle enabled tab
-  xows_doc_cls_set("tab_cont", "ENABLED", tab_cont);
-  xows_doc_hidden_set("cont_list", !tab_cont);
-  xows_doc_hidden_set("cont_add", !tab_cont);
+  xows_doc_cls_tog("tab_cont","SELECTED",tab_cont);
+  xows_doc("rost_cont").hidden = !tab_cont;
 
-  xows_doc_cls_set("tab_room", "ENABLED", tab_room);
-  xows_doc_hidden_set("room_list", !tab_room);
-  xows_doc_hidden_set("room_add", !tab_room);
-  xows_doc_hidden_set("room_upd", !tab_room);
+  xows_doc_cls_tog("tab_room","SELECTED",tab_room);
+  xows_doc("rost_room").hidden = !tab_room;
 
   // Search any SELECTED peer in the list to switch to
   let selected;
   if(list) selected = list.querySelector(".SELECTED");
+  
+  // Swicht to selected Peer
   xows_gui_switch_peer(selected ? selected.id : null);
-}
-
-/**
- * Callback function to handle click event on GUI Roster Tabs <li>
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_rost_tabs_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  const btn = event.target.closest("button");
-  if(btn) xows_gui_rost_switch(btn.id);
-}
-
-/**
- * Roster Contact/Room/Subscribe List on-click callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_rost_list_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  // get related <li> element where click occurred
-  const li = event.target.closest("li");
-
-  if(li) {
-
-    // Checks whether user clicked on action button
-    if(event.target.tagName === "BUTTON") {
-      // Select action
-      switch(event.target.name)
-      {
-      case "CONT_ASK": //< Request subscribe permission
-        xows_cli_subscribe_request(li.id);
-        xows_doc_mbox_open(XOWS_MBOX_SCS, "New authorization request was sent");
-        return;
-
-      case "CONT_REM": //< Remove contact
-        xows_gui_mbox_subs_edit_open(li.id);
-        return;
-      }
-    }
-
-    switch(li.className)
-    {
-      case "ROST-SUBS": {
-        // Open Subscription Allow/Deny dialog
-        xows_gui_mbox_subs_auth_open(li.id, li.name);
-        return;
-      }
-
-      default: {
-        // Select peer
-        xows_gui_switch_peer(li.id);
-        // Close panel in case we are in narrow-screen with wide panel
-        xows_gui_panel_close();
-      }
-    }
-  }
 }
 
 /* -------------------------------------------------------------------
  * Main screen - Roster - Calling Notifications
  * -------------------------------------------------------------------*/
-
 /**
  * Function to show or hide an calling status badge on the displayed
  * roster contact DOM element
@@ -1510,16 +1439,15 @@ function xows_gui_calling_set(peer, enable)
   if(!li) return;
 
   // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector(".CALL-SPOT");
+  const li_spot = li.querySelector("badg-call");
 
   // Increase the current unread count
-  li_spot.classList.toggle("HIDDEN", !enable);
+  li_spot.hidden = !enable;
 }
 
 /* -------------------------------------------------------------------
  * Main screen - Roster - Unread Notifications
  * -------------------------------------------------------------------*/
-
 /**
  * Function to update roster tab unread notification spot according
  * current state.
@@ -1542,34 +1470,34 @@ function xows_gui_unread_tab_update(peer, mesg, call, ring)
   }
 
   // Update unread message count
-  let remain_mesg = (parseInt(tab_spot.innerText) || 0);
+  let remain_mesg = parseInt(tab_spot.dataset.mesg);
   if(mesg) {
     remain_mesg += mesg;
-    tab_spot.innerText = (remain_mesg > 0) ? remain_mesg : "";
+    tab_spot.dataset.mesg = (remain_mesg > 0) ? remain_mesg : "";
   }
 
   // Update missed call count
-  let remain_call = parseInt(tab_spot.getAttribute("call"));
+  let remain_call = parseInt(tab_spot.dataset.call);
   if(call) {
     remain_call += call;
-    tab_spot.setAttribute("call", remain_call);
+    tab_spot.dataset.call = remain_call;
   }
 
   // Update ringing call count
-  let remain_ring = parseInt(tab_spot.getAttribute("ring"));
+  let remain_ring = parseInt(tab_spot.dataset.ring);
   if(ring) {
     remain_ring += ring;
-    tab_spot.setAttribute("ring", remain_ring);
+    tab_spot.dataset.ring = remain_ring;
   }
 
   // Update 'call' notification classes
-  tab_spot.classList.toggle("UNRD-CALL", remain_call > 0);
-  tab_spot.classList.toggle("UNRD-RING", remain_ring > 0);
-  tab.classList.toggle("RING-ROSTER", remain_ring > 0);
+  //tab_spot.classList.toggle("UNRD-CALL", remain_call > 0);
+  //tab_spot.classList.toggle("UNRD-RING", remain_ring > 0);
+  tab.classList.toggle("RINGING", remain_ring > 0);
 
   // Show or hide notification spot
   let has_notif = (remain_mesg > 0 || remain_call > 0 || remain_ring > 0);
-  tab_spot.classList.toggle("HIDDEN", !has_notif);
+  tab_spot.hidden = !has_notif;
 }
 
 /**
@@ -1586,11 +1514,11 @@ function xows_gui_unread_add(peer, id)
   if(!li) return;
 
   // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector(".UNRD-SPOT");
+  const li_spot = li.querySelector("badg-noti");
 
   // Increase the current unread count
-  li_spot.innerText = (parseInt(li_spot.innerText) || 0) + 1;
-  li_spot.classList.remove("HIDDEN"); //< show
+  li_spot.dataset.mesg = parseInt(li_spot.dataset.mesg) + 1;
+  li_spot.hidden = false; //< show
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, 1);
@@ -1613,11 +1541,11 @@ function xows_gui_unread_call(peer, ring)
   li.classList.toggle("RING-ROSTER", ring);
 
   // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector(".UNRD-SPOT");
+  const li_spot = li.querySelector("badg-noti");
   const had_ring = li_spot.classList.contains("UNRD-RING");
   li_spot.classList.toggle("UNRD-RING", ring);
   li_spot.classList.toggle("UNRD-CALL", !ring);
-  li_spot.classList.remove("HIDDEN"); //< show
+  li_spot.hidden = false; //< show
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, null, ring ? 0 : 1, (ring ? 1 : (had_ring ? -1 : 0)));
@@ -1639,10 +1567,10 @@ function xows_gui_unread_reset(peer)
   li.classList.remove("RING-ROSTER");
 
   // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector(".UNRD-SPOT");
+  const li_spot = li.querySelector("badg-noti");
 
   // Get unread element to 'substract' for roster tab button update
-  const mesg = -(parseInt(li_spot.innerText) || 0);
+  const mesg = - parseInt(li_spot.dataset.mesg);
   const ring = li_spot.classList.contains("UNRD-RING") ? 0 : -1;
   const call = li_spot.classList.contains("UNRD-CALL") ? 0 : -1;
 
@@ -1650,28 +1578,96 @@ function xows_gui_unread_reset(peer)
   li_spot.innerText = "";
   li_spot.classList.remove("UNRD-RING");
   li_spot.classList.remove("UNRD-CALL");
-  li_spot.classList.add("HIDDEN"); //< hide
+  li_spot.hidden = true; //< hide
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, mesg, call, ring);
 }
 
 /* -------------------------------------------------------------------
- *
- * Main screen - Roster - Contacts List
- *
+ * Main screen - Roster - Main management
  * -------------------------------------------------------------------*/
 
+/**
+ * Roster Header on-click callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_rost_head_onclick(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  switch(event.target.id)
+  {
+  case "cont_bt_add": 
+    // Open contact Add page
+    xows_gui_page_cont_open();
+    break;
+  case "room_bt_add": 
+    // Open Join Room page
+    xows_gui_page_join_open();
+    break;
+  case "room_bt_upd":
+    // Refresh Room list
+    xows_gui_room_list_reload();
+    break;
+  }
+}
+
+/**
+ * Roster Contact/Room/Subscribe List on-click callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_rost_list_onclick(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+  
+  // Search for <li-peer> parent element
+  const li_peer = event.target.closest("LI-PEER");
+  
+  if(event.target.tagName === "BUTTON") {
+    
+    switch(event.target.name)
+    {
+    case "cont_bt_rtry": //< Retry request subscribe permission
+      xows_cli_subscribe_request(li_peer.id);
+      xows_doc_mbox_open(XOWS_MBOX_SCS, "New authorization request was sent");
+      return;
+    case "cont_bt_unsb": //< Remove (Unsubscribe) contact
+      xows_gui_mbox_subs_edit_open(li_peer.id);
+      return;
+    }
+  }
+  
+  if(li_peer.className === "PEER-PEND") {
+    // Open Subscription Allow/Deny dialog
+    xows_gui_mbox_subs_auth_open(li_peer.id, li_peer.name);
+    return;
+  }
+  
+  // Select peer
+  xows_gui_switch_peer(li_peer.id);
+  
+  // Close panel in case we are in narrow-screen with wide panel
+  xows_gui_panel_close();
+}
+/* -------------------------------------------------------------------
+ * Main screen - Roster - Contacts List
+ * -------------------------------------------------------------------*/
 /**
  * Function to force query and refresh for Room list
  */
 function xows_gui_cont_list_reload()
 {
   xows_gui_switch_peer(null);
-  // Empty the list
+  // Empty the lists
+  xows_doc("subs_ul").hidden = true;
+  xows_doc("subs_ul").innerText = "";
+  xows_doc("cont_ul").hidden = true;
   xows_doc("cont_ul").innerText = "";
   // Add loading spinner at top of list
-  xows_doc_cls_add("cont_list", "LOADING");
+  xows_doc_cls_add("cont_list","LOADING");
   // Query for roster content
   xows_cli_rost_get_query();
 }
@@ -1695,14 +1691,13 @@ function xows_gui_cli_oncontpush(cont)
   if(li) {
 
     // Check whether this is a subscribing contact
-    if(li.classList.contains("ROST-SUBS")) {
+    if(li.classList.contains("PEER-PEND")) {
 
       const subs_ul = xows_doc("subs_ul");
       // Remove the subscribe <li> element
       subs_ul.removeChild(li);
-      // Show subscribes <ul> if required
-      if(subs_ul.childNodes.length < 2)
-        subs_ul.classList.add("HIDDEN"); //< Hide the subscribes <ul>
+      // Hide subscribes <ul> if required
+      subs_ul.hidden = !subs_ul.childElementCount;
 
     } else {
 
@@ -1722,9 +1717,9 @@ function xows_gui_cli_oncontpush(cont)
   const cont_ul = xows_doc("cont_ul");
 
   // Show Contact <ul> if required
-  if(cont_ul.classList.contains("HIDDEN")) {
+  if(cont_ul.hidden) {
     cont_ul.classList.remove("LOADING"); //< Remove the potential loading spinner
-    cont_ul.classList.remove("HIDDEN"); //< Show the contacts <ul>
+    cont_ul.hidden = false; //< Show the contacts <ul>
   }
 
   // Append new instance of contact <li> from template to roster <ul>
@@ -1753,20 +1748,16 @@ function xows_gui_cli_oncontrem(bare)
 
     // delete <li> element
     cont_ul.removeChild(li);
-    // Show or hide list depending content
-    cont_ul.classList.toggle("HIDDEN",(cont_ul.childNodes.length < 2));
+    // Hide Authorized Contacts <ul> if required
+    cont_ul.hidden = !cont_ul.childElementCount;
 
     // delete document fragment for this peer
     xows_doc_frag_delete(bare);
   }
 }
-
 /* -------------------------------------------------------------------
- *
  * Main screen - Roster - Subscription List
- *
  * -------------------------------------------------------------------*/
-
 /**
  * Add subscription request to the roster
  *
@@ -1788,14 +1779,14 @@ function xows_gui_cli_onsubspush(bare, nick)
   // Create a new subcription <li> element from template
   subs_ul.appendChild(xows_tpl_spawn_rost_subs(bare, nick));
 
-  const n = subs_ul.childNodes.length - 1;
+  const n = subs_ul.childElementCount - 1;
 
   // Enable or update notification spot
   subs_unrd.innerText = n;
-  subs_unrd.classList.remove("HIDDEN");
+  subs_unrd.hidden = false;
 
   // Show the subscribes <ul>
-  subs_ul.classList.remove("HIDDEN");
+  subs_ul.hidden = false;
 }
 
 /**
@@ -1817,23 +1808,20 @@ function xows_gui_cli_onsubsrem(bare)
     const subs_unrd = xows_doc("subs_unrd");
 
     // Get count of pending authorization (<ul> children minus title)
-    const n = subs_ul.childNodes.length - 1;
+    const pendning_count = subs_ul.childElementCount;
 
     // Update or disable the notification spot
-    subs_unrd.innerText = (n > 0) ? n : "";
-    subs_unrd.classList.toggle("HIDDEN", (n < 1));
+    subs_unrd.innerText = (pendning_count > 0) ? pendning_count : "";
+    subs_unrd.hidden = !pendning_count;
 
     // Show or hide list depending content
-    subs_ul.classList.toggle("HIDDEN", (n < 1));
+    subs_ul.hidden = !pendning_count;
   }
 }
 
 /* -------------------------------------------------------------------
- *
  * Main screen - Roster - Rooms List
- *
  * -------------------------------------------------------------------*/
-
 /**
  * Function to force query and refresh for Room list
  */
@@ -1845,26 +1833,13 @@ function xows_gui_room_list_reload()
 
   // Empty and hide the Public Room list
   xows_doc_hide("room_ul");
-  xows_doc_list_clean("room_ul");
+  xows_doc("room_ul").innerHTML = "";
 
   // Add loading animation to Room list
   xows_doc_cls_add("room_list", "LOADING");
 
   // Query to get public room list with delay
   setTimeout(xows_cli_muc_items_query, 500);
-}
-
-/**
- * Function to handle click on roster add room
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_room_add_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  // Open Join Room dialog
-  xows_gui_page_join_open();
 }
 
 /**
@@ -1891,7 +1866,7 @@ function xows_gui_cli_onroompush(room)
       const src_ul = li.parentNode;
       dst_ul.appendChild(li);
       // Show or hide source <ul> depending content
-      src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length < 2));
+      src_ul.hidden = !src_ul.childElementCount;
     }
     // Update room <li> element according template
     xows_tpl_update_rost_room(li, room.name, room.desc, room.lock);
@@ -1906,7 +1881,7 @@ function xows_gui_cli_onroompush(room)
   }
 
   // Show the destination list
-  dst_ul.classList.remove("HIDDEN");
+  dst_ul.hidden = false;
 }
 
 /**
@@ -1928,7 +1903,7 @@ function xows_gui_cli_onroomrem(bare)
     const src_ul = li.parentNode;
     src_ul.removeChild(li);
     // Show or hide source <ul> depending content
-    src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length < 2));
+    src_ul.hidden = (src_ul.childNodes.length < 2);
 
     // delete document fragment for this peer
     xows_doc_frag_delete(bare);
@@ -1959,7 +1934,7 @@ function xows_gui_cli_onselfchange(user)
     stat_inpt.className = "";
   }
   // Change Show Status displays
-  xows_doc("user_show").setAttribute("show", user.show);
+  xows_doc("user_show").dataset.show = user.show;
   xows_doc("user_name").innerText = user.name;
   xows_doc("user_addr").innerText = "("+user.bare+")";
   // Update avatar
@@ -1982,11 +1957,11 @@ function xows_gui_menu_show_onclick(event)
 {
   // Retreive the parent <li> element of the event target
   const li = event.target.closest("LI");
-
+  
   // Set presence as selected level
   if(li) {
-    const show = parseInt(li.getAttribute("name"));
-    if(show >= 0) {
+    const show = parseInt(li.value);
+    if(show > 0) {
       xows_cli_change_presence(show);
     } else {
       // Reset login page
@@ -2011,17 +1986,79 @@ function xows_gui_menu_show_onclick(event)
 }
 
 /* -------------------------------------------------------------------
+ * Main Screen - User Panel - User status edition
+ * -------------------------------------------------------------------*/
+/**
+ * User Presence Status on-blur callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_stat_inpt_onblur(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  // Set value to current stat
+  xows_doc("stat_inpt").innerText = xows_cli_self.stat;
+}
+
+/**
+ * Chat Panel on-input callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_stat_inpt_oninput(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  const stat_inpt = xows_doc("stat_inpt");
+
+  // Check inner text content to show placeholder
+  if(stat_inpt.innerText.length < 2) {
+
+    if(stat_inpt.innerText.trim().length === 0) {
+
+      // Add CSS class to show placeholder
+      stat_inpt.className = "PLACEHOLD";
+      stat_inpt.innerText = ""; //< Empty any residual <br>
+
+      return; //< Return now
+    }
+  }
+
+  // Hide the placeholder text
+  stat_inpt.className = "";
+}
+
+/**
+ * User Presence Status validation (enter) function, called when user
+ * press the Enter key (see xows_gui_wnd_onkey() function).
+ *
+ * @param   {object}    input     Input object to validate
+ */
+function xows_gui_stat_inpt_enter(input)
+{
+  // Get and reset value
+  const stat = input.innerText;
+
+  // If changed, inform of the new status
+  if(stat != xows_cli_self.stat)
+    xows_cli_change_status(stat);
+
+  // Unfocus input, this will throw blur event
+  input.blur();
+}
+
+/* -------------------------------------------------------------------
  *
  * Main Screen - Chat Frame
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Enable or disable UI elements according Room role and affiliation
  *
  * @param   {object}    room      Room object
  */
-function xows_gui_chat_conf_update(room)
+function xows_gui_chat_bt_cnfg_update(room)
 {
   /*
    * Privilege                  None      Visitor   Participant  Moderator
@@ -2057,8 +2094,8 @@ function xows_gui_chat_conf_update(room)
   meta_inpt.setAttribute("spellcheck", topic);
 
   // Room configuration button
-  const chat_conf = xows_gui_peer_doc(room,"chat_conf");
-  chat_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
+  const chat_bt_cnfg = xows_gui_peer_doc(room,"chat_bt_cnfg");
+  chat_bt_cnfg.hidden = (room.affi < XOWS_AFFI_ADMN);
 }
 
 /**
@@ -2066,19 +2103,18 @@ function xows_gui_chat_conf_update(room)
  *
  * @param   {object}    peer      Peer object
  */
-function xows_gui_chat_noti_update(peer)
+function xows_gui_chat_bt_noti_update(peer)
 {
-  const chat_noti = xows_gui_peer_doc(peer,"chat_noti");
+  const chat_bt_noti = xows_gui_peer_doc(peer,"chat_bt_noti");
 
   const notify = (peer.noti && xows_gui_notify_permi("granted"));
 
   // Set notification mute or enable
-  chat_noti.title = notify ? xows_l10n_get("Disable notifications") :
+  chat_bt_noti.title = notify ? xows_l10n_get("Disable notifications") :
                             xows_l10n_get("Enable notifications");
 
   // Toggle chat action button class
-  chat_noti.classList.toggle("CHAT-MUTE", notify);
-  chat_noti.classList.toggle("CHAT-NOTI", !notify);
+  chat_bt_noti.classList.toggle("DISABLED", !notify);
 }
 
 /**
@@ -2095,24 +2131,24 @@ function xows_gui_chat_head_update(peer)
 
   if(peer.type === XOWS_PEER_CONT) {  //< XOWS_PEER_CONT
     meta_inpt.innerText = peer.stat;
-    xows_gui_peer_doc(peer,"chat_show").setAttribute("show",peer.show);
+    xows_gui_peer_doc(peer,"chat_show").dataset.show = peer.show;
 
     let audio_call = false;
     let video_call = false;
 
     // Enable or disable multimedia call buttons
-    if(peer.show > 0 && xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn")) {
+    if(peer.show > XOWS_SHOW_DND && xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn")) {
       audio_call = xows_gui_medias_has("audioinput");
       video_call = xows_gui_medias_has("videoinput");
     }
 
-    xows_gui_peer_doc(peer,"chat_rtca").classList.toggle("HIDDEN",!audio_call);
-    xows_gui_peer_doc(peer,"chat_rtcv").classList.toggle("HIDDEN",!video_call);
+    xows_gui_peer_doc(peer,"chat_bt_cala").hidden = !audio_call;
+    xows_gui_peer_doc(peer,"chat_bt_calv").hidden = !video_call;
 
   } else {                            //< XOWS_PEER_ROOM
     meta_inpt.innerText = peer.subj;
     meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
-    xows_gui_peer_doc(peer,"chat_book").classList.toggle("HIDDEN",(peer.book || peer.publ));
+    xows_gui_peer_doc(peer,"chat_bt_bkmk").hidden = (peer.book || peer.publ);
   }
 }
 
@@ -2136,30 +2172,30 @@ function xows_gui_chat_head_onclick(event)
 
   switch(event.target.id)
   {
-    case "chat_book": {
+    case "chat_bt_bkmk": {
       // Open confirmation dialog
       if(xows_gui_peer) xows_gui_mbox_bookmark_open(xows_gui_peer);
       break;
     }
-    case "chat_noti": {
+    case "chat_bt_noti": {
       // Set notification for this Peer
-      xows_gui_peer.noti = event.target.classList.contains("CHAT-NOTI");
+      xows_gui_peer.noti = !event.target.classList.toggle("DISABLED");
       // Save parameter in localstorage
       xows_cach_peer_save(xows_gui_peer.bare, null, null, null, xows_gui_peer.noti);
       // Check for browser notification permission
       if(xows_gui_notify_permi("granted")) {
-        xows_gui_chat_noti_update(xows_gui_peer); //< update notify button
+        xows_gui_chat_bt_noti_update(xows_gui_peer); //< update notify button
       } else {
         xows_gui_notify_query(); //< request permission
       }
       break;
     }
-    case "chat_conf": {
+    case "chat_bt_cnfg": {
       // Query for Room configuration, will open Room config page
       xows_cli_room_cfg_get(xows_gui_peer, xows_gui_page_room_open);
       break;
     }
-    case "chat_occu": {
+    case "chat_bt_occu": {
       // Checks whether we are in narrow-screen mode
       if(window.matchMedia("(max-width: 799px)").matches) {
         // Widen right panel
@@ -2171,9 +2207,9 @@ function xows_gui_chat_head_onclick(event)
       break;
     }
 
-    case "chat_rtcv":
-    case "chat_rtca": {
-      const video = (event.target.id === "chat_rtcv");
+    case "chat_bt_calv":
+    case "chat_bt_cala": {
+      const video = (event.target.id === "chat_bt_calv");
       // Set incoming call flag
       xows_gui_call_incoming = null;
       // Start by getting user Media Stream
@@ -2230,19 +2266,19 @@ function xows_gui_chat_head_onfocus(event)
  * Chat Meta (Room Topic) validation (enter) function, called when user
  * press the Enter key (see xows_gui_wnd_onkey() function).
  *
- * @param   {object}    input     Input object to validate
+ * @param   {object}    inpt     Instance of <meta-inpt> element
  */
-function xows_gui_meta_inpt_enter(input)
+function xows_gui_meta_inpt_enter(inpt)
 {
   // Get entered subject
-  const subj = input.innerText.trimEnd();
+  const subj = inpt.innerText.trimEnd();
 
   // If changed, inform of the new room topic
   if(xows_gui_peer.type === XOWS_PEER_ROOM && subj != xows_gui_peer.subj)
     xows_cli_send_subject(xows_gui_peer, subj);
 
   // Unfocus input, this will throw blur event
-  input.blur();
+  inpt.blur();
 }
 
 /**
@@ -2276,94 +2312,41 @@ function xows_gui_call_menu_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
+  if(event.target.tagName !== "BUTTON")
+    return;
+  
+  let mutted;
+
   switch(event.target.id)
   {
-    case "call_vbtn": {
-      const call_vbtn = xows_doc("call_vbtn");
-      const call_vsld = xows_doc("call_vsld");
-      //const call_vdeo = xows_doc("call_vdeo");
-      if(call_vbtn.className === "CALL-VMUT") {
-        // Restore audio
-        xows_gui_audio.vol.gain.value = parseInt(call_vsld.value) / 100;
-        // Change button icon & title
-        call_vbtn.className = "CALL-VMID";
-        call_vbtn.title = xows_l10n_get("Disable sound");
-        call_vsld.disabled = false;
-        // Play sound
-        if(xows_gui_sound.unmute)
-          xows_gui_sound.unmute.play();
-      } else {
-        // Mute audio
-        xows_gui_audio.vol.gain.value = 0;
-        // Change button icon & title
-        call_vbtn.className = "CALL-VMUT";
-        call_vbtn.title = xows_l10n_get("Enable sound");
-        call_vsld.disabled = true;
-        // Play sound
-        if(xows_gui_sound.mute)
-          xows_gui_sound.mute.play();
-      }
+    case "call_bt_spk": {
+      mutted = event.target.classList.toggle("MUTTED");
+      xows_gui_audio.vol.gain.value = mutted ? 0 : parseInt(call_in_vol.value) / 100;
+      xows_doc("call_in_vol").disabled = mutted;
+      xows_gui_sound_play(mutted ? "mute" : "unmute"); //< Play sound
       break;
     }
-
-    case "call_bcam": {
-      if(event.target.className === "CALL-CAM1") {
-        // Change button icon & title
-        event.target.className = "CALL-CAM0";
-        event.target.title = xows_l10n_get("Enable camera");
-        // Disable local video tracks
-        xows_gui_call_media_enable(false, "video");
-        // Play sound
-        if(xows_gui_sound.disable)
-          xows_gui_sound.disable.play();
-      } else {
-        // Change button icon & title
-        event.target.className = "CALL-CAM1";
-        event.target.title = xows_l10n_get("Disable camera");
-        // Enable local video tracks
-        xows_gui_call_media_enable(true, "video");
-        // Play sound
-        if(xows_gui_sound.enable)
-          xows_gui_sound.enable.play();
-      }
+    case "call_bt_cam": {
+      mutted = event.target.classList.toggle("MUTTED");
+      // Enable/Disable local video tracks
+      xows_gui_call_media_enable(!mutted, "video");
+      xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
       break;
     }
-
-    case "call_bmic": {
-      if(event.target.className === "CALL-MIC1") {
-        // Change button icon & title
-        event.target.className = "CALL-MIC0";
-        event.target.title = xows_l10n_get("Enable microphone");
-        // Disable local audio tracks
-        xows_gui_call_media_enable(false, "audio");
-        // Play sound
-        if(xows_gui_sound.disable)
-          xows_gui_sound.disable.play();
-      } else {
-        // Change button icon & title
-        event.target.className = "CALL-MIC1";
-        event.target.title = xows_l10n_get("Disable microphone");
-        // Enable local audio tracks
-        xows_gui_call_media_enable(true, "audio");
-        // Play sound
-        if(xows_gui_sound.enable)
-          xows_gui_sound.enable.play();
-      }
+    case "call_bt_mic": {
+      mutted = event.target.classList.toggle("MUTTED");
+      // Enable/Disable local video tracks
+      xows_gui_call_media_enable(!mutted, "audio");
+      xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
       break;
     }
-
-    case "call_hgup": {
-      // Hangup and clear call data
+    case "call_bt_hup": {
+      // Hangup and clear data
       xows_gui_call_terminate();
       break;
     }
-
-    case "call_geom": {
-      if(xows_doc("chat_fram").classList.toggle("CALL-FULL")) {
-        xows_doc("call_geom").title = xows_l10n_get("Reduce");
-      } else {
-        xows_doc("call_geom").title = xows_l10n_get("Expand");
-      }
+    case "call_bt_geo": {
+      xows_doc("chat_fram").classList.toggle("CALL-FULL");
       break;
     }
   }
@@ -2374,62 +2357,24 @@ function xows_gui_call_menu_onclick(event)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_call_vsld_oninput(event)
+function xows_gui_call_in_vol_oninput(event)
 {
   const gain = parseInt(event.target.value) / 100;
 
   // Set volume
   xows_gui_audio.vol.gain.value = gain;
-  xows_log(2, "gui_call_vsld_oninput", "volume", gain);
+  xows_log(2, "gui_call_in_vol_oninput", "volume", gain);
 
   // Change volume slider icon according current level
-  let cls;
+  let cls = "";
 
   if(gain > 0.66) {
-    cls = "CALL-VMAX";
-  } else if(gain > 0.33) {
-    cls = "CALL-VMID";
-  } else {
-    cls = "CALL-VMIN";
+    cls = "RNG-MAX";
+  } else if(gain < 0.33) {
+    cls = "RNG-MIN";
   }
 
-  xows_doc("call_vbtn").className = cls;
-}
-
-/**
- * History Incoming Call dialog on-click callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_hist_call_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  // Stop Ring Bell sound
-  if(xows_gui_sound.ringbell)
-    xows_gui_sound.ringbell.pause();
-
-  switch(event.target.id)
-  {
-  case "call_pkup":
-    // Close the Incomming Call dialog
-    xows_gui_hist_call_close();
-    // Ask user for input devices and open Call View
-    xows_gui_call_media_get();
-    break;
-
-  case "call_reje":
-    // Close the Incomming Call dialog
-    xows_gui_hist_call_close();
-    // Reject and clear call data
-    xows_gui_call_terminate();
-    break;
-
-  case "call_clos":
-    // Close the Incomming Call dialog
-    xows_gui_hist_call_close();
-    break;
-  }
+  xows_doc("call_bt_spk").className = cls;
 }
 
 /* -------------------------------------------------------------------
@@ -2492,45 +2437,43 @@ function xows_gui_chat_call_open()
   xows_gui_calling_set(xows_gui_chat_call_peer, true);
 
   // Reset volume slider and button to initial state
-  const call_vbtn = xows_doc("call_vbtn");
-  const call_vsld = xows_doc("call_vsld");
+  const call_bt_spk = xows_doc("call_bt_spk");
+  const call_in_vol = xows_doc("call_in_vol");
 
-  call_vbtn.className = "CALL-VMID";
-  call_vbtn.title = xows_l10n_get("Disable sound");
-  call_vsld.disabled = false;
-  call_vsld.value = 50;
+  call_bt_spk.calssName = "";
+  call_in_vol.disabled = false;
+  call_in_vol.value = 50;
 
   // Set gain to current volume slider position
-  xows_gui_audio.vol.gain.value = parseInt(xows_doc("call_vsld").value) / 100;
+  xows_gui_audio.vol.gain.value = parseInt(xows_doc("call_in_vol").value) / 100;
 
   const use_video = xows_gui_call_constraints.video;
 
   // Reset Microphone button to intial state
-  const call_bmic = xows_doc("call_bmic");
-  call_bmic.className = "CALL-MIC1";
-  call_bmic.title = xows_l10n_get("Disable microphone");
+  const call_bt_mic = xows_doc("call_bt_mic");
+  call_bt_mic.classList.remove("MUTTED");
 
   // Reset Microphone button to intial state
   if(use_video) {
     // Reset Camera button to intial state
-    const call_bcam = xows_doc("call_bcam");
-    call_bcam.className = "CALL-CAM1";
-    call_bcam.title = xows_l10n_get("Disable camera");
+    const call_bt_cam = xows_doc("call_bt_cam");
+    call_bt_mic.classList.remove("MUTTED");
   }
-  xows_doc_hidden_set("call_bcam", !use_video);
+  
+  xows_doc("call_bt_cam").hidden = !use_video;
 
   // Add event listeners
   xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_menu_onclick);
-  xows_doc_listener_add(xows_doc("call_vsld"),"input",xows_gui_call_vsld_oninput);
+  xows_doc_listener_add(xows_doc("call_in_vol"),"input",xows_gui_call_in_vol_oninput);
 
   // Open Multimedia Call view layout
-  xows_doc("chat_fram").classList.add("CALL-OPEN");
+  xows_doc_cls_add("chat_fram","CALL-OPEN");
 }
 
 /**
  * Function to close Multimedia Call Session layout
  */
-function xows_gui_chat_call_close()
+function xows_gui_chat_ring_bt_close()
 {
   // Stop the speak/silence visual effects animation loop
   if(xows_gui_chat_call_fx_hnd) {
@@ -2543,10 +2486,10 @@ function xows_gui_chat_call_close()
 
   // Remove event listeners
   xows_doc_listener_rem(xows_doc("call_menu"),"click",xows_gui_call_menu_onclick);
-  xows_doc_listener_rem(xows_doc("call_vsld"),"input",xows_gui_call_vsld_oninput);
+  xows_doc_listener_rem(xows_doc("call_in_vol"),"input",xows_gui_call_in_vol_oninput);
 
   // Reset expand/reduce button title
-  xows_doc("call_geom").title = xows_l10n_get("Expand");
+  xows_doc("call_bt_geo").title = xows_l10n_get("Expand");
 
   // Close Multimedia Call view layout
   xows_doc("chat_fram").classList.remove("CALL-OPEN","CALL-FULL");
@@ -2645,56 +2588,54 @@ function xows_gui_chat_call_add_stream(peer, stream)
  * @param   {object}    peer      Contact Peer object.
  * @param   {string}    reason    Calling dialog open reason
  */
-function xows_gui_hist_call_open(peer, reason)
+function xows_gui_hist_ring_open(peer, reason)
 {
-  const hist_call = xows_gui_peer_doc(peer, "hist_call");
-
-  // Add event listeners
-  xows_doc_listener_add(hist_call,"click",xows_gui_hist_call_onclick);
+  const hist_ring = xows_gui_peer_doc(peer,"hist_ring");
 
   const video = xows_gui_call_constraints.video;
 
-  let icon, mesg, btn_reje, btn_pkup;
+  let icon, text, ringing, incall;
 
   switch(reason)
   {
   case "decline": { //< peer declined call
       icon = "CALL-TERM";
-      mesg = xows_l10n_get("The call has been declined");
+      text = xows_l10n_get("The call has been declined");
     } break;
 
   case "success": { //< peer hung up call
       icon = "CALL-TERM";
       if(xows_cli_call_stat === 3) {
-        mesg = xows_l10n_get("The other person has hung up");
+        text = xows_l10n_get("The other person has hung up");
       } else {
-        mesg = xows_l10n_get("You missed a call");
+        text = xows_l10n_get("You missed a call");
       }
     } break;
 
   case "initiate": { //< initiating call
       icon = video ? "CALL-VID" : "CALL-AUD";
-      mesg = xows_l10n_get("Call in progress...");
-      btn_reje = true;
+      text = xows_l10n_get("Call in progress...");
+      ringing = true;
     } break;
 
   default: { // incoming call
       icon = video ? "CALL-VID" : "CALL-AUD";
-      mesg = video ? xows_l10n_get("Incoming video call...") : xows_l10n_get("Incoming audio call...");
-      btn_reje = true; btn_pkup = true;
+      text = video ? xows_l10n_get("Incoming video call...") : xows_l10n_get("Incoming audio call...");
+      ringing = true; incall = true;
     } break;
   }
 
-  xows_gui_peer_doc(peer, "call_icon").className = icon;
-  xows_gui_peer_doc(peer, "call_mesg").innerText = mesg;
-  xows_gui_peer_doc(peer, "call_reje").classList.toggle("HIDDEN",!btn_reje);
-  xows_gui_peer_doc(peer, "call_pkup").classList.toggle("HIDDEN",!btn_pkup);
-  xows_gui_peer_doc(peer, "call_clos").classList.toggle("HIDDEN",btn_reje);
+  hist_ring.querySelector("RING-ICON").className = icon;
+  hist_ring.querySelector("RING-TEXT").innerText = text;
 
-  hist_call.classList.toggle("RING-DIALOG", btn_reje);
+  xows_gui_peer_doc(peer, "ring_bt_deny").hidden = !ringing;
+  xows_gui_peer_doc(peer, "ring_bt_pkup").hidden = !incall;
+  xows_gui_peer_doc(peer, "ring_bt_clos").hidden = ringing; //< Ringing, no Close button
+  
+  hist_ring.classList.toggle("RINGING", ringing);
 
   // Show the incoming call dialog
-  hist_call.classList.remove("HIDDEN");
+  hist_ring.hidden = false;
 
   // Scroll history down
   xows_gui_peer_scroll_down(peer);
@@ -2703,15 +2644,12 @@ function xows_gui_hist_call_open(peer, reason)
 /**
  * Function to close the Chat Incoming Call dialog
  */
-function xows_gui_hist_call_close()
+function xows_gui_hist_ring_bt_close()
 {
-  const hist_call = xows_doc("hist_call");
-
-  // Remove event listeners
-  xows_doc_listener_rem(hist_call,"click",xows_gui_hist_call_onclick);
+  const hist_ring = xows_doc("hist_ring");
 
   // Show the incoming call message
-  hist_call.classList.add("HIDDEN");
+  hist_ring.hidden = true;
 }
 
 /**
@@ -2740,7 +2678,7 @@ function xows_gui_call_media_onerror(error)
 
   // Display popup error message
   xows_doc_mbox_open(XOWS_SIG_WRN,mesg,
-    xows_gui_call_media_get,"Retry",xows_gui_chat_call_close,"Cancel");
+    xows_gui_call_media_get,"Retry",xows_gui_chat_ring_bt_close,"Cancel");
 }
 
 /**
@@ -2767,11 +2705,10 @@ function xows_gui_call_media_onresult(stream)
     xows_cli_call_initiate(stream, xows_gui_peer);
 
     // Open Call dialog
-    xows_gui_hist_call_open(xows_gui_peer,"initiate");
+    xows_gui_hist_ring_open(xows_gui_peer,"initiate");
 
     // Play Ring Tone sound
-    if(xows_gui_sound.ringtone)
-      xows_gui_sound.ringtone.play();
+    xows_gui_sound_play("ringtone");
   }
 }
 
@@ -2848,7 +2785,7 @@ function xows_gui_call_media_get(constr)
 function xows_gui_call_clear()
 {
   // Close the Media Call view frame
-  xows_gui_chat_call_close();
+  xows_gui_chat_ring_bt_close();
 
   // Stops and release aquired Media Streams
   let tracks = [];
@@ -2873,16 +2810,13 @@ function xows_gui_call_clear()
   xows_gui_call_incoming = null;
 
   // Stop Ring Tone sound
-  if(xows_gui_sound.ringtone)
-    xows_gui_sound.ringtone.pause();
+  xows_gui_sound_stop("ringtone");
 
   // Stop Ring Tone sound
-  if(xows_gui_sound.ringbell)
-    xows_gui_sound.ringbell.pause();
+  xows_gui_sound_stop("ringbell");
 
   // Play Hangup sound
-  if(xows_gui_sound.hangup)
-    xows_gui_sound.hangup.play();
+  xows_gui_sound_play("hangup");
 }
 
 /**
@@ -2918,15 +2852,14 @@ function xows_gui_cli_oncallincoming(peer, medias)
                                 video: (medias.video && xows_gui_medias_has("videoinput")) };
 
   // Open the Incoming Call dialog
-  xows_gui_hist_call_open(peer);
+  xows_gui_hist_ring_open(peer);
 
   // If peer is offscreen during incomming call, add notification
   if(peer !== xows_gui_peer)
     xows_gui_unread_call(peer, true);
 
   // Play Ring Bell sound
-  if(xows_gui_sound.ringbell)
-    xows_gui_sound.ringbell.play();
+  xows_gui_sound_play("ringbell");
 }
 
 /**
@@ -2946,12 +2879,11 @@ function xows_gui_cli_oncallstream(peer, stream)
   if(!xows_gui_call_incoming) {
 
     // Close the Incoming Call dialog
-    xows_gui_hist_call_close();
+    xows_gui_hist_ring_bt_close();
   }
 
   // Stop the Ringtone
-  if(xows_gui_sound.ringtone)
-    xows_gui_sound.ringtone.pause();
+  xows_gui_sound_stop("ringtone");
 }
 
 /**
@@ -2975,7 +2907,7 @@ function xows_gui_cli_oncallerror(code, mesg)
   xows_doc_mbox_open(XOWS_SIG_WRN,"Call session error: "+mesg);
 
   // Close potentially opened dialog
-  xows_gui_hist_call_close();
+  xows_gui_hist_ring_bt_close();
 
   // Clear call data
   xows_gui_call_terminate();
@@ -2990,7 +2922,7 @@ function xows_gui_cli_oncallerror(code, mesg)
 function xows_gui_cli_oncallended(code, mesg)
 {
   // Open the Call dialog
-  xows_gui_hist_call_open(xows_cli_call_peer, mesg);
+  xows_gui_hist_ring_open(xows_cli_call_peer, mesg);
 
   // If peer is offscreen during ended call change notification
   if(xows_cli_call_peer !== xows_gui_peer)
@@ -3030,22 +2962,22 @@ function xows_gui_chat_main_onscroll(event)
   // Check whether the scroll is at top of frame
   if(chat_main.scrollTop < 50) {
     // Query archive for current chat contact
-    xows_gui_mam_query(xows_gui_peer, false, XOWS_GUI_HIST_SIZE/2);
+    xows_gui_mam_query(xows_gui_peer, false, xows_gui_hist_pull);
   }
 
   // If scroll is enough far from bottom, show the "Back to recent" banner
   if(chat_main.scrollSaved > chat_main.clientHeight)
-    xows_gui_hist_back_recent_show(xows_gui_peer, true);
+    xows_gui_hist_nav_open(xows_gui_peer);
 
   // Check whether the scroll is at bottom of frame
   if(chat_main.scrollSaved < 50) {
     // Check whether we have cropped history
     if(!xows_doc_hidden("hist_end")) {
       // Query archive for current chat contact
-      xows_gui_mam_query(xows_gui_peer, true, XOWS_GUI_HIST_SIZE/2);
+      xows_gui_mam_query(xows_gui_peer, true, xows_gui_hist_pull);
     } else {
       // Hide the "Back to recent" banner/button
-      xows_gui_hist_back_recent_show(xows_gui_peer, false);
+      xows_gui_hist_nav_close(xows_gui_peer);
     }
   }
 }
@@ -3055,7 +2987,7 @@ function xows_gui_chat_main_onscroll(event)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_chat_main_onclick(event)
+function xows_gui_chat_hist_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
@@ -3066,37 +2998,63 @@ function xows_gui_chat_main_onclick(event)
     return;
   }
 
-  // Check for click on New Message notification banner
+  // Check for click on <button> element
   if(event.target.tagName === "BUTTON") {
+     
+     // If button has a valid name, this is history message button
+     if(event.target.name) {
+       
+      const mesg = event.target.closest("LI-MESG");
 
-    // Retrieve the parent <li> element
-    const li = event.target.closest("LI");
-    const inpt = li.querySelector("MESG-INPT");
-
-    switch(event.target.className)
-    {
-    case "btn-edit":
-      xows_gui_mesg_inpt_enable(inpt);
-      break;
-    case "btn-save":
-      xows_gui_mesg_inpt_enter(inpt);
-      break;
-    case "btn-cncl":
-      xows_gui_mesg_inpt_cancel(inpt);
-      break;
+      switch(event.target.name)
+      {
+      case "mesg_bt_edit":
+        xows_gui_mesg_edit_open(mesg);
+        break;
+      case "mesg_bt_canc":
+        xows_gui_mesg_edit_close(mesg);
+        break;
+      case "mesg_bt_save":
+        xows_gui_mesg_edit_valid(event.target.closest("MESG-INPT"));
+        break;
+      }
+      
+      return;
     }
-
-    return;
   }
+    
+  if(event.target.id) {
 
-  // Check for click on New Message notification banner
-  if(event.target.id === "hist_bot") {
-
-    // Hide the banner
-    xows_gui_hist_back_recent_show(xows_gui_peer, false);
-
-    // Go to end of history (last messages)
-    xows_gui_peer_scroll_down(xows_gui_peer);
+    // Check for history Ringing dialog
+    if(event.target.id.startsWith("ring")) {
+      
+      //< Close the Signaling Call dialog
+      xows_gui_hist_ring_bt_close(); 
+      // Stop Ring Bell sound
+      xows_gui_sound_stop("ringbell");
+      
+      switch(event.target.id)
+      {
+      case "ring_bt_pkup":
+        // Ask user for input devices and open Call View
+        xows_gui_call_media_get();
+        break;
+      case "ring_bt_deny":
+        // Reject and clear call data
+        xows_gui_call_terminate();
+        break;
+      }
+      
+      return;
+    }
+    
+    // Check History Navigation banner
+    if(event.target.id === "hist_nav") {
+      // Close navigation banner
+      xows_gui_hist_nav_close(xows_gui_peer);
+      // Go to end of history (last messages)
+      xows_gui_peer_scroll_down(xows_gui_peer);
+    }
   }
 }
 
@@ -3108,68 +3066,66 @@ let xows_gui_mesg_corr_raw = "";
 /**
  * History message correction Cancel function
  *
- * @param   {object}    input     Input element to validate
+ * @param   {object}     [mesg]    Instance of <li-mesg> or null
  */
-function xows_gui_mesg_inpt_cancel(input)
+function xows_gui_mesg_edit_close(mesg)
 {
+  let li_mesg;
+  
   // Check whether event directely reference object
-  if(input && input.tagName === "MESG-INPT") {
-    // Retrieve the parent <li> element
-    const li = input.closest("LI").classList.remove("MESG-EDIT");
-    return;
+  if(mesg && mesg.tagName === "LI-MESG") {
+    // We got message directly
+    li_mesg = mesg;
+  } else {
+    // We need to search any message in edit mode
+    li_mesg = xows_doc("chat_hist").querySelector(".MESG-EDITOR");
   }
 
-  // We need to search any message in edit mode
-  const chat_hist = xows_doc("chat_hist");
-  const li = chat_hist.querySelector(".MESG-EDIT");
-  if(li) li.classList.remove("MESG-EDIT");
+  if(li_mesg) 
+    xows_tpl_mesg_edit_remove(li_mesg);
 }
 
 /**
  * History message correction Enable function
  *
- * @param   {object}    input     Input element to validate
+ * @param   {object}    mesg     Instance of <li-mesg> to open editor in
  */
-function xows_gui_mesg_inpt_enable(input)
+function xows_gui_mesg_edit_open(mesg)
 {
-  // Cancel any previousely enabled edition
-  xows_gui_mesg_inpt_cancel();
+  // Close any previousely opened editor
+  xows_gui_mesg_edit_close();
 
-  // Retrieve the parent <li> element
-  const li = input.closest("LI");
-
-  // Save message content for reference
-  xows_gui_mesg_corr_raw = input.innerText.trimEnd();
-
-  // Enable eidition for this message
-  li.classList.add("MESG-EDIT");
+  // Spawn <mesg-edit> instance next to <mesg-body>
+  const mesg_edit = xows_tpl_mesg_edit_insert(mesg);
 
   // Set caret and focus
-  xows_doc_caret_at(input);
-  input.focus();
+  const mesg_inpt = mesg_edit.querySelector("MESG-INPT");
+  xows_doc_caret_at(mesg_inpt);
+  mesg_inpt.focus();
 }
 
 /**
  * History message correction validation (enter) function, called when
  * user press the Enter key (see xows_gui_wnd_onkey() function).
  *
- * @param   {object}    input     Input element to validate
+ * @param   {object}    inpt      Instance of <mesg-inpt> element
  */
-function xows_gui_mesg_inpt_enter(input)
+function xows_gui_mesg_edit_valid(inpt)
 {
-  // Retrieve the parent <li> element
-  const li = input.closest("LI");
+  // Retrieve the parent <li-mesg> element
+  const li_mesg = inpt.closest("LI-MESG");
+  
+  // Get input text
+  const inpt_text = inpt.innerText.trimEnd();
 
   // Check for difference to prevent useless correction
-  if(input.innerText.trimEnd() === xows_gui_mesg_corr_raw) {
-    // Cancel edition and return
-    xows_gui_mesg_inpt_cancel(input);
-    return;
+  if(inpt_text !== li_mesg.querySelector("MESG-BODY").dataset.raw) {
+    // Send message correction
+    xows_cli_send_message(xows_gui_peer, inpt_text, li_mesg.id);
   }
 
-  // Send message correction
-  xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd(), li.getAttribute("id"));
-  li.classList.remove("MESG-EDIT");
+  // Close editor
+  xows_tpl_mesg_edit_remove(li_mesg);
 }
 
 /**
@@ -3189,44 +3145,36 @@ function xows_gui_chat_main_onresize(entries, observer)
  * -------------------------------------------------------------------*/
 
 /**
- * Function to show or hide the "Back to recent" banner of chat history
+ * Function to open chat history navigation banner, with or without
+ * Unread message alert.
  *
- * @param   {object}    peer     Peer object
- * @param   {boolean}   show     Boolean to set visibility
+ * @param   {object}    peer      Peer object
+ * @param   {boolean}   alert     Enabled unread message alert
  */
-function xows_gui_hist_back_recent_show(peer, show)
+function xows_gui_hist_nav_open(peer, alert = false)
 {
   // Get the peer history bottom banner
-  const hist_bot = xows_gui_peer_doc(peer,"hist_bot");
+  const hist_nav = xows_gui_peer_doc(peer,"hist_nav");
 
-  if(show) {
-    // Show element
-    hist_bot.classList.remove("HIDDEN");
-  } else {
-    // Hide element
-    hist_bot.classList.add("HIDDEN");
-    // Reset to initial state if required
-    if(hist_bot.classList.contains("hist-new")) {
-      hist_bot.innerText = xows_l10n_get("Back to recent messages");
-      hist_bot.classList.remove("hist-new");
-    }
-  }
+  // Set text
+  hist_nav.innerText = alert ?  xows_l10n_get("New unread messages") : 
+                                xows_l10n_get("Back to recent messages");
+  
+  // Set Unread Alert class
+  hist_nav.classList.toggle("UNDREAD", alert);
+  
+  // Show or hide element
+  hist_nav.hidden = false;
 }
 
 /**
- * Function to show chat history "New unread message" button/banner
+ * Function to close chat history navigation banner
  *
  * @param   {object}    peer     Peer object
  */
-function xows_gui_hist_back_recent_new(peer)
+function xows_gui_hist_nav_close(peer)
 {
-  // Get the peer history bottom banner
-  const hist_bot = xows_gui_peer_doc(peer,"hist_bot");
-
-  // Show, set text and class for new message
-  hist_bot.classList.remove("HIDDEN");
-  hist_bot.innerText = xows_l10n_get("New unread messages");
-  hist_bot.classList.add("hist-new");
+  xows_gui_peer_doc(peer,"hist_nav").hidden = true;
 }
 
 /* -------------------------------------------------------------------
@@ -3284,8 +3232,7 @@ function xows_gui_hist_discard(peer, id)
 {
   const li = xows_gui_peer_mesg_li(peer, id);
   if(li) {
-    //li.className = "DISCARD";
-    li.classList.add("DISCARD");
+    li.hidden = true;
     li.innerHTML = "";
     return li;
   }
@@ -3313,8 +3260,8 @@ function xows_gui_hist_update(peer, bare, nick, avat)
 
   let i;
 
-  // Set new CSS class to all corresponding figures
-  const spn = hist_ul.querySelectorAll("SPAN[name='"+bare+"']");
+  // Set new content for all <mesg-from>
+  const spn = hist_ul.querySelectorAll("MESG-FROM[data-jid='"+bare+"']");
   i = spn.length;
   while(i--) if(nick != spn[i].innerText) spn[i].innerText = nick;
 
@@ -3324,7 +3271,7 @@ function xows_gui_hist_update(peer, bare, nick, avat)
   const cls = xows_tpl_spawn_avat_cls(avat);
 
   // Set new CSS class to all corresponding figures
-  const fig = hist_ul.querySelectorAll("FIGURE[name='"+bare+"']");
+  const fig = hist_ul.querySelectorAll("MESG-AVAT[data-jid='"+bare+"']");
   i = fig.length;
   while(i--) if(cls != fig[i].className) fig[i].className = cls;
 }
@@ -3341,51 +3288,57 @@ function xows_gui_hist_update(peer, bare, nick, avat)
  * @param   {boolean}   sent      Marks message as sent by client
  * @param   {boolean}   recp      Marks message as receipt received
  * @param   {object}    sndr      Message sender Peer object
- * @param   {string}   [corr]     Optionnal message ID to replace
+ * @param   {string}   [rpid]     Optionnal message ID to replace
  */
-function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, corr)
+function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, rpid)
 {
   // If message with id alread exists, return now to prevent double
   if(xows_gui_peer_mesg_li(peer, id))
     return;
 
   // Search for corrected message to be discarded
-  let dsc_li = null;
-  if(corr) dsc_li = xows_gui_hist_discard(peer, corr);
+  let rpl_li = null;
+  if(rpid) {
+    rpl_li = xows_gui_hist_discard(peer, rpid);
+    if(!rpl_li) return; //< ignore correction which are not in visible history
+  }
 
-  // If off screen, add unread message badge to the roster contact
-  if(peer !== xows_gui_peer)
-    xows_gui_unread_add(peer, id);
+  // Avoid notifications for correction messages
+  if(!rpid) {
+    // If off screen, add unread message badge to the roster contact
+    if(peer !== xows_gui_peer)
+      xows_gui_unread_add(peer, id);
 
-  // Send browser notification popup
-  if(!xows_gui_has_focus && !sent && peer.noti)
-    xows_gui_notify_push(sndr, body);
+    // Send browser notification popup
+    if(!xows_gui_has_focus && !sent && peer.noti)
+      xows_gui_notify_push(sndr, body);
+  }
 
   // Check whether end of history is croped, in this case the new message
   //  must not be appended, we will show it by querying archives
-  if(xows_gui_peer_doc(peer,"hist_end").classList.contains("HIDDEN") || dsc_li) {
-
+  if(xows_gui_peer_doc(peer,"hist_end").hidden || rpl_li) {
+  
     const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
     // To prevent history to inflate infinitely we keep it to a maximum
     // count of message and let user ability to query for archives
-    if((hist_ul.childNodes.length + 1) > XOWS_GUI_HIST_SIZE) {
+    if((hist_ul.childNodes.length + 1) > xows_gui_hist_size) {
       hist_ul.removeChild(hist_ul.firstChild);
       xows_gui_peer_doc(peer,"hist_beg").innerText = ""; //< Allow query history
     }
 
-    const msg_li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr, dsc_li);
+    const msg_li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr, rpl_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(dsc_li) {
-      hist_ul.insertBefore(msg_li, dsc_li.nextSibling);
+    if(corr) {
+      hist_ul.insertBefore(msg_li, rpl_li.nextSibling);
     } else {
       hist_ul.appendChild(msg_li);
     }
   }
 
   if(!sent && xows_gui_peer_scroll_get(peer) >= 50) {
-    xows_gui_hist_back_recent_new(peer); //< Show the "new messages" banner
+    xows_gui_hist_nav_open(peer, true); //< Show the "new messages" alert
   } else {
     xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
   }
@@ -3440,7 +3393,7 @@ function xows_gui_mam_query(peer, after, max = 20, delay = 100)
   let start, end;
 
   // Get start or end time depending after parameter, we get time
-  // always 25 MS after or before to prevent received the last or
+  // always 25 ms after or before to prevent received the last or
   // first message already in history.
 
   if(after) {
@@ -3448,11 +3401,11 @@ function xows_gui_mam_query(peer, after, max = 20, delay = 100)
     const hist_end = xows_doc("hist_end");
 
     // Check whether we already got the latest message
-    if(hist_end.classList.contains("HIDDEN"))
+    if(hist_end.hidden)
       return;
 
     if(hist_ul.childNodes.length)
-      start = parseInt(hist_ul.lastChild.getAttribute("time"));
+      start = parseInt(hist_ul.lastChild.dataset.time) + 25;
 
     hist_end.classList.add("LOADING");
 
@@ -3465,14 +3418,14 @@ function xows_gui_mam_query(peer, after, max = 20, delay = 100)
       return;
 
     if(hist_ul.childNodes.length)
-      end = parseInt(hist_ul.firstChild.getAttribute("time"));
+      end = parseInt(hist_ul.firstChild.dataset.time) - 25;
 
     hist_beg.classList.add("LOADING");
   }
 
   // To prevent flood and increase ergonomy the archive query is
   // temporised with a fake loading time.
-  xows_gui_mam_query_to.set(peer.bare, setTimeout(xows_cli_mam_query, delay, peer, max, start, end, xows_gui_mam_parse));
+  xows_gui_mam_query_to.set(peer.bare, setTimeout(xows_cli_pull_history, delay, peer, max, start, end, xows_gui_mam_parse));
 }
 
 /**
@@ -3480,9 +3433,10 @@ function xows_gui_mam_query(peer, after, max = 20, delay = 100)
  *
  * @param   {object}    peer      Archive related peer (Contact or Room)
  * @param   {object[]}  result    Received archived messages
+ * @param   {number}    count     Count of gathered true (visual) messages
  * @param   {boolean}   complete  Indicate results are complete (no remain)
  */
-function xows_gui_mam_parse(peer, result, complete)
+function xows_gui_mam_parse(peer, result, count, complete)
 {
   const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
@@ -3510,12 +3464,12 @@ function xows_gui_mam_parse(peer, result, complete)
   // count of message and let user ability to query for archives
   // Here we preventively cut the history as needed, either at top
   // or bottom, depending the "direction" of the archive result.
-  let crop = (hist_ul.childNodes.length - XOWS_GUI_HIST_SIZE) + result.length;
+  let crop = (hist_ul.childNodes.length - xows_gui_hist_size) + count;
   if(crop > 0) {
     if(prepend) {
       // Result are older messages, we delete messages at bottom of history
       while(crop--) hist_ul.removeChild(hist_ul.lastChild);
-      hist_end.classList.remove("HIDDEN"); //< Allow query history
+      hist_end.hidden = false; //< Allow query history
     } else {
       // Result are newer messages, we delete messages at top of history
       while(crop--) hist_ul.removeChild(hist_ul.firstChild);
@@ -3534,29 +3488,33 @@ function xows_gui_mam_parse(peer, result, complete)
     xows_gui_peer_scroll_adjust(peer);
   }
 
-  let dsc_li, pre_li, added = 0;
+  let rpl_li, pre_li, added = 0;
 
   for(let i = 0, n = result.length; i < n; ++i) {
 
     const mesg = result[i];
+    
+    // Check whether message has body (this may be reciept or chatstate)
+    if(!mesg.body) continue;
 
     // If message with id alread exists, skip to prevent double
     if(xows_gui_peer_mesg_li(peer, mesg.id))
       continue;
 
     // Search for corrected message to be discarded
-    if(mesg.corr) {
-      dsc_li = xows_gui_hist_discard(peer, mesg.corr);
+    if(mesg.rpid) {
+      rpl_li = xows_gui_hist_discard(peer, mesg.rpid);
+      if(!rpl_li) continue; //< ignore correction which are not in visible history
     } else {
-      dsc_li = null;
+      rpl_li = null;
     }
 
     // Create new message
-    const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,mesg.sent,mesg.sndr,dsc_li);
+    const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,mesg.sent,mesg.sndr,rpl_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(dsc_li) {
-      pre_li = hist_ul.insertBefore(new_li, dsc_li.nextSibling);
+    if(mesg.corr) {
+      hist_ul.insertBefore(new_li, rpl_li.nextSibling);
     } else {
       pre_li = hist_ul.insertBefore(new_li, ref_li);
     }
@@ -3565,12 +3523,14 @@ function xows_gui_mam_parse(peer, result, complete)
     added++;
   }
 
+  xows_log(2,"gui_mam_parse",added+" added messages for",peer.bare);
+
   // Checks whether we reached end or start of available history, so we
   // display the proper "bounding" elements.
   if(complete) {
     // If no message was added, we must ensure which history bound
     // was reached since "insert" will not necessarly be set
-    if(result.length && !added) {
+    if(count && !added) {
       // compare id of the last result with the last history message
       if(result[0].id === hist_ul.firstChild.id)
         prepend = true; //< Set prepend to show history start
@@ -3580,7 +3540,7 @@ function xows_gui_mam_parse(peer, result, complete)
       hist_beg.innerText = xows_l10n_get("Start of history"); //< Disallow reaching history
     } else {
       // We reached the most recent history message
-      hist_end.classList.add("HIDDEN"); //< Disallow reaching history
+      hist_end.hidden = true; //< Disallow reaching history
     }
   }
 
@@ -3621,7 +3581,7 @@ function xows_gui_upld_progress(name, percent)
 function xows_gui_upld_error(name, mesg)
 {
   // Set the upload dialog message
-  xows_doc_cls_add("upld_text","TEXT-ERR");
+  xows_doc_cls_add("upld_text","MBOX-ERR");
   xows_doc("upld_text").innerHTML = "<b>"+xows_l10n_get("Error")+"</b> : "+mesg;
 }
 
@@ -3879,7 +3839,7 @@ function xows_gui_chat_panl_onclick(event)
       break;
     }
 
-    case "edit_upld": {
+    case "edit_bt_upld": {
       const chat_file = xows_doc("chat_file");
       // Reset file input
       chat_file.value = "";
@@ -3888,9 +3848,9 @@ function xows_gui_chat_panl_onclick(event)
       break;
     }
 
-    case "edit_emoj": {
+    case "edit_bt_emoj": {
       // Toggle menu drop and focus button
-      xows_doc_menu_toggle(xows_doc("edit_emoj"), "drop_emoj");
+      xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
       break;
     }
   }
@@ -3993,7 +3953,7 @@ function xows_gui_cli_onchatstate(peer, from, chat)
     // If Contact stopped writing, empty chatstate
     if(peer.chat < XOWS_CHAT_COMP) {
       chat_stat.innerText = "";
-      chat_stat.classList.add("HIDDEN");
+      chat_stat.hidden = true;
       return;
     }
 
@@ -4008,7 +3968,7 @@ function xows_gui_cli_onchatstate(peer, from, chat)
     // If no Occupant is writing, empty chatsate
     if(n < 1) {
       chat_stat.innerText = "";
-      chat_stat.classList.add("HIDDEN");
+      chat_stat.hidden = true;
       return;
     }
 
@@ -4045,7 +4005,7 @@ function xows_gui_cli_onchatstate(peer, from, chat)
   }
 
   // Show the writing mention
-  chat_stat.classList.remove("HIDDEN");
+  chat_stat.hidden = false;
 }
 
 /* -------------------------------------------------------------------
@@ -4090,19 +4050,19 @@ function xows_gui_room_conf_update(room, occu)
   const modo = (room.role > XOWS_ROLE_PART);
 
   // Kick occupant button
-  const occu_kick = xows_gui_peer_doc(room,"occu_kick");
-  occu_kick.classList.toggle("HIDDEN",!modo);
+  const bt_kick = xows_gui_peer_doc(room,"occu_bt_kick");
+  bt_kick.hidden = !modo;
 
   // Occupant configuration button
-  const occu_conf = xows_gui_peer_doc(room,"occu_conf");
-  occu_conf.classList.toggle("HIDDEN",(room.affi < XOWS_AFFI_ADMN));
+  const bt_cnfg = xows_gui_peer_doc(room,"occu_bt_cnfg");
+  bt_cnfg.hidden = (room.affi < XOWS_AFFI_ADMN);
 
   if(occu && !occu.self) {
-    occu_kick.disabled = !modo;
-    occu_conf.disabled = (room.affi < occu.affi);
+    bt_kick.disabled = !modo;
+    bt_cnfg.disabled = (room.affi < occu.affi);
   } else {
-    occu_kick.disabled = true;
-    occu_conf.disabled = true;
+    bt_kick.disabled = true;
+    bt_cnfg.disabled = true;
   }
 }
 
@@ -4121,7 +4081,7 @@ function xows_gui_room_head_update(peer)
  *
  * @param   {string}    jid       Peer JID to select
  */
-function xows_gui_switch_occu(jid)
+function xows_gui_occu_switch(jid)
 {
   const occu_list = document.getElementById("occu_list");
 
@@ -4156,10 +4116,10 @@ function xows_gui_room_head_onclick(event)
 
   switch(event.target.id)
   {
-    case "occu_conf": {
+    case "occu_bt_cnfg": {
       break;
     }
-    case "occu_kick": {
+    case "occu_bt_kick": {
       break;
     }
     case "occu_kban": {
@@ -4187,7 +4147,7 @@ function xows_gui_cli_onoccupush(room, occu, code)
     // Code 201 mean initial room config
     xows_gui_page_join_onjoind(room, null, code.includes(201));
     // Update privileges related GUI elements
-    xows_gui_chat_conf_update(room);
+    xows_gui_chat_bt_cnfg_update(room);
     xows_gui_room_conf_update(room);
   }
 
@@ -4204,14 +4164,14 @@ function xows_gui_cli_onoccupush(room, occu, code)
 
     // Hide the "Add Contact" button depending context
     const show_subs = (!occu.self && (occu.full && !xows_cli_cont_get(occu.full)));
-    inst.querySelector(".OCCU-SUBS").classList.toggle("HIDDEN", !show_subs);
+    inst.querySelector("[name='occu_bt_subs']").hidden = !show_subs;
 
     // Select the proper role <ul> to put the occupant in
     const dst_ul = xows_gui_peer_doc(room, (occu.role === XOWS_ROLE_MODO) ? "modo_ul" : "memb_ul");
     // Create and append new <li> element from template
     dst_ul.appendChild(inst);
     // Show destination list
-    dst_ul.classList.remove("HIDDEN");
+    dst_ul.hidden = false;
   }
 }
 
@@ -4231,7 +4191,7 @@ function xows_gui_cli_onoccurem(room, ojid)
       const src_ul = li.parentNode; //< hold source <ul>
       src_ul.removeChild(li); //< remove <li> element
       // Show or hide list depending content
-      src_ul.classList.toggle("HIDDEN",(src_ul.childNodes.length < 2));
+      src_ul.hidden = !src_ul.childElementCount;
     }
 
   } else { // null jid mean occumant is self: we leaved the room
@@ -4258,7 +4218,7 @@ function xows_gui_occu_list_onclick(event)
   xows_cli_activity_wakeup(); //< Wakeup presence
 
   // get related <li> element where click occurred
-  const li = event.target.closest("li");
+  const li = event.target.closest("PEER-OCCU");
 
   if(li) {
 
@@ -4268,14 +4228,12 @@ function xows_gui_occu_list_onclick(event)
       // Select action
       switch(event.target.name)
       {
-        case "OCCU_ADD": { //< Add contact
-          // get contact address
-          const bare = xows_jid_to_bare(li.getAttribute("jid"));
+        case "occu_bt_subs": { //< Add contact
           // Compose display name from JID
           const user = bare.split("@")[0];
-          const name = user[0].toUpperCase()+user.slice(1);
+          const name = user[0].toUpperCase() + user.slice(1);
           // Open confirmation dialog
-          xows_gui_mbox_subs_edit_open(bare, name);
+          xows_gui_mbox_subs_edit_open(xows_jid_to_bare(li.dataset.jid), name);
           return;
         }
 
@@ -4287,80 +4245,10 @@ function xows_gui_occu_list_onclick(event)
 
     if(xows_gui_peer.role > XOWS_ROLE_PART && xows_gui_peer.role > XOWS_AFFI_MEMB) {
       // Switch occupant
-      xows_gui_switch_occu(li.id);
+      xows_gui_occu_switch(li.id);
     }
   }
 }
-
-
-
-
-/* -------------------------------------------------------------------
- *
- * Main Screen - User status Edition
- *
- * -------------------------------------------------------------------*/
-
-/**
- * User Presence Status on-blur callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_stat_inpt_onblur(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  // Set value to current stat
-  xows_doc("stat_inpt").innerText = xows_cli_self.stat;
-}
-
-/**
- * Chat Panel on-input callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_stat_inpt_oninput(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  const stat_inpt = xows_doc("stat_inpt");
-
-  // Check inner text content to show placeholder
-  if(stat_inpt.innerText.length < 2) {
-
-    if(stat_inpt.innerText.trim().length === 0) {
-
-      // Add CSS class to show placeholder
-      stat_inpt.className = "PLACEHOLD";
-      stat_inpt.innerText = ""; //< Empty any residual <br>
-
-      return; //< Return now
-    }
-  }
-
-  // Hide the placeholder text
-  stat_inpt.className = "";
-}
-
-/**
- * User Presence Status validation (enter) function, called when user
- * press the Enter key (see xows_gui_wnd_onkey() function).
- *
- * @param   {object}    input     Input object to validate
- */
-function xows_gui_stat_inpt_enter(input)
-{
-  // Get and reset value
-  const stat = input.innerText;
-
-  // If changed, inform of the new status
-  if(stat != xows_cli_self.stat)
-    xows_cli_change_status(stat);
-
-  // Unfocus input, this will throw blur event
-  input.blur();
-}
-
 /* -------------------------------------------------------------------
  *
  * Page Screen Dialogs
@@ -4478,8 +4366,6 @@ function xows_gui_page_auth_open()
   // Open dialog page
   xows_doc_page_open("page_auth",false,null,xows_gui_page_auth_oninput,
                                             xows_gui_page_auth_onclick);
-  // Add navigation history
-  xows_gui_nav_push("auth_open", xows_gui_page_auth_open);
 }
 
 /* -------------------------------------------------------------------
@@ -4566,8 +4452,6 @@ function xows_gui_page_regi_open()
   // Open dialog page
   xows_doc_page_open("page_regi",false,null,xows_gui_page_regi_oninput,
                                             xows_gui_page_regi_onclick);
-  // Add navigation history
-  xows_gui_nav_push("regi_open", xows_gui_page_regi_open);
 }
 
 /* -------------------------------------------------------------------
@@ -4714,9 +4598,6 @@ function xows_gui_page_user_open()
 
   // add "change" event listener to file input
   xows_doc_listener_add(xows_doc("card_file"),"change",xows_gui_page_user_ev_file);
-
-  // Add navigation history
-  xows_gui_nav_push("user_open", xows_gui_page_user_open);
 }
 
 /* -------------------------------------------------------------------
@@ -4900,9 +4781,6 @@ function xows_gui_page_join_open()
   // Open dialog page
   xows_doc_page_open("page_join",true,xows_gui_page_join_onclose,
                                       xows_gui_page_join_oninput);
-
-  // Add navigation history
-  xows_gui_nav_push("join_open", xows_gui_page_join_open);
 }
 /* -------------------------------------------------------------------
  *
@@ -5111,7 +4989,4 @@ function xows_gui_page_room_open(room, form)
   // Open dialog page
   xows_doc_page_open("page_room",true,xows_gui_page_room_onclose,
                                       xows_gui_page_room_oninput);
-
-  // Push navigation history
-  xows_gui_nav_push("room_open", xows_gui_page_room_open);
 }

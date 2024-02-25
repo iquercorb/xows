@@ -96,27 +96,22 @@ const XOWS_NS_PUBSUBOPTS   = "http://jabber.org/protocol/pubsub#publish-options"
 /**
  * List of presence show level
  */
-const XOWS_SHOW_OFF     = -1;
-const XOWS_SHOW_DND     = 0;
-const XOWS_SHOW_XA      = 1;
-const XOWS_SHOW_AWAY    = 2;
-const XOWS_SHOW_ON      = 3;
-const XOWS_SHOW_CHAT    = 4;
+const XOWS_SHOW_OFF     = 0;
+const XOWS_SHOW_DND     = 1;
+const XOWS_SHOW_XA      = 2;
+const XOWS_SHOW_AWAY    = 3;
+const XOWS_SHOW_ON      = 4;
+const XOWS_SHOW_CHAT    = 5;
 
 /**
  * Correspondance map array for presence show string to level
  */
-const xows_xmp_show_level_map = {
-  "dnd"   : 0,
-  "xa"    : 1,
-  "away"  : 2,
-  "chat"  : 4
-};
+const xows_xmp_show_level = new Map([["dnd",1],["xa",2],["away",3],["chat",5]]);
 
 /**
  * Correspondance map array for presence show level to string
  */
-const xows_xmp_show_name_map = ["dnd","xa","away","","chat"];
+const xows_xmp_show_name = ["","dnd","xa","away","","chat"];
 
 /**
  * List of presence subscrition values/mask bits
@@ -246,11 +241,6 @@ let xows_xmp_url = null;
 /**
  * Variable to hold the XMPP server domain
  */
-let xows_xmp_user = null;
-
-/**
- * Variable to hold the XMPP server domain
- */
 let xows_xmp_domain = null;
 
 /**
@@ -259,19 +249,24 @@ let xows_xmp_domain = null;
 let xows_xmp_jid = null;
 
 /**
- * Variable to hold the XMPP client session JID
+ * Variable to hold the XMPP server domain
  */
-let xows_xmp_bare = null;
-
-/**
- * Variable to hold the XMPP client session ressource
- */
-let xows_xmp_res = null;
+let xows_xmp_user = null;
 
 /**
  * Variable to hold the XMPP authentication data
  */
 let xows_xmp_auth = null;
+
+/**
+ * Variable to hold the XMPP client session JID
+ */
+let xows_xmp_bare = null;
+
+/**
+ * Variable to hold the XMPP client session resource
+ */
+let xows_xmp_sres = null;
 
 /**
  * Variable to specify that connect proceed to register
@@ -798,7 +793,7 @@ function xows_xmp_bind_parse(stanza)
   // Get the full JID and parse the received resource
   const jid = stanza.querySelector("jid"); //< <jid> node
   xows_xmp_jid = xows_xml_get_text(jid);
-  xows_xmp_res = xows_jid_to_nick(xows_xmp_jid);
+  xows_xmp_sres = xows_jid_to_nick(xows_xmp_jid);
   xows_log(2,"xmp_bind_parse","Resource Bind accepted",xows_xmp_jid);
 
   // Check whether stream session feature is available
@@ -1712,12 +1707,12 @@ function xows_xmp_mam_parse(stanza, onparse)
   }
 
   // Retrieve queryid to get proper result stack
-  if(!xows_xmp_mam_stack.has(param.queryid)) {
-    xows_log(1,"xmp_mam_parse","MAM result queryid not found",queryid);
+  if(!xows_xmp_mam_stack.has(param.qid)) {
+    xows_log(1,"xmp_mam_parse","MAM result queryid not found",qid);
     return;
   }
-  const stack = xows_xmp_mam_stack.get(param.queryid);
-  xows_xmp_mam_stack.delete(param.queryid); //< delete entrie we do not need it
+  const stack = xows_xmp_mam_stack.get(param.qid);
+  xows_xmp_mam_stack.delete(param.qid); //< delete entrie we do not need it
 
   //Check for the <fin> node to ensure this is what we seek for
   const fin = stanza.querySelector("fin");
@@ -1741,7 +1736,7 @@ function xows_xmp_mam_parse(stanza, onparse)
       xows_log(2,"xmp_mam_parse","No result received");
       // Forward parse result
       if(xows_isfunc(onparse))
-        onparse(param.to, param.peer, [], count, complete);
+        onparse(param.to, param.jid, [], count, complete);
       return;
     }
 
@@ -1779,7 +1774,7 @@ function xows_xmp_mam_parse(stanza, onparse)
 
     // Forward parse result
     if(xows_isfunc(onparse))
-      onparse(param.to, param.peer, result, count, complete);
+      onparse(param.to, param.jid, result, count, complete);
   }
 }
 
@@ -1789,13 +1784,13 @@ function xows_xmp_mam_parse(stanza, onparse)
  *
  * @param   {string}    to        Query destination, or Null for default
  * @param   {number}    max       Maximum count of result pages to get
- * @param   {string}    peer      With JID filter
+ * @param   {string}    jid       With JID filter
  * @param   {number}    start     Start time filter
  * @param   {number}    end       End time filter
  * @param   {string}    before    Result page Id to get messages before
  * @param   {function}  onparse   Callback to receive parse result
  */
-function xows_xmp_mam_query(to, max, peer, start, end, before, onparse)
+function xows_xmp_mam_query(to, max, jid, start, end, before, onparse)
 {
   // Get proper XMLNS
   const xmlns_mam = xows_xmp_get_xep(XOWS_NS_MAM);
@@ -1807,7 +1802,7 @@ function xows_xmp_mam_query(to, max, peer, start, end, before, onparse)
   // Add the needed x:data filter field
   const field = [];
   field.push({"var":"FORM_TYPE","type":"hidden","value":xmlns_mam});
-  if( peer) field.push({"var":"with"  ,"value":peer});
+  if(  jid) field.push({"var":"with"  ,"value":jid});
   if(start) field.push({"var":"start" ,"value":new Date(start).toJSON()});
   if(  end) field.push({"var":"end"   ,"value":new Date(end).toJSON()});
 
@@ -1822,22 +1817,22 @@ function xows_xmp_mam_query(to, max, peer, start, end, before, onparse)
   }
 
   // Generate new query ID with proper stack slot
-  const queryid = xows_gen_nonce_asc(12);
-  xows_xmp_mam_stack.set(queryid,[]);
+  const qid = xows_gen_nonce_asc(12);
+  xows_xmp_mam_stack.set(qid,[]);
 
   // Create the final stanza
   const id = xows_gen_uuid();
   const iq =  xows_xml_node("iq",{"id":id,"type":"set"},
-                xows_xml_node("query",{"xmlns":xmlns_mam,"queryid":queryid},[
+                xows_xml_node("query",{"xmlns":xmlns_mam,"queryid":qid},[
                   xows_xmp_xdata_make(field),rsm]));
 
   if(to !== null) iq.setAttribute("to",to);
 
   // Store query ID with the "with" parameter
-  xows_xmp_mam_param.set(id,{"to":to,"peer":peer,"queryid":queryid});
+  xows_xmp_mam_param.set(id,{"to":to,"jid":jid,"qid":qid});
 
   xows_log(2,"xmp_mam_query","send Archive query",
-            "with "+peer+" start "+start+" end "+end);
+            "with "+jid+" start "+start+" end "+end);
 
   // Send the query
   xows_xmp_send(iq, xows_xmp_mam_parse, onparse);
@@ -2342,7 +2337,7 @@ function xows_xmp_jingle_sdp_offer(to, sid, sdp, onresult)
   const jingle = xows_xmp_sdp_to_jingle(sdp);
 
   // Complete <jingle> node with proper attributes
-  jingle.setAttribute("initiator",xows_xmp_bare+"/"+xows_xmp_res);
+  jingle.setAttribute("initiator",xows_xmp_bare+"/"+xows_xmp_sres);
   jingle.setAttribute("action","session-initiate");
   jingle.setAttribute("sid",sid);
 
@@ -2365,7 +2360,7 @@ function xows_xmp_jingle_sdp_answer(to, sid, sdp, onresult)
   const jingle = xows_xmp_sdp_to_jingle(sdp);
 
   // Complete <jingle> node with proper attributes
-  jingle.setAttribute("responder",xows_xmp_bare+"/"+xows_xmp_res);
+  jingle.setAttribute("responder",xows_xmp_bare+"/"+xows_xmp_sres);
   jingle.setAttribute("action","session-accept");
   jingle.setAttribute("sid",sid);
 
@@ -2513,7 +2508,7 @@ function xows_xmp_auth_register_set_parse(from, type, er_type, er_code, er_name,
  *
  * @param   {object}    stanza    Received <iq> stanza
  */
-function xows_xmp_resp_ping(stanza)
+function xows_xmp_sresp_ping(stanza)
 {
   // Get iq sender and ID
   const from = stanza.getAttribute("from");
@@ -2528,7 +2523,7 @@ function xows_xmp_resp_ping(stanza)
  *
  * @param   {object}    stanza    Received <iq> stanza
  */
-function xows_xmp_resp_time(stanza)
+function xows_xmp_sresp_time(stanza)
 {
   // Get iq sender and ID
   const from = stanza.getAttribute("from");
@@ -2557,7 +2552,7 @@ function xows_xmp_resp_time(stanza)
  *
  * @param   {object}    stanza    Received <iq> stanza
  */
-function xows_xmp_resp_version(stanza)
+function xows_xmp_sresp_version(stanza)
 {
   // Get iq sender and ID
   const from = stanza.getAttribute("from");
@@ -2577,7 +2572,7 @@ function xows_xmp_resp_version(stanza)
  *
  * @param   {object}    stanza    Received <iq> stanza
  */
-function xows_xmp_resp_discoinfo(stanza)
+function xows_xmp_sresp_discoinfo(stanza)
 {
   // Get iq sender and ID
   const from = stanza.getAttribute("from");
@@ -2623,7 +2618,7 @@ function xows_xmp_recv_close(stanza)
   xows_log(2,"xmp_recv_close","stream closed");
 
   // Check whether this is an unexpected close
-  if(xows_xmp_res) {
+  if(xows_xmp_sres) {
     // Close is unexpected
     xows_xmp_connectloss("Server closed the stream");
   } else {
@@ -2913,7 +2908,7 @@ function xows_xmp_recv_presence(stanza)
     // Check for usual presence informations
     if(child.tagName === "show") {
       const text = xows_xml_get_text(child);
-      show = text ? xows_xmp_show_level_map[text] : 3; //< No text mean simply "available"
+      show = text ? xows_xmp_show_level.get(text) : XOWS_SHOW_ON; //< No text mean simply "available"
       continue;
     }
     if(child.tagName === "priority") {
@@ -2976,9 +2971,9 @@ function xows_xmp_recv_mam_result(result)
   const page = result.getAttribute("id");
 
   // Get result queryid
-  const queryid = result.getAttribute("queryid");
-  if(!xows_xmp_mam_stack.has(queryid)) {
-    xows_log(1,"xmp_recv_mam_result","unknown queryid for MAM result",queryid);
+  const qid = result.getAttribute("queryid");
+  if(!xows_xmp_mam_stack.has(qid)) {
+    xows_log(1,"xmp_recv_mam_result","unknown queryid for MAM result",qid);
     return;
   }
 
@@ -2986,7 +2981,7 @@ function xows_xmp_recv_mam_result(result)
   const forward = result.querySelector("forwarded");
   if(!forward) return false;
 
-  let id, from, to, time, body, corr;
+  let id, from, to, time, body, rpid, rcid;
 
   // We should found a <delay> node
   const delay = forward.querySelector("delay");
@@ -2999,15 +2994,25 @@ function xows_xmp_recv_mam_result(result)
     from = message.getAttribute("from");
     to = message.getAttribute("to");
     // Loop over children
-    let node, i = message.childNodes.length;
+    let node, xmlns, i = message.childNodes.length;
     while(i--) {
       node = message.childNodes[i];
       // Skip the non-object nodes
       if(node.nodeType !== 1)
         continue;
+      // Get XMLNS
+      xmlns = node.getAttribute("xmlns");
+      // Check for chatstate
+      if(xmlns === XOWS_NS_CHATSTATES) 
+        continue; 
+      // Check for delivery receipt
+      if(xmlns === XOWS_NS_RECEIPTS) {
+        rcid = node.getAttribute("id");
+        continue;
+      }
       // Check for correction
-      if(node.getAttribute("xmlns") === XOWS_NS_CORRECT) {
-        corr = node.getAttribute("id");
+      if(xmlns === XOWS_NS_CORRECT) {
+        rpid = node.getAttribute("id");
         continue;
       }
       // Check for <body> node
@@ -3020,7 +3025,7 @@ function xows_xmp_recv_mam_result(result)
     if(!time) time = new Date(0).getTime();
 
     // Add archived message to stack
-    xows_xmp_mam_stack.get(queryid).push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body,"corr":corr});
+    xows_xmp_mam_stack.get(qid).push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body,"repl":rpid,"recp":rcid});
 
     xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
     return true; //< stanza processed
@@ -3069,7 +3074,7 @@ function xows_xmp_recv_message(stanza)
   const from = stanza.getAttribute("from");
   const to = stanza.getAttribute("to");
 
-  let body, subj, time, chat, corr, rcid;
+  let body, subj, time, chat, rpid, rcid;
 
   let xmlns, tag, node, i = stanza.childNodes.length;
   while(i--) {
@@ -3118,7 +3123,7 @@ function xows_xmp_recv_message(stanza)
     }
     // Check for <replace> node, meaning of replacement
     if(xmlns === XOWS_NS_CORRECT) {
-      corr = node.getAttribute("id");
+      rpid = node.getAttribute("id");
       continue;
     }
     // Check for <body> node
@@ -3140,7 +3145,7 @@ function xows_xmp_recv_message(stanza)
     handled = true;
   }
   if(body !== undefined) {
-    xows_xmp_fw_onmessage(id, type, from, to, body, time, corr);
+    xows_xmp_fw_onmessage(id, type, from, to, body, time, rpid);
     handled = true;
   }
   if(rcid !== undefined) {
@@ -3189,13 +3194,13 @@ function xows_xmp_recv_iq(stanza)
     if(child !== undefined) {
       const xmlns = child.getAttribute("xmlns");
       // Check for ping request
-      if(xmlns === XOWS_NS_PING) return xows_xmp_resp_ping(stanza);
+      if(xmlns === XOWS_NS_PING) return xows_xmp_sresp_ping(stanza);
       // Check for time request
-      if(xmlns === XOWS_NS_TIME) return xows_xmp_resp_time(stanza);
+      if(xmlns === XOWS_NS_TIME) return xows_xmp_sresp_time(stanza);
       // Check for version request
-      if(xmlns === XOWS_NS_VERSION) return xows_xmp_resp_version(stanza);
+      if(xmlns === XOWS_NS_VERSION) return xows_xmp_sresp_version(stanza);
       // Check for disco#info request
-      if(xmlns === XOWS_NS_DISCOINFO) return xows_xmp_resp_discoinfo(stanza);
+      if(xmlns === XOWS_NS_DISCOINFO) return xows_xmp_sresp_discoinfo(stanza);
     }
     return false; //< stanza not processed
   }
@@ -3240,9 +3245,9 @@ function xows_xmp_send_presence(to, type, level, status, photo, muc, nick)
   if(type) stanza.setAttribute("type", type);
 
   // Append the <show> and <priority> children
-  if(level >= 0) {
+  if(level > XOWS_SHOW_OFF) {
     // Translate show level number to string
-    xows_xml_parent(stanza, xows_xml_node("show",null,xows_xmp_show_name_map[level]));
+    xows_xml_parent(stanza, xows_xml_node("show",null,xows_xmp_show_name[level]));
     // Set priority according show level
     xows_xml_parent(stanza, xows_xml_node("priority",null,(level * 20)));
     // Append <status> child
@@ -3370,16 +3375,17 @@ function xows_xmp_send_subject(to, subj)
  */
 function xows_xmp_send_close(code, mesg)
 {
-  // Some log output
-  xows_log(2,"xmp_send_close","close framed stream");
+  // Session is over
+  xows_xmp_sres = null;
 
   // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
 
   // Send the <close> stanza to close stream
   xows_xmp_send(xows_xml_node("close",{"xmlns":XOWS_NS_IETF_FRAMING}));
-
-  // Session is over
-  xows_xmp_res = null;
+  //xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
+  
+  // Some log output
+  xows_log(2,"xmp_send_close","close framed stream");
 
   // Different behavior depending whether close initiated by client
   if(code < 0) {
@@ -3391,6 +3397,7 @@ function xows_xmp_send_close(code, mesg)
 
     // Reset auth data only if close is initiated by user
     xows_xmp_bare = null;
+    xows_xmp_user = null;
     xows_xmp_auth = null;
   }
 }
@@ -3425,10 +3432,10 @@ function xows_xmp_sck_onopen()
  */
 function xows_xmp_sck_onclose(code, mesg)
 {
-  xows_log(1,"xmp_sck_onclose",mesg);
-
-  // This may be a connection loss
-  xows_xmp_connectloss(mesg);
+  // No username mean session closed by client
+  if(xows_xmp_user) 
+    // This may be a connection loss
+    xows_xmp_connectloss(mesg);
 }
 
 /**
@@ -3477,7 +3484,7 @@ function xows_xmp_connect(url, jid, password, register)
   xows_sck_destroy();
 
   // Reset stuff from previous session
-  xows_xmp_res = null;
+  xows_xmp_sres = null;
   xows_xmp_jid = null;
 
   // Split JID into user and domain parts
@@ -3523,26 +3530,28 @@ function xows_xmp_connect(url, jid, password, register)
  */
 function xows_xmp_connectloss(mesg)
 {
-  // Output log
-  xows_log(2,"xmp_connectloss","connection lost",xows_xmp_res);
-
   let code;
 
   // If session is active, this is indeed a connection loss
-  if(xows_xmp_res) {
-
+  if(xows_xmp_sres) {
+    
+    // Output log
+    xows_log(2,"xmp_connectloss","connection lost",xows_xmp_sres);
+    
     // Session is now over
-    xows_xmp_res = null;
+    xows_xmp_sres = null;
+    
     // This is actually a connection loss
     code = XOWS_SIG_HUP;
 
   } else {
-
-    // This is a connection error
+    
+    // Probably connexion error
     code = XOWS_SIG_ERR;
   }
+  
   // Forward to client
-  xows_xmp_fw_onclose(code,mesg);
+  xows_xmp_fw_onclose(code,mesg); 
 }
 
 /**
@@ -3563,4 +3572,27 @@ function xows_xmp_reconnect()
 
   // Open new WebSocket connection
   xows_sck_create(xows_xmp_url, "xmpp");
+}
+
+/**
+ * Special function to close session and exit the quickest way 
+ * possible, used to terminate session when browser exit page
+ */
+function xows_xmp_flyyoufools()
+{
+  // Ignore if no socket available
+  if(!xows_sck_sock)
+    return;
+  
+  // Session is over
+  xows_xmp_sres = null;
+  xows_xmp_user = null;
+
+  // Send unavailable <presence> stanza
+  xows_sck_sock.send("<presence type='unavailable'/>");
+  
+  // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
+
+  // Send the <close> stanza to close stream
+  xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }

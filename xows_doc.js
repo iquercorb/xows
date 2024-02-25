@@ -105,10 +105,11 @@ function xows_doc_cls_has(id, clsname)
  *
  * @param   {string}    id        Document element id
  * @param   {string}    clsname   Class name
+ * @param   {string}    force     Force add or remove
  */
-function xows_doc_cls_tog(id, clsname)
+function xows_doc_cls_tog(id, clsname, force)
 {
-  return document.getElementById(id).classList.toggle(clsname);
+  return document.getElementById(id).classList.toggle(clsname, force);
 }
 
 /**
@@ -134,46 +135,25 @@ function xows_doc_cls_rem(id, clsname)
 }
 
 /**
- * Add or remove the specified class to/from element class list
- *
- * @param   {string}    id        Document element id
- * @param   {string}    clsname   Class name
- * @param   {boolean}   add       Boolean to add or remove class
- */
-function xows_doc_cls_set(id, clsname, add)
-{
-  document.getElementById(id).classList.toggle(clsname, add);
-}
-
-/**
  * Show the specified item, either element object or id
  *
  * @param   {string}    id        Document element id
+ * @param   {boolean}   force     Force show or hide
  */
-function xows_doc_show(id)
+function xows_doc_show(id, force = true)
 {
-  document.getElementById(id).classList.remove("HIDDEN");
+  document.getElementById(id).hidden = !force;
 }
 
 /**
  * Hide the specified item, either element object or id
  *
  * @param   {string}    id        Document element id
+ * @param   {boolean}   force     Force hide or show
  */
-function xows_doc_hide(id)
+function xows_doc_hide(id, force = false)
 {
-  document.getElementById(id).classList.add("HIDDEN");
-}
-
-/**
- * Show or hide the specified item, either element object or id
- *
- * @param   {string}    id        Document element id
- * @param   {boolean}   hidden    Boolean to show or hide
- */
-function xows_doc_hidden_set(id, hidden)
-{
-  document.getElementById(id).classList.toggle("HIDDEN", hidden);
+  document.getElementById(id).hidden = !force;
 }
 
 /**
@@ -186,7 +166,7 @@ function xows_doc_hidden_set(id, hidden)
  */
 function xows_doc_hidden(id)
 {
-  return document.getElementById(id).classList.contains("HIDDEN");
+  return document.getElementById(id).hidden;
 }
 
 /**
@@ -332,10 +312,9 @@ function xows_doc_frag_find(slot, id)
       return frag.get(id);
 
     let node;
-    for(const element of frag.values()) {
+    for(const element of frag.values())
       if(node = element.getElementById(id))
         return node;
-    }
   }
 
   return null;
@@ -400,20 +379,6 @@ function xows_doc_sel_rng(index)
   return xows_doc_sel.getRangeAt(index);
 }
 
-
-/**
- * Remove all <li> elements of the specified DOM object
- *
- * @param   {string}    id        Document element id
- */
-function xows_doc_list_clean(id)
-{
-  const ul = document.getElementById(id);
-  const li = ul.querySelectorAll("LI");
-  let i = li.length;
-  while(i--) ul.removeChild(li[i]);
-}
-
 /**
  * Initializes document manager and browser interactions
  *
@@ -431,15 +396,16 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("main_hndl"),  "click",    xows_gui_main_open);
 
   xows_doc_listener_add(xows_doc("rost_tabs"),  "click",    xows_gui_rost_tabs_onclick);
+  //xows_doc_listener_add(xows_doc("rost_head"),  "click",    xows_gui_rost_head_onclick);
+  xows_doc_listener_add(xows_doc("cont_acts"),  "click",    xows_gui_rost_head_onclick);
+  xows_doc_listener_add(xows_doc("room_acts"),  "click",    xows_gui_rost_head_onclick);
+  //xows_doc_listener_add(xows_doc("user_rost"),  "click",    xows_gui_rost_list_onclick);
   xows_doc_listener_add(xows_doc("cont_list"),  "click",    xows_gui_rost_list_onclick);
   xows_doc_listener_add(xows_doc("room_list"),  "click",    xows_gui_rost_list_onclick);
-  xows_doc_listener_add(xows_doc("cont_add"),   "click",    xows_gui_page_cont_open);
-  xows_doc_listener_add(xows_doc("room_add"),   "click",    xows_gui_room_add_onclick);
-  xows_doc_listener_add(xows_doc("room_upd"),   "click",    xows_gui_room_list_reload);
 
   xows_doc_listener_add(xows_doc("menu_show"),  "click",    xows_gui_menu_show_onclick);
   xows_doc_listener_add(xows_doc("drop_show"),  "click",    xows_gui_menu_show_onclick);
-  xows_doc_listener_add(xows_doc("menu_user"),  "click",    xows_gui_page_user_open);
+  xows_doc_listener_add(xows_doc("user_bt_menu"),  "click",    xows_gui_page_user_open);
   xows_doc_listener_add(xows_doc("stat_inpt"),  "input",    xows_gui_stat_inpt_oninput);
   xows_doc_listener_add(xows_doc("stat_inpt"),  "blur",     xows_gui_stat_inpt_onblur);
 
@@ -450,12 +416,11 @@ function xows_doc_init(onready)
   xows_doc_listener_add(chat_head,              "input",    xows_gui_chat_head_oninput);
 
   // Chat main
-  const chat_main = xows_doc("chat_main");
-  xows_doc_listener_add(chat_main,              "scroll",   xows_gui_chat_main_onscroll);
-  xows_doc_listener_add(chat_main,              "click",    xows_gui_chat_main_onclick);
+  xows_doc_listener_add(xows_doc("chat_main"),  "scroll",   xows_gui_chat_main_onscroll);
+  xows_doc_listener_add(xows_doc("chat_hist"),  "click",    xows_gui_chat_hist_onclick);
   // Add Resize observer
   const observer = new ResizeObserver(xows_gui_chat_main_onresize);
-  observer.observe(chat_main);
+  observer.observe(xows_doc("chat_main"));
   observer.observe(xows_doc("chat_hist"));
 
   // Chat foot
@@ -509,18 +474,6 @@ function xows_doc_init(onready)
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
 
-  // Load sound effects
-  xows_gui_sound.notify = new Audio("/" + xows_options.root + "/sounds/notify.ogg");
-  xows_gui_sound.disable = new Audio("/" + xows_options.root + "/sounds/disable.ogg");
-  xows_gui_sound.enable = new Audio("/" + xows_options.root + "/sounds/enable.ogg");
-  xows_gui_sound.mute = new Audio("/" + xows_options.root + "/sounds/mute.ogg");
-  xows_gui_sound.unmute = new Audio("/" + xows_options.root + "/sounds/unmute.ogg");
-  xows_gui_sound.ringtone = new Audio("/" + xows_options.root + "/sounds/ringtone.ogg");
-  xows_gui_sound.ringtone.loop = true;
-  xows_gui_sound.ringbell = new Audio("/" + xows_options.root + "/sounds/ringbell.ogg");
-  xows_gui_sound.ringbell.loop = true;
-  xows_gui_sound.hangup = new Audio("/" + xows_options.root + "/sounds/hangup.ogg");
-
   // Set template callback
   xows_tpl_set_callback("embload", xows_doc_media_onload);
   xows_tpl_set_callback("emberror", xows_doc_media_onerror);
@@ -539,7 +492,8 @@ function xows_doc_init(onready)
 function xows_doc_media_onload(media)
 {
   // Remove the loading style
-  media.parentNode.classList.remove("LOADING"); //< container
+  media.parentNode.classList.remove("LOADPND");
+  media.parentNode.classList.remove("LOADING");
 }
 
 /**
@@ -550,6 +504,7 @@ function xows_doc_media_onload(media)
 function xows_doc_media_onerror(media)
 {
   // Remove the loading style
+  media.parentNode.classList.remove("LOADPND");
   media.parentNode.classList.remove("LOADING");
   // Add loading error style
   media.parentNode.classList.add("LOADERR");
@@ -645,21 +600,21 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
 
   switch(style)
   {
-  case XOWS_MBOX_ERR: cls = "TEXT-ERR"; break; //< same as XOWS_SIG_ERR
-  case XOWS_MBOX_WRN: cls = "TEXT-WRN"; break; //< same as XOWS_SIG_WRN
-  case XOWS_MBOX_SCS: cls = "TEXT-SCS"; break;
-  case XOWS_MBOX_ASK: cls = "TEXT-ASK"; break;
+  case XOWS_MBOX_ERR: cls = "MBOX-ERR"; break; //< same as XOWS_SIG_ERR
+  case XOWS_MBOX_WRN: cls = "MBOX-WRN"; break; //< same as XOWS_SIG_WRN
+  case XOWS_MBOX_SCS: cls = "MBOX-SCS"; break;
+  case XOWS_MBOX_ASK: cls = "MBOX-ASK"; break;
   }
 
   const mbox_text = xows_doc("mbox_text");
   mbox_text.classList = cls;
   mbox_text.innerHTML = xows_l10n_get(text);
 
-  xows_doc_hidden_set("mbox_close", !(!onvalid && !onabort));
-  xows_doc_hidden_set("mbox_valid", !onvalid);
-  xows_doc_hidden_set("mbox_abort", !onabort);
-  if(onvalid) xows_doc("mbox_valid").innerHTML = xows_l10n_get(valid);
-  if(onabort) xows_doc("mbox_abort").innerHTML = xows_l10n_get(abort);
+  xows_doc_show("mbox_close", (!onvalid && !onabort));
+  xows_doc_show("mbox_valid", Boolean(onvalid));
+  xows_doc_show("mbox_abort", Boolean(onabort));
+  if(onvalid) xows_doc("mbox_valid").innerText = xows_l10n_get(valid);
+  if(onabort) xows_doc("mbox_abort").innerText = xows_l10n_get(abort);
 
   // set callbacks
   xows_doc_mbox_cb_onabort = onabort;

@@ -54,6 +54,7 @@ let xows_options = {
   vcard4_notify   : true,       //< Request for Vcard4 PubSub notifications
   avatar_notify   : true,       //< Request for User Avatar PubSub notifications
   login_delay     : 2000,       //< Delay (in milliseconds) between registration and failed attempts
+  hist_size    : 256,        //< Size of message history "window" (history pull will gather half this value)
   extern_services : []          //< Additionnal External Services (as XEP-0215 replacement with same fashion)
 };
 
@@ -174,6 +175,7 @@ function xows_init(options)
     if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
     if(options.hasOwnProperty("avatar_notify"))    xows_options.avatar_notify = options.avatar_notify;
     if(options.hasOwnProperty("fail_delay"))       xows_options.fail_delay = options.fail_delay;
+    if(options.hasOwnProperty("hist_size"))     xows_options.hist_size = options.hist_size;
     if(options.hasOwnProperty("extern_services"))  xows_options.extern_services = options.extern_services;
   }
 
