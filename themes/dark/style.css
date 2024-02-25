@@ -179,16 +179,15 @@ button:disabled {
 .BLINK {
   animation: blink-anim 400ms ease-out infinite;
 }
-.LOADPND img,
-.LOADPND video,
-.LOADPND iframe {
-  height: 0px !important;
+@keyframes ringing-background {
+  0% {
+    background-color: var(--notif-base);
+  }
 }
-.LOADPND {
-  background-size: 40%;
-  background-repeat: no-repeat;
-  background-position: center;
-  /*background-image: url("images/logo_404.svg");*/
+@keyframes ringing-border {
+  0% {
+    border-color: var(--notif-base);
+  }
 }
 .LOADING img,
 .LOADING video,
@@ -518,28 +517,34 @@ badg-noti {
   background-position: center;
   background-repeat: no-repeat;
   background-color: var(--notif-base);
+  visibility: hidden;
 }
 badg-noti::before {
   content: attr(data-mesg);
 }
-badg-noti:not([data-call='0']) {
-  color: transparent !important;
-  background-image: url("images/call_bt_hup.svg");
-}
-badg-noti:not([data-ring='0']) {
-  color: transparent !important;
+.RINGING badg-noti {
   background-image: url("images/call.svg");
 }
-/*
-.UNRD-RING {
-  color: transparent !important;
+badg-noti:not([data-mesg="0"]),
+badg-noti:not([data-ring="0"]),
+badg-noti:not([data-call="0"]),
+badg-noti:not([data-subs="0"]) {
+  visibility: visible;
+}
+badg-noti:not([data-call="0"]) {
+  color: transparent;
+  background-image: url("images/call_hup.svg");
+}
+badg-noti:not([data-ring="0"]) {
+  color: transparent;
   background-image: url("images/call.svg");
 }
-.UNRD-CALL {
-  color: transparent !important;
-  background-image: url("images/call_bt_hup.svg");
+badg-noti:not([data-subs="0"]) {
+  animation: blink-anim 1s ease-out infinite;
 }
-*/
+badg-noti:not([data-subs="0"])::before {
+  content: attr(data-subs);
+}
 /* ------------------------------------------------------------------ */
 /* Call session Notification Badge */
 /* ------------------------------------------------------------------ */
@@ -1277,6 +1282,7 @@ rost-tab {
   background-size: 22px;
   background-repeat: no-repeat;
   background-position: center;
+  border-radius: 4px;
   cursor: pointer;
 }
 rost-tab::before {
@@ -1293,30 +1299,40 @@ rost-tab::before {
 rost-tab:hover::before {
   visibility: visible;
 }
+@keyframes rost-ringing {
+  0% {
+    background-color: var(--notif-base);
+    border-color: var(--notif-base);
+  }
+}
+rost-tab.RINGING {
+  animation: ringing-background 1s ease-out infinite;
+}
+rost-tab.RINGING badg-noti {
+  animation: ringing-border 1s ease-out infinite;
+}
 #tab_cont {
   background-image: url("images/contacts.svg");
 }
 #tab_room {
   background-image: url("images/rooms.svg");
 }
-#cont_unrd,
-#room_unrd {
+#cont_noti,
+#cont_call,
+#room_noti,
+#room_call {
   top: 2px; right: 2px;
   border: 3px solid var(--base-tone0);
-}
-#subs_unrd {
-  top: 2px; right: 2px;
-  border: 3px solid var(--base-tone0);
-  animation: blink-anim 1s ease-out infinite;
 }
 rost-tab.SELECTED::before {
   height: 100%;
   visibility: visible;
 }
-rost-tab.SELECTED badg-noti {
+rost-tab.SELECTED badg-noti,
+rost-tab.SELECTED badg-call {
   display: none;
 }
-rost-tab.SELECTED.RING-ROSTER {
+rost-tab.SELECTED.RINGING {
   animation-name: none;
 }
 /* ------------------------------------------------------------------ */
@@ -1505,7 +1521,7 @@ li-peer {
   flex-direction: row;
   align-items: center;
   width: 100%; height: 40px;
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
   cursor: pointer !important;
 }li-peer:hover {
@@ -1532,13 +1548,13 @@ li-peer.SELECTED::before {
   visibility: visible;
   height: 35px;
 }
-@keyframes peer-ringing {
-  0% {
-    background-color: var(--notif-base);
-  }
-}
 li-peer.RINGING {
-  animation: peer-ringing 1s ease-out infinite;
+  animation: ringing-background 1s ease-out infinite;
+}
+li-peer.RINGING badg-noti,
+li-peer.RINGING badg-call,
+li-peer.RINGING badg-show {
+  animation: ringing-border 1s ease-out infinite;
 }
 peer-info {
   flex: auto;
@@ -2399,35 +2415,25 @@ mesg-embd iframe {
   border-radius: 6px;
   border: none;
 }
-mesg-embd.LOADPND,
 mesg-embd.LOADING,
 mesg-embd.LOADERR {
-  display: flex;
-  justify-content: center;
-  align-items: end;
+  padding-top: 200px; /* this put the media to bottom of frame */
   min-width: 426px; min-height: 240px;
 }
-mesg-embd.LOADPND a,
 mesg-embd.LOADING a,
 mesg-embd.LOADERR a{
   display: none;
 }
-mesg-embd.EMBD-IMG.LOADPND {
-  background-size: 30%;
-  background-image: url("images/picture.svg");
-}
-mesg-embd.EMBD-IFR,
-mesg-embd.EMBD-IFR.LOADPND,
-mesg-embd.EMBD-IFR.LOADING,
-mesg-embd.EMBD-IFR.LOADERR {
+mesg-embd.EMBD-IFR {
   width: 450px; height: 284px;
   padding: 10px 10px 10px 9px;
   border-radius: 5px 10px 10px 5px;
   background-color: var(--base-tone3);
   border-left: 5px solid var(--link-base);
 }
-mesg-embd.EMBD-IFR.LOADPND {
-  background-image: url("images/movie.svg");
+mesg-embd.EMBD-IFR.LOADING,
+mesg-embd.EMBD-IFR.LOADERR {
+  padding-top: 200px; /* this put the media to bottom of frame */
 }
 /*
 mesg-embd.EMBD-VER {
@@ -2493,13 +2499,11 @@ mesg-embd.EMBD-DNL::before {
     width: 282px; height: 160px;
     border-radius: 3px;
   }
-  mesg-embd.LOADPND,
   mesg-embd.LOADING,
   mesg-embd.LOADERR {
     min-width: 280px; min-height: 158px;
   }
   mesg-embd.EMBD-IFR,
-  mesg-embd.EMBD-IFR.LOADPND,
   mesg-embd.EMBD-IFR.LOADING,
   mesg-embd.EMBD-IFR.LOADERR {
     flex-direction: column;

@@ -51,7 +51,7 @@ let xows_gui_hist_size = 128; //< size of the history 'window'
 /**
  * Count of messages to gather for each history pull request
  */
-let xows_gui_hist_pull = 64;
+let xows_gui_hist_page = 64;
 
 /**
  * Current selected GUI locale code
@@ -253,7 +253,7 @@ function xows_gui_peer_hist_reload(peer)
   xows_gui_peer_doc(peer, "hist_end").hidden = true;
 
   // Query for the last archives, with no delay
-  xows_gui_mam_query(peer, false, xows_gui_hist_pull, 0);
+  xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
 }
 
 /**
@@ -460,7 +460,7 @@ function xows_gui_init()
 
   // Store MAM parameters from options
   xows_gui_hist_size = xows_options.history_size;
-  xows_gui_hist_pull = xows_gui_hist_size / 2;
+  xows_gui_hist_page = xows_gui_hist_size / 2;
 }
 
 /* -------------------------------------------------------------------
@@ -965,12 +965,12 @@ function xows_gui_reset()
   // Reset roster tabs
   xows_doc("tab_room").disabled = true;
   xows_gui_rost_switch("tab_cont");
-  const room_unrd = xows_doc("room_unrd");
-  room_unrd.dataset.mesg = 0; room_unrd.dataset.call = 0; room_unrd.dataset.ring = 0;
-  room_unrd.innerText = "";
-  const cont_unrd = xows_doc("cont_unrd");
-  cont_unrd.dataset.mesg = 0; cont_unrd.dataset.call = 0; cont_unrd.dataset.ring = 0;
-  cont_unrd.innerText = "";
+  const room_noti = xows_doc("room_noti");
+  room_noti.dataset.mesg = 0; room_noti.dataset.call = 0; room_noti.dataset.ring = 0;
+  room_noti.innerText = "";
+  const cont_noti = xows_doc("cont_noti");
+  cont_noti.dataset.mesg = 0; cont_noti.dataset.call = 0; cont_noti.dataset.ring = 0;
+  cont_noti.innerText = "";
 
   // clean user frame
   xows_doc("user_show").dataset.show = 0;
@@ -1069,7 +1069,7 @@ function xows_gui_switch_peer(jid)
     }
     // Hidden history mean first "open", so we load a bunch of history
     if(xows_doc_hidden("hist_ul")) {
-      xows_gui_mam_query(next, false, xows_gui_hist_pull, 0);
+      xows_gui_mam_query(next, false, xows_gui_hist_page, 0);
       xows_doc_show("hist_ul");
     }
     // Clear contact unread notification for next peer
@@ -1433,14 +1433,21 @@ function xows_gui_rost_switch(id)
 function xows_gui_calling_set(peer, enable)
 {
   // Get the corresponding peer <li> (room or contact) in roster
-  const li = document.getElementById(peer.bare);
-  if(!li) return;
+  const li_peer = document.getElementById(peer.bare);
+  if(!li_peer) return;
 
-  // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector("badg-call");
+  // Inside the <li_peer> search for the <badg_call>
+  const badg_call = li_peer.querySelector("badg-call");
 
   // Increase the current unread count
-  li_spot.hidden = !enable;
+  badg_call.hidden = !enable;
+  
+  // Enable Call badge depending peer type
+  if(peer.type === XOWS_PEER_CONT) {
+    xows_doc("cont_call").hidden = !enable;
+  } else {
+    xows_doc("room_call").hidden = !enable;
+  }
 }
 
 /* -------------------------------------------------------------------
@@ -1458,44 +1465,46 @@ function xows_gui_calling_set(peer, enable)
 function xows_gui_unread_tab_update(peer, mesg, call, ring)
 {
   // Select proper tab elements depending peer type
-  let tab, tab_spot;
+  let tab_rost, badg_noti;
   if(peer.type === XOWS_PEER_ROOM) {
-    tab = xows_doc("tab_room");
-    tab_spot = xows_doc("room_unrd");
+    tab_rost = xows_doc("tab_room");
+    badg_noti = xows_doc("room_noti");
   } else {
-    tab = xows_doc("tab_cont");
-    tab_spot = xows_doc("cont_unrd");
+    tab_rost = xows_doc("tab_cont");
+    badg_noti = xows_doc("cont_noti");
   }
 
   // Update unread message count
-  let remain_mesg = parseInt(tab_spot.dataset.mesg);
+  let remain_mesg = parseInt(badg_noti.dataset.mesg);
   if(mesg) {
     remain_mesg += mesg;
-    tab_spot.dataset.mesg = (remain_mesg > 0) ? remain_mesg : "";
+    badg_noti.dataset.mesg = remain_mesg;
   }
 
   // Update missed call count
-  let remain_call = parseInt(tab_spot.dataset.call);
+  let remain_call = parseInt(badg_noti.dataset.call);
   if(call) {
     remain_call += call;
-    tab_spot.dataset.call = remain_call;
+    badg_noti.dataset.call = remain_call;
   }
 
   // Update ringing call count
-  let remain_ring = parseInt(tab_spot.dataset.ring);
+  let remain_ring = parseInt(badg_noti.dataset.ring);
   if(ring) {
     remain_ring += ring;
-    tab_spot.dataset.ring = remain_ring;
+    badg_noti.dataset.ring = remain_ring;
   }
-
-  // Update 'call' notification classes
-  //tab_spot.classList.toggle("UNRD-CALL", remain_call > 0);
-  //tab_spot.classList.toggle("UNRD-RING", remain_ring > 0);
-  tab.classList.toggle("RINGING", remain_ring > 0);
-
+  
+  // Update ringing animation class
+  tab_rost.classList.toggle("RINGING", remain_ring > 0);
+  
+  // Update notification classes
+  //badg_noti.classList.toggle("RINGING", remain_ring > 0);
+  //badg_noti.classList.toggle("BADG-CALL", remain_call > 0);
+  
   // Show or hide notification spot
   let has_notif = (remain_mesg > 0 || remain_call > 0 || remain_ring > 0);
-  tab_spot.hidden = !has_notif;
+  badg_noti.hidden = !has_notif;
 }
 
 /**
@@ -1507,16 +1516,16 @@ function xows_gui_unread_tab_update(peer, mesg, call, ring)
  */
 function xows_gui_unread_add(peer, id)
 {
-  // Get the corresponding peer <li> (room or contact) in roster
-  const li = document.getElementById(peer.bare);
-  if(!li) return;
+  // Get the corresponding peer <li-peer> (room or contact) in roster
+  const li_peer = document.getElementById(peer.bare);
+  if(!li_peer) return;
 
-  // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector("badg-noti");
+  // Inside the <li-peer> search for the <badg-noti>
+  const badg_noti = li_peer.querySelector("BADG-NOTI");
 
   // Increase the current unread count
-  li_spot.dataset.mesg = parseInt(li_spot.dataset.mesg) + 1;
-  li_spot.hidden = false; //< show
+  badg_noti.dataset.mesg = parseInt(badg_noti.dataset.mesg) + 1;
+  //badg_noti.hidden = false; //< show
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, 1);
@@ -1531,19 +1540,23 @@ function xows_gui_unread_add(peer, id)
  */
 function xows_gui_unread_call(peer, ring)
 {
-  // Get the corresponding peer <li> (room or contact) in roster
-  const li = document.getElementById(peer.bare);
-  if(!li) return;
+  // Get the corresponding peer <li-peer> (room or contact) in roster
+  const li_peer = document.getElementById(peer.bare);
+  if(!li_peer) return;
 
-  // Add or remove ringing animation to Contact <li>
-  li.classList.toggle("RING-ROSTER", ring);
+  // Add or remove ringing animation to Contact <li-peer>
+  li_peer.classList.toggle("RINGING", ring);
 
-  // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector("badg-noti");
-  const had_ring = li_spot.classList.contains("UNRD-RING");
-  li_spot.classList.toggle("UNRD-RING", ring);
-  li_spot.classList.toggle("UNRD-CALL", !ring);
-  li_spot.hidden = false; //< show
+  // Inside the <li-peer> search for the <badg-noti>
+  const badg_noti = li_peer.querySelector("BADG-NOTI");
+  
+  //const had_ring = badg_noti.classList.contains("RINGING");
+  const had_ring = (parseInt(badg_noti.dataset.ring) > 0);
+  badg_noti.dataset.ring = ring ? 1 : 0;
+  badg_noti.dataset.call = ring ? 0 : 1;
+  //badg_noti.classList.toggle("RINGING", ring);
+  //badg_noti.classList.toggle("BADG-CALL", !ring);
+  //badg_noti.hidden = false; //< show
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, null, ring ? 0 : 1, (ring ? 1 : (had_ring ? -1 : 0)));
@@ -1557,26 +1570,31 @@ function xows_gui_unread_call(peer, ring)
  */
 function xows_gui_unread_reset(peer)
 {
-  // Get the corresponding peer <li> (room or contact) in roster
-  const li = document.getElementById(peer.bare);
-  if(!li) return;
+  // Get the corresponding peer <li-peer> (room or contact) in roster
+  const li_peer = document.getElementById(peer.bare);
+  if(!li_peer) return;
 
   // Remove the ringing call effect
-  li.classList.remove("RING-ROSTER");
+  li_peer.classList.remove("RINGING");
 
-  // Inside the <li> search for the unread <div>
-  const li_spot = li.querySelector("badg-noti");
+  // Inside the <li-peer> search for the <badg-noti>
+  const badg_noti = li_peer.querySelector("BADG-NOTI");
 
   // Get unread element to 'substract' for roster tab button update
-  const mesg = - parseInt(li_spot.dataset.mesg);
-  const ring = li_spot.classList.contains("UNRD-RING") ? 0 : -1;
-  const call = li_spot.classList.contains("UNRD-CALL") ? 0 : -1;
+  const mesg = - parseInt(badg_noti.dataset.mesg);
+  const ring = - parseInt(badg_noti.dataset.ring);
+  const call = - parseInt(badg_noti.dataset.call);
+  //const ring = badg_noti.classList.contains("RINGING") ? 0 : -1;
+  //const call = badg_noti.classList.contains("BADG-CALL") ? 0 : -1;
 
   // Reset the unread spot <div> properties
-  li_spot.innerText = "";
-  li_spot.classList.remove("UNRD-RING");
-  li_spot.classList.remove("UNRD-CALL");
-  li_spot.hidden = true; //< hide
+  badg_noti.dataset.mesg = 0;
+  badg_noti.dataset.ring = 0;
+  badg_noti.dataset.call = 0;
+  //badg_noti.classList.remove("RINGING");
+  //badg_noti.classList.remove("BADG-CALL");
+  
+  badg_noti.hidden = true; //< hide
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, mesg, call, ring);
@@ -1738,16 +1756,16 @@ function xows_gui_cli_oncontrem(bare)
 {
   const cont_ul = xows_doc("cont_ul");
 
-  // Remove <li> element
-  const li = document.getElementById(bare);
-  if(li && li.parentNode === cont_ul) {
+  // Remove <li_peer> element
+  const li_peer = document.getElementById(bare);
+  if(li_peer && li_peer.parentNode === cont_ul) {
 
     // switch peer if required
     if(xows_gui_peer && xows_gui_peer.bare === bare)
       xows_gui_switch_peer(null);
 
-    // delete <li> element
-    cont_ul.removeChild(li);
+    // delete <li_peer> element
+    cont_ul.removeChild(li_peer);
     // Hide Authorized Contacts <ul> if required
     cont_ul.hidden = !cont_ul.childElementCount;
 
@@ -1769,24 +1787,24 @@ function xows_gui_cli_oncontrem(bare)
  */
 function xows_gui_cli_onsubspush(bare, nick)
 {
-  // Ensure subscribe <li> does not already exists
+  // Ensure subscribe <li_peer> does not already exists
   if(document.getElementById(bare))
     return;
 
   const subs_ul = xows_doc("subs_ul");
-  const subs_unrd = xows_doc("subs_unrd");
 
-  // Create a new subcription <li> element from template
+  // Create a new subcription <li_peer> element from template
   subs_ul.appendChild(xows_tpl_spawn_rost_subs(bare, nick));
 
-  const n = subs_ul.childElementCount - 1;
-
-  // Enable or update notification spot
-  subs_unrd.innerText = n;
-  subs_unrd.hidden = false;
+  // Get count of pending authorization (<ul> children minus title)
+  const pendning_count = subs_ul.childElementCount;
 
   // Show the subscribes <ul>
-  subs_ul.hidden = false;
+  subs_ul.hidden = !pendning_count;
+  
+  // Update or disable the notification badge
+  xows_doc("cont_noti").dataset.subs = pendning_count;
+
 }
 
 /**
@@ -1801,21 +1819,21 @@ function xows_gui_cli_onsubsrem(bare)
 {
   const subs_ul = xows_doc("subs_ul");
 
-  // Search and remove <li> element
-  const li = document.getElementById(bare);
-  if(li && li.parentNode === subs_ul) {
+  // Search and remove <li_peer> element
+  const li_peer = document.getElementById(bare);
+  if(li_peer && li_peer.parentNode === subs_ul) {
 
-    const subs_unrd = xows_doc("subs_unrd");
+    // delete <li_peer> element
+    subs_ul.removeChild(li_peer);
 
     // Get count of pending authorization (<ul> children minus title)
     const pendning_count = subs_ul.childElementCount;
-
-    // Update or disable the notification spot
-    subs_unrd.innerText = (pendning_count > 0) ? pendning_count : "";
-    subs_unrd.hidden = !pendning_count;
-
+    
     // Show or hide list depending content
     subs_ul.hidden = !pendning_count;
+    
+    // Update or disable the notification badge
+    xows_doc("cont_noti").dataset.subs = pendning_count;
   }
 }
 
@@ -2961,7 +2979,7 @@ function xows_gui_chat_main_onscroll(event)
   // Check whether the scroll is at top of frame
   if(chat_main.scrollTop < xows_doc("hist_beg").offsetHeight * 0.8) {
     // Query archive for current chat contact
-    xows_gui_mam_query(xows_gui_peer, false, xows_gui_hist_pull);
+    xows_gui_mam_query(xows_gui_peer, false, xows_gui_hist_page);
   }
 
   // If scroll is enough far from bottom, show the "Back to recent" banner
@@ -2975,7 +2993,7 @@ function xows_gui_chat_main_onscroll(event)
     // Check whether the scroll is at bottom of frame
     if(chat_main.scrollSaved < hist_end.offsetHeight * 0.8) {
       // Query archive for current chat contact
-      xows_gui_mam_query(xows_gui_peer, true, xows_gui_hist_pull);
+      xows_gui_mam_query(xows_gui_peer, true, xows_gui_hist_page);
     }
   } else {
     // Check whether the scroll is at bottom of frame

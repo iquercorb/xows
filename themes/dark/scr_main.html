@@ -8,12 +8,14 @@
       </row-head>
       <!-- Main Frame (Roster Tabs selector) -->
       <row-main id="rost_tabs">
-        <rost-tab id="tab_cont" class="SELECTED" title="${'Contacts'}"> 
-          <badg-noti hidden id="cont_unrd" data-ring=0 data-call=0 data-mesg=0></badg-noti>
-          <badg-noti hidden id="subs_unrd"></badg-noti>
+        <rost-tab id="tab_cont" class="SELECTED" title="${'Contacts'}">
+          <!-- <badg-noti hidden id="subs_noti"></badg-noti> -->
+          <badg-noti id="cont_noti" data-ring=0 data-call=0 data-mesg=0 data-subs=0></badg-noti>
+          <badg-call hidden id="cont_call"></badg-call>
         </rost-tab>
         <rost-tab id="tab_room" title="${'Chatrooms'}">
-          <badg-noti hidden id="room_unrd" data-ring=0 data-call=0 data-mesg=0></badg-noti>
+          <badg-noti id="room_noti" data-ring=0 data-call=0 data-mesg=0 data-subs=0></badg-noti>
+          <badg-call hidden id="room_call"></badg-call>
         </rost-tab>
       </row-main>
       <!-- Froot Frame (App About button) -->
