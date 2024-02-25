@@ -2970,13 +2970,16 @@ function xows_gui_chat_main_onscroll(event)
 
   const hist_end = xows_doc("hist_end");
 
-  // Check whether the scroll is at bottom of frame
-  if(chat_main.scrollSaved < hist_end.offsetHeight * 0.8) {
-    // Check whether we have cropped history
-    if(!hist_end.hidden) {
+  // Check whether we have cropped history
+  if(!hist_end.hidden) {
+    // Check whether the scroll is at bottom of frame
+    if(chat_main.scrollSaved < hist_end.offsetHeight * 0.8) {
       // Query archive for current chat contact
       xows_gui_mam_query(xows_gui_peer, true, xows_gui_hist_pull);
-    } else {
+    }
+  } else {
+    // Check whether the scroll is at bottom of frame
+    if(chat_main.scrollSaved < 50) {
       // Hide the "Back to recent" banner/button
       xows_gui_hist_nav_close(xows_gui_peer);
     }
