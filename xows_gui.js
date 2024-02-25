@@ -1052,21 +1052,20 @@ function xows_gui_switch_peer(jid)
   if(prev) xows_gui_title_pop();
 
   if(next) {
+    const is_room = (next.type === XOWS_PEER_ROOM);
     // Add highlight class to new <li> element
     document.getElementById(next.bare).classList.add("SELECTED");
     // Bring back Peer document elements from offscreen
     xows_gui_peer_doc_import(next);
-    // Open or close right panel
-    xows_doc_cls_tog("main_colr","COL-HIDE",(next.type !== XOWS_PEER_ROOM));
     // Set the current contact
     xows_gui_peer = next;
+    // Open or close right panel
+    xows_doc_cls_tog("main_colr","COL-HIDE",!is_room);
+    // Set proper chat frame style
+    chat_fram.classList.toggle("CHAT-ROOM",is_room);
+    chat_fram.classList.toggle("CHAT-CONT",!is_room);
     // Join the room if required
-    if(next.type === XOWS_PEER_ROOM) {
-      chat_fram.className = "CHAT-ROOM";
-      if(!next.join) xows_cli_room_join(next);
-    } else {
-      chat_fram.className = "CHAT-CONT";
-    }
+    if(is_room) if(!next.join) xows_cli_room_join(next);
     // Hidden history mean first "open", so we load a bunch of history
     if(xows_doc_hidden("hist_ul")) {
       xows_gui_mam_query(next, false, xows_gui_hist_page, 0);
@@ -2160,8 +2159,11 @@ function xows_gui_chat_head_update(peer)
       video_call = xows_gui_medias_has("videoinput");
     }
 
-    xows_gui_peer_doc(peer,"chat_bt_cala").hidden = !audio_call;
-    xows_gui_peer_doc(peer,"chat_bt_calv").hidden = !video_call;
+    const chat_bt_cala = xows_gui_peer_doc(peer,"chat_bt_cala");
+    const chat_bt_calv = xows_gui_peer_doc(peer,"chat_bt_calv");
+    
+    chat_bt_cala.hidden = !audio_call;
+    chat_bt_calv.hidden = !video_call;
 
   } else {                            //< XOWS_PEER_ROOM
     meta_inpt.innerText = peer.subj;
@@ -2491,7 +2493,7 @@ function xows_gui_chat_call_open()
 /**
  * Function to close Multimedia Call Session layout
  */
-function xows_gui_chat_ring_bt_close()
+function xows_gui_chat_call_close()
 {
   // Stop the speak/silence visual effects animation loop
   if(xows_gui_chat_call_fx_hnd) {
@@ -2516,9 +2518,9 @@ function xows_gui_chat_ring_bt_close()
   xows_doc("call_grid").innerHTML = "";
 
   // Remove calling badge to roster contact
-  if(xows_gui_chat_call_peer)
+  if(xows_gui_chat_call_peer) 
     xows_gui_calling_set(xows_gui_chat_call_peer, false);
-
+  
   // Session closed, reset call peer
   xows_gui_chat_call_peer = null;
 }
@@ -2696,7 +2698,7 @@ function xows_gui_call_media_onerror(error)
 
   // Display popup error message
   xows_doc_mbox_open(XOWS_SIG_WRN,mesg,
-    xows_gui_call_media_get,"Retry",xows_gui_chat_ring_bt_close,"Cancel");
+    xows_gui_call_media_get,"Retry",xows_gui_chat_call_close,"Cancel");
 }
 
 /**
@@ -2722,12 +2724,16 @@ function xows_gui_call_media_onresult(stream)
     // Initiate WebRTC/Jingle call
     xows_cli_call_initiate(stream, xows_gui_peer);
 
-    // Open Call dialog
+    // Open Ringin dialog
     xows_gui_hist_ring_open(xows_gui_peer,"initiate");
 
     // Play Ring Tone sound
     xows_gui_sound_play("ringtone");
   }
+
+  // Disable Call buttons
+  xows_gui_peer_doc(xows_gui_peer,"chat_bt_cala").disabled = true;
+  xows_gui_peer_doc(xows_gui_peer,"chat_bt_calv").disabled = true;
 }
 
 /**
@@ -2803,8 +2809,12 @@ function xows_gui_call_media_get(constr)
 function xows_gui_call_clear()
 {
   // Close the Media Call view frame
-  xows_gui_chat_ring_bt_close();
-
+  xows_gui_chat_call_close();
+  
+  // Enable Call buttons
+  xows_gui_peer_doc(xows_cli_call_peer,"chat_bt_cala").disabled = false;
+  xows_gui_peer_doc(xows_cli_call_peer,"chat_bt_calv").disabled = false;
+  
   // Stops and release aquired Media Streams
   let tracks = [];
 
