@@ -3056,6 +3056,8 @@ function xows_gui_chat_hist_onclick(event)
 
       const mesg = event.target.closest("LI-MESG");
 
+      console.log(event.target);
+
       switch(event.target.name)
       {
       case "mesg_bt_edit":
@@ -3165,6 +3167,8 @@ function xows_gui_mesg_edit_valid(inpt)
   // Retrieve the parent <li-mesg> element
   const li_mesg = inpt.closest("LI-MESG");
 
+  console.log(li_mesg);
+
   // Get input text
   const inpt_text = inpt.innerText.trimEnd();
 
@@ -3255,7 +3259,7 @@ function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr, di
   // discarded one
   if(disc) {
     replace = true;
-    aggregate = !disc.classList.contains("MESG-FULL");
+    aggregate = disc.classList.contains("MESG-APPEND");
   } else if(prev) {
     // If previous message sender is different or if elapsed time is
     // greater than # minutes, we create a new full message block
