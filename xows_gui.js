@@ -1705,6 +1705,8 @@ function xows_gui_cli_oncontpush(cont)
       xows_gui_chat_head_update(cont);
       // Update message history
       xows_gui_hist_update(cont, cont.bare, cont.name, cont.avat);
+      // If contact goes offline, ensure chatstat resets
+      if(cont.show < 1) xows_gui_cli_onchatstate(cont, 0);
 
       // Return now since we DO NOT append new <li> element
       return;
@@ -3938,10 +3940,9 @@ function xows_gui_drop_emoj_onclick(event)
  * it in the chat window
  *
  * @param   {object}    peer      Sender peer object
- * @param   {string}    from      Sender full JID
  * @param   {number}    chat      Chat state value
  */
-function xows_gui_cli_onchatstate(peer, from, chat)
+function xows_gui_cli_onchatstate(peer, chat)
 {
   // get Peer chatstat object
   const chat_stat = xows_gui_peer_doc(peer,"chat_stat");

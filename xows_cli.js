@@ -1727,9 +1727,8 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
       xows_log(2,"cli_xmp_onpresence","removing Resource for "+cont.bare, res);
       delete cont.ress[res]; //< ressource gone offline remove it
     }
-    // If user goes unavailable we ensures that chatstat resets
+    // If user goes unavailable, reset chatstate
     cont.chat = 0;
-    xows_cli_fw_onchatstate(cont, cont.bare, 0);
   }
   // Set default show level and status
   cont.show = 0;
@@ -1985,7 +1984,7 @@ function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
   xows_log(2,"cli_xmp_onchatstate","chat state",from+" "+chat);
 
   // Forward changed Chat State
-  xows_cli_fw_onchatstate(peer, from, chat);
+  xows_cli_fw_onchatstate(peer, chat);
 }
 
 /**
