@@ -440,6 +440,9 @@
   "The call has been declined":
   "L'appel a été refusé",
 
+  "The other person is buzy":
+  "Le correspondant est occupé",
+
   "The other person has hung up":
   "Le correspondant a raccroché",
 
@@ -448,7 +451,10 @@
 
   "You missed a call":
   "Vous avez manqué un appel",
-  
+
+  "Unexpected end of call":
+  "Fin d'appel innatendu",
+
   "modified":
   "modifié"
 }

@@ -443,6 +443,12 @@
   "The call has been declined":
   "",
 
+  "The other person is buzy":
+  "",
+
+  "The other person has hung up":
+  "",
+
   "Call terminated":
   "",
 
@@ -452,6 +458,9 @@
   "You missed a call":
   "",
   
+  "Unexpected end of call":
+  "",
+
   "modified":
   ""
 }

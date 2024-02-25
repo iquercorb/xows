@@ -2464,7 +2464,7 @@ function xows_gui_chat_call_open()
   const call_bt_spk = xows_doc("call_bt_spk");
   const call_in_vol = xows_doc("call_in_vol");
 
-  call_bt_spk.calssName = "";
+  call_bt_spk.className = "";
   call_in_vol.disabled = false;
   call_in_vol.value = 50;
 
@@ -2619,15 +2619,20 @@ function xows_gui_hist_ring_open(peer, reason)
   const video = xows_gui_call_constraints.video;
 
   let icon, text, ringing, incall;
-
+  
   switch(reason)
   {
-  case "decline": { //< peer declined call
+  case "decline": {   //< peer declined call
       icon = "CALL-TERM";
       text = xows_l10n_get("The call has been declined");
     } break;
 
-  case "success": { //< peer hung up call
+  case "buzy": {      //< peer is buzy
+      icon = "CALL-TERM";
+      text = xows_l10n_get("The other person is buzy");
+    } break;
+
+  case "success": {   //< peer hung up call
       icon = "CALL-TERM";
       if(xows_cli_call_stat === 3) {
         text = xows_l10n_get("The other person has hung up");
@@ -2636,16 +2641,21 @@ function xows_gui_hist_ring_open(peer, reason)
       }
     } break;
 
-  case "initiate": { //< initiating call
+  case "initiate": {  //< initiating call
       icon = video ? "CALL-VID" : "CALL-AUD";
       text = xows_l10n_get("Call in progress...");
       ringing = true;
     } break;
 
-  default: { // incoming call
+  case "incall":  {    //< incoming call
       icon = video ? "CALL-VID" : "CALL-AUD";
       text = video ? xows_l10n_get("Incoming video call...") : xows_l10n_get("Incoming audio call...");
       ringing = true; incall = true;
+    } break;
+
+  default:  {         //< Unknown reason
+      icon = "CALL-TERM";
+      text = xows_l10n_get("Unexpected end of call") + ": " + xows_l10n_get(reason);
     } break;
   }
 
@@ -2884,7 +2894,7 @@ function xows_gui_cli_oncallincoming(peer, medias)
                                 video: (medias.video && xows_gui_medias_has("videoinput")) };
 
   // Open the Incoming Call dialog
-  xows_gui_hist_ring_open(peer);
+  xows_gui_hist_ring_open(peer,"incall");
 
   // If peer is offscreen during incomming call, add notification
   if(peer !== xows_gui_peer)
