@@ -848,14 +848,15 @@ function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
   inst.id = bare;
   inst.title = name+" ("+bare+")";
   inst.querySelector("PEER-NAME").innerText = name;
-  inst.querySelector("PEER-META").innerText = stat?stat:"";
-  const show_dv = inst.querySelector("BADG-SHOW");
+  const badg_show = inst.querySelector("BADG-SHOW");
   if(subs < XOWS_SUBS_TO) {
     inst.classList.add("PEER-DENY");
-    show_dv.hidden = true;
+    inst.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
+    badg_show.hidden = true;
     inst.querySelector("[name='cont_bt_rtry']").disabled = false;
   } else {
-    show_dv.dataset.show = show || 0;
+    inst.querySelector("PEER-META").innerText = stat ? stat:"";
+    badg_show.dataset.show = show || 0;
     const peer_avat = inst.querySelector("PEER-AVAT");
     peer_avat.dataset.jid = bare;
     peer_avat.className = xows_tpl_spawn_avat_cls(avat);
@@ -879,15 +880,16 @@ function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
   // Update content
   li.title = name+" ("+li.id+")";
   li.querySelector("PEER-NAME").innerText = name;
-  li.querySelector("PEER-META").innerText = stat?stat:"";
   const badg_show = li.querySelector("BADG-SHOW");
   const cont_bt_rtry = li.querySelector("[name='cont_bt_rtry']");
   if(subs < XOWS_SUBS_TO) {
     li.classList.add("PEER-DENY");
+    li.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
     cont_bt_rtry.disabled = false;
   } else {
     li.classList.remove("PEER-DENY");
+    li.querySelector("PEER-META").innerText = stat ? stat : "";
     badg_show.hidden = false;
     badg_show.dataset.show = show || 0;
     cont_bt_rtry.disabled = true;

@@ -1617,9 +1617,8 @@ li-peer.PEER-CONT.PEER-DENY peer-avat {
 li-peer.PEER-CONT.PEER-DENY peer-name {
   color: var(--text-tone2);
 }
-li-peer.PEER-CONT.PEER-DENY peer-meta::before {
+li-peer.PEER-CONT.PEER-DENY peer-meta {
   color: var(--text-error);
-  content: attr(data-deny);
 }
 /* ------------------------------------------------------------------ */
 /* Roster Contacts - <li-peer> Subscribe Request instance */
