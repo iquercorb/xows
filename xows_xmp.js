@@ -3589,7 +3589,7 @@ function xows_xmp_flyyoufools()
   xows_xmp_user = null;
 
   // Send unavailable <presence> stanza
-  xows_sck_sock.send("<presence type='unavailable'/>");
+  xows_sck_sock.send("<presence xmlns='jabber:client' type='unavailable'/>");
   
   // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
 
