@@ -494,6 +494,9 @@ function xows_doc_media_onload(media)
   // Remove the loading style
   media.parentNode.classList.remove("LOADPND");
   media.parentNode.classList.remove("LOADING");
+
+  // Force adjust scroll
+  xows_gui_chat_main_onresize();
 }
 
 /**
