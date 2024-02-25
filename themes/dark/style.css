@@ -2010,9 +2010,10 @@ hist-bound {
   width: 100%;
   height: 700px;
   text-align: center;
-  font-size: 1.2em;
-  font-style: italic;
-  color: var(--text-tone3);
+  font-size: 1.1em;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--base-tone6);
   margin-bottom: 0;
   margin-top: auto;
   background-color: transparent;
@@ -2023,9 +2024,9 @@ hist-bound {
 }
 #hist_beg.HIST-START {
   height: 200px;
-  padding-top: 85px;
+  padding-top: 90px;
   background-image: none;
-  border-bottom: 3px solid var(--base-tone5);
+  border-bottom: 2px solid var(--base-tone5);
 }
 #hist_beg.HIST-START::before {
   content: attr(data-text);
