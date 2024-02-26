@@ -1234,7 +1234,7 @@ page-inner fieldset select:focus {
 /* ------------------------------------------------------------------ */
 row-head {
   margin: 0;
-  box-shadow: 0 2px 3px -3px rgba(0,0,0,0.5);
+  box-shadow: 0 1px 0 0 rgba(26,26,31,0.3);
   z-index: 0;
 }
 /* ------------------------------------------------------------------ */
@@ -1372,8 +1372,7 @@ rost-tab.SELECTED.RINGING {
   border-radius: 3px;
   cursor:pointer;
 }.menu-drop li:hover {
-  color: var(--base-tone0);
-  background-color: var(--link-base);
+  background-color: var(--base-tone4);
 }
 .menu-separ {
   border-bottom: 1px solid var(--base-tone4);
@@ -1443,7 +1442,7 @@ row-page {
   overflow-y: hidden;
 }
 #rost_fram {
-  box-shadow: -3px 0 3px -3px rgba(0,0,0,0.5);
+  box-shadow: -1px 0 0 0 rgba(0,0,0,0.2);
 }
 #rost_fram row-head {
   background-color: var(--base-tone4);
@@ -1671,7 +1670,7 @@ li-peer.PEER-ROOM peer-avat {
 .user-cont peer-name {
   color: var(--text-hligh);
 }
-#menu_show:hover {
+#menu_show {
   cursor: pointer;
 }
 .user-cont button {
@@ -1704,8 +1703,11 @@ stat-inpt:focus {
 .drop-show {
   position:absolute;
   left:47px; bottom:83px;
-  width: 225px;
+  width: 232px;
   padding: 5px;
+  border-radius: 6px;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,0.4);
+  border-left: 6px solid var(--link-base);
 }
 .drop-show li {
   padding: 10px 0;
@@ -2637,12 +2639,12 @@ chat-inpt {
   float: right;
   /*! right: 15px; */ bottom: 305px;
   width: 420px; height: 305px;
-  border: 10px solid var(--base-tone3);
+  border: 10px solid var(--base-tone1);
   border-right: 0;
-  border-radius: 3px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.4);
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
-  background-color: var(--base-tone3);
+  background-color: var(--base-tone1);
   overflow-y: scroll;
   overflow-x: hidden;
   scrollbar-color: var(--base-tone0) transparent;
