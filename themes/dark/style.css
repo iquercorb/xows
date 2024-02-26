@@ -94,11 +94,6 @@
   --back-hover:       #606070;  /* Normal Ribbon background hover */
   --back-text:        #FFF;     /* Ribbon text */
 
-  /* Loading Spinning Ring */
-  --load-tail:        rgba(115, 115, 128, 0.1);
-  --load-dimm:        rgba(115, 115, 128, 0.3);
-  --load-start:       rgba(115, 115, 128, 0.5);
-
   /* Presence 'show level' colors */
   --show-off:         #858585;  /* Offline */
   --show-dnd:         #FD4E3F;  /* Do Not Disturb */
@@ -1576,7 +1571,7 @@ li-peer:hover peer-acts {
 }
 peer-acts button {
   display: block;
-  width: 16px; height: 16px;
+  width: 20px; height: 20px;
   padding: 0;
   margin: 2px 0;
   border: 0;
@@ -1675,7 +1670,7 @@ li-peer.PEER-ROOM peer-avat {
 }
 .user-cont button {
   display: block;
-  background-size: 16px;
+  background-size: 20px;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control elements  */
@@ -2763,7 +2758,6 @@ chat-inpt {
   font-size: 0.9em;
   font-weight: bold;
   text-transform: uppercase;
-  /*! margin-left: 11px; */
   color: var(--text-tone3);
   margin-top: 3px;
 }
