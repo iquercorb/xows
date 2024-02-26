@@ -342,6 +342,9 @@ function xows_gui_peer_doc_init(peer)
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "room_head");
   xows_doc_frag_clone(peer.bare, XOWS_GUI_FRAG_INIT, "occu_list");
 
+  // Signal first open by hidding chat history
+  xows_gui_peer_doc(peer,"hist_ul").hidden = true;
+
    // set chat title bar informations
   xows_gui_peer_doc(peer,"chat_titl").innerText = peer.name;
 
@@ -381,7 +384,7 @@ function xows_gui_peer_doc_export(peer)
   xows_gui_peer_scroll_db.set(peer.bare, {  scrollTop:chat_main.scrollTop,
                                             scrollHeight:chat_main.scrollHeight,
                                             clientHeight:chat_main.clientHeight,
-                                            scrollSaved:chat_main.scrollSaved|0});
+                                            scrollSaved:chat_main.scrollSaved || 0});
 
   // export document elements to offscreen fragment
   xows_doc_frag_export(peer.bare, "chat_head");
@@ -405,6 +408,11 @@ function xows_gui_peer_doc_import(peer)
     xows_doc_frag_import(peer.bare, "chat_panl");
     xows_doc_frag_import(peer.bare, "room_head");
     xows_doc_frag_import(peer.bare, "occu_list");
+
+    // Enable or disable Multimedia Call buttons
+    const in_call = (xows_cli_call_stat > 1); // < XOWS_CALL_RING
+    xows_gui_peer_doc(peer,"chat_bt_cala").disabled = in_call;
+    xows_gui_peer_doc(peer,"chat_bt_calv").disabled = in_call;
 
     // Restore chat history with compensation in case of frame resize
     const chat_main = xows_doc("chat_main");
@@ -1052,40 +1060,56 @@ function xows_gui_switch_peer(jid)
   if(prev) xows_gui_title_pop();
 
   if(next) {
-    const is_room = (next.type === XOWS_PEER_ROOM);
-    // Add highlight class to new <li> element
-    document.getElementById(next.bare).classList.add("SELECTED");
-    // Update chat header bar before showing it
-    xows_gui_chat_head_update(next);
-    // Bring back Peer document elements from offscreen
-    xows_gui_peer_doc_import(next);
+
     // Set the current contact
     xows_gui_peer = next;
+
+    // Add SELECTED class to new <li-peer> element
+    document.getElementById(next.bare).classList.add("SELECTED");
+
+    // Bring back Peer document elements from offscreen
+    xows_gui_peer_doc_import(next);
+
+    const is_room = (next.type === XOWS_PEER_ROOM);
+
+    // Set proper chat frame style
+    chat_fram.classList.toggle("CHAT-ROOM", is_room);
+    chat_fram.classList.toggle("CHAT-CONT",!is_room);
+
     // Open or close right panel
     xows_doc_cls_tog("main_colr","COL-HIDE",!is_room);
-    // Set proper chat frame style
-    chat_fram.classList.toggle("CHAT-ROOM",is_room);
-    chat_fram.classList.toggle("CHAT-CONT",!is_room);
+
     // Join the room if required
     if(is_room) if(!next.join) xows_cli_room_join(next);
-    // Hidden history mean first "open", so we load a bunch of history
+
+    // Hidden history mean first open, need to pull some history
     if(xows_doc_hidden("hist_ul")) {
-      xows_gui_mam_query(next, false, xows_gui_hist_page, 0);
       xows_doc_show("hist_ul");
+      xows_gui_peer_scroll_adjust(next);
+      xows_gui_mam_query(next, false, xows_gui_hist_page, 0);
     }
+
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
+
     // Set window title
     xows_gui_title_push("@" + next.name + " - XOWS");
+
     // Some debug log
     xows_log(2,"gui_switch_peer","peer \""+next.bare+"\"","selected");
+
   } else {
+
     if(xows_gui_peer) {
+
       xows_log(2,"gui_switch_peer","unselect peer");
+
       // Set the current contact
       xows_gui_peer = null;
+
       // Bring back initial document elements from offscreen
       xows_gui_peer_doc_import(null);
+
       // Close right panel
       xows_doc_cls_add("main_colr", "COL-HIDE");
     }
@@ -2151,33 +2175,19 @@ function xows_gui_chat_head_update(peer)
   xows_gui_peer_doc(peer,"chat_titl").innerText = peer.name;
 
   const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
-  const chat_bt_cala = xows_gui_peer_doc(peer,"chat_bt_cala");
-  const chat_bt_calv = xows_gui_peer_doc(peer,"chat_bt_calv");
 
   if(peer.type === XOWS_PEER_CONT) {  //< XOWS_PEER_CONT
     meta_inpt.innerText = peer.stat;
     xows_gui_peer_doc(peer,"chat_show").dataset.show = peer.show;
-
     // Show or hide Multimedia Call buttons
-    let audio_call = false;
-    let video_call = false;
-    if(peer.show > XOWS_SHOW_DND && xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn")) {
-      audio_call = xows_gui_medias_has("audioinput");
-      video_call = xows_gui_medias_has("videoinput");
-    }
-    chat_bt_cala.hidden = !audio_call;
-    chat_bt_calv.hidden = !video_call;
-
+    const has_ices = (xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn"));
+    xows_gui_peer_doc(peer,"chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
+    xows_gui_peer_doc(peer,"chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
   } else {                            //< XOWS_PEER_ROOM
     meta_inpt.innerText = peer.subj;
     meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
     xows_gui_peer_doc(peer,"chat_bt_bkmk").hidden = (peer.book || peer.publ);
   }
-
-  // Enable or disable Multimedia Call buttons
-  const in_call = (xows_cli_call_stat > 1); // < XOWS_CALL_RING
-  xows_gui_peer_doc(peer,"chat_bt_cala").disabled = in_call;
-  xows_gui_peer_doc(peer,"chat_bt_calv").disabled = in_call;
 }
 
  /* -------------------------------------------------------------------
@@ -3606,6 +3616,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     // Save current offset from bottom to properly align it later
     xows_gui_peer_scroll_save(peer);
   }
+
 
   xows_gui_mam_query_to.delete(peer.bare); //< Allow a new archive query
 }
