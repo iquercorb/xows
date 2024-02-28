@@ -582,7 +582,7 @@ function xows_gui_cli_onconnect(user)
   } else {
 
     // Push history to allow message box if user click Back
-    window.history.pushState({},"","/");
+    window.history.pushState({},"",window.location.pathname);
 
     // Reset the Roster and Chat window
     xows_gui_peer = null;
