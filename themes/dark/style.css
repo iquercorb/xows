@@ -54,7 +54,7 @@
   --text-tone1:       #DFDFE6;  /* Light text (common text) */
   --text-tone2:       #AAAAB3;  /* Medium text (section titles, secondary texts) */
   --text-tone3:       #777780;  /* Dark text (disabled, placeholders, notices) */
-  --text-tone4:       #45454D;  /* Darker text (Not used...) */
+  --text-tone4:       #4D4D59;  /* Darker text (block quote border) */
   --text-hligh:       #FFE9B7;  /* Highlight text (emphasis, highlighted text) */
   --text-error:       #FC8484;  /* Error text (forbiden and error text) */
 
@@ -243,6 +243,32 @@ button:disabled {
   color: var(--text-tone3);
   pointer-events: none;
   white-space: nowrap;
+}
+/* ------------------------------------------------------------------ */
+/* History message styling elements
+/* ------------------------------------------------------------------ */
+blockquote {
+  margin: 0;
+  border-left: 3px solid var(--text-tone4);
+  padding-left: 0.8em;
+  border-radius: 2px;
+}
+code {
+  font-size: 1.1em;
+  color: var(--text-tone1);
+  line-height: 25px;
+  border-radius: 3px;
+  padding: 0 4px 2px 4px;
+  background-color: var(--base-tone3);
+}
+pre {
+  margin:0;
+  padding: 5px 10px;
+  font-size: 1.1em;
+  color: var(--text-tone1);
+  line-height: 20px;
+  border-radius: 5px;
+  background-color: var(--base-tone3);
 }
 /* ------------------------------------------------------------------ */
 /* Global WebKit scroll style to mimic Gecko
@@ -1671,6 +1697,7 @@ li-peer.PEER-ROOM peer-avat {
 .user-cont button {
   display: block;
   background-size: 20px;
+  opacity: .7;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control elements  */
@@ -2276,6 +2303,8 @@ mesg-body {
   line-height: 25px;
   color: var(--text-tone1);
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
+  word-break: normal;
+  white-space: break-spaces; /* DO NOT TOUCH THIS ! */
 }
 mesg-body::after {
   content: attr(data-after);

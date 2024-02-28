@@ -54,6 +54,7 @@ const XOWS_NS_CARBONS      = "urn:xmpp:carbons";
 const XOWS_NS_CARBONS_RUL  = "urn:xmpp:carbons:rules";
 const XOWS_NS_RECEIPTS     = "urn:xmpp:receipts";
 const XOWS_NS_CORRECT      = "urn:xmpp:message-correct:0";
+const XOWS_NS_STYLING      = "urn:xmpp:styling:0";
 const XOWS_NS_MAM          = "urn:xmpp:mam";
 const XOWS_NS_VCARD4       = "urn:xmpp:vcard4";
 const XOWS_NS_AVATAR_DATA  = "urn:xmpp:avatar:data";
@@ -383,6 +384,7 @@ function xows_xmp_get_caps()
     xows_xml_node("feature",{"var":XOWS_NS_CHATSTATES}),
     xows_xml_node("feature",{"var":XOWS_NS_RECEIPTS}),
     xows_xml_node("feature",{"var":XOWS_NS_CORRECT}),
+    xows_xml_node("feature",{"var":XOWS_NS_STYLING}),
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
     xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
     xows_xml_node("feature",{"var":vcard4}),

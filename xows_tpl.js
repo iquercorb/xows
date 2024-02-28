@@ -692,11 +692,6 @@ function xows_tpl_replace_emots(match, space, eyes, mouth)
 }
 
 /**
- * Stack of found URL during text format/replacement
- */
-let xows_tpl_format_urls = null;
-
-/**
  * Replacement function to substitute URL by properly formated link
  *
  * @param   {string}    href      Regex full match string (URL)
@@ -710,46 +705,87 @@ function xows_tpl_replace_url(href)
 }
 
 /**
- * Parses the given text (message body) to search known patterns such as
- * emoticons and URLs to properly format them as HTML
- *
- * @param   {string}    body      Original text to parse
- *
- * @return  {object}    Object containing enhanced body and embeded medias
+ * Regular expression to match and capture whole quote block including
+ * nested block already parsed
  */
-function xows_tpl_format_body(body)
+const  xows_tpl_reg_quote = /(?:<br>|^)((?:<blockquote>)*?&gt;(?: ?|&gt;+?)[\w\W]*\<br\>)/g;
+
+/**
+ * Replacement function to enclose styling quote patterns into HTML <blockquote>
+ * tags. The function act recursively to handle nested blocks.
+ *
+ * @param   {string}    match     Regex full match string
+ * @param   {string}    block     Preceding space or null
+ *
+ * @return  {string}    Replacement HTML sample
+ */
+function xows_tpl_replace_quote(match, block)
 {
-  // Escape HTML characters for correct display
-  body = xows_html_escape(body);
+  function REPLACE_LINE(m,c) {
+    return "<blockquote>"+c+"</blockquote>";
+  };
 
-  // Search for emoji codepoints to add style to
-  body = body.replace(/([\u{2300}-\u{2BFF}]|[\u{1F000}-\u{1FB00}])/ug, xows_tpl_replace_emoj_cp);
+  let result;
 
-  // Search for emoji short-code to replace
-  body = body.replace(/:([\w-+-_]*):/g, xows_tpl_replace_emoj_sc);
+  // Add blockquote tags around each line of the block quote
+  result = block.replace(/&gt;(?: ?|&gt;+?)([\w\W]+?(?:\<br\>|$))/g, REPLACE_LINE);
 
-  // Search for known and common ASCII emots to replace
-  body = body.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
+  // Removes the extra closing and opening block between each lines
+  result = result.replace(/<\/blockquote><blockquote>/g, "");
 
-  // Create embded medias from found urls
-  const embeds = xows_tpl_format_embed(body);
+  // Go recursive for nested blocks
+  result = result.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
 
-  // If message is only a single URL that was embedded we delete the body
-  if(embeds && (body.search(/^\s*(http|https):\/\/(\S[^\s^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
-    body = "";
+  return result;
+}
 
-  // Search for remaining URLs to create HTML links from raw URL
-  body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
+/**
+ * Creates HTML formated styled text according XEP-0393 syntax rules
+ *
+ * @param   {string}    body      Message to parse and modify
+ *
+ * @return  {string}    Formated HTML styled text
+ */
+function xows_tpl_format_style(body)
+{
+  // Replacement functions
+  function ENCLOSE_STRONG(match, content) {
+    return "<strong>"+content+"</strong>";
+  };
 
-  // Append embededed stuff
-  if(embeds) body += embeds;
+  function ENCLOSE_EM(match, content) {
+    return "<em>"+content+"</em>";
+  };
 
-  // Finaly format URL and add embeded media
+  function ENCLOSE_CODE(match, content) {
+    return "<code>"+content+"</code>";
+  };
+
+  function ENCLOSE_PRE(match, syntax, content) {
+    // TODO: here can be inserted per-syntax content styling
+    return "<pre>"+content+"</pre>";
+  };
+
+  // Enclose *strong* text with <strong>
+  body = body.replace(/\*(\w[^\*]*\w)\*/g, ENCLOSE_STRONG);
+
+  // Enclose _emphasis_ text with <em>
+  body = body.replace(/_(\w[^_]*\w)_/g, ENCLOSE_EM);
+
+  // Enclose `preformated span` text with <code>
+  body = body.replace(/`(\w[^`]*\w)`/g, ENCLOSE_CODE);
+
+  // Enclose ```preformated block``` text with <pre>
+  body = body.replace(/(?:<br>|^)```(.*?)<br>([\w\W]*)<br>```(?:<br>|$)/g, ENCLOSE_PRE);
+
+  // Parse and format quote bloks... which is more tricky and complex
+  body = body.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
+
   return body;
 }
 
 /**
- * Created embeded medias and formated links from found raw URL
+ * Creates embeded medias and formated links from found raw URL
  *
  * @param   {string}    body      Message to parse and modify
  *
@@ -790,6 +826,48 @@ function xows_tpl_format_embed(body)
   }
 
   return embeds.length ? embeds : null;
+}
+
+/**
+ * Parses the given text (message body) to search known patterns such as
+ * emoticons and URLs to properly format them as HTML
+ *
+ * @param   {string}    body      Original text to parse
+ *
+ * @return  {object}    Object containing enhanced body and embeded medias
+ */
+function xows_tpl_format_body(body)
+{
+  // Escape HTML characters for correct display
+  body = xows_html_escape(body);
+
+  // Search for emoji codepoints to add style to
+  body = body.replace(/([\u{2300}-\u{2BFF}]|[\u{1F000}-\u{1FB00}])/ug, xows_tpl_replace_emoj_cp);
+
+  // Search for emoji short-code to replace
+  body = body.replace(/:([\w-+-_]*):/g, xows_tpl_replace_emoj_sc);
+
+  // Search for known and common ASCII emots to replace
+  body = body.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
+
+  // Search for styling marks
+  body = xows_tpl_format_style(body);
+
+  // Create embded medias from found urls
+  const embeds = xows_tpl_format_embed(body);
+
+  // If message is only a single URL that was embedded we delete the body
+  if(embeds && (body.search(/^\s*(http|https):\/\/(\S[^\s^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
+    body = "";
+
+  // Search for remaining URLs to create HTML links from raw URL
+  body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
+
+  // Append embededed stuff
+  if(embeds) body += embeds;
+
+  // Finaly format URL and add embeded media
+  return body;
 }
 
 /**
