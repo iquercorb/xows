@@ -708,7 +708,7 @@ function xows_tpl_replace_url(href)
  * Regular expression to match and capture whole quote block including
  * nested block already parsed
  */
-const  xows_tpl_reg_quote = /(?:<br>|^)((?:<blockquote>)*?&gt;(?: ?|&gt;+?)[\w\W]*\<br\>)/g;
+const  xows_tpl_reg_quote = /(?:<br>|^)((?:<blockquote>)*?&gt;(?: ?|&gt;+?)(?:[\w\W]*<br>|[\w\W]*$))/g;
 
 /**
  * Replacement function to enclose styling quote patterns into HTML <blockquote>
@@ -734,9 +734,37 @@ function xows_tpl_replace_quote(match, block)
   result = result.replace(/<\/blockquote><blockquote>/g, "");
 
   // Go recursive for nested blocks
-  result = result.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
+  return result.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
+}
 
-  return result;
+/**
+ * Replacement function to add styling to non-preformated text, this function
+ * is used to create styling according XEP-0393 syntax rules.
+ *
+ * @param   {string}    match     Regex full match string
+ *
+ * @return  {string}    Formated HTML styled text
+ */
+function xows_tpl_format_nonpre(match)
+{
+  function ENCLOSE_STRONG(match, content) {
+    return "<strong>"+content+"</strong>";
+  };
+
+  function ENCLOSE_EM(match, content) {
+    return "<em>"+content+"</em>";
+  };
+
+  let result;
+
+  // Parse and format quote bloks... which is more tricky and complex
+  result = match.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
+
+  // Enclose *strong* text with <strong>
+  result = result.replace(/\*(\S.+?\S)\*/g, ENCLOSE_STRONG);
+
+  // Enclose _emphasis_ text with <em>
+  return result.replace(/_(\S.+?\S)_/g, ENCLOSE_EM);
 }
 
 /**
@@ -746,42 +774,28 @@ function xows_tpl_replace_quote(match, block)
  *
  * @return  {string}    Formated HTML styled text
  */
-function xows_tpl_format_style(body)
+function xows_tpl_format_styling(body)
 {
   // Replacement functions
-  function ENCLOSE_STRONG(match, content) {
-    return "<strong>"+content+"</strong>";
-  };
-
-  function ENCLOSE_EM(match, content) {
-    return "<em>"+content+"</em>";
+  function ENCLOSE_PRE(match, syntax, content) {
+    // TODO: here can be inserted per-syntax content styling
+    return "<pre>"+content+"</pre>";
   };
 
   function ENCLOSE_CODE(match, content) {
     return "<code>"+content+"</code>";
   };
 
-  function ENCLOSE_PRE(match, syntax, content) {
-    // TODO: here can be inserted per-syntax content styling
-    return "<pre>"+content+"</pre>";
-  };
-
-  // Enclose *strong* text with <strong>
-  body = body.replace(/\*(\w[^\*]*\w)\*/g, ENCLOSE_STRONG);
-
-  // Enclose _emphasis_ text with <em>
-  body = body.replace(/_(\w[^_]*\w)_/g, ENCLOSE_EM);
-
-  // Enclose `preformated span` text with <code>
-  body = body.replace(/`(\w[^`]*\w)`/g, ENCLOSE_CODE);
+  // We first parse preformated text so we can exclud it from further format
 
   // Enclose ```preformated block``` text with <pre>
-  body = body.replace(/(?:<br>|^)```(.*?)<br>([\w\W]*)<br>```(?:<br>|$)/g, ENCLOSE_PRE);
+  body = body.replace(/(?:<br>|^)```(.*?)<br>([\w\W]*)```(?:<br>|$)/g, ENCLOSE_PRE);
 
-  // Parse and format quote bloks... which is more tricky and complex
-  body = body.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
+  // Enclose `preformated span` text with <code>
+  body = body.replace(/`(\S.+?\S)`/g, ENCLOSE_CODE);
 
-  return body;
+  // Now add style to all text which are NOT preformated
+  return body.replace(/(?<=^|<\/pre>|<\/code>).+?(?=<code>|<pre>|$)/g, xows_tpl_format_nonpre);
 }
 
 /**
@@ -851,7 +865,7 @@ function xows_tpl_format_body(body)
   body = body.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
 
   // Search for styling marks
-  body = xows_tpl_format_style(body);
+  body = xows_tpl_format_styling(body);
 
   // Create embded medias from found urls
   const embeds = xows_tpl_format_embed(body);
