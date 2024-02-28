@@ -3080,7 +3080,7 @@ function xows_gui_chat_hist_onclick(event)
         xows_gui_mesg_edit_close(mesg);
         break;
       case "mesg_bt_save":
-        xows_gui_mesg_edit_valid(event.target.closest("MESG-INPT"));
+        xows_gui_mesg_edit_valid(mesg.querySelector("MESG-INPT"));
         break;
       }
 
