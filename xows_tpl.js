@@ -792,10 +792,39 @@ function xows_tpl_parse_styling(raw)
       }
     }
 
-    // 0-7 A-Z a-z
-    if((c > 0x2F && c < 0x38) || (c > 0x40 && c < 0x5B) || (c > 0x60 && c < 0x7B)) {
+    // 0-9 A-Z a-z
+    if((c > 0x2F && c < 0x3A) || (c > 0x40 && c < 0x5B) || (c > 0x60 && c < 0x7B)) {
       result += raw.charAt(i++);
       continue;
+    }
+
+    // Try for Emoji short code
+    if(c === 0x3A) { //< ':'
+      if(match = xows_tpl_reg_emoji.exec(raw.substring(i))) {
+        const code = xows_tpl_emoji_sc_map[match[1]];
+        if(code) {
+          result += "<emo-ji>&#x"+code+";</emo-ji>";
+          i += match[0].length;
+          continue;
+        }
+      }
+    }
+
+    // Try for ASCII Emoticons (must be preceded by space)
+    if((c === 0x3A || c === 0x3B || c === 0x58 || c === 0x78)) { //< ':' || ';' || 'X' || 'x'
+
+      // Must be at start of line or precedded by space
+      if((i === 0 || raw.charCodeAt(i-1) === 0x20)) {
+
+        if(match = xows_tpl_reg_emoticon.exec(raw.substring(i))) {
+          const code = xows_tpl_emoticon_map[match[1].toUpperCase()][match[2].toUpperCase()];
+          if(code) {
+            result += "<emo-ji>&#x"+code+";</emo-ji>";
+            i += match[0].length;
+            continue;
+          }
+        }
+      }
     }
 
     // Raw emoji unicode
@@ -893,35 +922,6 @@ function xows_tpl_parse_styling(raw)
           result += "<pre>"+match[2]+"</pre>";
           i += match[0].length;
           continue;
-        }
-      }
-    }
-
-    // Try for Emoji short code
-    if(c === 0x3A) { //< ':'
-      if(match = xows_tpl_reg_emoji.exec(raw.substring(i))) {
-        const code = xows_tpl_emoji_sc_map[match[1]];
-        if(code) {
-          result += "<emo-ji>&#x"+code+";</emo-ji>";
-          i += match[0].length;
-          continue;
-        }
-      }
-    }
-
-    // Try for ASCII Emoticons (must be preceded by space)
-    if((c === 0x3A || c === 0x3B || c === 0x58 || c === 0x78 || c === 0x38)) { //< ':' || ';' || 'X' || 'x' || '8'
-
-      // Must be at start of line or precedded by space
-      if((i === 0 || raw.charCodeAt(i-1) === 0x20)) {
-
-        if(match = xows_tpl_reg_emoticon.exec(raw.substring(i))) {
-          const code = xows_tpl_emoticon_map[match[1].toUpperCase()][match[2].toUpperCase()];
-          if(code) {
-            result += "<emo-ji>&#x"+code+";</emo-ji>";
-            i += match[0].length;
-            continue;
-          }
         }
       }
     }
