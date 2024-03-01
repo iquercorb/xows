@@ -2681,7 +2681,7 @@ function xows_cli_upld_put_abort(event)
 {
   const name = event.target._name;
 
-  xows_log(1,"cli_upld_xhr_error","HTTP PUT aborted by user",name);
+  xows_log(1,"cli_upld_put_abort","HTTP PUT aborted by user",name);
 
   // Retrieve initial query parameters
   const param = xows_cli_upld_param.get(name);
@@ -2699,7 +2699,13 @@ function xows_cli_upld_put_abort(event)
 function xows_cli_upld_xhr_state(xhr)
 {
   // Check for ready state and status code
-  if(xhr.readyState === 4 && xhr.status === 201) {
+  if(xhr.readyState === 4) {
+
+    // check for server error
+    if(xhr.status !== 201) {
+      xows_log(1,"cli_upld_xhr_state","server responded",xhr.status);
+      return;
+    }
 
     const name = xhr.upload._name;
     // Retrieve initial query parameters
