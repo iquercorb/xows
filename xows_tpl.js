@@ -416,6 +416,265 @@ function xows_tpl_init(onready)
 }
 
 /**
+ * Regular expression to match alone link
+ */
+const xows_tpl_reg_alone_link = /^\s*<a href=.+<\/a>\s*$/;
+
+/**
+ * Regular expression to match HTTP url
+ */
+const xows_tpl_reg_url = /^(?:http|https):\/\/\S[^\s^"'()<>|\[\]\\]+/i;
+
+/**
+ * Regular expression to match code block
+ */
+const xows_tpl_reg_pre = /^```(.*?)\n(.+)```(?:\s?\n|\s?$)/s;
+
+/**
+ * Regular expression to match code span
+ */
+const xows_tpl_reg_code = /^`(\S.+?\S)`/;
+
+/**
+ * Regular expression to match strong span
+ */
+const xows_tpl_reg_strong = /^\*\S.+?\S\*/;
+
+/**
+ * Regular expression to match emphasis span
+ */
+const xows_tpl_reg_emphas = /^_\S.+?\S_/;
+
+/**
+ * Regular expression to match strike span
+ */
+const xows_tpl_reg_strike = /^~\S.+?\S~/;
+
+/**
+ * Regular expression to match block quote line
+ */
+const xows_tpl_reg_quote = /^(>+?) .+[^>](?=\n|$)/;
+
+/**
+ * Regular expression to match emoji short code
+ */
+const xows_tpl_reg_emoji = /^:([\w\-+]+):/;
+
+/**
+ * Regular expression to match ASCII smileys
+ */
+const xows_tpl_reg_emoticon = /^([X8:;]|:')([()|DPXO#$.\/*sS])(?=\s|$)/i;
+
+/**
+ * Map for HTML escape character from char code
+ */
+const xows_tpl_html_esc_map = new Map([[0x26,"&amp;"],[0x3C,"&lt;"],[0x3E,"&gt;"],[0x27,"&apos;"],[0x22,"&quot;"],[0x0A,"<br>"]]);
+
+/**
+ * Array contain collected URLs from the previous parsing
+ */
+const xows_tpl_parsed_url = new Array();
+
+/**
+ * Parsing function that transform raw message into styled message.
+ *
+ * The function also populate the xows_tpl_parse_urls array with all
+ * parsed URLs
+ *
+ * @param   {string}    raw       Raw input string
+ *
+ * @return  {string}    Formated message
+ */
+function xows_tpl_parse_styling(raw)
+{
+  let match;
+  let lead_sp, lead_lf = true;
+  let span_b = false;
+  let span_i = false;
+  let span_s = false;
+  let quote_depth = 0;
+
+  let result = "";
+
+  let c, s, i = 0;
+
+  // Reset parsed URLs array
+  xows_tpl_parsed_url.length = 0;
+
+  while(true) {
+
+    // end of text
+    if(i === raw.length)
+      break;
+
+    c = raw.charCodeAt(i);
+
+    // Check for Quote block exit
+    if(quote_depth && raw.charCodeAt(i-1) === 0x0A && c !== 0x3E) {
+      while(quote_depth) { //< close ALL quote block
+        result += "</blockquote>";
+        quote_depth--;
+      }
+    }
+
+    // http(s):// URL
+    if(c === 0x48 || c === 0x68) { //< 'H' || 'h'
+      if(match = xows_tpl_reg_url.exec(raw.substring(i))) {
+        xows_tpl_parsed_url.push(match[0]); //< add to Array
+        result += "<a href=\""+match[0]+"\" target=\"_blank\">"+match[0]+"</a>";
+        i += match[0].length;
+        continue;
+      }
+    }
+
+    // Chek for Emojis and Emoticons
+    if(c === 0x3A || c === 0x3B || c === 0x58 || c === 0x78 || c === 0x38) { //< ':' || ';' || 'X' || 'x' || '8'
+
+      const substr = raw.substring(i);
+
+      // Try for Emoji short code
+      if(match = xows_tpl_reg_emoji.exec(substr)) {
+        const code = xows_tpl_emoji_sc_map[match[1]];
+        if(code) {
+          result += "<emo-ji>&#x"+code+";</emo-ji>";
+          i += match[0].length;
+          continue;
+        }
+      }
+
+      // Must be at start of line or precedded by space
+      if(i === 0 || raw.charCodeAt(i-1) === 0x20) {
+
+        if(match = xows_tpl_reg_emoticon.exec(substr)) {
+          const code = xows_tpl_emoticon_map[match[1].toUpperCase()][match[2].toUpperCase()];
+          if(code) {
+            result += "<emo-ji>&#x"+code+";</emo-ji>";
+            i += match[0].length;
+            continue;
+          }
+        }
+      }
+    }
+
+    // 0-9 A-Z a-z
+    if((c > 0x2F && c < 0x3A) || (c > 0x40 && c < 0x5B) || (c > 0x60 && c < 0x7B)) {
+      result += raw.charAt(i++);
+      continue;
+    }
+
+    // Raw emoji unicode
+    if((c >= 0x2300 && c <= 0x2BFF) || (c >= 0x1F000 && c <= 0x1FB00)) {
+      result += "<emo-ji>&#x"+c+";</emo-ji>";
+      continue;
+    }
+
+    // Bold/Strong span
+    if(c === 0x2A) { //< '*'
+      if(span_b) {
+        span_b = false;
+        result += "</b>"; //< close span
+        i++; continue;
+      } else {
+        if(span_b = xows_tpl_reg_strong.test(raw.substring(i))) {
+          result += "<b>"; //< open span
+          i++; continue;
+        }
+      }
+    }
+
+    // Emphasis span
+    if(c === 0x5F) { //< '_'
+      if(span_i) {
+        span_i = false;
+        result += "</i>"; //< close span
+        i++; continue;
+      } else {
+        if(span_i = xows_tpl_reg_emphas.test(raw.substring(i))) {
+          result += "<i>"; //< open span
+          i++; continue;
+        }
+      }
+    }
+
+    // Strike span
+    if(c === 0x7E) {  //< '~'
+      if(span_s) {
+        span_s = false;
+        result += "</s>"; //< close span
+        i++; continue;
+      } else {
+        if(span_s = xows_tpl_reg_strike.test(raw.substring(i))) {
+          result += "<s>"; //< open span
+          i++; continue;
+        }
+      }
+    }
+
+    // Check for Quote block
+    if(c === 0x3E) { //< '>'
+
+      // Must be at start of a new line
+      if(i === 0 || raw.charCodeAt(i-1) === 0x0A) {
+
+        let depth = 0;
+        while(match = xows_tpl_reg_quote.exec(raw.substring(i))) {
+          if(raw.charCodeAt(i+1) === 0x20) { //< ' '
+            i += 2; //< eat '> '
+          } else {
+            i++;    //< eat '>'
+          }
+          depth++;
+        }
+
+        if(depth) {
+          while(depth > quote_depth) {
+            result += "<blockquote>"; //< open quote block
+            quote_depth++;
+          }
+          while(depth < quote_depth) {
+            result += "</blockquote>"; //< close quote block
+            quote_depth--;
+          }
+          continue;
+        }
+      }
+    }
+
+    // Check for preformated and code
+    if(c === 0x60) { //< '`'
+
+      const substr = raw.substring(i);
+
+      if(match = xows_tpl_reg_code.exec(substr)) {
+        result += "<code>"+match[1]+"</code>";
+        i += match[0].length;
+        continue;
+      }
+
+      // Must be at start of a new line
+      if(i === 0 || raw.charCodeAt(i-1) === 0x0A) {
+        if(match = xows_tpl_reg_pre.exec(substr)) {
+          result += "<pre>"+match[2]+"</pre>";
+          i += match[0].length;
+          continue;
+        }
+      }
+    }
+
+    // Finaly escape character if required
+    if(xows_tpl_html_esc_map.has(c)) {
+      result += xows_tpl_html_esc_map.get(c);
+    } else {
+      result += raw.charAt(i);
+    }
+
+    i++;
+  }
+
+  return result;
+}
+
+/**
  * Function to create HTML embeding wrapper element
  *
  * If the href parameter is not null, an HTML hyperlink is prepended to
@@ -638,316 +897,6 @@ function xows_tpl_embed_add_file(match, parse)
 function xows_tpl_embed_add_upld(match)
 {
   xows_tpl_embed_uplds[match] = xows_tpl_embed_upld;
-}
-
-/**
- * Replacement function to substitute emojis shortcode by enhanced HTML
- * sample with proper escaped emoji unicode
- *
- * @param   {string}    match     Regex full match string
- * @param   {string}    code      Extracted emoji short code
- *
- * @return  {string} Replacement HTML sample.
- */
-/*
-function xows_tpl_replace_emoj_sc(match, code)
-{
-  const hex = xows_tpl_emoji_sc_map[code];
-  return (hex) ? "<emo-ji>&#x"+hex+";</emo-ji>" : match;
-}
-*/
-
-/**
- * Replacement function to substitute emojis codepoint by enhanced HTML
- * sample with proper escaped emoji unicode
- *
- * @param   {string}    match     Regex full match string
- * @param   {string}    code      Extracted emoji short code
- *
- * @return  {string}    Replacement HTML sample
- */
-/*
-function xows_tpl_replace_emoj_cp(match, code)
-{
-  return "<emo-ji>"+code+"</emo-ji>";
-}
-*/
-/**
- * Replacement function to substitute ASCII emoticons by
- * enhanced HTML with proper escaped emoji unicode
- *
- * @param   {string}    match     Regex full match string
- * @param   {string}    space     Preceding space or null
- * @param   {string}    eyes      Emoticon eyes (including tears)
- * @param   {string}    mouth     Emoticon mouth
- *
- * @return  {string}    Replacement HTML sample
- */
-/*
-function xows_tpl_replace_emots(match, space, eyes, mouth)
-{
-  const hex = xows_tpl_emoticon_map[eyes.toUpperCase()][mouth.toUpperCase()];
-  return (hex) ? "<emo-ji>&#x"+hex+";</emo-ji>" : match;
-}
-*/
-/**
- * Regular expression to match alone link
- */
-const xows_tpl_reg_alone_link = /^\s*<a href=.+<\/a>\s*$/;
-/**
- * Regular expression to match HTTP url
- */
-const xows_tpl_reg_url = /^(?:http|https):\/\/\S[^\s^"'()<>|\[\]\\]+/i;
-/**
- * Regular expression to match code block
- */
-const xows_tpl_reg_pre = /^```(.*?)\n(.+)```(?:\s?\n|\s?$)/s;
-/**
- * Regular expression to match code span
- */
-const xows_tpl_reg_code = /^`(\S.+?\S)`/;
-/**
- * Regular expression to match strong span
- */
-const xows_tpl_reg_strong = /^\*\S.+?\S\*/;
-/**
- * Regular expression to match emphasis span
- */
-const xows_tpl_reg_emphas = /^_\S.+?\S_/;
-/**
- * Regular expression to match strike span
- */
-const xows_tpl_reg_strike = /^~\S.+?\S~/;
-/**
- * Regular expression to match block quote line
- */
-const xows_tpl_reg_quote = /^(>+?) .+[^>](?=\n|$)/;
-/**
- * Regular expression to match emoji short code
- */
-const xows_tpl_reg_emoji = /^:([\w\-+]+):/;
-/**
- * Regular expression to match ASCII smileys
- */
-const xows_tpl_reg_emoticon = /^([X8:;]|:')([()|DPXO#$.\/*sS])(?=\s|$)/i;
-/**
- * Map for HTML escape character from char code
- */
-const xows_tpl_html_esc_map = new Map([[0x26,"&amp;"],[0x3C,"&lt;"],[0x3E,"&gt;"],[0x27,"&apos;"],[0x22,"&quot;"],[0x0A,"<br>"]]);
-
-/**
- * Array contain collected URLs from the previous parsing
- */
-const xows_tpl_parsed_url = new Array();
-
-/**
- * Parsing function that transform raw message into styled message.
- *
- * The function also populate the xows_tpl_parse_urls array with all
- * parsed URLs
- *
- * @param   {string}    raw       Raw input string
- *
- * @return  {string}    Formated message
- */
-function xows_tpl_parse_styling(raw)
-{
-  let match;
-  let lead_sp, lead_lf = true;
-  let span_b = false;
-  let span_i = false;
-  let span_s = false;
-  let quote_depth = 0;
-
-  let result = "";
-
-  let c, s, i = 0;
-
-  // Reset parsed URLs array
-  xows_tpl_parsed_url.length = 0;
-
-  while(true) {
-
-    // end of text
-    if(i === raw.length)
-      break;
-
-    c = raw.charCodeAt(i);
-
-    // Check for Quote block exit
-    if(quote_depth && raw.charCodeAt(i-1) === 0x0A && c !== 0x3E) {
-      while(quote_depth) { //< close ALL quote block
-        result += "</blockquote>";
-        quote_depth--;
-      }
-    }
-
-    // http(s):// URL
-    if(c === 0x48 || c === 0x68) { //< 'H' || 'h'
-      if(match = xows_tpl_reg_url.exec(raw.substring(i))) {
-        xows_tpl_parsed_url.push(match[0]); //< add to Array
-        result += "<a href=\""+match[0]+"\" target=\"_blank\">"+match[0]+"</a>";
-        i += match[0].length;
-        continue;
-      }
-    }
-
-    // 0-9 A-Z a-z
-    if((c > 0x2F && c < 0x3A) || (c > 0x40 && c < 0x5B) || (c > 0x60 && c < 0x7B)) {
-      result += raw.charAt(i++);
-      continue;
-    }
-
-    // Try for Emoji short code
-    if(c === 0x3A) { //< ':'
-      if(match = xows_tpl_reg_emoji.exec(raw.substring(i))) {
-        const code = xows_tpl_emoji_sc_map[match[1]];
-        if(code) {
-          result += "<emo-ji>&#x"+code+";</emo-ji>";
-          i += match[0].length;
-          continue;
-        }
-      }
-    }
-
-    // Try for ASCII Emoticons (must be preceded by space)
-    if((c === 0x3A || c === 0x3B || c === 0x58 || c === 0x78)) { //< ':' || ';' || 'X' || 'x'
-
-      // Must be at start of line or precedded by space
-      if((i === 0 || raw.charCodeAt(i-1) === 0x20)) {
-
-        if(match = xows_tpl_reg_emoticon.exec(raw.substring(i))) {
-          const code = xows_tpl_emoticon_map[match[1].toUpperCase()][match[2].toUpperCase()];
-          if(code) {
-            result += "<emo-ji>&#x"+code+";</emo-ji>";
-            i += match[0].length;
-            continue;
-          }
-        }
-      }
-    }
-
-    // Raw emoji unicode
-    if((c >= 0x2300 && c <= 0x2BFF) || (c >= 0x1F000 && c <= 0x1FB00)) {
-      result += "<emo-ji>&#x"+c+";</emo-ji>";
-      continue;
-    }
-
-    // Bold/Strong span
-    if(c === 0x2A) { //< '*'
-      if(span_b) {
-        span_b = false;
-        result += "</b>"; //< close span
-        i++; continue;
-      } else {
-        if(span_b = xows_tpl_reg_strong.test(raw.substring(i))) {
-          result += "<b>"; //< open span
-          i++; continue;
-        }
-      }
-    }
-
-    // Emphasis span
-    if(c === 0x5F) { //< '_'
-      if(span_i) {
-        span_i = false;
-        result += "</i>"; //< close span
-        i++; continue;
-      } else {
-        if(span_i = xows_tpl_reg_emphas.test(raw.substring(i))) {
-          result += "<i>"; //< open span
-          i++; continue;
-        }
-      }
-    }
-
-    // Strike span
-    if(c === 0x7E) {  //< '~'
-      if(span_s) {
-        span_s = false;
-        result += "</s>"; //< close span
-        i++; continue;
-      } else {
-        if(span_s = xows_tpl_reg_strike.test(raw.substring(i))) {
-          result += "<s>"; //< open span
-          i++; continue;
-        }
-      }
-    }
-
-    // Check for Quote block
-    if(c === 0x3E) { //< '>'
-
-      // Must be at start of a new line
-      if(i === 0 || raw.charCodeAt(i-1) === 0x0A) {
-
-        let depth = 0;
-        while(match = xows_tpl_reg_quote.exec(raw.substring(i))) {
-          if(raw.charCodeAt(i+1) === 0x20) { //< ' '
-            i += 2; //< eat '> '
-          } else {
-            i++;    //< eat '>'
-          }
-          depth++;
-        }
-
-        if(depth) {
-          while(depth > quote_depth) {
-            result += "<blockquote>"; //< open quote block
-            quote_depth++;
-          }
-          while(depth < quote_depth) {
-            result += "</blockquote>"; //< close quote block
-            quote_depth--;
-          }
-          continue;
-        }
-      }
-    }
-
-    // Check for preformated and code
-    if(c === 0x60) { //< '`'
-
-      const substr = raw.substring(i);
-
-      if(match = xows_tpl_reg_code.exec(substr)) {
-        result += "<code>"+match[1]+"</code>";
-        i += match[0].length;
-        continue;
-      }
-
-      // Must be at start of a new line
-      if(i === 0 || raw.charCodeAt(i-1) === 0x0A) {
-        if(match = xows_tpl_reg_pre.exec(substr)) {
-          result += "<pre>"+match[2]+"</pre>";
-          i += match[0].length;
-          continue;
-        }
-      }
-    }
-
-    // Finaly escape character if required
-    if(xows_tpl_html_esc_map.has(c)) {
-      result += xows_tpl_html_esc_map.get(c);
-    } else {
-      result += raw.charAt(i);
-    }
-
-    i++;
-  }
-
-  /*
-  // Search for emoji codepoints to add style to
-  result = result.replace(/([\u{2300}-\u{2BFF}]|[\u{1F000}-\u{1FB00}])/ug, xows_tpl_replace_emoj_cp);
-
-  // Search for emoji short-code to replace
-  result = result.replace(/:([\w-+-_]*):/g, xows_tpl_replace_emoj_sc);
-
-  // Search for known and common ASCII emots to replace
-  result.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
-  */
-
-  return result;
 }
 
 /**
