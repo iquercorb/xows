@@ -939,12 +939,12 @@ function xows_url_to_type(url)
 /**
  * Correspondence map to escape HTML reserved or special characters
  */
-const XOWS_HTML_ESCAP_MAP = {"&":"&amp;","<":"&lt;",">":"&gt;","'":"&apos;","\"":"&quot;","\n":"<br>"};
+const XOWS_HTML_ESCAP_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'","&apos;"],["\"","&quot;"],["\n","<br>"]]);
 
 /**
  * Remplacement function for HTML string escape
  */
-function xows_html_escap_fnc(m) {return XOWS_HTML_ESCAP_MAP[m];}
+function xows_html_escap_fnc(m) {return XOWS_HTML_ESCAP_MAP.get(m);}
 
 /**
  * Rewrites the given string with HTML escapes for reserved or special

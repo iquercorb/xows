@@ -511,6 +511,9 @@ function xows_doc_media_onerror(media)
   media.parentNode.classList.remove("LOADING");
   // Add loading error style
   media.parentNode.classList.add("LOADERR");
+
+  // Body may be hidden due to alone link, we force to show it
+  media.closest("MESG-MAIN").querySelector("MESG-BODY").hidden = false;
 }
 
 /**

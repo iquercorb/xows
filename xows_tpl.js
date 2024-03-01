@@ -72,7 +72,7 @@ let xows_tpl_theme = "dark";
 /**
  * Emojis short code to unicode map
  */
-const xows_tpl_emoj_map = {
+const xows_tpl_emoji_sc_map = {
   "100":"1F4AF","1234":"1F522","grinning":"1F600","smiley":"1F603","smile":"1F604","grin":"1F601","laughing":"1F606","sweat_smile":"1F605","rolling_on_the_floor_laughing":"1F923","joy":"1F602","slightly_smiling_face":"1F642","upside_down_face":"1F643","wink":"1F609","blush":"1F60A","innocent":"1F607","smiling_face_with_3_hearts":"1F970",
   "heart_eyes":"1F60D","star-struck":"1F929","kissing_heart":"1F618","kissing":"1F617","kissing_closed_eyes":"1F61A","kissing_smiling_eyes":"1F619","yum":"1F60B","stuck_out_tongue":"1F61B","stuck_out_tongue_winking_eye":"1F61C","zany_face":"1F92A","stuck_out_tongue_closed_eyes":"1F61D","money_mouth_face":"1F911","hugging_face":"1F917",
   "face_with_hand_over_mouth":"1F92D","shushing_face":"1F92B","thinking_face":"1F914","zipper_mouth_face":"1F910","face_with_raised_eyebrow":"1F928","neutral_face":"1F610","expressionless":"1F611","no_mouth":"1F636","smirk":"1F60F","unamused":"1F612","face_with_rolling_eyes":"1F644","grimacing":"1F62C","lying_face":"1F925","relieved":"1F60C",
@@ -144,7 +144,7 @@ const xows_tpl_emoj_map = {
  *
  *  See: xows_tpl_init, xows_tpl_init_json, xows_tpl_template_parse_json
  */
-const xows_tpl_emot_map = {
+const xows_tpl_emoticon_map = {
  ":": {
     ")":"1F642","(":"1F641","O":"1F62E",
     "P":"1F61B","D":"1F604","*":"1F617",
@@ -153,7 +153,7 @@ const xows_tpl_emot_map = {
     "X":"1F922"},
   "8": {
     ")":"1F60E"},
-  ":&APOS;": {
+  ":'": {
     ")":"1F602","(":"1F622","D":"1F923"},
   ";": {
     ")":"1F609","P":"1F61C"},
@@ -416,11 +416,6 @@ function xows_tpl_init(onready)
 }
 
 /**
- * Regular expression to match HTTP url
- */
-const xows_tpl_reg_urls = /(http|https):\/\/(\S[^\s^"'()<>|\[\]\\]*)/g;
-
-/**
  * Function to create HTML embeding wrapper element
  *
  * If the href parameter is not null, an HTML hyperlink is prepended to
@@ -436,12 +431,12 @@ const xows_tpl_reg_urls = /(http|https):\/\/(\S[^\s^"'()<>|\[\]\\]*)/g;
  */
 function xows_tpl_embed_wrap(href, media, style, title)
 {
-  let wrap = "<mesg-embd class='"; if(style) wrap += style; wrap += "'>";
+  let wrap = "<embd-wrap class='"; if(style) wrap += style; wrap += "'>";
   if(title) wrap += "<a href='"+href+"' target='_blank'>"+title+"</a>";
 
   // Add envent callback and common attributes
   wrap += media.replace(/src=/g,"loading='lazy' onload='xows_tpl_emld(this)' onerror='xows_tpl_emer(this)' src=");
-  wrap += "</mesg-embd>";
+  wrap += "</embd-wrap>";
 
   return wrap;
 }
@@ -654,11 +649,13 @@ function xows_tpl_embed_add_upld(match)
  *
  * @return  {string} Replacement HTML sample.
  */
+/*
 function xows_tpl_replace_emoj_sc(match, code)
 {
-  const hex = xows_tpl_emoj_map[code];
-  return (hex) ? "<emoj>&#x"+hex+";</emoj>" : match;
+  const hex = xows_tpl_emoji_sc_map[code];
+  return (hex) ? "<emo-ji>&#x"+hex+";</emo-ji>" : match;
 }
+*/
 
 /**
  * Replacement function to substitute emojis codepoint by enhanced HTML
@@ -669,11 +666,12 @@ function xows_tpl_replace_emoj_sc(match, code)
  *
  * @return  {string}    Replacement HTML sample
  */
+/*
 function xows_tpl_replace_emoj_cp(match, code)
 {
-  return "<emoj>"+code+"</emoj>";
+  return "<emo-ji>"+code+"</emo-ji>";
 }
-
+*/
 /**
  * Replacement function to substitute ASCII emoticons by
  * enhanced HTML with proper escaped emoji unicode
@@ -685,130 +683,284 @@ function xows_tpl_replace_emoj_cp(match, code)
  *
  * @return  {string}    Replacement HTML sample
  */
+/*
 function xows_tpl_replace_emots(match, space, eyes, mouth)
 {
-  const hex = xows_tpl_emot_map[eyes.toUpperCase()][mouth.toUpperCase()];
-  return (hex) ? "<emoj>&#x"+hex+";</emoj>" : match;
+  const hex = xows_tpl_emoticon_map[eyes.toUpperCase()][mouth.toUpperCase()];
+  return (hex) ? "<emo-ji>&#x"+hex+";</emo-ji>" : match;
 }
+*/
+/**
+ * Regular expression to match alone link
+ */
+const xows_tpl_reg_alone_link = /^\s*<a href=.+<\/a>\s*$/;
+/**
+ * Regular expression to match HTTP url
+ */
+const xows_tpl_reg_url = /^(?:http|https):\/\/\S[^\s^"'()<>|\[\]\\]+/i;
+/**
+ * Regular expression to match code block
+ */
+const xows_tpl_reg_pre = /^```(.*?)\n(.+)```(?:\s?\n|\s?$)/s;
+/**
+ * Regular expression to match code span
+ */
+const xows_tpl_reg_code = /^`(\S.+?\S)`/;
+/**
+ * Regular expression to match strong span
+ */
+const xows_tpl_reg_strong = /^\*\S.+?\S\*/;
+/**
+ * Regular expression to match emphasis span
+ */
+const xows_tpl_reg_emphas = /^_\S.+?\S_/;
+/**
+ * Regular expression to match strike span
+ */
+const xows_tpl_reg_strike = /^~\S.+?\S~/;
+/**
+ * Regular expression to match block quote line
+ */
+const xows_tpl_reg_quote = /^(>+?) .+[^>](?=\n|$)/;
+/**
+ * Regular expression to match emoji short code
+ */
+const xows_tpl_reg_emoji = /^:([\w\-+]+):/;
+/**
+ * Regular expression to match ASCII smileys
+ */
+const xows_tpl_reg_emoticon = /^([X8:;]|:')([()|DPXO#$.\/*sS])(?=\s|$)/i;
+/**
+ * Map for HTML escape character from char code
+ */
+const xows_tpl_html_esc_map = new Map([[0x26,"&amp;"],[0x3C,"&lt;"],[0x3E,"&gt;"],[0x27,"&apos;"],[0x22,"&quot;"],[0x0A,"<br>"]]);
 
 /**
- * Replacement function to substitute URL by properly formated link
- *
- * @param   {string}    href      Regex full match string (URL)
- *
- * @return  {string}    Replacement HTML sample
+ * Array contain collected URLs from the previous parsing
  */
-function xows_tpl_replace_url(href)
+const xows_tpl_parsed_url = new Array();
+
+/**
+ * Parsing function that transform raw message into styled message.
+ *
+ * The function also populate the xows_tpl_parse_urls array with all
+ * parsed URLs
+ *
+ * @param   {string}    raw       Raw input string
+ *
+ * @return  {string}    Formated message
+ */
+function xows_tpl_parse_styling(raw)
 {
-  // Return link to URL
-  return "<a href=\""+href+"\" title=\""+href+"\" target=\"_blank\">"+href+"</a>";
-}
+  let match;
+  let lead_sp, lead_lf = true;
+  let span_b = false;
+  let span_i = false;
+  let span_s = false;
+  let quote_depth = 0;
 
-/**
- * Regular expression to match and capture whole quote block including
- * nested block already parsed
- */
-const  xows_tpl_reg_quote = /(?:<br>|^)((?:<blockquote>)*?&gt;(?: ?|&gt;+?)(?:[\w\W]*<br>|[\w\W]*$))/g;
+  let result = "";
 
-/**
- * Replacement function to enclose styling quote patterns into HTML <blockquote>
- * tags. The function act recursively to handle nested blocks.
- *
- * @param   {string}    match     Regex full match string
- * @param   {string}    block     Preceding space or null
- *
- * @return  {string}    Replacement HTML sample
- */
-function xows_tpl_replace_quote(match, block)
-{
-  function REPLACE_LINE(m,c) {
-    return "<blockquote>"+c+"</blockquote>";
-  };
+  let c, s, i = 0;
 
-  let result;
+  // Reset parsed URLs array
+  xows_tpl_parsed_url.length = 0;
 
-  // Add blockquote tags around each line of the block quote
-  result = block.replace(/&gt;(?: ?|&gt;+?)([\w\W]+?(?:\<br\>|$))/g, REPLACE_LINE);
+  while(true) {
 
-  // Removes the extra closing and opening block between each lines
-  result = result.replace(/<\/blockquote><blockquote>/g, "");
+    // end of text
+    if(i === raw.length)
+      break;
 
-  // Go recursive for nested blocks
-  return result.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
-}
+    c = raw.charCodeAt(i);
 
-/**
- * Replacement function to add styling to non-preformated text, this function
- * is used to create styling according XEP-0393 syntax rules.
- *
- * @param   {string}    match     Regex full match string
- *
- * @return  {string}    Formated HTML styled text
- */
-function xows_tpl_format_nonpre(match)
-{
-  function ENCLOSE_STRONG(match, content) {
-    return "<strong>"+content+"</strong>";
-  };
+    // Check for Quote block exit
+    if(quote_depth && raw.charCodeAt(i-1) === 0x0A && c !== 0x3E) {
+      while(quote_depth) { //< close ALL quote block
+        result += "</blockquote>";
+        quote_depth--;
+      }
+    }
 
-  function ENCLOSE_EM(match, content) {
-    return "<em>"+content+"</em>";
-  };
+    // http(s):// URL
+    if(c === 0x48 || c === 0x68) { //< 'H' || 'h'
+      if(match = xows_tpl_reg_url.exec(raw.substring(i))) {
+        xows_tpl_parsed_url.push(match[0]); //< add to Array
+        result += "<a href=\""+match[0]+"\" target=\"_blank\">"+match[0]+"</a>";
+        i += match[0].length;
+        continue;
+      }
+    }
 
-  let result;
+    // 0-7 A-Z a-z
+    if((c > 0x2F && c < 0x38) || (c > 0x40 && c < 0x5B) || (c > 0x60 && c < 0x7B)) {
+      result += raw.charAt(i++);
+      continue;
+    }
 
-  // Parse and format quote bloks... which is more tricky and complex
-  result = match.replace(xows_tpl_reg_quote, xows_tpl_replace_quote);
+    // Raw emoji unicode
+    if((c >= 0x2300 && c <= 0x2BFF) || (c >= 0x1F000 && c <= 0x1FB00)) {
+      result += "<emo-ji>&#x"+c+";</emo-ji>";
+      continue;
+    }
 
-  // Enclose *strong* text with <strong>
-  result = result.replace(/\*(\S.+?\S)\*/g, ENCLOSE_STRONG);
+    // Bold/Strong span
+    if(c === 0x2A) { //< '*'
+      if(span_b) {
+        span_b = false;
+        result += "</b>"; //< close span
+        i++; continue;
+      } else {
+        if(span_b = xows_tpl_reg_strong.test(raw.substring(i))) {
+          result += "<b>"; //< open span
+          i++; continue;
+        }
+      }
+    }
 
-  // Enclose _emphasis_ text with <em>
-  return result.replace(/_(\S.+?\S)_/g, ENCLOSE_EM);
-}
+    // Emphasis span
+    if(c === 0x5F) { //< '_'
+      if(span_i) {
+        span_i = false;
+        result += "</i>"; //< close span
+        i++; continue;
+      } else {
+        if(span_i = xows_tpl_reg_emphas.test(raw.substring(i))) {
+          result += "<i>"; //< open span
+          i++; continue;
+        }
+      }
+    }
 
-/**
- * Creates HTML formated styled text according XEP-0393 syntax rules
- *
- * @param   {string}    body      Message to parse and modify
- *
- * @return  {string}    Formated HTML styled text
- */
-function xows_tpl_format_styling(body)
-{
-  // Replacement functions
-  function ENCLOSE_PRE(match, syntax, content) {
-    // TODO: here can be inserted per-syntax content styling
-    return "<pre>"+content+"</pre>";
-  };
+    // Strike span
+    if(c === 0x7E) {  //< '~'
+      if(span_s) {
+        span_s = false;
+        result += "</s>"; //< close span
+        i++; continue;
+      } else {
+        if(span_s = xows_tpl_reg_strike.test(raw.substring(i))) {
+          result += "<s>"; //< open span
+          i++; continue;
+        }
+      }
+    }
 
-  function ENCLOSE_CODE(match, content) {
-    return "<code>"+content+"</code>";
-  };
+    // Check for Quote block
+    if(c === 0x3E) { //< '>'
 
-  // We first parse preformated text so we can exclud it from further format
+      // Must be at start of a new line
+      if(i === 0 || raw.charCodeAt(i-1) === 0x0A) {
 
-  // Enclose ```preformated block``` text with <pre>
-  body = body.replace(/(?:<br>|^)```(.*?)<br>([\w\W]*)```(?:<br>|$)/g, ENCLOSE_PRE);
+        let depth = 0;
+        while(match = xows_tpl_reg_quote.exec(raw.substring(i))) {
+          if(raw.charCodeAt(i+1) === 0x20) { //< ' '
+            i += 2; //< eat '> '
+          } else {
+            i++;    //< eat '>'
+          }
+          depth++;
+        }
 
-  // Enclose `preformated span` text with <code>
-  body = body.replace(/`(\S.+?\S)`/g, ENCLOSE_CODE);
+        if(depth) {
+          while(depth > quote_depth) {
+            result += "<blockquote>"; //< open quote block
+            quote_depth++;
+          }
+          while(depth < quote_depth) {
+            result += "</blockquote>"; //< close quote block
+            quote_depth--;
+          }
+          continue;
+        }
+      }
+    }
 
-  // Now add style to all text which are NOT preformated
-  return body.replace(/(?<=^|<\/pre>|<\/code>).+?(?=<code>|<pre>|$)/g, xows_tpl_format_nonpre);
+    // Check for preformated and code
+    if(c === 0x60) { //< '`'
+
+      const substr = raw.substring(i);
+
+      if(match = xows_tpl_reg_code.exec(substr)) {
+        result += "<code>"+match[1]+"</code>";
+        i += match[0].length;
+        continue;
+      }
+
+      // Must be at start of a new line
+      if(i === 0 || raw.charCodeAt(i-1) === 0x0A) {
+        if(match = xows_tpl_reg_pre.exec(substr)) {
+          result += "<pre>"+match[2]+"</pre>";
+          i += match[0].length;
+          continue;
+        }
+      }
+    }
+
+    // Try for Emoji short code
+    if(c === 0x3A) { //< ':'
+      if(match = xows_tpl_reg_emoji.exec(raw.substring(i))) {
+        const code = xows_tpl_emoji_sc_map[match[1]];
+        if(code) {
+          result += "<emo-ji>&#x"+code+";</emo-ji>";
+          i += match[0].length;
+          continue;
+        }
+      }
+    }
+
+    // Try for ASCII Emoticons (must be preceded by space)
+    if((c === 0x3A || c === 0x3B || c === 0x58 || c === 0x78 || c === 0x38)) { //< ':' || ';' || 'X' || 'x' || '8'
+
+      // Must be at start of line or precedded by space
+      if((i === 0 || raw.charCodeAt(i-1) === 0x20)) {
+
+        if(match = xows_tpl_reg_emoticon.exec(raw.substring(i))) {
+          const code = xows_tpl_emoticon_map[match[1].toUpperCase()][match[2].toUpperCase()];
+          if(code) {
+            result += "<emo-ji>&#x"+code+";</emo-ji>";
+            i += match[0].length;
+            continue;
+          }
+        }
+      }
+    }
+
+    // Finaly escape character if required
+    if(xows_tpl_html_esc_map.has(c)) {
+      result += xows_tpl_html_esc_map.get(c);
+    } else {
+      result += raw.charAt(i);
+    }
+
+    i++;
+  }
+
+  /*
+  // Search for emoji codepoints to add style to
+  result = result.replace(/([\u{2300}-\u{2BFF}]|[\u{1F000}-\u{1FB00}])/ug, xows_tpl_replace_emoj_cp);
+
+  // Search for emoji short-code to replace
+  result = result.replace(/:([\w-+-_]*):/g, xows_tpl_replace_emoj_sc);
+
+  // Search for known and common ASCII emots to replace
+  result.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
+  */
+
+  return result;
 }
 
 /**
  * Creates embeded medias and formated links from found raw URL
  *
- * @param   {string}    body      Message to parse and modify
+ * @param   {string[]}  urls      List of URL to parse and embed
  *
  * @return  {string}    Formated HTML data of embedded medias
  */
-function xows_tpl_format_embed(body)
+function xows_tpl_parse_embeds(urls)
 {
-  const urls = body.match(xows_tpl_reg_urls);
-  if(!urls) return null;
+  if(!urls.length)
+    return null;
 
   let match, k, href, media, embeds = "";
 
@@ -840,48 +992,6 @@ function xows_tpl_format_embed(body)
   }
 
   return embeds.length ? embeds : null;
-}
-
-/**
- * Parses the given text (message body) to search known patterns such as
- * emoticons and URLs to properly format them as HTML
- *
- * @param   {string}    body      Original text to parse
- *
- * @return  {object}    Object containing enhanced body and embeded medias
- */
-function xows_tpl_format_body(body)
-{
-  // Escape HTML characters for correct display
-  body = xows_html_escape(body);
-
-  // Search for emoji codepoints to add style to
-  body = body.replace(/([\u{2300}-\u{2BFF}]|[\u{1F000}-\u{1FB00}])/ug, xows_tpl_replace_emoj_cp);
-
-  // Search for emoji short-code to replace
-  body = body.replace(/:([\w-+-_]*):/g, xows_tpl_replace_emoj_sc);
-
-  // Search for known and common ASCII emots to replace
-  body = body.replace(/(\s|^)([Xx8:;]|:&apos;)-?([()|DpPxXoO#$.\/*sS])/g, xows_tpl_replace_emots);
-
-  // Search for styling marks
-  body = xows_tpl_format_styling(body);
-
-  // Create embded medias from found urls
-  const embeds = xows_tpl_format_embed(body);
-
-  // If message is only a single URL that was embedded we delete the body
-  if(embeds && (body.search(/^\s*(http|https):\/\/(\S[^\s^"'()<>|\[\]\\\t\n]*)\s*$/) >= 0))
-    body = "";
-
-  // Search for remaining URLs to create HTML links from raw URL
-  body = body.replace(xows_tpl_reg_urls, xows_tpl_replace_url);
-
-  // Append embededed stuff
-  if(embeds) body += embeds;
-
-  // Finaly format URL and add embeded media
-  return body;
 }
 
 /**
@@ -1172,7 +1282,25 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
 
   if(repl) inst.classList.add("MESG-MODIFY");
 
-  inst.querySelector("MESG-BODY").innerHTML = xows_tpl_format_body(body);
+  const mesg_body = inst.querySelector("MESG-BODY");
+  const mesg_embd = inst.querySelector("MESG-EMBD");
+
+  // Parse body for styling
+  const styled = xows_tpl_parse_styling(body);
+  mesg_body.innerHTML = styled;
+
+  // Check whether we have URLs to embeds
+  const embeds = xows_tpl_parse_embeds(xows_tpl_parsed_url);
+  if(embeds) {
+
+    // Add embedded medias
+    mesg_embd.innerHTML = embeds;
+    mesg_embd.hidden = false;
+
+    // check whether message is an alone link
+    if(xows_tpl_reg_alone_link.test(styled))
+      mesg_body.hidden = true;
+  }
 
   // Return final tree
   return inst;

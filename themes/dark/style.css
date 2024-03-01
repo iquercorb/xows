@@ -132,7 +132,8 @@ a:active {
   /*transition: opacity 200ms, color 200ms, border-color 200ms, background-color 200ms ease-out;*/
 }
 
-emoj {
+emoj,
+emo-ji {
   display: inline;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
   font-size: 1.3em;
@@ -140,7 +141,8 @@ emoj {
   vertical-align: top;
 }
 @media (max-width: 824px) {
-  emoj {
+  emoj,
+  emo-ji {
     font-size: 1.2em;
   }
 }
@@ -248,7 +250,7 @@ button:disabled {
 /* History message styling elements
 /* ------------------------------------------------------------------ */
 blockquote {
-  margin: 0;
+  margin: 2px 0;
   border-left: 3px solid var(--text-tone4);
   padding-left: 0.8em;
   border-radius: 2px;
@@ -262,7 +264,7 @@ code {
   background-color: var(--base-tone3);
 }
 pre {
-  margin:0;
+  margin: 2px 0;
   padding: 5px 10px;
   font-size: 1.1em;
   color: var(--text-tone1);
@@ -1310,14 +1312,19 @@ rost-tab::before {
   display: block;
   flex:none;
   content: "";
-  width: 6px; height: 10px;
+  width: 6px; height: 3px;
   margin: 0 2px 0 -2px;
   border-right: 4px solid var(--link-base);
   border-radius: 4px;
-  transition: height ease 50ms;
+  transition: height ease 150ms;
   visibility: hidden;
 }
 rost-tab:hover::before {
+  height: 10px;
+  visibility: visible;
+}
+rost-tab.SELECTED::before {
+  height: 100%;
   visibility: visible;
 }
 @keyframes rost-ringing {
@@ -1344,10 +1351,6 @@ rost-tab.RINGING badg-noti {
 #room_call {
   top: 2px; right: 2px;
   border: 3px solid var(--base-tone0);
-}
-rost-tab.SELECTED::before {
-  height: 100%;
-  visibility: visible;
 }
 rost-tab.SELECTED badg-noti,
 rost-tab.SELECTED badg-call {
@@ -1544,7 +1547,7 @@ li-peer {
   border-radius: 4px;
   overflow: hidden;
   cursor: pointer !important;
-}li-peer:hover {
+} li-peer:hover {
   background-color: var(--base-tone4);
 }
 li-peer:hover badg-show {
@@ -1554,15 +1557,16 @@ li-peer::before {
   display: block;
   flex:none;
   content: "";
-  width: 6px; height: 10px;
+  width: 6px; height: 3px;
   margin: 0 2px 0 -2px;
   border-right: 4px solid var(--link-base);
   border-radius: 4px;
-  transition: height ease 50ms;
+  transition: height ease 150ms;
   visibility: hidden;
 }
 li-peer:hover::before  {
   visibility: visible;
+  height: 10px;
 }
 li-peer.SELECTED::before {
   visibility: visible;
@@ -1834,7 +1838,7 @@ head-info badg-show {
 /* Main Page - Center Col - Main Frame - Chat Windows */
 /* ------------------------------------------------------------------ */
 #chat_main {
-  padding: 0 10px;
+  padding: 0 0;
   background-color: var(--base-tone4);
   scrollbar-color: var(--base-tone1) transparent;
   /*scroll-snap-type: y mandatory;*/
@@ -2241,18 +2245,19 @@ ring-acts btn-close {
 li-mesg {
   display: flex;
   flex-direction: row;
-  width: 100%;
+  /*! width: 100%; */
   border-radius: 8px;
   padding: 3px 0 2px 0;
-  margin-top: 20px;
+  /*margin-top: 20px;*/
+  margin: 20px 10px 0 10px;
 }
 li-mesg:hover {
   background-color: var(--base-tone7);
 }
 mesg-head {
-  flex: 0 0 60px;
-  text-align: left;
-  padding-left: 5px;
+  flex: 0 0 70px;
+  text-align: center;
+  padding-right: 10px;
 }
 mesg-main {
   flex: 1 0 auto;
@@ -2412,6 +2417,10 @@ li-mesg.MESG-SENT.MESG-RECP mesg-body {
 /* History Message - Embeded Medias */
 /* ------------------------------------------------------------------ */
 mesg-embd {
+ line-height: 0;
+ display: block;
+}
+embd-wrap {
   display:block;
   width: 0; min-height: 0;
   color: var(--text-tone2);
@@ -2420,8 +2429,8 @@ mesg-embd {
   border-radius: 10px;
   margin-top: 6px;
 }
-mesg-embd a,
-mesg-embd a:visited {
+embd-wrap a,
+embd-wrap a:visited {
   display: block;
   line-height: 14px;
   font-size: 14px;
@@ -2429,50 +2438,50 @@ mesg-embd a:visited {
   color: var(--text-tone2);
   margin-bottom: 10px;
 }
-mesg-embd a:hover {
+embd-wrap a:hover {
   color: var(--link-text-hover);
 }
-mesg-embd img {
+embd-wrap img {
   min-width: 0;
   max-width: 480px; max-height: 300px;
   width: auto;
   border-radius: 10px;
   border: none;
 }
-mesg-embd iframe {
+embd-wrap iframe {
   width: 426px; height: 240px;
   border-radius: 6px;
   border: none;
 }
-mesg-embd.LOADING,
-mesg-embd.LOADERR {
+embd-wrap.LOADING,
+embd-wrap.LOADERR {
   padding-top: 200px; /* this put the media to bottom of frame */
   min-width: 426px; min-height: 240px;
 }
-mesg-embd.LOADING a,
-mesg-embd.LOADERR a{
+embd-wrap.LOADING a,
+embd-wrap.LOADERR a{
   display: none;
 }
-mesg-embd.EMBD-IFR {
+embd-wrap.EMBD-IFR {
   width: 450px; height: 284px;
   padding: 10px 10px 10px 9px;
   border-radius: 5px 10px 10px 5px;
   background-color: var(--base-tone3);
   border-left: 5px solid var(--link-base);
 }
-mesg-embd.EMBD-IFR.LOADING,
-mesg-embd.EMBD-IFR.LOADERR {
+embd-wrap.EMBD-IFR.LOADING,
+embd-wrap.EMBD-IFR.LOADERR {
   padding-top: 200px; /* this put the media to bottom of frame */
 }
 /*
-mesg-embd.EMBD-VER {
+embd-wrap.EMBD-VER {
   width: 240px; height: 480px;
 }
-mesg-embd.EMBD-VER iframe {
+embd-wrap.EMBD-VER iframe {
   width: 240px; height: 420px;
 }
 */
-mesg-embd.EMBD-DNL {
+embd-wrap.EMBD-DNL {
   width: 450px; height: 50px;
   margin: 0;
   padding: 10px;
@@ -2481,13 +2490,13 @@ mesg-embd.EMBD-DNL {
   border-left: 5px solid var(--link-base);
   white-space: nowrap;
 }
-mesg-embd.EMBD-DNL a {
+embd-wrap.EMBD-DNL a {
   display: inline-block !important;
   padding: 0 !important;
   vertical-align: middle;
   text-overflow: ellipsis;
 }
-mesg-embd.EMBD-DNL .dnld-btn {
+embd-wrap.EMBD-DNL .dnld-btn {
   display: inline-block;
   width: 32px; height:32px;
   float: right;
@@ -2499,10 +2508,10 @@ mesg-embd.EMBD-DNL .dnld-btn {
   opacity: .6;
   transition: opacity 160ms ;
 }
-mesg-embd.EMBD-DNL .dnld-btn:hover {
+embd-wrap.EMBD-DNL .dnld-btn:hover {
   opacity: .8;
 }
-mesg-embd.EMBD-DNL::before {
+embd-wrap.EMBD-DNL::before {
   display: inline-block;
   content:"";
   width: 32px; height: 32px;
@@ -2515,33 +2524,33 @@ mesg-embd.EMBD-DNL::before {
   opacity: .5;
 }
 @media (max-width: 824px) {
-  mesg-embd a {
+  embd-wrap a {
     line-height: 10px;
     font-size: 13px;
 
     padding: 5px 0 10px 0;
   }
-  mesg-embd img {
+  embd-wrap img {
     max-width: 280px; max-height: 158px;
   }
-  mesg-embd iframe {
+  embd-wrap iframe {
     width: 282px; height: 160px;
     border-radius: 3px;
   }
-  mesg-embd.LOADING,
-  mesg-embd.LOADERR {
+  embd-wrap.LOADING,
+  embd-wrap.LOADERR {
     min-width: 280px; min-height: 158px;
   }
-  mesg-embd.EMBD-IFR,
-  mesg-embd.EMBD-IFR.LOADING,
-  mesg-embd.EMBD-IFR.LOADERR {
+  embd-wrap.EMBD-IFR,
+  embd-wrap.EMBD-IFR.LOADING,
+  embd-wrap.EMBD-IFR.LOADERR {
     flex-direction: column;
     width: 300px; height: 200px;
     padding: 6px;
     border-radius: 4px 8px 8px 4px;
     border-left: 4px solid var(--link-base);
   }
-  mesg-embd.EMBD-DNL {
+  embd-wrap.EMBD-DNL {
     min-width: 300px; min-height: 45px;
     padding: 6px;
     border-radius: 4px 8px 8px 4px;
