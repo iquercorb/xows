@@ -742,7 +742,7 @@ function xows_cli_connect(url, jid, password, register)
   xows_cli_feat_own.length = 0;
   xows_cli_feat_srv.length = 0;
   xows_cli_svc_url.clear();
-  
+
   // Store MAM parameter from options
   xows_cli_mam_max = xows_options.history_size / 2;
 
@@ -2175,16 +2175,16 @@ function xows_cli_mam_parse(from, bare, result, count, complete)
   let i = result.length;
 
   if(peer.type === XOWS_PEER_CONT) {
-    
+
     while(i--) {
       result[i].sent = xows_cli_isself(result[i].from);
       result[i].sndr = result[i].sent ? xows_cli_self : peer;
     }
-    
+
   } else { //<  === XOWS_PEER_ROOM
-    
+
     let from, sndr;
-    
+
     while(i--) {
       from = result[i].from;
       result[i].sent = (from === peer.join);
@@ -2209,17 +2209,17 @@ function xows_cli_mam_parse(from, bare, result, count, complete)
   } else {
     param.pool = result.concat(param.pool);
   }
-  
+
   // Shortcut...
   const pool = param.pool;
-  
+
   // Comput count of visible messages excluding replacements
-  let bodies = 0; 
+  let bodies = 0;
   i = pool.length;
   while(i--) if(pool[i].body && !pool[i].rpid) bodies++;
 
   if(!complete) {
-    
+
     // Send another query until we get enough message
     if(bodies < param.count) {
       // Shift time to get more message after/before the last/first
@@ -2229,43 +2229,43 @@ function xows_cli_mam_parse(from, bare, result, count, complete)
       } else {
         param.end = pool[0].time - 1;
       }
-      
+
       // Change the 'max' value to avoid querying too much, but
       // more than needed since received messages can be receipts
       const need = (param.count - bodies) * 2;
       if(need < xows_cli_mam_max) param.max = need;
-      
+
       // Send new request after little delay
       setTimeout(xows_cli_mam_query, 100, peer);
       return;
     }
   }
-  
+
   xows_log(2,"cli_mam_parse",bodies+" gathered messages for",peer.bare);
-  
+
   if(xows_isfunc(param.onresult))
     param.onresult(peer, pool, bodies, complete);
-    
+
   // Delete history pull params
   xows_cli_mam_param.delete(peer.bar);
 }
 
 /**
- * Send MAM archive query for the specified history pull request, the 
+ * Send MAM archive query for the specified history pull request, the
  * pull request must had been initialized by xows_cli_pull_history()
- * 
+ *
  * This function is for private usage only.
  *
  * @param   {object}    peer      Peer to get archive
  */
 function xows_cli_mam_query(peer)
 {
-  if(!xows_cli_mam_param.has(peer.pare)) 
+  if(!xows_cli_mam_param.has(peer.pare))
     return;
-  
+
   // Get history pull parameters
   const param = xows_cli_mam_param.get(peer.pare);
-  
+
   // Send new query to XMPP interface
   if(peer.type === XOWS_PEER_CONT) {
     xows_xmp_mam_query(null, param.max, peer.bare, param.start, param.end, null, xows_cli_mam_parse);
@@ -2285,17 +2285,17 @@ function xows_cli_mam_query(peer)
  */
 function xows_cli_pull_history(peer, count, start, end, onresult)
 {
-  if(xows_cli_mam_param.has(peer.pare)) 
+  if(xows_cli_mam_param.has(peer.pare))
     return;
-  
+
   xows_log(2,"cli_pull_history","pull history for",peer.bare);
-  
+
   // Choose proper "max" value
   const max = (count > xows_cli_mam_max) ? xows_cli_mam_max : count;
-  
+
   // Initialize history pull parameters
   xows_cli_mam_param.set(peer.pare,{"peer":peer,"count":count,"max":max,"start":start,"end":end,"onresult":onresult,"pool":new Array()});
-  
+
   // Send first query
   xows_cli_mam_query(peer);
 }
@@ -2382,7 +2382,7 @@ function xows_cli_send_chatstate(peer, chat)
 function xows_cli_send_subject(room, subj)
 {
   xows_log(2,"cli_send_subject","send subject",room.bare+" \""+subj+"\"");
-  
+
   // Send message with subject
   xows_xmp_send_subject(room.bare, subj);
 }
@@ -2643,27 +2643,11 @@ function xows_cli_upld_abort(name)
  */
 function xows_cli_upld_put_progress(event)
 {
-  const name = event.target.name;
+  const name = event.target._name;
   // Retrieve initial query parameters
   const param = xows_cli_upld_param.get(name);
   if(xows_isfunc(param.onprogress))
     param.onprogress(name, (event.loaded / event.total) * 100);
-}
-
-/**
- * Http Upload query XMLHttpRequest.upload "load" callback function
- */
-function xows_cli_upld_put_load(event)
-{
-  const name = event.target.name;
-  // Retrieve initial query parameters
-  const param = xows_cli_upld_param.get(name);
-  // Forward file download URL with some delay to let the HTTP server
-  // to refresh and be able to provide correct GET access to file
-  if(xows_isfunc(param.onload))
-    setTimeout(param.onload, 1000, name, param.url);
-
-  xows_cli_upld_param.delete(name);
 }
 
 /**
@@ -2673,7 +2657,7 @@ function xows_cli_upld_put_load(event)
  */
 function xows_cli_upld_put_error(event)
 {
-  const name = event.target.name;
+  const name = event.target._name;
 
   console.log(event);
 
@@ -2695,7 +2679,7 @@ function xows_cli_upld_put_error(event)
  */
 function xows_cli_upld_put_abort(event)
 {
-  const name = event.target.name;
+  const name = event.target._name;
 
   xows_log(1,"cli_upld_xhr_error","HTTP PUT aborted by user",name);
 
@@ -2705,6 +2689,29 @@ function xows_cli_upld_put_abort(event)
     param.onabort(name);
 
   xows_cli_upld_param.delete(name);
+}
+
+/**
+ * Http Upload query XMLHttpRequest onreadystatechange callback.
+ *
+ * @param   {object}    xhr       XMLHttpRequest instance
+ */
+function xows_cli_upld_xhr_state(xhr)
+{
+  // Check for ready state and status code
+  if(xhr.readyState === 4 && xhr.status === 201) {
+
+    const name = xhr.upload._name;
+    // Retrieve initial query parameters
+    const param = xows_cli_upld_param.get(name);
+
+    // Forward file download URL with some delay to let the HTTP server
+    // to refresh and be able to provide correct GET access to file
+    if(xows_isfunc(param.onload))
+      setTimeout(param.onload, 500, name, param.url);
+
+    xows_cli_upld_param.delete(name);
+  }
 }
 
 /**
@@ -2748,12 +2755,15 @@ function xows_cli_upld_result(name, puturl, headers, geturl, error)
 
   xows_log(2,"cli_upld_result","sending HTTP PUT request",puturl);
 
+  xhr.upload._name = name; //< Custom parameter
+
   // Set proper callbacks to Xhr object
   xhr.upload.onprogress = xows_cli_upld_put_progress;
-  xhr.upload.onload = xows_cli_upld_put_load;
   xhr.upload.onerror = xows_cli_upld_put_error;
   xhr.upload.onabort = xows_cli_upld_put_abort;
-  xhr.upload.name = name; //< Custom parameter
+
+  xhr.onreadystatechange = function(){xows_cli_upld_xhr_state(this);};
+  //xhr.upload.onload = xows_cli_upld_put_load; //< this is not reliable
 
   // Here we go...
   xhr.send(param.file);
@@ -3040,7 +3050,7 @@ function xows_cli_presence_update()
     show = xows_cli_self.show;
     stat = xows_cli_self.stat;
     avat = xows_cli_self.avat;
-  } else { 
+  } else {
     type = "unavailable";
   }
 
@@ -3204,7 +3214,7 @@ function xows_cli_disconnect()
     return;
 
   xows_log(2,"cli_disconnect","prepare disconnect");
-  
+
   // Terminate call session if any
   xows_cli_call_terminate();
 
@@ -3547,7 +3557,7 @@ function xows_cli_call_accept(stream)
 
   // Request to create an SDP Answer
   xows_cli_webrtc_pc.createAnswer().then(xows_cli_webrtc_setlocaldesc, xows_cli_webrtc_onerror);
-  
+
   xows_log(2,"cli_call_accept","create SDP answer");
 }
 
@@ -3565,7 +3575,7 @@ function xows_cli_call_terminate(peer)
     const reason = (xows_cli_call_stat === XOWS_CALL_RING) ? "decline" : "success";
 
     xows_log(2,"cli_call_terminate",reason,xows_cli_call_peer.call);
-    
+
     // Send Jingle session terminate
     xows_xmp_jingle_terminate(xows_cli_call_peer.call, xows_cli_call_ssid, reason);
 
@@ -3667,21 +3677,21 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
 }
 
 /**
- * Special function to close session and exit the quickest way 
+ * Special function to close session and exit the quickest way
  * possible, used to terminate session when browser exit page
- * 
+ *
  * @param   {string}   [peer]     Optionnal Peer object
  */
 function xows_cli_flyyoufools(peer)
 {
   // Send chatsate to current chat peer
-  if(peer) 
+  if(peer)
     xows_cli_send_chatstate(peer, 0);
-  
+
   // Terminate any pending call
   if(xows_cli_call_stat > 0)
     xows_xmp_jingle_terminate(xows_cli_call_peer.call, xows_cli_call_ssid, "failed-application");
-  
+
   // Disconnect XMPP session
   xows_xmp_flyyoufools();
 }
