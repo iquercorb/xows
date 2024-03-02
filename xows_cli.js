@@ -1763,7 +1763,6 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
   // connected resources priority
   let p = -128;
   for(const res of cont.ress.values()) {
-    console.log(res);
     if(res.prio > p) {
       p = res.prio;
       cont.show = res.show;
@@ -2684,8 +2683,6 @@ function xows_cli_upld_put_progress(event)
 function xows_cli_upld_put_error(event)
 {
   const name = event.target._name;
-
-  console.log(event);
 
   const mesg = "HTTP PUT failed";
   xows_log(1,"cli_upld_put_error",mesg,name);
@@ -3660,8 +3657,6 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
 
     // Create new RTC Peer Connection object
     xows_cli_webrtc_create();
-
-    console.log(mesg);
 
     // Set the Remote description
     const description = new RTCSessionDescription({"type":"offer","sdp":mesg});
