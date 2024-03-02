@@ -464,12 +464,13 @@ function xows_doc_init(onready)
 
   // Set event listener to handle user presence and GUI focus
   xows_doc_listener_add(document,   "visibilitychange",   xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window,     "pagehide",           xows_gui_wnd_onfocus);
   xows_doc_listener_add(window,     "focus",              xows_gui_wnd_onfocus);
   xows_doc_listener_add(window,     "blur",               xows_gui_wnd_onfocus);
 
   // Set event listener to handle page quit or reload
-  xows_doc_listener_add(window,     "beforeunload",       xows_gui_wnd_onunload);
-  xows_doc_listener_add(window,     "unload",             xows_gui_wnd_onunload);
+  xows_doc_listener_add(window,     "beforeunload",       xows_cli_flyyoufools);
+  xows_doc_listener_add(window,     "unload",             xows_cli_flyyoufools);
 
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
@@ -627,7 +628,11 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
   xows_doc_mbox_cb_onvalid = onvalid;
 
   // if 'modal' show the 'void screen' to catch mouse clicks
-  if(modal) xows_doc_show("scr_void");
+  if(modal) {
+    // show the 'void' screen with dark filter
+    xows_doc_cls_add("scr_void", "VOID-DARK");
+    xows_doc_show("scr_void");
+  }
 
   xows_doc_show("over_mbox");
 }
@@ -657,7 +662,10 @@ function xows_doc_mbox_close()
 
   // hide message box stuff
   xows_doc_hide("over_mbox");
-  xows_doc_hide("scr_void"); //< hide the 'void screen'
+
+  // remove 'dark' filter and hide 'void' screen
+  xows_doc_cls_rem("scr_void", "VOID-DARK");
+  xows_doc_hide("scr_void");
 }
 
 /**
