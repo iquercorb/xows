@@ -338,7 +338,8 @@ function xows_cli_cont_new(bare, name, subs, avat)
   // set Constant properties
   xows_def_readonly(cont,"type",XOWS_PEER_CONT);  //< Peer type
   xows_def_readonly(cont,"bare",bare);            //< bare JID (user@domain)
-  xows_def_readonly(cont,"ress",{});              //< Resource list
+  //xows_def_readonly(cont,"ress",{});              //< Resource list
+  xows_def_readonly(cont,"ress",new Map());              //< Resource list
 
   Object.seal(cont); //< prevet structure modification
 
@@ -390,7 +391,7 @@ function xows_cli_cont_best_jid(cont)
     let res = null;
 
     // Try to find best suitable resource
-    const ress = Object.keys(cont.ress);
+    const ress = Array.from(cont.ress.values());
 
     if(ress.length) {
       if(ress.length > 1) {
@@ -399,7 +400,7 @@ function xows_cli_cont_best_jid(cont)
         // Then sort by Priority
         ress.sort(function(a,b){return b.prio - a.prio;});
       }
-      res = ress[0];
+      res = ress[0].id;
     }
 
     // Select ressource according show level and priority
@@ -810,8 +811,8 @@ function xows_cli_xmp_onsession(jid)
 
 
   if(xows_cli_connect_loss) {
-    // Recovery from connexion loss, skip features & services discovery
-    xows_cli_presence_init();
+    // Recovery from connection loss, skip features & services discovery
+    xows_cli_rost_get_query(); //< Refresh contacts Presence/Status
   } else {
     // Start features & services discovery
     xows_xmp_discoinfo_query(xows_cli_self.bare, null, xows_cli_own_info_parse);
@@ -843,18 +844,24 @@ function xows_cli_xmp_onclose(code, mesg)
     // Set connexion loss
     xows_cli_connect_loss = true;
 
+    // Clear all contact resources to prevent 'ghost'
+    xows_cli_rost_reset();
+
+    // We are about to initialize again
+    xows_cli_initialize = true;
+
     // Start reconnect process with 10 attempts
     xows_cli_reconnect(10);
 
   } else {
 
-    // Ignore if already closed or if connection loss
+    // Ignore if already closed
     if(xows_cli_self.jid) {
 
       // Output log
       xows_log(1,"cli_xmp_onclose","session destroy",mesg);
 
-      // Clean the client
+      // Clean the client data
       xows_cli_cont.length = 0;
       xows_cli_room.length = 0;
 
@@ -973,8 +980,6 @@ function xows_cli_srv_items_parse(from, item)
 {
   // If no item is reported we are ready right now
   if(!item.length) {
-    // Server discovery finished, now query for roster
-    //xows_cli_rost_get_query();
     // Query for external services (ftp, stun, etc.)
     xows_xmp_extdisco_query(null, xows_cli_extdisco_parse);
     return;
@@ -1048,8 +1053,6 @@ function xows_cli_srv_item_info_parse(from, iden, feat)
     // Query info for the next service
     xows_xmp_discoinfo_query(xows_cli_srv_items_stack.pop(), null, xows_cli_srv_item_info_parse);
   } else {
-    // Server discovery finished, now query for roster
-    //xows_cli_rost_get_query();
     // Query for external services (ftp, stun, etc.)
     xows_xmp_extdisco_query(null, xows_cli_extdisco_parse);
   }
@@ -1073,6 +1076,28 @@ function xows_cli_extdisco_parse(svcs)
 
   // Server discovery finished, now query for roster
   xows_cli_rost_get_query();
+}
+
+/**
+ * Resets all roster contacts referenced resources and set all to unavailable.
+ *
+ * This function is used to reset contacts resources to avoid ghost resources
+ * that may stay available, for example, after a client connection loss.
+ */
+function xows_cli_rost_reset()
+{
+  let i = xows_cli_cont.length;
+  while(i--) {
+    const cont = xows_cli_cont[i];
+
+    // Remove all resources and reset presence and status
+    cont.ress.clear();
+    cont.show = 0;
+    cont.stat = "";
+
+    // Forward "reseted" Contact
+    xows_cli_fw_oncontpush(cont);
+  }
 }
 
 /**
@@ -1703,13 +1728,13 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
 
   // Updates presence of the specific resource, delete it if offline
   if(show > 0) {
-    if(!cont.ress[res]) { //< new ressource ? add it
+    if(!cont.ress.has(res)) { //< new ressource ? add it
       xows_log(2,"cli_xmp_onpresence","adding Resource for "+cont.bare, res);
-      cont.ress[res] = {"show":show,"prio":prio,"stat":stat,"node":null};
+      cont.ress.set(res,{"id":res,"show":show,"prio":prio,"stat":stat,"node":null});
       // Check for entity capabilities
       if(node) {
         const node_ver = node.node + "#" + node.ver;
-        cont.ress[res].node = node_ver;
+        cont.ress.get(res).node = node_ver;
         // If we don't know this node, get features
         if(!xows_cach_caps_has(node_ver)) {
           xows_log(2,"cli_xmp_onpresence","query entity caps for "+cont.bare,node_ver);
@@ -1718,14 +1743,14 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
       }
     } else { //< update existing ressource
       xows_log(2,"cli_xmp_onpresence","updating Resource for "+cont.bare, res);
-      cont.ress[res].show = show;
-      cont.ress[res].prio = prio;
-      cont.ress[res].stat = stat;
+      cont.ress.get(res).show = show;
+      cont.ress.get(res).prio = prio;
+      cont.ress.get(res).stat = stat;
     }
   } else {
-    if(cont.ress[res]) {
+    if(cont.ress.has(res)) {
       xows_log(2,"cli_xmp_onpresence","removing Resource for "+cont.bare, res);
-      delete cont.ress[res]; //< ressource gone offline remove it
+      cont.ress.delete(res); //< ressource gone offline remove it
     }
     // If user goes unavailable, reset chatstate
     cont.chat = 0;
@@ -1737,11 +1762,12 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
   // Select new displayed show level and status according current
   // connected resources priority
   let p = -128;
-  for(const k in cont.ress) {
-    if(cont.ress[k].prio > p) {
-      p = cont.ress[k].prio;
-      cont.show = cont.ress[k].show;
-      cont.stat = cont.ress[k].stat;
+  for(const res of cont.ress.values()) {
+    console.log(res);
+    if(res.prio > p) {
+      p = res.prio;
+      cont.show = res.show;
+      cont.stat = res.stat;
     }
   }
 
@@ -2335,7 +2361,7 @@ function xows_cli_send_message(peer, body, corr)
     // message should not be marked as "receip received"
     if(peer.lock !== peer.bare) {
       // Get resource object of current locked
-      const res = peer.ress[xows_jid_to_nick(peer.lock)];
+      const res = peer.ress.get(xows_jid_to_nick(peer.lock));
       // Check for receipt support
       if(res) use_recp = xows_cli_entity_caps_test(res.node,XOWS_NS_RECEIPTS);
     }
@@ -3079,7 +3105,7 @@ function xows_cli_presence_update()
 /**
  * Set the client current presence show level
  *
- * @param   {number}    level     Numerical show level to set (-1 to 4)
+ * @param   {number}    level     Numerical show level to set (0 to 5)
  */
 function xows_cli_change_presence(level)
 {
@@ -3685,15 +3711,9 @@ function xows_cli_xmp_onjingle(from, id, sid, action, mesg)
 /**
  * Special function to close session and exit the quickest way
  * possible, used to terminate session when browser exit page
- *
- * @param   {string}   [peer]     Optionnal Peer object
  */
-function xows_cli_flyyoufools(peer)
+function xows_cli_flyyoufools()
 {
-  // Send chatsate to current chat peer
-  if(peer)
-    xows_cli_send_chatstate(peer, 0);
-
   // Terminate any pending call
   if(xows_cli_call_stat > 0)
     xows_xmp_jingle_terminate(xows_cli_call_peer.call, xows_cli_call_ssid, "failed-application");

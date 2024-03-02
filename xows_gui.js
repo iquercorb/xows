@@ -736,27 +736,13 @@ function xows_gui_wnd_onfocus(event)
     break;
 
   case "visibilitychange":
+    // I am not sure this is usefull at all...
     if(xows_cli_connect_loss && !document.hidden)
       xows_cli_reconnect(10);
     break;
   }
 
   xows_gui_has_focus = document.hasFocus();
-}
-
-/**
- * Callback function to handle user close or exit web page
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_wnd_onunload(event)
-{
-  // The closing process for the XMPP subprotocol mirrors that of the XMPP
-  // TCP binding as defined in Section 4.4 of [RFC6120], except that a
-  // <close/> element is used instead of the ending </stream:stream> tag.
-
-  // Call special function for express session close
-  xows_cli_flyyoufools(xows_gui_peer);
 }
 
 /* -------------------------------------------------------------------
@@ -1181,7 +1167,7 @@ function xows_gui_mbox_exit_onabort()
 function xows_gui_mbox_exit_onvalid()
 {
   // Disconnect
-  xows_gui_disconnect();
+  xows_cli_flyyoufools();
 
   // Back nav history
   history.back();

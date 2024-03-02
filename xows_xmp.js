@@ -3005,8 +3005,8 @@ function xows_xmp_recv_mam_result(result)
       // Get XMLNS
       xmlns = node.getAttribute("xmlns");
       // Check for chatstate
-      if(xmlns === XOWS_NS_CHATSTATES) 
-        continue; 
+      if(xmlns === XOWS_NS_CHATSTATES)
+        continue;
       // Check for delivery receipt
       if(xmlns === XOWS_NS_RECEIPTS) {
         rcid = node.getAttribute("id");
@@ -3385,7 +3385,7 @@ function xows_xmp_send_close(code, mesg)
   // Send the <close> stanza to close stream
   xows_xmp_send(xows_xml_node("close",{"xmlns":XOWS_NS_IETF_FRAMING}));
   //xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
-  
+
   // Some log output
   xows_log(2,"xmp_send_close","close framed stream");
 
@@ -3435,7 +3435,7 @@ function xows_xmp_sck_onopen()
 function xows_xmp_sck_onclose(code, mesg)
 {
   // No username mean session closed by client
-  if(xows_xmp_user) 
+  if(xows_xmp_user)
     // This may be a connection loss
     xows_xmp_connectloss(mesg);
 }
@@ -3536,24 +3536,24 @@ function xows_xmp_connectloss(mesg)
 
   // If session is active, this is indeed a connection loss
   if(xows_xmp_sres) {
-    
+
     // Output log
     xows_log(2,"xmp_connectloss","connection lost",xows_xmp_sres);
-    
+
     // Session is now over
     xows_xmp_sres = null;
-    
+
     // This is actually a connection loss
     code = XOWS_SIG_HUP;
 
   } else {
-    
+
     // Probably connexion error
     code = XOWS_SIG_ERR;
   }
-  
+
   // Forward to client
-  xows_xmp_fw_onclose(code,mesg); 
+  xows_xmp_fw_onclose(code,mesg);
 }
 
 /**
@@ -3577,7 +3577,7 @@ function xows_xmp_reconnect()
 }
 
 /**
- * Special function to close session and exit the quickest way 
+ * Special function to close session and exit the quickest way
  * possible, used to terminate session when browser exit page
  */
 function xows_xmp_flyyoufools()
@@ -3585,14 +3585,14 @@ function xows_xmp_flyyoufools()
   // Ignore if no socket available
   if(!xows_sck_sock)
     return;
-  
+
   // Session is over
   xows_xmp_sres = null;
   xows_xmp_user = null;
 
   // Send unavailable <presence> stanza
   xows_sck_sock.send("<presence xmlns='jabber:client' type='unavailable'/>");
-  
+
   // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
 
   // Send the <close> stanza to close stream
