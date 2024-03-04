@@ -681,16 +681,6 @@ function xows_cli_connect(url, jid, password, register)
   xows_cli_entities.clear();
   xows_cli_extservs.clear();
 
-  // Gather external services provided in options
-  if(xows_options.extern_services) {
-    const svcs = xows_options.extern_services;
-    for(let i = 0, n = svcs.length; i < n; ++i) {
-      const type = svcs[i].type;
-      if(!xows_cli_extservs.has(type)) xows_cli_extservs.set(type,[]);
-      xows_cli_extservs.get(type).push(svcs[i]);
-    }
-  }
-
   // Store MAM parameter from options
   xows_cli_mam_max = xows_options.history_size / 2;
 
@@ -1052,6 +1042,17 @@ function xows_cli_extdisco_parse(from, svcs)
  */
 function xows_cli_setup_features()
 {
+  // Gather external services provided in options
+  if(xows_options.extern_services) {
+    const svcs = xows_options.extern_services;
+    for(let i = 0, n = svcs.length; i < n; ++i) {
+      console.log(svcs[i]);
+      const type = svcs[i].type;
+      if(!xows_cli_extservs.has(type)) xows_cli_extservs.set(type,[]);
+      xows_cli_extservs.get(type).push(svcs[i]);
+    }
+  }
+
   // Check for main XMPP server features
   const serv_infos = xows_cli_entities.get(xows_xmp_domain);
 
