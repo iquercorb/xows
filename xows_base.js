@@ -374,6 +374,7 @@ function xows_bytes_to_hex(uint8)
  */
 function xows_gen_uuid()
 {
+  /*
   const r = new Uint8Array(16);
   window.crypto.getRandomValues(r);
   // UUID : xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
@@ -388,7 +389,8 @@ function xows_gen_uuid()
             XOWS_CMAP_HEX.charAt((r[b])       & 0x0F);
     c += 2;
   }
-  return uuid;
+  */
+  return window.crypto.randomUUID();
 }
 
 /**
@@ -939,12 +941,12 @@ function xows_url_to_type(url)
 /**
  * Correspondence map to escape HTML reserved or special characters
  */
-const XOWS_HTML_ESCAP_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'","&apos;"],["\"","&quot;"],["\n","<br>"]]);
+const XOWS_HTML_ESC_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'","&apos;"],["\"","&quot;"],["\n","<br>"]]);
 
 /**
  * Remplacement function for HTML string escape
  */
-function xows_html_escap_fnc(m) {return XOWS_HTML_ESCAP_MAP.get(m);}
+function xows_html_esc_func(m) {return XOWS_HTML_ESC_MAP.get(m);}
 
 /**
  * Rewrites the given string with HTML escapes for reserved or special
@@ -956,7 +958,7 @@ function xows_html_escap_fnc(m) {return XOWS_HTML_ESCAP_MAP.get(m);}
  */
 function xows_html_escape(str)
 {
-  return str.replace(/[\&<>'"\n]/g, xows_html_escap_fnc);
+  return str.replace(/[\&<>'"\n]/g, xows_html_esc_func);
 }
 
 /* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --

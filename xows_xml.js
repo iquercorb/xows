@@ -51,17 +51,17 @@ const xows_xml_doc = document.implementation.createDocument("jabber:client","Xow
 /**
  * Correspondence map to escape XML reserved characters
  */
-const XOWS_XML_ESCAP_MAP = {"&":"&amp;","<":"&lt;",">":"&gt;","'":"&apos;","\"":"&quot;"};
+const XOWS_XML_ESCAP_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'","&apos;"],["\"","&quot;"],["\n","<br>"]]);
 
 /**
  *  Correspondence map to unescape and XML string
  */
-const XOWS_XML_UNESC_MAP = {"&amp;":"&","&lt;":"<","&gt;":">","&apos;":"'","&quot;":"\""};
+const XOWS_XML_UNESC_MAP = new Map([["&amp;","&"],["&lt;","<"],["&gt;",">"],["&apos;","'"],["&quot;","\""]]);
 
 /**
  * Remplacement function for XML string escape
  */
-function xows_xml_escap_fnc(m) {return XOWS_XML_ESCAP_MAP[m];}
+function xows_xml_escap_fnc(m) {return XOWS_XML_ESCAP_MAP.get(m);}
 
 /**
  * Rewrites the given string with XML escapes for reserved characters
@@ -78,7 +78,7 @@ function xows_xml_escape(str)
 /**
  *  Remplacement function for XML string unescape
  */
-function xows_xml_unesc_fnc(m) {return XOWS_XML_UNESC_MAP[m];}
+function xows_xml_unesc_fnc(m) {return XOWS_XML_UNESC_MAP.get(m);}
 
 /**
  * Rewrites the given XML escaped string with proper ASCII charaters
@@ -266,7 +266,3 @@ function xows_xml_get_text(node) {
 
   return xows_xml_unesc(str);
 }
-
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *                 SDP protocol translation utilities
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
