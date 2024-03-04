@@ -27,12 +27,14 @@
   <!-- invisible frame to capture mouse click outside menus or dialogs -->
 </div>
 
-<dialog hidden id="over_view">
-  <figure>
-    <img id="view_img" src="">
+<div hidden id="over_view">
+  <div id="view_wrap">
     <a id="view_open" href="" target="_blank">${'Open in new tab'}</a>
-  </figure>
-</dialog>
+    <img id="view_img" src="">
+    <btn-close id="page_exit"></btn-close>
+  </div>
+
+</div>
 
 <dialog hidden id="over_mbox">
   <mbox-text id="mbox_text"></mbox-text>

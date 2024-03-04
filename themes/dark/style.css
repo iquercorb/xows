@@ -95,12 +95,12 @@
   --back-text:        #FFF;     /* Ribbon text */
 
   /* Presence 'show level' colors */
-  --show-off:         #858585;  /* Offline */
-  --show-dnd:         #FD4E3F;  /* Do Not Disturb */
-  --show-xa:          #FD8733;  /* Extended Away */
-  --show-away:        #FFBF40;  /* Away / AFK */
-  --show-on:          #31D065;  /* Online */
-  --show-chat:        #7FFFCB;  /* Available for chat */
+  --show-off:         #6E6E6E;  /* Offline */
+  --show-dnd:         #C92B2B;  /* Do Not Disturb */
+  --show-xa:          #E46735;  /* Extended Away */
+  --show-away:        #E0AF46;  /* Away / AFK */
+  --show-on:          #2BAC53;  /* Online */
+  --show-chat:        #33A5D5;  /* Available for chat */
 }
 [hidden] {
   display: none !important;
@@ -137,13 +137,14 @@ emo-ji {
   display: inline;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
   font-size: 1.3em;
-  padding: 0 3px 0 5px;
+  line-height: 25px;
   vertical-align: top;
 }
 @media (max-width: 824px) {
   emoj,
   emo-ji {
     font-size: 1.2em;
+    line-height: 16px;
   }
 }
 dialog {
@@ -311,6 +312,7 @@ pre {
 /* Scroll style for Lists (Contacts, Rooms, Occupants)
 /* ------------------------------------------------------------------ */
 peer-list {
+  display: block;
   width: 100%; height: 100%;
   overflow-x: hidden;
   overflow-y: scroll;
@@ -336,6 +338,13 @@ peer-list ul::before {
   color: var(--text-tone3);
   white-space: nowrap;
   overflow: hidden;
+}
+peer-list.LOADING::before,
+peer-list.LOADING::after {
+  top: 35px;
+}
+peer-list.LOADING #room_ul {
+  visibility: hidden;
 }
 /* ------------------------------------------------------------------ */
 /* Buttons - Common Valid / Cancel */
@@ -503,14 +512,11 @@ btn-close:hover {
 /* Presence (Show level) Badge */
 /* ------------------------------------------------------------------ */
 badg-show {
-  display: inline-block;
+  display: block;
   position: absolute;
-  top: 20px; left: 20px;
-  width: 15px; height: 15px;
-  border: 3px solid var(--base-tone3);
-  text-align: center;
-  line-height: 5px;
-  padding: 0;
+  top: 19px; left: 19px;
+  width: 18px; height: 18px;
+  border: 4px solid var(--base-tone3);
   border-radius: 50%;
   background-color: var(--base-tone3);
 }
@@ -600,9 +606,9 @@ badg-call {
   top: 0; left: 0;
   bottom: 0; right: 0;
   z-index: 2;
-  background-color: #000;
 }
 .VOID-DARK {
+  background-color: #000;
   opacity: .4;
 }
 /* ------------------------------------------------------------------ */
@@ -880,48 +886,50 @@ mbox-acts {
 /* Media Viewer - Commons */
 /* ------------------------------------------------------------------ */
 #over_view {
-  display: block;
   position: absolute;
+  top: 0; bottom: 0;
+  left: 0; right: 0;
   z-index: 4;
-  top: 50%;
-  transform: translate(0, -50%);
-  height: 100%;
-  padding: 0;
-  margin: auto;
-  background-color: transparent;
+  background-color: rgba(0,0,0,0.8);
 }
-#over_view figure {
-  display: inline-block;
-  text-align: left;
-  width: 100%;
+#view_wrap {
+  display: flex;
+  flex-direction: row;
   height: 100%;
-  margin: 0;
+  padding: 60px;
+}
+#view_wrap btn-close {
+  position:absolute;
+  top: 20px;
+  right: 20px;
+  opacity: .8;
+}
+#view_wrap btn-close:hover {
+  opacity: 1;
 }
 #over_view img {
-  display: block;
-  position: relative;
-  top: 50%;
-  transform: translate(0, -50%);
+  margin: auto;
   max-width: 100%;
   max-height: 100%;
-  padding: 20px 20px 30px 20px;
 }
-#over_view a {
+#view_open {
   display: block;
   position: absolute;
-  left: 0;
-  bottom: 2px;
+  left: 12px;
+  top: 12px;
   text-decoration: none;
   font-size: 14px;
-  margin: 5px 20px;
+  background-color: var(--base-tone3);
+  padding: 5px 10px;
+  border-radius: 5px;
 }
 #over_view a,
 #over_view a:visited {
-  color: var(--text-tone3);
+  color: var(--text-tone1);
 }
 #over_view a:hover,
 #over_view a:active {
-  color: var(--text-tone2);
+  background-color: var(--base-tone4);
 }
 /* ------------------------------------------------------------------ */
 /* Dialog Page - columns layout */
@@ -1517,8 +1525,6 @@ peer-avat badg-call {
 }
 peer-name {
   display: block;
-  margin: 0;
-  padding: 0;
   font-weight: bold;
   font-size: 0.9em;
   overflow:hidden;
@@ -1528,9 +1534,9 @@ peer-name {
 }
 peer-meta {
   display: block;
-  margin:0;
-  padding: 0;
+  max-height: 14px;
   font-size: 0.7em;
+  line-height: 0.9em;
   color: var(--text-tone3);
   overflow:hidden;
   white-space:nowrap;
@@ -2245,11 +2251,9 @@ ring-acts btn-close {
 li-mesg {
   display: flex;
   flex-direction: row;
-  /*! width: 100%; */
   border-radius: 8px;
-  padding: 3px 0 2px 0;
-  /*margin-top: 20px;*/
-  margin: 20px 10px 0 10px;
+  padding: 10px 0 2px 0;
+  margin: 10px 10px 0 10px;
 }
 li-mesg:hover {
   background-color: var(--base-tone7);
@@ -2355,7 +2359,8 @@ li-mesg:hover mesg-acts {
   visibility: visible;
 }
 li-mesg.MESG-APPEND {
-  margin-top: 0;
+  padding: 0;
+  margin: 0 10px 0 10px;
 }
 li-mesg.MESG-APPEND mesg-info,
 li-mesg.MESG-APPEND mesg-avat {
@@ -2393,13 +2398,16 @@ li-mesg.MESG-SENT.MESG-RECP mesg-body {
 }
 @media (max-width: 824px) {
   li-mesg {
-    margin: 5px 0 0 0;
+    margin: 5px 5px 0 5px;
   }
   mesg-head {
     flex: 0 0 44px;
   }
   mesg-avat {
     width: 32px; height: 32px;
+  }
+  mesg-hour {
+    width: 32px;
   }
   mesg-date,
   mesg-hour {
@@ -2741,6 +2749,7 @@ chat-inpt {
   content: '\25CF';
   margin: 0 0 2px 5px;
   width: 35px;
+  font-family: Arial;
   font-size: 1.2em;
   vertical-align:middle;
   animation: dots 800Ms steps(5, end) infinite;
