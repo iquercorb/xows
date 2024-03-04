@@ -64,7 +64,23 @@ const xows_cli_feat_own = [];
 /**
  * List of available server feature
  */
-const xows_cli_feat_srv = [];
+const xows_cli_entities = new Map();
+
+/**
+ * Check whether entity has the specified feature
+ *
+ * @param   {string}    entity    Entity (JID) to check
+ * @param   {string}    feat      Feature name to search
+ *
+ * @return  {boolean}   True if feature was found, false otherwise
+ */
+function xows_cli_entity_has(entity, feat)
+{
+  if(xows_cli_entities.has(entity))
+    return xows_cli_entities.get(entity).feat.includes(feat);
+
+  return false;
+}
 
 /**
  * Maximum result to get from one MAM query (please set even number)
@@ -72,94 +88,15 @@ const xows_cli_feat_srv = [];
 let xows_cli_mam_max = 32;
 
 /**
- * Check whether own account feature is available
- *
- * @param   {string}    feat      Feature name to search
- *
- * @return  {boolean}   True if feature was found, false otherwise
- */
-function xows_cli_feat_own_has(feat)
-{
-  return xows_cli_feat_own.includes(feat);
-}
-
-/**
- * Check whether feature is available, either in own account or
- * server
- *
- * @param   {string}    feat      Feature name to search
- *
- * @return  {boolean}   True if feature was found, false otherwise
- */
-function xows_cli_feat_srv_has(feat)
-{
-  return xows_cli_feat_srv.includes(feat);
-}
-
-/**
  * Store the URL of available server items such as Http Upload or MUC
  * services.
  */
-const xows_cli_svc_url = new Map();
-
-/**
- * Check whether server item (service) is available
- *
- * @param   {string}    xmlns     XMLNS corresponding to service
- */
-function xows_cli_svc_exist(xmlns)
-{
-  return (xows_cli_svc_url.has(xmlns));
-}
+const xows_cli_services = new Map();
 
 /**
  * List of defined external services
  */
-const xows_cli_ext_svc = [];
-
-/**
- * Check whether external services exist by type
- *
- * @param   {string}    type      Service type to retrieve
- */
-function xows_cli_ext_svc_has(type)
-{
-  if(xows_options.extern_services) {
-    const ext_svc = xows_options.extern_services;
-    for(let i = 0, n = ext_svc.length; i < n; ++i)
-      if(ext_svc[i].type === type)
-        return true;
-  }
-
-  for(let i = 0, n = xows_cli_ext_svc.length; i < n; ++i)
-    if(xows_cli_ext_svc[i].type === type)
-      return true;
-
-  return false;
-}
-
-/**
- * Get list of external services by type
- *
- * @param   {string}    type      Service type to retrieve
- */
-function xows_cli_ext_svc_get(type)
-{
-  const result = [];
-
-  if(xows_options.extern_services) {
-    const ext_svc = xows_options.extern_services;
-    for(let i = 0, n = ext_svc.length; i < n; ++i)
-      if(ext_svc[i].type === type)
-        result.push(ext_svc[i]);
-  }
-
-  for(let i = 0, n = xows_cli_ext_svc.length; i < n; ++i)
-    if(xows_cli_ext_svc[i].type === type)
-      result.push(xows_cli_ext_svc[i]);
-
-  return result;
-}
+const xows_cli_extservs = new Map();
 
 /**
  * Callback function for client connected
@@ -740,9 +677,19 @@ function xows_cli_connect(url, jid, password, register)
   // Reset all stuff from previous session
   xows_cli_cont.length = 0;
   xows_cli_room.length = 0;
-  xows_cli_feat_own.length = 0;
-  xows_cli_feat_srv.length = 0;
-  xows_cli_svc_url.clear();
+  xows_cli_services.clear();
+  xows_cli_entities.clear();
+  xows_cli_extservs.clear();
+
+  // Gather external services provided in options
+  if(xows_options.extern_services) {
+    const svcs = xows_options.extern_services;
+    for(let i = 0, n = svcs.length; i < n; ++i) {
+      const type = svcs[i].type;
+      if(!xows_cli_extservs.has(type)) xows_cli_extservs.set(type,[]);
+      xows_cli_extservs.get(type).push(svcs[i]);
+    }
+  }
 
   // Store MAM parameter from options
   xows_cli_mam_max = xows_options.history_size / 2;
@@ -815,7 +762,15 @@ function xows_cli_xmp_onsession(jid)
     xows_cli_rost_get_query(); //< Refresh contacts Presence/Status
   } else {
     // Start features & services discovery
-    xows_xmp_discoinfo_query(xows_cli_self.bare, null, xows_cli_own_info_parse);
+
+    // Add own JID for discovery to get available account features
+    xows_cli_disco_queue(xows_cli_self.bare);
+
+    // Add server for discovery to get available features and services
+    xows_cli_disco_queue(xows_xmp_domain);
+
+    // Here we go...
+    xows_cli_disco_start(xows_cli_setup_features, true);
   }
 }
 
@@ -895,35 +850,97 @@ function xows_cli_xmp_onerror(code, mesg)
 }
 
 /**
- * Handle disco#info query to own user JID
- *
- * Called once the query result is received, continue the discovery
- * process by sending a disco#info to the server.
- *
- * @param   {string}    from      Query result sender JID
- * @param   {object[]}  iden      Array of parsed <identity> objects
- * @param   {string[]}  feat      Array of parsed feature strings
+ * Discovery session stack to track end fo discovery
  */
-function xows_cli_own_info_parse(from, iden, feat)
+const xows_cli_disco_qeu = [];
+
+/**
+ * Discovery session stack to track end fo discovery
+ */
+const xows_cli_disco_stk = [];
+
+/**
+ * Stored callback function for discovery session
+ */
+let xows_cli_disco_onend = null;
+
+/**
+ * Add entity to discovery session queue
+ *
+ * @param   {string}    jid       Entity JID to discover infos
+ */
+function xows_cli_disco_queue(jid)
 {
-  // Check for available features
-  for(let i = 0, n = feat.length; i < n; ++i) {
-
-    // Add to local feature list
-    xows_cli_feat_own.push(feat[i]);
-
-    // Search for MAM feature
-    if(feat[i].includes(XOWS_NS_MAM)) {
-      // Set XEP xmlns (version) to use for this session
-      xows_xmp_use_xep(feat[i]);
-    }
-  }
-  // Next discovery step with server features
-  xows_xmp_discoinfo_query(xows_xmp_domain, null, xows_cli_srv_info_parse);
+  xows_cli_disco_qeu.push(jid);
 }
 
 /**
- * Handle disco#info query to the current server
+ * Setup a new discovery session with callback function to be called once
+ * discovery ended.
+ *
+ * @param   {string}    onend     Callback function to be called once discovery ended
+ * @param   {boolean}  [clear]    Optionnal boolean to force clear discovered entities
+ */
+function xows_cli_disco_start(onend, clear = false)
+{
+  xows_log(2,"cli_discoinfo_start","start new discovery session");
+
+  // Ensure we start from empty stack
+  xows_cli_disco_stk.length;
+
+  // Clear discovered entities if required
+  if(clear) {
+    xows_cli_entities.clear();
+    xows_cli_services.clear();
+    xows_cli_extservs.clear();
+  }
+
+  // Store the onend callback
+  xows_cli_disco_onend = onend;
+
+  // Send discoinfo queries
+  for(let i = 0, n = xows_cli_disco_qeu.length; i < n; ++i)
+    xows_cli_discoinfo_query(xows_cli_disco_qeu[i]);
+
+  // empty queue
+  xows_cli_disco_qeu.length = 0;
+}
+
+/**
+ * "Private" function to specify discovery of entity ended. This function is
+ * not to be used on its own
+ *
+ * @param   {string}    jid       Entity JID to remove from stack
+ */
+function xows_cli_disco_ended(jid)
+{
+  // Remove entity from discovery stack
+  xows_cli_disco_stk.splice(xows_cli_disco_stk.indexOf(jid), 1);
+
+  // Check for empty stack for callback
+  if(!xows_cli_disco_stk.length) {
+    if(xows_isfunc(xows_cli_disco_onend))
+      xows_cli_disco_onend();
+  }
+}
+
+/**
+ * Query disco#info for the specified entity
+ *
+ * @param   {string}    to        Entity JID to query disco#info to
+ * @param   {string}   [node]     Optionnal node to query to
+ */
+function xows_cli_discoinfo_query(to, node = null)
+{
+  // Push entiy discovery
+  xows_cli_disco_stk.push(to);
+
+  // Send query
+  xows_xmp_discoinfo_query(to, node, xows_cli_discoinfo_parse);
+}
+
+/**
+ * Handle disco#info query to entity
  *
  * Called once the query result is received, continue the discovery
  * process by sending a disco#items to server.
@@ -931,42 +948,44 @@ function xows_cli_own_info_parse(from, iden, feat)
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  iden      Array of parsed <identity> objects
  * @param   {string[]}  feat      Array of parsed feature strings
+ * @param   {object}   [form]     Optionnal x data form included in result
  */
-function xows_cli_srv_info_parse(from, iden, feat)
+function xows_cli_discoinfo_parse(from, iden, feat, form)
 {
-  // Check for available features
-  for(let i = 0, n = feat.length; i < n; ++i) {
+  xows_log(2,"cli_discoinfo_parse","discovered entiy",from+" (category:"+iden[0].category+" type:"+iden[0].type+")");
 
-    // Add to local feature list
-    xows_cli_feat_srv.push(feat[i]);
+  xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
 
-    if(feat[i].includes(XOWS_NS_CARBONS)) {
-      // Check and set the xmlns (version) to use for this session
-      if(xows_xmp_use_xep(feat[i]))
-        xows_xmp_carbons_query(true); //< enable carbons
-    }
-    // Search for Http Upload feature
-    if(feat[i].includes(XOWS_NS_HTTPUPLOAD)) {
-      // Set XEP xmlns (version) to use for this session
-      xows_xmp_use_xep(feat[i]);
-    }
-    // Search for MUC feature
-    if(feat[i].includes(XOWS_NS_MUC)) {
-      // Set XEP xmlns (version) to use for this session
-      xows_xmp_use_xep(feat[i]);
-    }
+  // Check whether entity is a MUC Room
+  if(from.includes("@") && iden[0].category === "conference")
+    xows_cli_muc_room_parse(from, iden, feat, form); //< Parse MUC Room features
+
+  // Search whether entity has http://jabber.org/protocol/disco#items
+  if(feat.includes(XOWS_NS_DISCOITEMS)) {
+
+    // Push entiy discovery
+    xows_cli_disco_stk.push(from);
+
+    // Query for entity items
+    xows_xmp_discoitems_query(from, xows_cli_discoitems_parse);
   }
-  // Next discovery step with server items
-  xows_xmp_discoitems_query(xows_xmp_domain, xows_cli_srv_items_parse);
+
+  // Search whether entity has urn:xmpp:extdisco:2
+  if(feat.includes(XOWS_NS_EXTDISCO)) {
+
+    // Push entiy discovery
+    xows_cli_disco_stk.push(from);
+
+    // Query for external services (ftp, stun, etc.)
+    xows_xmp_extdisco_query(from, null, xows_cli_extdisco_parse);
+  }
+
+  // Pop entiy discovery
+  xows_cli_disco_ended(from);
 }
 
 /**
- * Stack used to fulfill the per server-item features discovery
- */
-const xows_cli_srv_items_stack = [];
-
-/**
- * Handle disco#items query to the current server
+ * Handle disco#items query to entity
  *
  * Called once the query result is received. If items are received, the
  * discovery process continue by sending disco#info to each item,
@@ -976,101 +995,93 @@ const xows_cli_srv_items_stack = [];
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  item      Array of parsed <item> objects
  */
-function xows_cli_srv_items_parse(from, item)
+function xows_cli_discoitems_parse(from, item)
 {
-  // If no item is reported we are ready right now
-  if(!item.length) {
-    // Query for external services (ftp, stun, etc.)
-    xows_xmp_extdisco_query(null, xows_cli_extdisco_parse);
-    return;
-  }
-  // Ensure services stack is empty
-  xows_cli_srv_items_stack.length = 0;
-  // First, fill the services stack
-  let i = item.length;
-  while(i--) xows_cli_srv_items_stack.push(item[i].jid);
-  // Then start query info for each services
-  xows_xmp_discoinfo_query(xows_cli_srv_items_stack.pop(), null, xows_cli_srv_item_info_parse);
-}
+  const entity = xows_cli_entities.get(from);
 
-/**
- * Handle disco#info query to server item/service
- *
- * Called for each received query result received from item disco#info,
- * once result is received for each item the discovery is assumed
- * completed and a query for roster.
- *
- * @param   {string}    from      Query result sender JID
- * @param   {object[]}  iden      Array of parsed <identity> objects
- * @param   {string[]}  feat      Array of parsed feature strings
- */
-function xows_cli_srv_item_info_parse(from, iden, feat)
-{
-  // prevent further crash
-  if(iden.length) {
+  // If this is MUC Service, Forward null to signal query response
+  if(entity.iden[0].category === "conference")
+    xows_cli_fw_onroompush(null);
 
-    // Get item identity
-    const catg = iden[0].category;
-    const type = iden[0].type;
-    const name = iden[0].name;
+  for(let i = 0, n = item.length; i < n; ++i) {
 
-    // Output log
-    xows_log(2,"cli_srv_item_info_parse","discover service features",
-                from+": "+catg+", "+type+", \""+name+"\"");
+    // Add items to entity
+    entity.item.push(item[i].jid);
 
-    let i;
-    // Check for Http-Upload service
-    if(catg === "store" && type === "file") {
-      // Search for the proper feature
-      i = feat.length;
-      while(i--) {
-        if(feat[i].includes(XOWS_NS_HTTPUPLOAD)) {
-          // Set XEP xmlns (version) to use for this session
-          xows_xmp_use_xep(feat[i]);
-          xows_cli_svc_url.set(XOWS_NS_HTTPUPLOAD, from);
-          xows_log(2,"cli_srv_item_info_parse","use service for Http-Upload",from);
-        }
-      }
-    }
-    // Check for MUC service
-    if(catg === "conference" && type === "text") {
-      // Search for the proper feature
-      i = feat.length;
-      while(i--) {
-        if(feat[i] === XOWS_NS_MUC) {
-          xows_cli_svc_url.set(XOWS_NS_MUC, from);
-          xows_log(2,"cli_srv_item_info_parse","use service for Multi-User Chat",from);
-        }
-      }
-    }
-
-  } else {
-    xows_log(1,"cli_srv_item_info_parse","item without identity",from);
-    return;
+    // Query disco#info for this item
+    xows_cli_discoinfo_query(item[i].jid);
   }
 
-  if(xows_cli_srv_items_stack.length) {
-    // Query info for the next service
-    xows_xmp_discoinfo_query(xows_cli_srv_items_stack.pop(), null, xows_cli_srv_item_info_parse);
-  } else {
-    // Query for external services (ftp, stun, etc.)
-    xows_xmp_extdisco_query(null, xows_cli_extdisco_parse);
-  }
+  // Pop entiy discovery
+  xows_cli_disco_ended(from);
 }
 
 /**
  * Function to handle parsed result of external services query
  *
+ * @param   {string}    from      Query result sender JID
  * @param   {object[]}  svcs      Array of parsed <service> objects
  */
-function xows_cli_extdisco_parse(svcs)
+function xows_cli_extdisco_parse(from, svcs)
 {
   // Copy arrays
-  if(svcs) {
-    for(let i = 0; i < svcs.length; ++i) {
-      xows_cli_ext_svc.push(svcs[i]);
-      // Output some logs
-      xows_log(2,"cli_extdisco_parse","external service",svcs[i].type+" ("+svcs[i].host+":"+svcs[i].port+")");
+  for(let i = 0, n = svcs.length; i < n; ++i) {
+
+    const type = svcs[i].type;
+
+    // Output some logs
+    xows_log(2,"cli_extdisco_parse","discovered external",type+" ("+svcs[i].host+":"+svcs[i].port+")");
+
+    // Create entry for this type if required
+    if(!xows_cli_extservs.has(type))
+      xows_cli_extservs.set(type,[]);
+
+    // Add external service to list
+    xows_cli_extservs.get(type).push(svcs[i]);
+  }
+
+  // Pop entiy discovery
+  xows_cli_disco_ended(from);
+}
+
+/**
+ * Setup aivalable common features for this session.
+ *
+ * This function is called once main discovery is finished and will call will
+ * performs roster query to fullfill the client initialization cycle.
+ */
+function xows_cli_setup_features()
+{
+  // Check for main XMPP server features
+  const serv_infos = xows_cli_entities.get(xows_xmp_domain);
+
+  // Check for message carbons
+  if(serv_infos.feat.includes(XOWS_NS_CARBONS))
+    xows_xmp_carbons_query(true);
+
+  // Search in entity for MUC and HTTP_File_Upload services
+  for(const [entity, infos] of xows_cli_entities) {
+
+    // Check for MUC service
+    if(infos.feat.includes(XOWS_NS_MUC)) {
+
+      // Initialize service slot if required
+      if(!xows_cli_services.has(XOWS_NS_MUC))
+        xows_cli_services.set(XOWS_NS_MUC,[]);
+
+      // Add service address
+      xows_cli_services.get(XOWS_NS_MUC).push(entity);
+    }
+
+    // Check for HTTP_File_Upload (XEP-0363) service
+    if(infos.feat.includes(XOWS_NS_HTTPUPLOAD)) {
+
+      // Initialize service slot if required
+      if(!xows_cli_services.has(XOWS_NS_HTTPUPLOAD))
+        xows_cli_services.set(XOWS_NS_HTTPUPLOAD,[]);
+
+      // Add service address
+      xows_cli_services.get(XOWS_NS_HTTPUPLOAD).push(entity);
     }
   }
 
@@ -1231,7 +1242,7 @@ function xows_cli_vcard_query(jid)
   xows_log(2,"cli_vcard_query","query vCard for",jid);
 
   // parse either legacy vcard-temp or vCard4 depending options
-  if(xows_cli_feat_own_has(XOWS_NS_IETF_VCARD4) && !xows_options.legacy_vcard) {
+  if(xows_cli_entity_has(xows_cli_self.bare, XOWS_NS_IETF_VCARD4) && !xows_options.legacy_vcard) {
     xows_xmp_vcard4_get_query(jid, xows_cli_vcard_parse);
   } else {
     xows_xmp_vcardt_get_query(jid, xows_cli_vcard_parse);
@@ -1263,7 +1274,7 @@ function xows_cli_vcard_parse(from, vcard)
     xows_cli_self.vcrd = vcard;
 
     // parse either legacy vcard-temp or vCard4 depending options
-    if(xows_cli_feat_own_has(XOWS_NS_IETF_VCARD4) && !xows_options.legacy_vcard) {
+    if(xows_cli_entity_has(xows_cli_self.bare, XOWS_NS_IETF_VCARD4) && !xows_options.legacy_vcard) {
       // XEP-0292 vCard4 parsing
       if((node = vcard.querySelector("nickname")))
         nick = xows_xml_get_text(node.firstChild); //< <nickname><text>#text
@@ -1314,10 +1325,12 @@ function xows_cli_vcard_publish(open)
   // create new local copy of vcard if not exists
   if(!xows_cli_self.vcrd) xows_cli_self.vcrd = xows_xml_node("vcard");
 
+  const has_vcard4 = xows_cli_entity_has(xows_cli_self.bare, XOWS_NS_IETF_VCARD4);
+
   const vcard = xows_cli_self.vcrd;
 
   // Check if account supports Vcard4 or fallback to vcard-temp
-  if(xows_cli_feat_own_has(XOWS_NS_IETF_VCARD4) && !xows_options.legacy_vcard) {
+  if(has_vcard4 && !xows_options.legacy_vcard) {
     // XEP-0292 vCard4 edition
     xows_xml_edit(vcard,   "nickname", xows_xml_node("text",null,xows_cli_self.name));
     xows_xml_edit(vcard,   "note",     xows_xml_node("text",null,xows_cli_self.stat));
@@ -1343,12 +1356,11 @@ function xows_cli_vcard_publish(open)
     nodes.push(vcard.childNodes[i].cloneNode(true));
 
   // Send query
-  if(xows_cli_feat_own_has(XOWS_NS_IETF_VCARD4) && !xows_options.legacy_vcard) {
+  if(has_vcard4 && !xows_options.legacy_vcard) {
     xows_xmp_vcard4_publish(nodes, open ? "open" : "presence");
   } else {
     xows_xmp_vcardt_set_query(nodes);
   }
-
 }
 
 /**
@@ -1618,7 +1630,7 @@ function xows_cli_book_parse(from, item)
     if(auto) xows_cli_room_join(room);
 
     // Query info for Room
-    xows_cli_room_discoinfo(room);
+    xows_cli_discoinfo_query(room.bare);
   }
 }
 
@@ -1815,7 +1827,7 @@ function xows_cli_xmp_onoccupant(from, show, stat, muc, photo)
     room = xows_cli_room_new(bare, name, "", false, false);
     xows_log(2,"cli_xmp_onoccupant","add unexisting Room",name+" ("+bare+")");
     xows_cli_fw_onroompush(room); //< Forward created Room
-    xows_cli_room_discoinfo(room); //< Query info for new room
+    xows_cli_discoinfo_query(room.bare); //< Query info for the newly created room
   }
 
   // Handle special case of room join and creation
@@ -2413,63 +2425,35 @@ function xows_cli_send_subject(room, subj)
 }
 
 /**
- * Stack used to fulfill the per roominfos features discovery
- */
-const xows_cli_muc_item_info_stack = [];
-
-/**
  * Query disco#items to MUC service, to retrieve public room list
  */
+
 function xows_cli_muc_items_query()
 {
   // Verify the server provide MUC service
-  if(!xows_cli_svc_exist(XOWS_NS_MUC)) {
+  if(!xows_cli_services.has(XOWS_NS_MUC)) {
     xows_log(1,"cli_muc_items_query","service not found",
                 "the server does not provide "+XOWS_NS_MUC+" service");
     xows_cli_fw_onerror(XOWS_SIG_WRN,"multi-user chat (XEP-0045) service is unavailable");
     return;
   }
 
-  // Send Item discovery to the MUC service URL
-  xows_xmp_discoitems_query(xows_cli_svc_url.get(XOWS_NS_MUC),
-                        xows_cli_muc_items_parse);
+  const muc = xows_cli_services.get(XOWS_NS_MUC);
+
+  // Send Item discovery to availabled MUC services
+  for(let i = 0, n = muc.length; i < n; ++i)
+    xows_xmp_discoitems_query(muc[i], xows_cli_discoitems_parse);
 }
 
 /**
- * Handle disco#items query to MUC service for existing public rooms
- *
- * @param   {string}    from      Query result sender JID
- * @param   {object[]}  item      Array of parsed <item> objects
- */
-function xows_cli_muc_items_parse(from, item)
-{
-  // Remove all Public Rooms from list
-  let i = xows_cli_room.length;
-  while(i--) if(xows_cli_room[i].publ) xows_cli_room.splice(i,1);
-
-  if(item.length) {
-    // Ensure services stack is empty
-    xows_cli_muc_item_info_stack.length = 0;
-    // First, fill the services stack
-    let i = item.length;
-    while(i--) xows_cli_muc_item_info_stack.push(item[i].jid);
-    // Then start query info for each services
-    xows_xmp_discoinfo_query(xows_cli_muc_item_info_stack.pop(), null, xows_cli_muc_item_info_parse);
-  }
-
-  // Forward null object to signal query response
-  xows_cli_fw_onroompush(null);
-}
-
-/**
- * Handle disco#info query to a MUC room
+ * Handle disco#info result as MUC room
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  iden      Array of parsed <identity> objects
  * @param   {string[]}  feat      Array of parsed feature strings
  * @param   {object[]}  form      Array of parsed X-Data fields
  */
-function xows_cli_muc_item_info_parse(from, iden, feat, form)
+function xows_cli_muc_room_parse(from, iden, feat, form)
 {
   let i, n, name, subj = "", desc = "", prot = false, publ = false;
 
@@ -2501,32 +2485,15 @@ function xows_cli_muc_item_info_parse(from, iden, feat, form)
     room.desc = desc;
     room.prot = prot;
     room.publ = publ;
-    xows_log(2,"cli_muc_item_info_parse","refresh Room",name+" ("+from+") :\""+desc+"\"");
+    xows_log(2,"cli_muc_room_parse","refresh Room",name+" ("+from+") :\""+desc+"\"");
   } else {
     // Create new room in local list
     room = xows_cli_room_new(from, name, desc, prot, publ);
-    xows_log(2,"cli_muc_item_info_parse","adding Room",name+" ("+from+") :\""+desc+"\"");
+    xows_log(2,"cli_muc_room_parse","adding Room",name+" ("+from+") :\""+desc+"\"");
   }
 
   // Forward added/updated Room
   xows_cli_fw_onroompush(room);
-
-  // Proceed the next room in stack to get info
-  if(xows_cli_muc_item_info_stack.length) {
-    // Query info for the next service
-    xows_xmp_discoinfo_query(xows_cli_muc_item_info_stack.pop(), null, xows_cli_muc_item_info_parse);
-  }
-}
-
-/**
- * Query for MUC room informations
- *
- * @param   {object}    room      Room object to query info
- */
-function xows_cli_room_discoinfo(room)
-{
-  // Query info for room
-  xows_xmp_discoinfo_query(room.bare, null, xows_cli_muc_item_info_parse);
 }
 
 /**
@@ -2575,7 +2542,7 @@ function xows_cli_muc_cfg_set_parse(from, type)
     }
 
     // Query Room info
-    xows_cli_room_discoinfo(room);
+    xows_cli_discoinfo_query(room.bare);
 
     // Forward submit result
     if(xows_isfunc(xows_cli_muc_cfg_cb))
@@ -2812,7 +2779,7 @@ function xows_cli_upld_query(file, onerror, onload, onprogress, onabort)
   if(xows_cli_upld_param.has(file.name))
     return;
 
-  if(!xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD)) {
+  if(!xows_cli_services.has(XOWS_NS_HTTPUPLOAD)) {
     const mesg = "HTTP File Upload (XEP-0363) service is unavailable";
     xows_log(1,"cli_upld_query",mesg);
     xows_cli_fw_onerror(XOWS_SIG_ERR, mesg);
@@ -2829,7 +2796,7 @@ function xows_cli_upld_query(file, onerror, onload, onprogress, onabort)
                                       "onabort":onabort});
 
   // Query an upload slot to XMPP service
-  xows_xmp_upld_query(xows_cli_svc_url.get(XOWS_NS_HTTPUPLOAD),
+  xows_xmp_upld_query(xows_cli_services.get(XOWS_NS_HTTPUPLOAD)[0],
                       file.name, file.size, file.type, xows_cli_upld_result);
 }
 
@@ -2934,7 +2901,7 @@ function xows_cli_subscribe_allow(bare, allow, nick)
 function xows_cli_room_join(room, name, nick, pass)
 {
   // Verify the server provide MUC service
-  if(!xows_cli_svc_exist(XOWS_NS_MUC)) {
+  if(!xows_cli_services.has(XOWS_NS_MUC)) {
     xows_log(1,"cli_room_join","service not found",
                 "the server does not provide "+XOWS_NS_MUC+" service");
     xows_cli_fw_onerror(XOWS_SIG_WRN,"Multi-User Chat (XEP-0045) service is unavailable");
@@ -2949,7 +2916,7 @@ function xows_cli_room_join(room, name, nick, pass)
     bare = room.bare; //< get room JID
   } else {
     // compose room JID
-    bare = name.toLowerCase()+"@"+xows_cli_svc_url.get(XOWS_NS_MUC);
+    bare = name.toLowerCase()+"@"+xows_cli_services.get(XOWS_NS_MUC)[0];
   }
 
   xows_log(2,"cli_room_join","request join",name+" ("+bare+")");
@@ -3506,25 +3473,29 @@ function xows_cli_webrtc_create()
   let i, serv;
 
   // Add STUN servers (if any)
-  const stuns = xows_cli_ext_svc_get("stun");
-  for(i = 0; i < stuns.length; ++i) {
-    serv = {"urls":'stun:'+stuns[i].host};
-    iceservers.push(serv);
+  const stuns = xows_cli_extservs.get("stun");
+  if(stuns) {
+    for(i = 0; i < stuns.length; ++i) {
+      serv = {"urls":'stun:'+stuns[i].host};
+      iceservers.push(serv);
+    }
   }
   // Add TURN servers (if any)
-  const truns = xows_cli_ext_svc_get("turn");
-  for(i = 0; i < truns.length; ++i) {
-    serv = {"urls":'turn:'+truns[i].host};
-    // Check whether we need to generate credentials
-    if(truns[i].secret) {
-      const creds = xows_gen_turn_credential(xows_cli_self.bare, truns[i].secret);
-      serv.username = creds.username;
-      serv.credential = creds.password;
-    } else {
-      if(truns[i].username) serv.username = truns[i].username;
-      if(truns[i].password) serv.credential = truns[i].password;
+  const truns = xows_cli_extservs.get("turn");
+  if(truns) {
+    for(i = 0; i < truns.length; ++i) {
+      serv = {"urls":'turn:'+truns[i].host};
+      // Check whether we need to generate credentials
+      if(truns[i].secret) {
+        const creds = xows_gen_turn_credential(xows_cli_self.bare, truns[i].secret);
+        serv.username = creds.username;
+        serv.credential = creds.password;
+      } else {
+        if(truns[i].username) serv.username = truns[i].username;
+        if(truns[i].password) serv.credential = truns[i].password;
+      }
+      iceservers.push(serv);
     }
-    iceservers.push(serv);
   }
 
   // Compose final options descriptor

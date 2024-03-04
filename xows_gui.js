@@ -588,16 +588,14 @@ function xows_gui_cli_onconnect(user)
     xows_gui_peer = null;
 
     // Check whether file Upload is available
-    const upld = xows_cli_svc_exist(XOWS_NS_HTTPUPLOAD);
+    const upld = xows_cli_services.has(XOWS_NS_HTTPUPLOAD);
     xows_doc("edit_bt_upld").disabled = !upld;
     // Add embeded download matching http upload service domain
-    if(upld) xows_tpl_embed_add_upld(xows_cli_svc_url[XOWS_NS_HTTPUPLOAD]);
+    if(upld) xows_tpl_embed_add_upld(xows_cli_services.get(XOWS_NS_HTTPUPLOAD)[0]);
 
     // Check whether MUC service is available
-    const muc = xows_cli_svc_exist(XOWS_NS_MUC);
+    const muc = xows_cli_services.has(XOWS_NS_MUC);
     xows_doc("tab_room").disabled = !muc;
-    // Refresh public room list
-    if(muc) xows_gui_room_list_reload();
   }
 }
 
@@ -2169,7 +2167,7 @@ function xows_gui_chat_head_update(peer)
     meta_inpt.innerText = peer.stat;
     xows_gui_peer_doc(peer,"chat_show").dataset.show = peer.show;
     // Show or hide Multimedia Call buttons
-    const has_ices = (xows_cli_ext_svc_has("stun") && xows_cli_ext_svc_has("turn"));
+    const has_ices = (xows_cli_extservs.has("stun") && xows_cli_extservs.has("turn"));
     xows_gui_peer_doc(peer,"chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
     xows_gui_peer_doc(peer,"chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
   } else {                            //< XOWS_PEER_ROOM
@@ -3353,7 +3351,9 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, re
   let rpl_li = null;
   if(repl) {
     rpl_li = xows_gui_hist_discard(peer, repl);
-    if(!rpl_li) return; //< ignore correction which are not in visible history
+    // We ignore correction which are not in visible history or if correction
+    // message have no body, in this case this mean message deletion
+    if(!rpl_li) return; 
   }
 
   // Avoid notifications for correction messages

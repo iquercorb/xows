@@ -50,18 +50,19 @@ const XOWS_NS_XDATA        = "jabber:x:data";
 const XOWS_NS_PING         = "urn:xmpp:ping";
 const XOWS_NS_TIME         = "urn:xmpp:time";
 const XOWS_NS_DELAY        = "urn:xmpp:delay";
-const XOWS_NS_CARBONS      = "urn:xmpp:carbons";
-const XOWS_NS_CARBONS_RUL  = "urn:xmpp:carbons:rules";
+const XOWS_NS_CARBONS      = "urn:xmpp:carbons:2";
+const XOWS_NS_CARBONS_RUL  = "urn:xmpp:carbons:rules:0";
 const XOWS_NS_RECEIPTS     = "urn:xmpp:receipts";
 const XOWS_NS_CORRECT      = "urn:xmpp:message-correct:0";
 const XOWS_NS_STYLING      = "urn:xmpp:styling:0";
-const XOWS_NS_MAM          = "urn:xmpp:mam";
+const XOWS_NS_SID          = "urn:xmpp:sid:0";                        //< XEP-0359
+const XOWS_NS_MAM          = "urn:xmpp:mam:2";
 const XOWS_NS_VCARD4       = "urn:xmpp:vcard4";
 const XOWS_NS_AVATAR_DATA  = "urn:xmpp:avatar:data";
 const XOWS_NS_AVATAR_META  = "urn:xmpp:avatar:metadata";
-const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
+//const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
 const XOWS_NS_HTTPUPLOAD   = "urn:xmpp:http:upload";
-const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1"; //< XEP-0402
+const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1";                  //< XEP-0402
 const XOWS_NS_EXTDISCO     = "urn:xmpp:extdisco:2";
 const XOWS_NS_JINGLE       = "urn:xmpp:jingle:1";                     //< XEP-0166
 const XOWS_NS_JINGLE_RTP1  = "urn:xmpp:jingle:apps:rtp:1";            //< XEP-0166
@@ -198,16 +199,6 @@ const xows_xmp_affi_level_map = {
 const xows_xmp_chat_name_map = ["gone","active","inactive","paused","composing"];
 
 /**
- * Map for XEP support between client and server. This is used to
- * set the best match between client and server supported XEP version
- */
-const xows_xmp_xep_ns = {
-  "urn:xmpp:carbons":                     null,
-  "urn:xmpp:mam":                         null,
-  "urn:xmpp:http:upload":                 null
-};
-
-/**
  * Array to hold current server required or available stream features
  * such as <bind> and <session>
  */
@@ -275,88 +266,6 @@ let xows_xmp_sres = null;
 let xows_xmp_auth_register = false;
 
 /**
- * Store the name space (xmlns) to use for the specified XEP during
- * an XMPP session
- *
- * This function is typically used to allow backward compatibility when
- * possible. It first check if the supplied version (xmlns) by the
- * server is available/valid, then store it to use it for all further
- * queries related to this XEP.
- *
- * @param   {string}    xmlns   Specific xmlns to use for this XEP
- *
- * @return  {boolean}   Ture if the supplied xmlns is supported and accepted for the specified XEP, false otherwise
- */
-function xows_xmp_use_xep(xmlns)
-{
-  const matches = xmlns.match(/([a-z\:]+)(:(\d|$))/);
-
-  if(matches) {
-    // Check whether we know this xmlns prefix
-    if(xows_xmp_xep_ns.hasOwnProperty(matches[1])) {
-      let keep_curr = false;
-      // Extract version number if any
-      if(matches[3].length) { // should be ":#" where # is a number
-        if(xows_xmp_xep_ns[matches[1]] !== null) {
-          // We need to compare the two version to keep the greater one
-          let keep_curr = false;
-          if(xows_xmp_xep_ns[matches[1]].length) {
-            // Current client version IS a number, we compare integers
-            const vcur = parseInt(xows_xmp_xep_ns[matches[1]]);
-            const vnew = parseInt(matches[3]);
-            if(vcur >= vnew) keep_curr = true;
-          }
-        }
-      } else {
-        // Check whether this prefix was already set before
-        if(xows_xmp_xep_ns[matches[1]] !== null) keep_curr = true;
-      }
-
-      if(keep_curr) {
-        // Keep current XMLNS as default
-        xows_log(2,"xmp_use_xep","ignoring extension",xmlns);
-        return false;
-      } else {
-        // set version string or empty string for "base" version
-        xows_xmp_xep_ns[matches[1]] = (matches[3].length) ? matches[3] : "";
-        xows_log(2,"xmp_use_xep","use extension",xmlns);
-        return true;
-      }
-    }
-  }
-
-  xows_log(1,"xmp_use_xep","unhandled extension",xmlns);
-  return false;
-}
-
-/**
- * Get the name space (xmlns) currently in use for the specified XEP
- * for this XMPP session
- *
- * This function allow to get the full xmlns with proper version to be
- * used for XEP queries for the current session. What this function
- * returns depend on what was previously set during services and
- * features discovery (see: xows_xmp_use_xep).
- *
- * If no xmlns version was previously set, the function returns null,
- * indicating the XEP is not available for the current session.
- *
- * @param   {string}    xmlns   Specific xmlns prefix
- *
- * @return  {string}    specific xmlns with proper version suffix or null
- */
-function xows_xmp_get_xep(xmlns)
-{
-  if(xows_xmp_xep_ns.hasOwnProperty(xmlns)) {
-    if(xows_xmp_xep_ns[xmlns]) {
-      return xmlns+":"+xows_xmp_xep_ns[xmlns];
-    }
-  }
-  xows_log(1,"xmp_get_xep","unknown extension",xmlns);
-  return null;
-}
-
-/**
  * Get own entity capabilities
  *
  * This returns an array  containing XML nodes ready to be injected
@@ -385,6 +294,7 @@ function xows_xmp_get_caps()
     xows_xml_node("feature",{"var":XOWS_NS_RECEIPTS}),
     xows_xml_node("feature",{"var":XOWS_NS_CORRECT}),
     xows_xml_node("feature",{"var":XOWS_NS_STYLING}),
+    xows_xml_node("feature",{"var":XOWS_NS_SID}), //< Realy ?
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
     xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
     xows_xml_node("feature",{"var":vcard4}),
@@ -837,17 +747,11 @@ function xows_xmp_carbons_query(enable, onparse)
   // Create enable or disable node
   const tag = (enable) ? "enable" : "disable";
 
-  const xmlns_carbons = xows_xmp_get_xep(XOWS_NS_CARBONS);
-  if(!xmlns_carbons) {
-    xows_log(1,"xmp_carbons_query","Message Carbons unavailable");
-    return;
-  }
-
   xows_log(2,"xmp_carbons_query","query Message Carbons",tag);
 
   // Send request to enable carbons
   const iq =  xows_xml_node("iq",{"type":"set"},
-                xows_xml_node(tag,{"xmlns":xmlns_carbons}));
+                xows_xml_node(tag,{"xmlns":XOWS_NS_CARBONS}));
 
   // Use generic parsing function
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
@@ -889,16 +793,17 @@ function xows_xmp_extdisco_parse(stanza, onparse)
 
   // Forward result to client
   if(xows_isfunc(onparse))
-    onparse(svcs);
+    onparse(stanza.getAttribute("from"), svcs);
 }
 
 /**
  * Send a external services discovery query
  *
+ * @param   {string}    to        Target JID or URL
  * @param   {string}    type      Query type attribute or null to ignore
  * @param   {function}  onparse   Callback to forward parse result
  */
-function xows_xmp_extdisco_query(type, onparse)
+function xows_xmp_extdisco_query(to, type, onparse)
 {
   xows_log(2,"xmp_extdisco_query","query extdisco");
 
@@ -908,7 +813,7 @@ function xows_xmp_extdisco_query(type, onparse)
   // Add type if supplied
   if(type) services.setAttribute("type",type);
 
-  const iq =  xows_xml_node("iq",{"type":"get","to":xows_xmp_domain},services);
+  const iq =  xows_xml_node("iq",{"type":"get","to":to},services);
 
   xows_xmp_send(iq, xows_xmp_extdisco_parse, onparse);
 }
@@ -1794,16 +1699,9 @@ function xows_xmp_mam_parse(stanza, onparse)
  */
 function xows_xmp_mam_query(to, max, jid, start, end, before, onparse)
 {
-  // Get proper XMLNS
-  const xmlns_mam = xows_xmp_get_xep(XOWS_NS_MAM);
-  if(!xmlns_mam) {
-    xows_log(1,"xmp_mam_query","Message Archive Management (XEP-0313) is unavailable");
-    return;
-  }
-
   // Add the needed x:data filter field
   const field = [];
-  field.push({"var":"FORM_TYPE","type":"hidden","value":xmlns_mam});
+  field.push({"var":"FORM_TYPE","type":"hidden","value":XOWS_NS_MAM});
   if(  jid) field.push({"var":"with"  ,"value":jid});
   if(start) field.push({"var":"start" ,"value":new Date(start).toJSON()});
   if(  end) field.push({"var":"end"   ,"value":new Date(end).toJSON()});
@@ -1825,7 +1723,7 @@ function xows_xmp_mam_query(to, max, jid, start, end, before, onparse)
   // Create the final stanza
   const id = xows_gen_uuid();
   const iq =  xows_xml_node("iq",{"id":id,"type":"set"},
-                xows_xml_node("query",{"xmlns":xmlns_mam,"queryid":qid},[
+                xows_xml_node("query",{"xmlns":XOWS_NS_MAM,"queryid":qid},[
                   xows_xmp_xdata_make(field),rsm]));
 
   if(to !== null) iq.setAttribute("to",to);
@@ -1898,16 +1796,9 @@ function xows_xmp_upld_parse(stanza, onparse)
  */
 function xows_xmp_upld_query(url, name, size, type, onparse)
 {
-  // Get the proper XMLNS
-  const xmlns_httpupload = xows_xmp_get_xep(XOWS_NS_HTTPUPLOAD);
-  if(!xmlns_httpupload) {
-    xows_log(1,"xmp_upld_query","HTTP File Upload (XEP-0363) is unvailable");
-    return;
-  }
-
   xows_log(2,"xmp_upld_query","send HTTP-Upload query",size+" bytes required");
 
-  let attr = {"xmlns":xmlns_httpupload,"filename":name,"size":size};
+  let attr = {"xmlns":XOWS_NS_HTTPUPLOAD,"filename":name,"size":size};
   if(type) attr.type = type;
 
   const id = xows_gen_uuid();
@@ -3086,7 +2977,7 @@ function xows_xmp_recv_message(stanza)
     // Store child xmlns attribute
     xmlns = node.getAttribute("xmlns");
     // Check whether this is a MAM archive query result
-    if(xmlns === xows_xmp_get_xep(XOWS_NS_MAM)) {
+    if(xmlns === XOWS_NS_MAM) {
       xows_log(2,"xmp_recv_message","received Archive result");
       return xows_xmp_recv_mam_result(node);
     }
@@ -3096,7 +2987,7 @@ function xows_xmp_recv_message(stanza)
       return xows_xmp_recv_pubsub(from, node);
     }
     // Check whether this is an encapsuled carbons copy
-    if(xmlns === xows_xmp_get_xep(XOWS_NS_CARBONS)) {
+    if(xmlns === XOWS_NS_CARBONS) {
       xows_log(2,"xmp_recv_message","received forwarded Carbons");
       // Take the inner <message> node and parse it
       const message = node.querySelector("message");
@@ -3255,11 +3146,11 @@ function xows_xmp_send_presence(to, type, level, status, photo, muc, nick)
     // Append <status> child
     if(status) xows_xml_parent(stanza, xows_xml_node("status",null,status));
 
-    if(xows_cli_feat_srv_has(XOWS_NS_VCARD)) {
+    //if(xows_cli_feat_srv_has(XOWS_NS_VCARD)) {
       // Append vcard-temp:x:update for avatar update child
       xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
                                   (photo)?xows_xml_node("photo",null,photo):null));
-    }
+    //}
 
     // Append <c> (caps) child
     xows_xml_parent(stanza, xows_xml_node("c",{ "xmlns":XOWS_NS_CAPS,
