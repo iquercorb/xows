@@ -423,7 +423,7 @@ const xows_tpl_reg_alone_link = /^\s*<a href=.+<\/a>\s*$/;
 /**
  * Regular expression to match HTTP url
  */
-const xows_tpl_reg_url = /^(?:http|https):\/\/\S[^\s^"'()<>|\[\]\\]+/i;
+const xows_tpl_reg_url = /^(?:http|https):\/\/(?:[!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})+/i;
 
 /**
  * Regular expression to match code block
@@ -755,7 +755,7 @@ function xows_tpl_embed_audio(href, ext)
  */
 function xows_tpl_embed_youtube(href, domain)
 {
-  const match = href.match(/(?:v=|embed\/|shorts\/|youtu\.be\/)([\w\d\-_]+)(&.+)?/);
+  const match = href.match(/(?:v=|embed\/|shorts\/|youtu\.be\/)([\w\-]+)(\?.+)?/);
   if(!match) return null;
   let ref = match[1];
   // add options and replace the potential t= by start=
