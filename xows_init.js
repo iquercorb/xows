@@ -42,7 +42,7 @@
  * Stored default application options
  */
 let xows_options = {
-  root            : "xows",     //< Default Lib root folder
+  root            : "xows",     //< Default application root folder
   url             : "ws://localhost/xmpp-websocket/", //< XMPP Websocket URL
   domain          : "localhost",                      //< XMPP server domain
   locale          : "en-US",    //< Default Locales
@@ -178,6 +178,10 @@ function xows_init(options)
     if(options.hasOwnProperty("history_size"))     xows_options.history_size = options.history_size;
     if(options.hasOwnProperty("extern_services"))  xows_options.extern_services = options.extern_services;
   }
+
+  // Fix root path
+  if(xows_options.root.charAt(0) != "/") 
+    xows_options.root = "/"+xows_options.root;
 
   xows_log(2,"init","xows init start");
 
