@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Xows debug</title>
+    
+    <script src="xows_base.js"></script> <!-- Base functions and constants -->
+    <script src="xows_l10n.js"></script> <!-- l10n Module -->
+    <script src="xows_xml.js"></script>  <!-- XML Module -->
+    <script src="xows_sasl.js"></script> <!-- SALS Module -->
+    <script src="xows_sck.js"></script>  <!-- WebSocket interface Module -->
+    <script src="xows_xmp.js"></script>  <!-- XMPP Protocol interface Module -->
+    <script src="xows_cach.js"></script> <!-- Cache & Local Storage Module -->
+    <script src="xows_cli.js"></script>  <!-- Main Client Module -->
+    <script src="xows_tpl.js"></script>  <!-- HTML Templates Module -->
+    <script src="xows_doc.js"></script>  <!-- DOM Managment Module -->
+    <script src="xows_wrtc.js"></script> <!-- WebRTC interface -->
+    <script src="xows_gui.js"></script>  <!-- User interface Module -->
+    <script src="xows_init.js"></script> <!-- Main "public" API -->
+
+  </head>
+  <body>
+    <!-- leave that empty -->
+  </body>
+  <script>
+    
+  // Set options
+  const options = {
+    
+    // Base configuration
+    "root"            : "xows",                               //< Application root path (relative to base URL)
+    "theme"           : "dark",                               //< Interface theme (directory)
+    "verbose"         : 4,                                    //< Verbosity level (0-4)
+    "uncache"         : true,                                 //< Prevent browser cache (force reload assets)
+
+    // XMPP/Websocket configuration
+    "url"             : "wss://localhost/xmpp-websocket/",    //< XMPP server Websocket address
+    "domain"          : "localhost",                          //< XMPP server domain
+    "login_delay"     : 2000,                                 //< Delay (in milliseconds) between login attempts
+
+    // Interface configuration
+    "locale"          : "en-US",                              //< Interface Localization
+    "allow_register"  : true,                                 //< Enable account register link and dialog
+    "history_size"    : 128,                                  //< Maximum message count per chat history window
+
+    // XMPP features configuration
+    "legacy_vcard"    : false,                                //< Force usage of legacy vcard-temp (XEP-0054 ) instead of vCard4 (XEP-0292)
+    "vcard4_notify"   : true,                                 //< Request for Vcard4 (XEP-0292) PubSub notifications
+    "avatar_notify"   : true,                                 //< Request for User Avatar (XEP-0084) PubSub notifications
+    "extern_services" : [ { type:"stun",                      //< Manually defined XMPP External Services (following XEP-0215 schemas)
+                            transport:"udp",
+                            host:"stun.example.net",
+                            port:"3478" },
+                            
+                          { type:"turn",
+                            transport:"udp",
+                            host:"turn.example.net",
+                            port:"3478",
+                            secret:"7d77f8a6ac0bc041959af2abe460" } ],
+  };
+
+  // Initialize
+  xows_init(options);
+
+  </script>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Xows release</title>
+
+    <script src="xows.min.js"></script>
+
+  </head>
+  <body>
+    <!-- leave that empty -->
+  </body>
+  <script>
+
+
+  // Set options
+  const options = {
+
+    // Base configuration
+    "root"            : "xows",                               //< Application root path (relative to base URL)
+    "theme"           : "dark",                               //< Interface theme (directory)
+    "verbose"         : 1,                                    //< Verbosity level (0-4)
+    "uncache"         : true,                                 //< Prevent browser cache (force reload assets)
+
+    // XMPP/Websocket configuration
+    "url"             : "wss://localhost/xmpp-websocket/",    //< XMPP server Websocket address
+    "domain"          : "localhost",                          //< XMPP server domain
+    "login_delay"     : 2000,                                 //< Delay (in milliseconds) between login attempts
+
+    // Interface configuration
+    "locale"          : "en-US",                              //< Interface Localization
+    "allow_register"  : true,                                 //< Enable account register link and dialog
+    "history_size"    : 256,                                  //< Maximum message count per chat history window
+
+    // XMPP features configuration
+    "legacy_vcard"    : false,                                //< Force usage of legacy vcard-temp (XEP-0054 ) instead of vCard4 (XEP-0292)
+    "vcard4_notify"   : true,                                 //< Request for Vcard4 (XEP-0292) PubSub notifications
+    "avatar_notify"   : true,                                 //< Request for User Avatar (XEP-0084) PubSub notifications
+    "extern_services" : [ { type:"stun",                      //< Manually defined XMPP External Services (following XEP-0215 schemas)
+                            transport:"udp",
+                            host:"stun.example.net",
+                            port:"3478" },
+
+                          { type:"turn",
+                            transport:"udp",
+                            host:"turn.example.net",
+                            port:"3478",
+                            secret:"7d77f8a6ac0bc041959af2abe460" } ],
+  };
+
+  // Initialize
+  xows_init(options);
+
+
+  </script>
+</html>
