@@ -429,7 +429,7 @@ let xows_xmp_fw_onoccupant = function() {};
 /**
  * Reference to callback function for received roster push
  */
-let xows_xmp_fw_onroster = function() {};
+let xows_xmp_fw_onrostpush = function() {};
 
 /**
  * Reference to callback function for received chat message content
@@ -501,7 +501,7 @@ function xows_xmp_set_callback(type, callback)
     case "presence":  xows_xmp_fw_onpresence = callback; break;
     case "subscrib":  xows_xmp_fw_onsubscrib = callback; break;
     case "occupant":  xows_xmp_fw_onoccupant = callback; break;
-    case "roster":    xows_xmp_fw_onroster = callback; break;
+    case "rostpush":  xows_xmp_fw_onrostpush = callback; break;
     case "message":   xows_xmp_fw_onmessage = callback; break;
     case "chatstate": xows_xmp_fw_onchatstate = callback; break;
     case "receipt":   xows_xmp_fw_onreceipt = callback; break;
@@ -2220,14 +2220,16 @@ function xows_xmp_jingle_result(stanza, onresult)
  * Send Jingle RTP session initiate from SDP offer
  *
  * @parma   {string}    to          Destination JID
- * @parma   {string}    sid         Jingle session ID
  * @parma   {string}    sdp         SDP offer string
  * @param   {function} [onresult]   Optionnal callback for request result
+ *
+ * @return  {string}    Initiated Jingle session ID
  */
-function xows_xmp_jingle_sdp_offer(to, sid, sdp, onresult)
+function xows_xmp_jingle_sdp_offer(to, sdp, onresult)
 {
   // Create <jingle> RTP session from SDP string
   const jingle = xows_xmp_sdp_to_jingle(sdp);
+  const sid = xows_gen_nonce_asc(16); // xows_sdp_get_sid(sdp);
 
   // Complete <jingle> node with proper attributes
   jingle.setAttribute("initiator",xows_xmp_bare+"/"+xows_xmp_sres);
@@ -2753,7 +2755,7 @@ function xows_xmp_recv_roster_push(stanza)
   xows_log(2,"xmp_recv_roster_push","received Roster Push");
 
   // Forward parse result
-  xows_xmp_fw_onroster(bare, name, subs, group);
+  xows_xmp_fw_onrostpush(bare, name, subs, group);
 }
 
 /**

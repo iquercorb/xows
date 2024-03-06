@@ -410,7 +410,7 @@ function xows_gui_peer_doc_import(peer)
     xows_doc_frag_import(peer.bare, "occu_list");
 
     // Enable or disable Multimedia Call buttons
-    const in_call = (xows_cli_call_stat > 1); // < XOWS_CALL_RING
+    const in_call = (xows_wrtc_busy());
     xows_gui_peer_doc(peer,"chat_bt_cala").disabled = in_call;
     xows_gui_peer_doc(peer,"chat_bt_calv").disabled = in_call;
 
@@ -510,11 +510,10 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("error", xows_gui_cli_onerror);
   xows_cli_set_callback("close", xows_gui_cli_onclose);
   xows_cli_set_callback("timeout", xows_gui_cli_ontimeout);
-  xows_cli_set_callback("callincoming", xows_gui_cli_oncallincoming);
-  xows_cli_set_callback("callstream", xows_gui_cli_oncallstream);
-  xows_cli_set_callback("calllinked", xows_gui_cli_oncalllinked);
   xows_cli_set_callback("callerror", xows_gui_cli_oncallerror);
-  xows_cli_set_callback("callended", xows_gui_cli_oncallended);
+  xows_cli_set_callback("callinit", xows_gui_cli_oncallinit);
+  xows_cli_set_callback("callaccept", xows_gui_cli_oncallaccept);
+  xows_cli_set_callback("callend", xows_gui_cli_oncallend);
 
   // From now the DOM is no longer in its default state
   xows_gui_clean = false;
@@ -1040,8 +1039,7 @@ function xows_gui_switch_peer(jid)
   chat_fram.hidden = (next === null);
 
   // Open or close Multimedia Call layout
-  if(xows_gui_chat_call_peer)
-    chat_fram.classList.toggle("CALL-OPEN",(xows_gui_chat_call_peer === next));
+  chat_fram.classList.toggle("CALL-OPEN", xows_gui_call_remote.has(next));
 
   // Revert window title
   if(prev) xows_gui_title_pop();
@@ -1067,7 +1065,7 @@ function xows_gui_switch_peer(jid)
     xows_doc_cls_tog("main_colr","COL-HIDE",!is_room);
 
     // Join the room if required
-    if(is_room) if(!next.join) xows_cli_room_join(next);
+    if(is_room) if(!next.join) xows_cli_muc_join(next);
 
     // Hidden history mean first open, need to pull some history
     if(xows_doc_hidden("hist_ul")) {
@@ -1873,7 +1871,7 @@ function xows_gui_room_list_reload()
   xows_doc_cls_add("room_list", "LOADING");
 
   // Query to get public room list with delay
-  setTimeout(xows_cli_muc_items_query, 500);
+  setTimeout(xows_cli_muc_discoitems_query, 500);
 }
 
 /**
@@ -2167,7 +2165,7 @@ function xows_gui_chat_head_update(peer)
     meta_inpt.innerText = peer.stat;
     xows_gui_peer_doc(peer,"chat_show").dataset.show = peer.show;
     // Show or hide Multimedia Call buttons
-    const has_ices = (xows_cli_extservs.has("stun") && xows_cli_extservs.has("turn"));
+    const has_ices = xows_cli_external_has("stun", "turn");
     xows_gui_peer_doc(peer,"chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
     xows_gui_peer_doc(peer,"chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
   } else {                            //< XOWS_PEER_ROOM
@@ -2177,7 +2175,7 @@ function xows_gui_chat_head_update(peer)
   }
 }
 
- /* -------------------------------------------------------------------
+/* -------------------------------------------------------------------
  *
  * Main Screen - Chat Frame - Header
  *
@@ -2217,7 +2215,7 @@ function xows_gui_chat_head_onclick(event)
     }
     case "chat_bt_cnfg": {
       // Query for Room configuration, will open Room config page
-      xows_cli_room_cfg_get(xows_gui_peer, xows_gui_page_room_open);
+      xows_cli_muc_getcfg_query(xows_gui_peer, xows_gui_page_room_open);
       break;
     }
     case "chat_bt_occu": {
@@ -2235,10 +2233,8 @@ function xows_gui_chat_head_onclick(event)
     case "chat_bt_calv":
     case "chat_bt_cala": {
       const video = (event.target.id === "chat_bt_calv");
-      // Set incoming call flag
-      xows_gui_call_incoming = null;
-      // Start by getting user Media Stream
-      xows_gui_call_media_get({"audio": true, "video": video});
+      // Initiate call
+      xows_gui_call_invite(xows_gui_peer, {"audio": true,"video": video});
       break;
     }
   }
@@ -2300,7 +2296,7 @@ function xows_gui_meta_inpt_enter(inpt)
 
   // If changed, inform of the new room topic
   if(xows_gui_peer.type === XOWS_PEER_ROOM && subj != xows_gui_peer.subj)
-    xows_cli_send_subject(xows_gui_peer, subj);
+    xows_cli_muc_set_subject(xows_gui_peer, subj);
 
   // Unfocus input, this will throw blur event
   inpt.blur();
@@ -2354,20 +2350,20 @@ function xows_gui_call_menu_onclick(event)
     case "call_bt_cam": {
       mutted = event.target.classList.toggle("MUTTED");
       // Enable/Disable local video tracks
-      xows_gui_call_media_enable(!mutted, "video");
+      xows_gui_call_input_enable(!mutted, "video");
       xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
       break;
     }
     case "call_bt_mic": {
       mutted = event.target.classList.toggle("MUTTED");
       // Enable/Disable local video tracks
-      xows_gui_call_media_enable(!mutted, "audio");
+      xows_gui_call_input_enable(!mutted, "audio");
       xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
       break;
     }
     case "call_bt_hup": {
       // Hangup and clear data
-      xows_gui_call_terminate();
+      xows_gui_call_terminate(xows_gui_peer,"success");
       break;
     }
     case "call_bt_geo": {
@@ -2405,11 +2401,6 @@ function xows_gui_call_in_vol_oninput(event)
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - Call View - Initialization
  * -------------------------------------------------------------------*/
-
-/**
- * Stored Multimedia Call Session layout Peer object
- */
-let xows_gui_chat_call_peer = null;
 
 /**
  * Multimedia Call speak/silence visual effect animation function handle.
@@ -2455,12 +2446,6 @@ function xows_gui_chat_call_fx()
  */
 function xows_gui_chat_call_open()
 {
-  // Session opened, store the call peer
-  xows_gui_chat_call_peer = xows_cli_call_peer;
-
-  // Add calling badge to roster contact
-  xows_gui_calling_set(xows_gui_chat_call_peer, true);
-
   // Reset volume slider and button to initial state
   const call_bt_spk = xows_doc("call_bt_spk");
   const call_in_vol = xows_doc("call_in_vol");
@@ -2472,7 +2457,7 @@ function xows_gui_chat_call_open()
   // Set gain to current volume slider position
   xows_gui_audio.vol.gain.value = parseInt(xows_doc("call_in_vol").value) / 100;
 
-  const use_video = xows_gui_call_constraints.video;
+  const use_video = xows_gui_call_local.constraints.video; //xows_gui_call_constraints.video;
 
   // Reset Microphone button to intial state
   const call_bt_mic = xows_doc("call_bt_mic");
@@ -2521,13 +2506,6 @@ function xows_gui_chat_call_close()
 
   // Empty the peer/stream view grid
   xows_doc("call_grid").innerHTML = "";
-
-  // Remove calling badge to roster contact
-  if(xows_gui_chat_call_peer)
-    xows_gui_calling_set(xows_gui_chat_call_peer, false);
-
-  // Session closed, reset call peer
-  xows_gui_chat_call_peer = null;
 }
 
 /**
@@ -2606,18 +2584,46 @@ function xows_gui_chat_call_add_stream(peer, stream)
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - Incoming call - Initialization
  * -------------------------------------------------------------------*/
-
-/**
- * Function to open the Chat Incoming Call dialog
+ /**
+ * History Ringing dialog on-click callback
  *
  * @param   {object}    peer      Contact Peer object.
  * @param   {string}    reason    Calling dialog open reason
+ * @param   {object}   [constraints] Optionnal media constraints
  */
-function xows_gui_hist_ring_open(peer, reason)
+function xows_gui_hist_ring_onclick(event)
+{
+  // Close the Signaling Call dialog
+  xows_gui_hist_ring_close();
+
+  // Stop Ring Bell sound
+  xows_gui_sound_stop("ringbell");
+
+  switch(event.target.id)
+  {
+  case "ring_bt_pkup":
+    // Ask user for input devices and open Call View
+    xows_gui_call_accept(xows_gui_peer);
+    break;
+  case "ring_bt_deny":
+    // Reject and clear call data
+    xows_gui_call_terminate(xows_gui_peer,"decline");
+    break;
+  }
+}
+
+/**
+ * Open History Ringing dialog
+ *
+ * @param   {object}    peer          Contact Peer object.
+ * @param   {string}    reason        Calling dialog open reason
+ * @param   {object}   [constraints]  Optionnal media constraints
+ */
+function xows_gui_hist_ring_open(peer, reason, constraints)
 {
   const hist_ring = xows_gui_peer_doc(peer,"hist_ring");
 
-  const video = xows_gui_call_constraints.video;
+  const video = constraints ? constraints.video : false;
 
   let icon, text, ringing, incall;
 
@@ -2635,7 +2641,7 @@ function xows_gui_hist_ring_open(peer, reason)
 
   case "success": {   //< peer hung up call
       icon = "CALL-TERM";
-      if(xows_cli_call_stat === 3) {
+      if(xows_wrtc_linked()) {
         text = xows_l10n_get("The other person has hung up");
       } else {
         text = xows_l10n_get("You missed a call");
@@ -2677,104 +2683,173 @@ function xows_gui_hist_ring_open(peer, reason)
 }
 
 /**
- * Function to close the Chat Incoming Call dialog
+ * Close History Ringing dialog
  */
-function xows_gui_hist_ring_bt_close()
+function xows_gui_hist_ring_close()
 {
-  const hist_ring = xows_doc("hist_ring");
-
   // Show the incoming call message
-  hist_ring.hidden = true;
+  xows_doc("hist_ring").hidden = true;
 }
 
-/**
- * Multimedia Call flag for incoming call
- */
-let xows_gui_call_incoming = null;
-
-/**
- * Multimedia Call user Media Stream object
- */
-let xows_gui_call_stream = {rmt:null,loc:null};
-
-/**
- * Multimedia Call user Media constraints descriptor
- */
-let xows_gui_call_constraints = null;
-
-/**
- * Get user Media Stream error callback function
+/* -------------------------------------------------------------------
  *
- * @param   {object}  error     Error object supplied by MediaDevices API
- */
-function xows_gui_call_media_onerror(error)
-{
-  const mesg = xows_l10n_get("Unable to get device stream for media call session");
-
-  // Display popup error message
-  xows_doc_mbox_open(XOWS_SIG_WRN,mesg,
-    xows_gui_call_media_get,"Retry",xows_gui_chat_call_close,"Cancel");
-}
+ * Multimedia-Call management
+ *
+ * -------------------------------------------------------------------*/
 
 /**
- * Get user Media Stream error callback function
- *
- * @param   {object}  stream    Stream object provided by MediaDevices API
+ * Multimedia-Call session per-peer Remote parameters
  */
-function xows_gui_call_media_onresult(stream)
+const xows_gui_call_remote = new Map();
+
+/**
+ * Multimedia-Call session Local parameters
+ */
+const xows_gui_call_local = {"sdp":null,"sid":null,"constraints":null,"stream":null};
+
+/* -------------------------------------------------------------------
+ * Multimedia-Call - General interface functions
+ * -------------------------------------------------------------------*/
+/**
+ * Function to hangup call and clear Call data and references
+ */
+function xows_gui_call_clear()
 {
-  // Store local stream
-  xows_gui_call_stream.loc = stream;
+  // Close the Media Call view frame
+  xows_gui_chat_call_close();
 
-  // Add stream to Multimedia View
-  xows_gui_chat_call_add_stream(xows_cli_self, stream);
+  // Stop local stream
+  if(xows_gui_call_local.stream) {
 
-  if(xows_gui_call_incoming) {
+    const tracks = xows_gui_call_local.stream.getTracks();
+    let i = tracks.length;
+    while(i--) tracks[i].stop();
 
-    // Accept WebRTC/Jingle call
-    xows_cli_call_accept(stream);
-
-  } else {
-
-    // Initiate WebRTC/Jingle call
-    xows_cli_call_initiate(stream, xows_gui_peer);
-
-    // Open Ringin dialog
-    xows_gui_hist_ring_open(xows_gui_peer,"initiate");
-
-    // Play Ring Tone sound
-    xows_gui_sound_play("ringtone");
+    xows_gui_call_local.stream = null;
   }
 
-  // Disable Call buttons
-  xows_gui_peer_doc(xows_gui_peer,"chat_bt_cala").disabled = true;
-  xows_gui_peer_doc(xows_gui_peer,"chat_bt_calv").disabled = true;
+  xows_gui_call_local.sdp = null;
+  xows_gui_call_local.sid = null;
+
+  // Stop Ring Tone sound
+  xows_gui_sound_stop("ringtone");
+
+  // Stop Ring Bell sound
+  xows_gui_sound_stop("ringbell");
+
+  // Play Hangup sound
+  xows_gui_sound_play("hangup");
+
+  // Clear WebRTC interface
+  xows_wrtc_clear();
 }
 
 /**
- * Function to disable (mute) or enable (unmute) Media Call input
- * (local) tracks of the specified type.
+ * Multimedia-Call terminate call for the specified Peer
+ *
+ * If not 'reason' is provided, data for the specified Remote peer is cleared
+ * without sending session terminate signaling.
+ *
+ * @param   {object}     peer       Related Peer object
+ * @param   {string}    [reason]    Optionnal reason to HangUp
+ */
+function xows_gui_call_terminate(peer, reason)
+{
+  if(reason)
+    xows_cli_jing_terminate(peer, reason);
+
+  // Prevent useless process
+  if(!xows_gui_call_remote.has(peer))
+    return;
+
+  // Enable Call buttons
+  xows_gui_peer_doc(peer,"chat_bt_cala").disabled = false;
+  xows_gui_peer_doc(peer,"chat_bt_calv").disabled = false;
+
+  // Remove calling badge to roster contact
+  xows_gui_calling_set(peer, false);
+
+  const remote = xows_gui_call_remote.get(peer);
+
+  // Stop stream for this remote peer
+  if(remote.stream) {
+    const tracks = remote.stream.getTracks();
+    let i = tracks.length;
+    while(i--) tracks[i].stop();
+
+    remote.stream = null;
+  }
+
+  // Remove peer from remote entities
+  xows_gui_call_remote.delete(peer);
+
+  // Clear call data if required
+  if(!xows_gui_call_remote.size)
+    xows_gui_call_clear();
+}
+
+/**
+ * Multimedia-Call accept incomping call from the specified Peer
+ *
+ * @param   {object}     peer     Related Peer object
+ */
+function xows_gui_call_accept(peer)
+{
+  if(!xows_gui_call_remote.has(peer))
+    return;
+
+  const remote = xows_gui_call_remote.get(peer);
+
+  const medias = xows_sdp_get_medias(remote.sdp);
+
+  // Create best medias constraint according incomming call
+  // medias list and currently available local input medias
+  const constraints = { audio: (medias.audio && xows_gui_medias_has("audioinput")),
+                        video: (medias.video && xows_gui_medias_has("videoinput")) };
+
+  xows_gui_call_input_ask(constraints);
+}
+
+/**
+ * Multimedia-Call invite the specified Peer for a call
+ *
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     constraints  Medias constraints
+ */
+function xows_gui_call_invite(peer, constraints)
+{
+  if(xows_gui_call_remote.has(peer))
+    return;
+
+  // Add peer as remote entiy
+  xows_gui_call_remote.set(peer,{"sid":null,"sdp":null,"stream":null});
+
+  // Start by getting user Media Stream
+  xows_gui_call_input_ask(constraints);
+}
+
+/* -------------------------------------------------------------------
+ * Multimedia-Call - Local/User Input-Medias routines
+ * -------------------------------------------------------------------*/
+/**
+ * Multimedia-Call user Input-Medias activation.
  *
  * @param   {boolean} enable      Enable or disable tacks
- * @param   {string}  type        Medias type, either audio or video
+ * @param   {string}  type        Medias type, either 'audio', 'video' or null for both
  */
-function xows_gui_call_media_enable(enable, type)
+function xows_gui_call_input_enable(enable, type)
 {
-  if(xows_gui_call_stream.loc) {
+  if(xows_gui_call_local.stream) {
+
+    const stream = xows_gui_call_local.stream;
 
     let tracks = null;
 
     switch(type)
     {
-    case "video":
-      tracks = xows_gui_call_stream.loc.getVideoTracks();
-      break;
-    case "audio":
-      tracks = xows_gui_call_stream.loc.getAudioTracks();
-      break;
-    default:
-      tracks = xows_gui_call_stream.loc.getTracks();
-      break;
+    case "video": tracks = stream.getVideoTracks(); break;
+    case "audio": tracks = stream.getAudioTracks(); break;
+    default:      tracks = stream.getTracks(); break;
     }
 
     if(tracks) {
@@ -2785,117 +2860,218 @@ function xows_gui_call_media_enable(enable, type)
 }
 
 /**
- * Function to get user Media Stream for Media Call (WebRTC session)
- *
- * If constr parameter is set, the global constraints descriptor
- * (xows_gui_call_constraints) is set to the new values, otherwise the
- * current global constraints descriptor is used.
- *
- * @param   {object}  constr     Optionnal media constraints descriptor
+ * Multimedia-Call user Input-Medias acquiring error callback
  */
-function xows_gui_call_media_get(constr)
+function xows_gui_call_input_error()
+{
+  const mesg = xows_l10n_get("Unable to get device stream for media call session");
+
+  // Display popup error message
+  xows_doc_mbox_open(XOWS_SIG_WRN,mesg,
+    xows_gui_call_media_get,"Retry",xows_gui_chat_call_close,"Cancel");
+}
+
+/**
+ * Multimedia-Call user Input-Medias acquiring success callback
+ *
+ * @param   {object}  stream    Input MediaStream object
+ */
+function xows_gui_call_input_setup(stream)
+{
+  // Store local stream
+  xows_gui_call_local.stream = stream;
+
+  // Add stream to Multimedia View
+  xows_gui_chat_call_add_stream(xows_cli_self, stream);
+
+  // Setup WebRTC interface if required
+  if(!xows_wrtc_ready()) {
+    xows_wrtc_setup(  xows_cli_external_get("stun", "turn"),
+                      xows_gui_wrtc_onlinked,
+                      xows_gui_wrtc_onerror);
+  }
+
+  // If no remote stream this is a call initiation
+  if(!xows_wrtc_has_remote()) {
+
+    // Open Ringin dialog
+    xows_gui_hist_ring_open(xows_gui_peer,"initiate",xows_gui_call_local.constraints);
+
+    // Play Ring Tone sound
+    xows_gui_sound_play("ringtone");
+  }
+
+  // Set WebRTC Local stream and wait for SDP
+  xows_wrtc_local_stream(stream, xows_gui_wrtc_onsdp);
+
+  // Disable Call buttons
+  for(const peer of xows_gui_call_remote.keys()) {
+    xows_gui_peer_doc(peer,"chat_bt_cala").disabled = true;
+    xows_gui_peer_doc(peer,"chat_bt_calv").disabled = true;
+  }
+}
+
+/**
+ * Multimedia-Call user Input-Medias acquiring request function
+ *
+ * @param   {object}  constraints  Media constraints object
+ */
+function xows_gui_call_input_ask(constraints)
 {
   // Check whether API is available
   if(!xows_gui_medias) {
-    xows_log(1,"gui_call_media_get","Feature unavailable");
+    xows_log(1,"gui_call_input_ask","Feature unavailable");
     return;
   }
 
-  // Check whether constraints are properly defined
-  if(!constr && !xows_gui_call_constraints) {
-    xows_log(1,"gui_call_media_get","constraints descriptor not defined");
-    return;
-  }
-
-  // Update constraints descriptor if required
-  if(constr) xows_gui_call_constraints = constr;
-
-  // Reset previous stream if any
-  xows_gui_call_stream.loc = null;
+  xows_gui_call_local.constraints = constraints;
 
   // Send media request to User
-  navigator.mediaDevices.getUserMedia(xows_gui_call_constraints)
-    .then(xows_gui_call_media_onresult, xows_gui_call_media_onerror);
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(xows_gui_call_input_setup, xows_gui_call_input_error);
+}
+
+/* -------------------------------------------------------------------
+ * Multimedia-Call - WebRTC interface routines
+ * -------------------------------------------------------------------*/
+/**
+ * Multimedia-Call WebRTC error callback
+ *
+ * @param   {string}      mesg    Error message
+ */
+function xows_gui_wrtc_onerror(mesg)
+{
+  // Display popup error message
+  xows_doc_mbox_open(XOWS_SIG_WRN,"Call session error: "+mesg);
+
+  // Close potentially opened dialog
+  xows_gui_hist_ring_close();
+
+  // Clear call data
+  xows_gui_call_terminate();
 }
 
 /**
- * Function to hangup call and clear Call data and references
+ * Multimedia-Call WebRTC local description (SDP) created callback
+ *
+ * @param   {string}      sdp     Local SDP description string
  */
-function xows_gui_call_clear()
+function xows_gui_wrtc_onsdp(sdp)
 {
-  // Close the Media Call view frame
-  xows_gui_chat_call_close();
+  // Store local SDP
+  xows_gui_call_local.sdp = sdp;
 
-  // Enable Call buttons
-  xows_gui_peer_doc(xows_cli_call_peer,"chat_bt_cala").disabled = false;
-  xows_gui_peer_doc(xows_cli_call_peer,"chat_bt_calv").disabled = false;
+  // Check whether we initiated call
+  const initiate = !xows_wrtc_has_remote();
 
-  // Stops and release aquired Media Streams
-  let tracks = [];
-
-  if(xows_gui_call_stream.loc)
-    tracks = tracks.concat(xows_gui_call_stream.loc.getTracks());
-
-  if(xows_gui_call_stream.rmt)
-    tracks = tracks.concat(xows_gui_call_stream.rmt.getTracks());
-
-  let i = tracks.length;
-  while(i--) {
-    tracks[i].stop();
+  for(const peer of xows_gui_call_remote.keys()) {
+    if(initiate) {
+      xows_cli_jing_initiate_sdp(peer, sdp);
+    } else {
+      xows_cli_jing_accept_sdp(peer, sdp);
+    }
   }
+}
 
-  // Release MediaStream object
-  xows_gui_call_stream.loc = null;
-  xows_gui_call_stream.rmt = null;
+/**
+ * Multimedia-Call WebRTC remote stream available callback
+ *
+ * @param   {object}     stream     Remote MediaStream object
+ * @param   {object}     peer       Related Peer object
+ */
+function xows_gui_wrtc_onstream(stream, peer)
+{
+  const remote = xows_gui_call_remote.get(peer);
 
-  // Reset call variables
-  xows_gui_call_constraints = null;
-  xows_gui_call_incoming = null;
+  remote.stream = stream;
 
+ // Add stream to Multimedia View
+  xows_gui_chat_call_add_stream(peer, stream);
+
+  // Check whether we answer this call
+  if(xows_wrtc_has_local()) {
+
+    // Close the Incoming Call dialog
+    xows_gui_hist_ring_close();
+  }
+}
+
+/**
+ * Multimedia-Call WebRTC connection established callback
+ */
+function xows_gui_wrtc_onlinked()
+{
   // Stop Ring Tone sound
   xows_gui_sound_stop("ringtone");
 
-  // Stop Ring Tone sound
+  // Stop Ring Bell sound
   xows_gui_sound_stop("ringbell");
 
-  // Play Hangup sound
-  xows_gui_sound_play("hangup");
+  for(const peer of xows_gui_call_remote.keys()) {
+    // Add calling badge to roster contact
+    xows_gui_calling_set(peer, true);
+  }
+
+  // Open Chat Multimedia View layout
+  xows_gui_chat_call_open();
 }
 
+/* -------------------------------------------------------------------
+ * Multimedia-Call - XMPP/Jingle interface routines
+ * -------------------------------------------------------------------*/
 /**
- * Function to hangup or decline incoming call
+ * Multimedia-Call XMPP/Jingle error callback
+ *
+ * @param   {number}     code     Error code
+ * @param   {string}     mesg     Error message
  */
-function xows_gui_call_terminate()
+function xows_gui_cli_oncallerror(code, mesg)
 {
-  // Prevent useless process
-  if(!xows_cli_call_stat)
-    return;
+  // Display popup error message
+  xows_doc_mbox_open(XOWS_SIG_WRN,"Call session error: "+mesg);
+
+  // Close potentially opened dialog
+  xows_gui_hist_ring_close();
+
+  // Hangup with all peer
+  for(const peer of xows_gui_call_remote.keys()) {
+    // Add calling badge to roster contact
+    xows_gui_call_terminate(peer, "failed-application");
+  }
 
   // Clear call data
   xows_gui_call_clear();
-
-  // Terminate call
-  xows_cli_call_terminate();
 }
 
 /**
- * Callback function for incoming client call session
+ * Multimedia-Call XMPP/Jingle received session initiate callback
  *
- * @param   {object}    peer     Peer object
- * @param   {object}    medias   Medias list
+ * @param   {object}     peer     Related Peer object
+ * @param   {string}     sid      Jingle session ID
+ * @param   {string}     sdp      Converted SDP Offer string
  */
-function xows_gui_cli_oncallincoming(peer, medias)
+function xows_gui_cli_oncallinit(peer, sid, sdp)
 {
-  // Set incoming call flag
-  xows_gui_call_incoming = peer;
+  // Check whether we are busy
+  if(xows_wrtc_busy()) {
+    xows_gui_call_terminate(peer,"busy");
+    return;
+  }
 
-  // Create best medias constraint according incomming call medias list
-  // and currently available local input medias
-  xows_gui_call_constraints = { audio: (medias.audio && xows_gui_medias_has("audioinput")),
-                                video: (medias.video && xows_gui_medias_has("videoinput")) };
+  // Add peer as remote entiy
+  xows_gui_call_remote.set(peer,{"sid":sid,"sdp":sdp,"stream":null});
+
+  // Setup WebRTC interface if required
+  if(!xows_wrtc_ready()) {
+    xows_wrtc_setup(  xows_cli_external_get("stun", "turn"),
+                      xows_gui_wrtc_onlinked,
+                      xows_gui_wrtc_onerror);
+  }
+
+  xows_wrtc_remote_sdp(sdp, xows_gui_wrtc_onstream, peer);
 
   // Open the Incoming Call dialog
-  xows_gui_hist_ring_open(peer,"incall");
+  xows_gui_hist_ring_open(peer,"incall",xows_sdp_get_medias(sdp));
 
   // If peer is offscreen during incomming call, add notification
   if(peer !== xows_gui_peer)
@@ -2906,73 +3082,45 @@ function xows_gui_cli_oncallincoming(peer, medias)
 }
 
 /**
- * Callback function for client call session new remote stream available
+ * Multimedia-Call XMPP/Jingle received session accept callback
  *
- * @param   {object}  peer      Peer object the stream is related to
- * @param   {object}  stream    Available remote stream
+ * @param   {object}     peer     Related Peer object
+ * @param   {string}     sid      Jingle session ID
+ * @param   {string}     sdp      Converted SDP Answer string
  */
-function xows_gui_cli_oncallstream(peer, stream)
+function xows_gui_cli_oncallaccept(peer, sid, sdp)
 {
-  xows_gui_call_stream.rmt = stream;
-
-  // Add stream to Multimedia View
-  xows_gui_chat_call_add_stream(peer, stream);
-
-  // Check whether we initiated this call
-  if(!xows_gui_call_incoming) {
-
-    // Close the Incoming Call dialog
-    xows_gui_hist_ring_bt_close();
+  // Check for existing remote entiy
+  if(!xows_gui_call_remote.has(peer)) {
+    xows_log(1,"gui_cli_oncallaccept","accept from unknown remote",peer.bare);
+    return;
   }
 
-  // Stop the Ringtone
-  xows_gui_sound_stop("ringtone");
+  // Save remote SDP answer
+  const remote = xows_gui_call_remote.get(peer);
+  remote.sdp = sdp;
+
+  xows_wrtc_remote_sdp(sdp, xows_gui_wrtc_onstream, peer);
 }
 
 /**
- * Callback function for call session etablished on both sides
- */
-function xows_gui_cli_oncalllinked()
-{
-  // Open Chat Multimedia View layout
-  xows_gui_chat_call_open();
-}
-
-/**
- * Callback function for client call session error
+ * Multimedia-Call XMPP/Jingle received session terminate callback
  *
- * @param   {number}    code     Error code
- * @param   {string}    mesg     Error message
+ * @param   {object}     peer     Related Peer object
+ * @param   {string}     sid      Jingle session ID
+ * @param   {string}     reason   Parsed terminate reason
  */
-function xows_gui_cli_oncallerror(code, mesg)
-{
-  // Display popup error message
-  xows_doc_mbox_open(XOWS_SIG_WRN,"Call session error: "+mesg);
-
-  // Close potentially opened dialog
-  xows_gui_hist_ring_bt_close();
-
-  // Clear call data
-  xows_gui_call_terminate();
-}
-
-/**
- * Callback function for client call session terminated
- *
- * @param   {number}    code     Error code
- * @param   {string}    mesg     Error message
- */
-function xows_gui_cli_oncallended(code, mesg)
+function xows_gui_cli_oncallend(peer, sid, reason)
 {
   // Open the Call dialog
-  xows_gui_hist_ring_open(xows_cli_call_peer, mesg);
+  xows_gui_hist_ring_open(peer, reason);
 
   // If peer is offscreen during ended call change notification
-  if(xows_cli_call_peer !== xows_gui_peer)
-    xows_gui_unread_call(xows_cli_call_peer, false);
+  if(peer !== xows_gui_peer)
+    xows_gui_unread_call(peer, false);
 
-  // Clear call data
-  xows_gui_call_clear();
+  // Hangup with this peer
+  xows_gui_call_terminate(peer, null);
 }
 
 /* -------------------------------------------------------------------
@@ -3076,24 +3224,8 @@ function xows_gui_chat_hist_onclick(event)
 
     // Check for history Ringing dialog
     if(event.target.id.startsWith("ring")) {
-
-      //< Close the Signaling Call dialog
-      xows_gui_hist_ring_bt_close();
-      // Stop Ring Bell sound
-      xows_gui_sound_stop("ringbell");
-
-      switch(event.target.id)
-      {
-      case "ring_bt_pkup":
-        // Ask user for input devices and open Call View
-        xows_gui_call_media_get();
-        break;
-      case "ring_bt_deny":
-        // Reject and clear call data
-        xows_gui_call_terminate();
-        break;
-      }
-
+      // Forward to dedicated function
+      xows_gui_hist_ring_onclick(event);
       return;
     }
 
@@ -3353,7 +3485,7 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, re
     rpl_li = xows_gui_hist_discard(peer, repl);
     // We ignore correction which are not in visible history or if correction
     // message have no body, in this case this mean message deletion
-    if(!rpl_li) return; 
+    if(!rpl_li) return;
   }
 
   // Avoid notifications for correction messages
@@ -3478,7 +3610,7 @@ function xows_gui_mam_query(peer, after, count = 20, delay = 100)
 
   // To prevent flood and increase ergonomy the archive query is
   // temporised with a fake loading time.
-  xows_gui_mam_query_to.set(peer.bare, setTimeout(xows_cli_pull_history, delay, peer, count, start, end, xows_gui_mam_parse));
+  xows_gui_mam_query_to.set(peer.bare, setTimeout(xows_cli_mam_fetch, delay, peer, count, start, end, xows_gui_mam_parse));
 }
 
 /**
@@ -3727,65 +3859,6 @@ function xows_gui_chat_file_onchange(event)
 /* -------------------------------------------------------------------
  * Main screen - Chat Frame - Foot Panel - Message edition
  * -------------------------------------------------------------------*/
-/**
- * Chat Editor table to store current pressed (down) key
- */
-//const xows_gui_edit_mesg_keyd = new Array(256);
-
-/**
- * Chat Panel on-keydown / on-keyup callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-/*
-function xows_gui_chat_panl_onkeyp(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  // Enable key down according received event
-  xows_gui_edit_mesg_keyd[event.keyCode] = (event.type === "keydown");
-
-  // Check for key down event
-  if(event.type === "keydown") {
-
-    // Check for prend Enter
-    if(event.keyCode === 13) {
-
-      // Check whether shift key is press, meaning escaping to
-      // add new line in input instead of send message.
-      if(xows_gui_edit_mesg_keyd[16])
-        return;
-
-      // Prevent browser to append the new-line in the text-area
-      event.preventDefault();
-
-      // Send message
-      if(xows_gui_peer) {
-
-        const edit_mesg = document.getElementById("edit_mesg");
-
-        if(edit_mesg.innerText.length) {
-
-          // Send message
-          xows_cli_send_message(xows_gui_peer, edit_mesg.innerText.trimEnd());
-          edit_mesg.innerText = ""; //< Empty any residual <br>
-
-          // Add CSS class to show placeholder
-          edit_mesg.classList.add("PLACEHOLD");
-        }
-
-        // Reset chatsate to active
-        xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_ACTI);
-      }
-
-    } else {
-      // Set composing
-      if(xows_gui_peer)
-        xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_COMP);
-    }
-  }
-}
-*/
 
 /**
  * Chat Message Edition validation (enter) function, called when user
@@ -4769,7 +4842,7 @@ function xows_gui_page_join_onvalid()
 
       // Send Room config form request, XMPP server will reply which
       // will automatically opens the Room Configuration page.
-      xows_cli_room_cfg_get(room, xows_gui_page_room_open);
+      xows_cli_muc_getcfg_query(room, xows_gui_page_room_open);
 
   } else {
 
@@ -4777,7 +4850,7 @@ function xows_gui_page_join_onvalid()
     const nick = xows_cli_self.name; //< user nickname to join room with
 
     // Join or create room
-    xows_cli_room_join(null, name, nick);
+    xows_cli_muc_join(null, name, nick);
   }
 }
 
@@ -4793,7 +4866,7 @@ function xows_gui_page_join_onabort()
   const room = xows_gui_page_join.room;
 
   // If we are in Room creation process, we accept the default config
-  if(room) xows_cli_room_cfg_set(room, null, xows_gui_page_join_onjoind);
+  if(room) xows_cli_muc_setcfg_query(room, null, xows_gui_page_join_onjoind);
 }
 
 /**
@@ -4896,7 +4969,7 @@ function xows_gui_page_room_onvalid()
   }
 
   // Submit fulfilled configuration form
-  xows_cli_room_cfg_set(room, form, xows_gui_page_room_onresult);
+  xows_cli_muc_setcfg_query(room, form, xows_gui_page_room_onresult);
 }
 
 /**
@@ -5002,12 +5075,12 @@ function xows_gui_page_room_onclose()
   if(room.init) {
 
     // Accept default config
-    xows_cli_room_cfg_set(room, null, null);
+    xows_cli_muc_setcfg_query(room, null, null);
 
   } else {
 
     // Cancel Room configuration
-    xows_cli_room_cfg_cancel(room);
+    xows_cli_muc_setcfg_cancel(room);
   }
 
   // unreference data

@@ -1267,46 +1267,44 @@ function xows_sdp_parse(raw)
  *
  * @param   {string}    raw       Raw SDP data to parse
  *
- * @return  {object}    Media constraints
+ * @return  {object}    Media types
  */
 function xows_sdp_get_medias(raw)
 {
-  const constraints = {};
+  const medias = {};
   let m = raw.indexOf("m=");
   while(m > 0) {
 
     m += 2;
 
-    const media = raw.substring(m).split(' ')[0];
+    const lf = raw.indexOf("\n", m);
+    const media = raw.substring(m, lf).split(' ')[0];
 
-    if(media === "audio" && !constraints.audio)
-      constraints.audio = true;
-    if(media === "video" && !constraints.video)
-      constraints.video = true;
+    if(media === "audio" && !medias.audio)
+      medias.audio = true;
+    if(media === "video" && !medias.video)
+      medias.video = true;
 
     m = raw.indexOf("m=", m);
   }
 
-  return constraints;
+  return medias;
 }
 
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *                       TUNR REST API utilites
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
 /**
- * Generate Turn server REST API credential from secret
+ *  Get Session ID from SDP string
  *
- * @param   {string}    name      Username to use for generation
- * @param   {string}    secret    TURN server static secret
+ * @param   {string}    raw       Raw SDP data to parse
  *
- * @return  {object}    Generated username and password
+ * @return  {string}    SDP origin Session ID
  */
-function xows_gen_turn_credential(name, secret)
+function xows_sdp_get_sid(raw)
 {
-  const expire = parseInt(Date.now()/1000) + 24*3600;
-  const username = expire+":"+name;
-  const password = xows_bytes_to_b64(xows_hmac_sha1(username, secret));
-
-  return {"username":username,"password":password};
+  const o = raw.indexOf("o=");
+  if(o > 0) {
+    o += 2;
+    const lf = raw.indexOf("\n", o);
+    return raw.substring(o, lf).split(' ')[1];
+  }
+  return "";
 }

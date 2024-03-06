@@ -73,9 +73,8 @@ function xows_l10n_select(locale, onready)
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
-  if(xows_options.uncache) {
+  if(xows_options.uncache) 
     path += "?" + xows_gen_nonce_asc(4);
-  }
 
   // Launch request to download locale/lang list file
   const xhr = new XMLHttpRequest();
@@ -130,9 +129,9 @@ function xows_l10n_db_load(locale, onready)
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
-  if(xows_options.uncache) {
+  if(xows_options.uncache) 
     path += "?" + xows_gen_nonce_asc(4);
-  }
+
   // Launch request to download template file
   const xhr = new XMLHttpRequest();
   xhr.open("GET", path, true);
