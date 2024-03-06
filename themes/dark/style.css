@@ -2060,15 +2060,13 @@ call-geom button:hover {
   padding: 0;
 }
 hist-bound {
-  width: 100%;
   height: 700px;
   text-align: center;
   font-size: 1.1em;
   font-weight: bold;
   text-transform: uppercase;
   color: var(--base-tone6);
-  margin-bottom: 0;
-  margin-top: auto;
+  margin: auto 13px 0 13px;
   background-color: transparent;
   background-size: 1000px;
   background-repeat: no-repeat;
@@ -2092,8 +2090,7 @@ hist-bound {
   align-items: center;
   border-radius: 5px;
   height: 75px;
-  margin: 10px 3px 5px 2px;
-  /*padding: 15px 15px 15px 0;*/
+  margin: 10px 13px 5px 13px;
   background-color: var(--base-tone5);
 }
 @keyframes hist-ringing {
