@@ -49,11 +49,6 @@ let xows_wrtc_pc = null;
 let xows_wrtc_cb_onsdp = function(){};
 
 /**
- * Reference to custom event callback function for remote Stream available
- */
-let xows_wrtc_cb_onstream = function(){};
-
-/**
  * Reference to custom event callback function for established connection
  */
 let xows_wrtc_cb_onlinked = function(){};
