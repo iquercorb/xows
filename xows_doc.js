@@ -613,9 +613,8 @@ function xows_doc_mbox_open(style, text, onvalid, valid, onabort, abort, modal)
   case XOWS_MBOX_ASK: cls = "MBOX-ASK"; break;
   }
 
-  const mbox_text = xows_doc("mbox_text");
-  mbox_text.classList = cls;
-  mbox_text.innerHTML = xows_l10n_get(text);
+  xows_doc("over_mbox").classList = cls;
+  xows_doc("mbox_text").innerHTML = xows_l10n_get(text);
 
   xows_doc_show("mbox_close", (!onvalid && !onabort));
   xows_doc_show("mbox_valid", Boolean(onvalid));
