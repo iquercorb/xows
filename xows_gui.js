@@ -85,10 +85,37 @@ const xows_gui_sound_lib = new Map();
  * @param   {string}    file    Sound file name
  * @param   {boolean}   loop    Optionnal boolean to enable loop
  */
+function xows_gui_sound_error(event)
+{
+  const audio = event.target;
+  xows_log(1,"gui_sound_error","'"+audio.title+"' sound load failed",audio.src);
+  xows_gui_sound_lib.delete(audio.title);
+}
+
+/**
+ * Load sound file to sound library at specified slot
+ *
+ * @param   {string}    name    Sound slot name
+ * @param   {string}    file    Sound file name
+ * @param   {boolean}   loop    Optionnal boolean to enable loop
+ */
 function xows_gui_sound_load(name, file, loop)
 {
-  xows_gui_sound_lib.set(name, new Audio("/"+xows_options.root+"/sounds/"+file));
-  if(loop) xows_gui_sound_lib.get(name).loop = true;
+  // Create new Audio object
+  const audio = new Audio();
+  xows_gui_sound_lib.set(name, audio);
+
+  audio.title = name; //< custom property to keep refrence
+  audio.loop = loop;  //< set loop option
+
+  // Creating path to sound
+  const path = xows_options.root+"/sounds/"+file;
+
+  xows_log(2,"gui_sound_load","loading '"+name+"' sound",path);
+
+  // Set error callback and start loading
+  audio.onerror = xows_gui_sound_error;
+  audio.src = path;
 }
 
 /**
@@ -484,14 +511,6 @@ function xows_gui_init()
  */
 function xows_gui_connect(register = false)
 {
-  // Close message box
-  xows_doc_mbox_close();
-
-  // Append domain if the option is set, otherwise it should be
-  // set in the usename as typed by user.
-  if(xows_options.domain)
-    xows_gui_auth.user += "@"+xows_options.domain;
-
   // Configure client callbacks
   xows_cli_set_callback("connect", xows_gui_cli_onconnect);
   xows_cli_set_callback("selfchange", xows_gui_cli_onselfchange);
@@ -515,6 +534,9 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("callaccept", xows_gui_cli_oncallaccept);
   xows_cli_set_callback("callend", xows_gui_cli_oncallend);
 
+  // Close message box
+  xows_doc_mbox_close();
+
   // From now the DOM is no longer in its default state
   xows_gui_clean = false;
 
@@ -526,6 +548,11 @@ function xows_gui_connect(register = false)
     // Volume is muted by default
     xows_gui_audio.vol.gain.value = 0;
   }
+
+  // Append domain if the option is set, otherwise it should be
+  // set in the usename as typed by user.
+  if(xows_options.domain)
+    xows_gui_auth.user += "@"+xows_options.domain;
 
   // Launch the client connection
   xows_cli_connect( xows_options.url,
@@ -807,7 +834,7 @@ function xows_gui_notify_permi(status)
  */
 function xows_gui_notify_push(peer, body)
 {
-  xows_log(1,"gui_notify_push", peer.name, Notification.permission);
+  xows_log(2,"gui_notify_push", peer.name, Notification.permission);
 
   switch(Notification.permission)
   {
@@ -1818,7 +1845,6 @@ function xows_gui_cli_onsubspush(bare, nick)
 
   // Update or disable the notification badge
   xows_doc("cont_noti").dataset.subs = pendning_count;
-
 }
 
 /**
@@ -4359,7 +4385,7 @@ function xows_gui_occu_list_onclick(event)
           const user = bare.split("@")[0];
           const name = user[0].toUpperCase() + user.slice(1);
           // Open confirmation dialog
-          xows_gui_mbox_subs_edit_open(xows_jid_to_bare(li.dataset.jid), name);
+          xows_gui_mbox_subs_edit_open(xows_jid_bare(li.dataset.jid), name);
           return;
         }
 
