@@ -856,10 +856,10 @@ function xows_isjid(str)
  *
  * @return  {string}    Extracted bare JID
  */
-function xows_jid_to_bare(jid)
+function xows_jid_bare(jid)
 {
-  const p = jid.indexOf("/");
-  return (p !== -1) ? jid.substring(0, p) : jid;
+  const e = jid.indexOf("/");
+  return (e !== -1) ? jid.substring(0, e) : jid;
 }
 
 /**
@@ -871,10 +871,29 @@ function xows_jid_to_bare(jid)
  *
  * @return  {string}    Extracted bare JID
  */
-function xows_jid_to_user(jid)
+function xows_jid_node(jid)
 {
-  const p = jid.indexOf("@");
-  return (p !== -1) ? jid.substring(0, p) : jid;
+  const e = jid.indexOf("@");
+  return (e !== -1) ? jid.substring(0, e) : "";
+}
+
+/**
+ * Get Username from JID
+ *
+ * 'user@sever/resource' => 'user'
+ *
+ * @param   {string}    jid       JID to get the bare part
+ *
+ * @return  {string}    Extracted bare JID
+ */
+function xows_jid_host(jid)
+{
+  const s = jid.indexOf("@");
+  if(s !== -1) {
+    const e = jid.indexOf("/");
+    return jid.substring(s + 1, (e !== -1) ? e : null);
+  }
+  return "";
 }
 
 /**
@@ -886,10 +905,10 @@ function xows_jid_to_user(jid)
  *
  * @return  {string}    Extracted nick, resource or null if unavailable
  */
-function xows_jid_to_nick(jid)
+function xows_jid_resc(jid)
 {
-  const p = jid.indexOf("/");
-  return (p !== -1) ? jid.substring(p+1) : null;
+  const s = jid.indexOf("/");
+  return (s !== -1) ? jid.substring(s + 1) : "";
 }
 
 /**
