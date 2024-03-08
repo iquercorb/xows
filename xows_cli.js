@@ -739,7 +739,6 @@ function xows_cli_set_callback(type, callback)
  * Client - PubSub common routines
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Handles an incoming PubSub event
  *
@@ -791,7 +790,6 @@ function xows_cli_xmp_onpubsub(from, node, item)
  * Client - Vcard (PubSub) routines and interface
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Publish user own vcard-temp to store formated name, nickname and
  * custom status as note
@@ -923,7 +921,6 @@ function xows_cli_vcard_query(jid)
  * Client - Avatar (PubSub) routines and interface
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Stores received XEP-0084 avatar metadata
  */
@@ -1215,7 +1212,6 @@ function xows_cli_book_publish(room, auto, name, nick)
  * Client - User Roster routines and interface
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Proceeds incoming XMPP roster push
  *
@@ -1356,7 +1352,6 @@ function xows_cli_rost_edit(bare, name)
  * Client - Recieved Presences and Client-to-Client routines
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Handles received presence (<presence> stanza) status from
  * other contacts
@@ -2708,7 +2703,7 @@ function xows_cli_activity_stop()
 
 /* -------------------------------------------------------------------
  *
- * Client - Chat States management
+ * Client - Chat State management
  *
  * -------------------------------------------------------------------*/
 

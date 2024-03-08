@@ -1179,6 +1179,10 @@ function xows_xmp_presence_send(to, type, level, status, photo, muc, nick)
  * XMPP API - Message stanza semantics routines
  *
  * -------------------------------------------------------------------*/
+/**
+ * Delayed Delivery (XEP-0203) XMLNS constant
+ */
+const XOWS_NS_DELAY = "urn:xmpp:delay";
 
 /**
  * Message stanza received body message event client callback
@@ -1194,6 +1198,11 @@ let xows_xmp_fw_onchatstate = function() {};
  * Message stanza received receipt message event client callback
  */
 let xows_xmp_fw_onreceipt = function() {};
+
+/**
+ * Multi-User Chat (XEP-0045) received subject event callback
+ */
+let xows_xmp_fw_onsubject = function() {};
 
 /**
  * Parse received <message> stanza
@@ -1406,6 +1415,7 @@ function xows_xmp_message_receipt_send(to, id)
   xows_xmp_send(xows_xml_node("message",{"to":to},
                   xows_xml_node("received",{"id":id,"xmlns":XOWS_NS_RECEIPTS})));
 }
+
 /* -------------------------------------------------------------------
  * XMPP API - Message semantics - Last Message Correction (XEP-0308)
  * -------------------------------------------------------------------*/
@@ -1455,7 +1465,6 @@ function xows_xmp_ping_reply(stanza)
  *  Entity Time (XEP-0202) XMLNS constants
  */
 const XOWS_NS_TIME  = "urn:xmpp:time";
-const XOWS_NS_DELAY = "urn:xmpp:delay";
 
 /**
  *  Function to send response to <iq> time query
@@ -2961,11 +2970,6 @@ const xows_xmp_affi_level_map = {
   "admin"         : 2,
   "owner"         : 3
 };
-
-/**
- * Multi-User Chat (XEP-0045) received subject event callback
- */
-let xows_xmp_fw_onsubject = function() {};
 
 /**
  * Send a subject to MUC room
