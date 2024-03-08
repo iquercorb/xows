@@ -246,7 +246,7 @@ function xows_xml_parse(str)
  *
  * @return  {string}    Node text content or empty string
  */
-function xows_xml_get_text(node) {
+function xows_xml_innertext(node) {
 
   if(!node) return ""; //< nothing to get
 
