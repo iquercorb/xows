@@ -73,14 +73,14 @@ function xows_l10n_select(locale, onready)
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
-  if(xows_options.uncache) 
+  if(xows_options.uncache)
     path += "?" + xows_gen_nonce_asc(4);
 
   // Launch request to download locale/lang list file
   const xhr = new XMLHttpRequest();
   xhr.open("GET", path, true);
   xhr.onreadystatechange= function() {
-    if(this.readyState === 4)
+    if(this.readyState === 4) {
       if(this.status === 200) {
         xows_log(2,"l10n_select","parsing locale list", this.responseURL);
         let list = JSON.parse(this.responseText);
@@ -103,8 +103,9 @@ function xows_l10n_select(locale, onready)
         xows_log(1,"l10n_select","invalid or unavailable locale \""+locale+"\"","using default");
         xows_l10n_fw_onready();
       } else {
-        xows_log(0,"l10n_select","locale list \""+this.responseURL+"\" loading error","HTTP status:\""+this.status+"\"");
+        xows_init_fatal(this.status, this.responseURL);
       }
+    }
   };
 
   // Increase count of template remaining to load
@@ -129,7 +130,7 @@ function xows_l10n_db_load(locale, onready)
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
-  if(xows_options.uncache) 
+  if(xows_options.uncache)
     path += "?" + xows_gen_nonce_asc(4);
 
   // Launch request to download template file

@@ -232,7 +232,7 @@ function xows_tpl_template_load(name, isinst)
       if(this.status === 200) {
         xows_tpl_template_parse(this.responseText, this.responseURL, this._isinst);
       } else {
-        xows_log(0,"tpl_template_load","file \""+this.responseURL+"\" loading error","HTTP status:\""+this.status+"\"");
+        xows_init_fatal(this.status, this.responseURL);
       }
   };
   // Increase count of template remaining to load
@@ -1215,7 +1215,7 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
   // Add time or date
   if(sndr) {
     inst.querySelector("MESG-DATE").innerText = xows_l10n_date(time);
-    const jid = xows_jid_to_bare(from);
+    const jid = xows_jid_bare(from);
     // Set author name with JID data
     const mesg_from = inst.querySelector("MESG-FROM");
     mesg_from.dataset.jid = jid;

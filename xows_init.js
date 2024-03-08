@@ -42,7 +42,7 @@
  * Stored default application options
  */
 let xows_options = {
-  root            : "xows",     //< Default application root folder
+  root            : "/xows",    //< Default application root folder
   url             : "ws://localhost/xmpp-websocket/", //< XMPP Websocket URL
   domain          : "localhost",                      //< XMPP server domain
   locale          : "en-US",    //< Default Locales
@@ -179,12 +179,28 @@ function xows_init(options)
     if(options.hasOwnProperty("extern_services"))  xows_options.extern_services = options.extern_services;
   }
 
-  // Fix root path
-  if(xows_options.root.charAt(0) != "/") 
+  // If missing, add  a leading slash to root path to make it
+  // absolute (i.e. relative to URL root)
+  if(xows_options.root.charAt(0) != "/")
     xows_options.root = "/"+xows_options.root;
 
   xows_log(2,"init","xows init start");
 
   // Start init by the l10n module, other init will follow
   xows_l10n_select(xows_options.locale, xows_init_onl10n);
+}
+
+/**
+ * Show initialization fatal error (due to asset loading error)
+ *
+ * @param   {number}    code      Loading error code (HTTP response code)
+ * @param   {string}    path      URL/Path to related file.
+ */
+function xows_init_fatal(code, path)
+{
+  let html = "<h1>XOWS init failed</h1><h4>Asset file loading error ( HTTP error "+code+" )</h4>";
+  html += "<big><code>"+path.match(/(.+?)(?:\?.*|$)/)[1]+"</code></big>";
+  html += "<h5>Did you set the proper library/assets root path ?</h5>";
+  document.body.style = "padding:20px;text-align:center;background:#1A1A1F;color:#FC8484";
+  document.body.innerHTML = html;
 }
