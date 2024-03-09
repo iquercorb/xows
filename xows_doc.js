@@ -396,10 +396,8 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("main_hndl"),  "click",    xows_gui_main_open);
 
   xows_doc_listener_add(xows_doc("rost_tabs"),  "click",    xows_gui_rost_tabs_onclick);
-  //xows_doc_listener_add(xows_doc("rost_head"),  "click",    xows_gui_rost_head_onclick);
   xows_doc_listener_add(xows_doc("cont_acts"),  "click",    xows_gui_rost_head_onclick);
   xows_doc_listener_add(xows_doc("room_acts"),  "click",    xows_gui_rost_head_onclick);
-  //xows_doc_listener_add(xows_doc("user_rost"),  "click",    xows_gui_rost_list_onclick);
   xows_doc_listener_add(xows_doc("cont_list"),  "click",    xows_gui_rost_list_onclick);
   xows_doc_listener_add(xows_doc("room_list"),  "click",    xows_gui_rost_list_onclick);
 
@@ -451,7 +449,7 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("scr_void"),   "click",    xows_doc_void_onclick);
 
   // Image viewer "over_view" event listener
-  xows_doc_listener_add(xows_doc("over_view"),  "click",    xows_doc_view_close);
+  xows_doc_listener_add(xows_doc("over_view"),  "click",    xows_doc_view_onclick);
 
   // Message Box "over_mbox" event listeners
   xows_doc_listener_add(xows_doc("mbox_close"), "click",    xows_doc_mbox_close);
@@ -932,22 +930,6 @@ function xows_doc_menu_toggle(btn, drop)
 }
 
 /**
- * Media Viewer screen close
- */
-function xows_doc_view_close()
-{
-  if(!xows_doc_hidden("over_view")) {
-
-    // hide the media overlay element
-    xows_doc_hide("over_view");
-
-    // remove 'dark' filter and hide 'void' screen
-    xows_doc_cls_rem("scr_void", "VOID-DARK");
-    xows_doc_hide("scr_void");
-  }
-}
-
-/**
  * Media Viewer screen open
  *
  * @param   {object}    media     DOM element that throwed event
@@ -959,14 +941,47 @@ function xows_doc_view_open(media)
 
     // set proper link and references
     xows_doc("view_img").src = media.src;
-    xows_doc("view_open").href = media.src;
+    //xows_doc("view_open").href = media.src;
 
     // show the media overlay element
     xows_doc_show("over_view");
-
     // show the 'void' screen with dark filter
     xows_doc_cls_add("scr_void", "VOID-DARK");
     xows_doc_show("scr_void");
+  }
+}
+
+/**
+ * Media Viewer screen close
+ */
+function xows_doc_view_close()
+{
+  // hide the media overlay element
+  xows_doc_hide("over_view");
+  // reset image reference
+  xows_doc("view_img").src = "";
+  // remove 'dark' filter and hide 'void' screen
+  xows_doc_cls_rem("scr_void", "VOID-DARK");
+  xows_doc_hide("scr_void");
+}
+
+/**
+ * Media Viewer screen on-click event callback
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_doc_view_onclick(event)
+{
+  switch(event.target.id)
+  {
+  case "view_optab":
+    // Get the <img> element and open in new tab
+    window.open(event.target.parentNode.querySelector("IMG").src, '_blank').focus();
+    break;
+  case "view_close":
+    // Close image view
+    xows_doc_view_close();
+    break;
   }
 }
 
