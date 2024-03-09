@@ -1159,7 +1159,7 @@ function xows_xmp_presence_send(to, type, level, status, photo, muc, nick)
     xows_xml_parent(stanza, xows_xml_node("c",{ "xmlns":XOWS_NS_CAPS,
                                                 "hash":"sha-1",
                                                 "node":XOWS_APP_NODE,
-                                                "ver":xows_xmp_caps_own_verif()}));
+                                                "ver":xows_xmp_caps_self_verif()}));
   }
 
   // Append the proper <x> child for MUC protocole
@@ -1554,7 +1554,7 @@ function xows_xmp_disco_info_reply(stanza)
   xows_log(2,"xmp_disco_info_reply","responds to disco#info",from);
 
   // Send response
-  const caps = xows_xmp_caps_own_features();
+  const caps = xows_xmp_caps_self_features();
   xows_xmp_send(  xows_xml_node("iq",{"to":from,"id":id,"type":"result"},
                     xows_xml_node("query",{"xmlns":XOWS_NS_DISCOINFO,"node":node},caps)));
 }
@@ -3667,7 +3667,7 @@ const XOWS_NS_CAPS         = "http://jabber.org/protocol/caps";
  *
  * @return  {string}    Array of XML objects defining client identity and features.
  */
-function xows_xmp_caps_own_features()
+function xows_xmp_caps_self_features()
 {
   let vcard4 = XOWS_NS_VCARD4;
   let avatar = XOWS_NS_AVATAR_META;
@@ -3708,13 +3708,13 @@ function xows_xmp_caps_own_features()
  * Get own entity capabilities verification hash
  *
  * This build the verification hash from data returned by the
- * xows_xmp_caps_own_features function.
+ * xows_xmp_caps_self_features function.
  *
  * @return  {string}    Base64 encoded verficiation hash
  */
-function xows_xmp_caps_own_verif()
+function xows_xmp_caps_self_verif()
 {
-  const caps = xows_xmp_caps_own_features();
+  const caps = xows_xmp_caps_self_features();
 
   let i, n = caps.length, S = "";
 

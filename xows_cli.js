@@ -320,7 +320,7 @@ Object.seal(xows_cli_self); //< prevet structure modification
  */
 function xows_cli_isself(jid)
 {
-  return jid.includes(xows_cli_self.bare);
+  return jid.startsWith(xows_cli_self.bare);
 }
 
 /**
@@ -365,7 +365,7 @@ function xows_cli_cont_new(bare, name, subs, avat)
 
 
 /**
- * Returns the contact object with the specified JID
+ * Returns Contact Peer object with the specified JID
  *
  * @param   {string}    jid       Contact JID to find
  *
