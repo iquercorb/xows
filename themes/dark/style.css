@@ -2241,9 +2241,6 @@ li-mesg.SELECTED {
   background-color: var(--base-tone7);
   border: 1px dashed var(--base-tone1);
 }
-li-mesg.SELECTED mesg-acts {
-  box-shadow: 0 0 5px var(--base-tone1);
-}
 mesg-head {
   flex: 0 0 70px;
   text-align: center;
@@ -2253,22 +2250,6 @@ mesg-main {
   flex: 1 0 auto;
   width: 0; /* DO NOT TOUCH THIS ! */
   padding: 0 20px 0 0;
-}
-mesg-acts {
-  visibility: hidden;
-  position: absolute;
-  top: -15px; right: 6px;
-  border: 1px solid var(--base-tone1);
-  background: var(--base-tone2);
-  /*box-shadow: 0 0 2px var(--base-tone0);*/
-  display: flex;
-  align-items: center;
-  line-height: 5px;
-  border-radius: 5px;
-}
-li-mesg:hover mesg-acts,
-li-mesg.SELECTED mesg-acts {
-  visibility: visible;
 }
 mesg-avat {
   display: inline-block;
@@ -2322,6 +2303,25 @@ mesg-body::after {
   line-height: 12px;
   vertical-align: middle;
 }
+mesg-acts {
+  visibility: hidden;
+  position: absolute;
+  top: -15px; right: 6px;
+  border: 1px solid var(--base-tone1);
+  background: var(--base-tone2);
+  /*box-shadow: 0 0 2px var(--base-tone0);*/
+  display: flex;
+  align-items: center;
+  line-height: 5px;
+  border-radius: 5px;
+}
+li-mesg:hover mesg-acts,
+li-mesg.SELECTED mesg-acts {
+  visibility: visible;
+}
+li-mesg.SELECTED mesg-acts {
+  box-shadow: 0 0 5px var(--base-tone1);
+}
 mesg-acts button {
   width: 30px; height: 30px;
   background-color: transparent;
@@ -2359,9 +2359,6 @@ button.mesg-bt-edit {
   display: none;
   background-image: url("images/edit.svg");
 }
-li-mesg:hover mesg-acts {
-  visibility: visible;
-}
 li-mesg.MESG-APPEND {
   margin: 0 10px 0 10px;
 }
@@ -2369,7 +2366,8 @@ li-mesg.MESG-APPEND mesg-info,
 li-mesg.MESG-APPEND mesg-avat {
   display: none;
 }
-li-mesg.MESG-APPEND:hover mesg-hour {
+li-mesg.MESG-APPEND:hover mesg-hour,
+li-mesg.MESG-APPEND.SELECTED mesg-hour {
   display: inline-block;
 }
 li-mesg.MESG-MODIFY mesg-body::after {
