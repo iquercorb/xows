@@ -884,7 +884,7 @@ mbox-acts {
   background-color: rgba(255,255,255,0.2);
 }
 #view_optab {
-  top: 13px; right: 20px;
+  top: 13px; right: 13px;
   background-image: url("images/detach.svg");
 }
 #view_img {
@@ -893,7 +893,7 @@ mbox-acts {
   max-height: 100%;
 }
 #view_close {
-  top: 13px; left: 20px;
+  top: 13px; left: 13px;
   background-image: url("images/delete.svg");
 }
 /* ------------------------------------------------------------------ */
