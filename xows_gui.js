@@ -3227,8 +3227,6 @@ function xows_gui_chat_hist_onclick(event)
 
       const mesg = event.target.closest("LI-MESG");
 
-      console.log(event.target);
-
       switch(event.target.name)
       {
       case "mesg_bt_edit":
@@ -3321,8 +3319,6 @@ function xows_gui_mesg_edit_valid(inpt)
 {
   // Retrieve the parent <li-mesg> element
   const li_mesg = inpt.closest("LI-MESG");
-
-  console.log(li_mesg);
 
   // Get input text
   const inpt_text = inpt.innerText.trimEnd();
