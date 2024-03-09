@@ -3212,38 +3212,6 @@ function xows_gui_chat_hist_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
-  // Check for click on New Message notification banner
-  if(event.target.tagName === "IMG") {
-    // Open image viewer
-    xows_doc_view_open(event.target);
-    return;
-  }
-
-  // Check for click on <button> element
-  if(event.target.tagName === "BUTTON") {
-
-     // If button has a valid name, this is history message button
-     if(event.target.name) {
-
-      const mesg = event.target.closest("LI-MESG");
-
-      switch(event.target.name)
-      {
-      case "mesg_bt_edit":
-        xows_gui_mesg_edit_open(mesg);
-        break;
-      case "mesg_bt_canc":
-        xows_gui_mesg_edit_close(mesg);
-        break;
-      case "mesg_bt_save":
-        xows_gui_mesg_edit_valid(mesg.querySelector("MESG-INPT"));
-        break;
-      }
-
-      return;
-    }
-  }
-
   if(event.target.id) {
 
     // Check for history Ringing dialog
@@ -3259,14 +3227,67 @@ function xows_gui_chat_hist_onclick(event)
       xows_gui_hist_nav_close(xows_gui_peer);
       // Go to end of history (last messages)
       xows_gui_peer_scroll_down(xows_gui_peer);
+      return;
+    }
+  }
+  
+  // Check for closted <li-mesg> parent
+  const li_mesg = event.target.closest("LI-MESG");
+  if(!li_mesg) 
+    return;
+  
+  // Select message
+  xows_gui_mesg_select(li_mesg);
+  
+  // Check for click on New Message notification banner
+  if(event.target.tagName === "IMG") {
+    // Open image viewer
+    xows_doc_view_open(event.target);
+    return;
+  }
+
+  // Check for click on <button> element
+  if(event.target.tagName === "BUTTON") {
+
+     // If button has a valid name, this is history message button
+     if(event.target.name) {
+
+      switch(event.target.name)
+      {
+      case "mesg_bt_edit":
+        xows_gui_mesg_edit_open(li_mesg);
+        break;
+      case "mesg_bt_canc":
+        xows_gui_mesg_edit_close(li_mesg);
+        break;
+      case "mesg_bt_save":
+        xows_gui_mesg_edit_valid(li_mesg.querySelector("MESG-INPT"));
+        break;
+      }
+
+      return;
     }
   }
 }
 
+/* -------------------------------------------------------------------
+ * Main Screen - Chat Frame - History - Messages
+ * -------------------------------------------------------------------*/
+ 
 /**
- * History message correction parameters
+ * Select the specified history message
+ *
+ * @param   {object}      mesg    Instance of <li-mesg> or null
  */
-let xows_gui_mesg_corr_raw = "";
+function xows_gui_mesg_select(mesg)
+{
+  // Unselect any selected message
+  const li_selected = xows_doc("hist_ul").querySelector("LI-MESG.SELECTED");
+  if(li_selected) li_selected.classList.remove("SELECTED");
+
+  // Select the specified message
+  if(mesg) mesg.classList.add("SELECTED");
+}
 
 /**
  * History message correction Cancel function
@@ -3348,7 +3369,6 @@ function xows_gui_chat_main_onresize(entries, observer)
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - History - Navigation
  * -------------------------------------------------------------------*/
-
 /**
  * Function to open chat history navigation banner, with or without
  * Unread message alert.

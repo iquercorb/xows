@@ -884,7 +884,7 @@ mbox-acts {
   background-color: rgba(255,255,255,0.2);
 }
 #view_optab {
-  top: 13px; right: 13px;
+  top: 13px; right: 20px;
   background-image: url("images/detach.svg");
 }
 #view_img {
@@ -893,7 +893,7 @@ mbox-acts {
   max-height: 100%;
 }
 #view_close {
-  top: 13px; left: 13px;
+  top: 13px; left: 20px;
   background-image: url("images/delete.svg");
 }
 /* ------------------------------------------------------------------ */
@@ -2227,27 +2227,47 @@ ring-acts btn-close {
 li-mesg {
   display: flex;
   flex-direction: row;
-  border-radius: 8px;
-  padding: 10px 0 2px 0;
-  margin: 10px 10px 0 10px;
+  border-radius: 6px;
+  padding: 4px 0;
+  margin: 15px 10px 0 10px;
+  border: 1px solid  transparent;
+  position: relative;
+  cursor: pointer;
 }
 li-mesg:hover {
   background-color: var(--base-tone7);
 }
+li-mesg.SELECTED {
+  background-color: var(--base-tone7);
+  border: 1px dashed var(--base-tone1);
+}
+li-mesg.SELECTED mesg-acts {
+  box-shadow: 0 0 5px var(--base-tone1);
+}
 mesg-head {
   flex: 0 0 70px;
   text-align: center;
-  padding-right: 10px;
+  padding: 2px 0 0 0;
 }
 mesg-main {
   flex: 1 0 auto;
   width: 0; /* DO NOT TOUCH THIS ! */
+  padding: 0 20px 0 0;
 }
 mesg-acts {
   visibility: hidden;
-  flex: 0 0 30px;
+  position: absolute;
+  top: -15px; right: 6px;
+  border: 1px solid var(--base-tone1);
+  background: var(--base-tone2);
+  /*box-shadow: 0 0 2px var(--base-tone0);*/
+  display: flex;
+  align-items: center;
+  line-height: 5px;
+  border-radius: 5px;
 }
-li-mesg:hover mesg-acts {
+li-mesg:hover mesg-acts,
+li-mesg.SELECTED mesg-acts {
   visibility: visible;
 }
 mesg-avat {
@@ -2262,7 +2282,7 @@ mesg-hour {
   text-align:center;
   font-size: 0.7em;
   color: var(--text-tone3);
-  vertical-align: bottom;
+  vertical-align: middle;
 }
 mesg-info {
   display: block;
@@ -2283,13 +2303,15 @@ mesg-from {
 }
 mesg-body {
   display: inline;
-  margin: 0 0 5px 0;
+  /*! margin: 0 0 5px 0; */
   font-size: .95em;
-  line-height: 25px;
+  line-height: 24px;
   color: var(--text-tone1);
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   word-break: normal;
   white-space: break-spaces; /* DO NOT TOUCH THIS ! */
+  vertical-align: middle;
+  cursor: text;
 }
 mesg-body::after {
   content: attr(data-after);
@@ -2301,23 +2323,29 @@ mesg-body::after {
   vertical-align: middle;
 }
 mesg-acts button {
-  width: 24px; height: 24px;
+  width: 30px; height: 30px;
   background-color: transparent;
-  background-size: 16px;
+  background-size: 19px;
   background-repeat: no-repeat;
   background-position: center;
   opacity: .6;
 }mesg-acts button:hover {
   opacity: 1;
 }
+mesg-dial {
+  margin-left: -5px;
+}
 mesg-dial button {
-  width: 24px; height: 24px;
-  background-color: transparent;
+  width: 32px; height: 19px;
+  border-radius: 4px;
+  border: 1px solid var(--base-tone1);
+  background-color: var(--base-tone2);
   background-size: 16px;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: .6;
-  margin: 0 10px 4px 0;
+  opacity: .7;
+  margin: 4px 10px 0 0;
+  padding: 0;
 }mesg-dial button:hover{
   opacity: 1;
 }
@@ -2335,7 +2363,6 @@ li-mesg:hover mesg-acts {
   visibility: visible;
 }
 li-mesg.MESG-APPEND {
-  padding: 0;
   margin: 0 10px 0 10px;
 }
 li-mesg.MESG-APPEND mesg-info,
@@ -2374,7 +2401,11 @@ li-mesg.MESG-SENT.MESG-RECP mesg-body {
 }
 @media (max-width: 824px) {
   li-mesg {
+    padding: 3px 0;
     margin: 5px 5px 0 5px;
+  }
+  li-mesg.MESG-APPEND {
+    margin: 0 5px 0 5px;
   }
   mesg-head {
     flex: 0 0 44px;
@@ -2394,7 +2425,7 @@ li-mesg.MESG-SENT.MESG-RECP mesg-body {
   }
   mesg-body {
     font-size: 0.8em;
-    line-height: 16px;
+    line-height: 22px;
   }
 }
 /* ------------------------------------------------------------------ */
@@ -2411,16 +2442,16 @@ embd-wrap {
   background-color: var(--base-tone3);
   cursor: pointer;
   border-radius: 10px;
-  margin-top: 6px;
+  margin: 5px 0;
 }
 embd-wrap a,
 embd-wrap a:visited {
   display: block;
   line-height: 14px;
-  font-size: 14px;
+  font-size: 0.95em;
   text-decoration: none;
-  color: var(--text-tone2);
-  margin-bottom: 10px;
+  color: var(--link-base);
+  margin: 5px 0 15px 0;
 }
 embd-wrap a:hover {
   color: var(--link-text-hover);
@@ -2447,7 +2478,7 @@ embd-wrap.LOADERR a{
   display: none;
 }
 embd-wrap.EMBD-IFR {
-  width: 450px; height: 284px;
+  width: 450px; height: 294px;
   padding: 10px 10px 10px 9px;
   border-radius: 5px 10px 10px 5px;
   background-color: var(--base-tone3);
@@ -2457,14 +2488,6 @@ embd-wrap.EMBD-IFR.LOADING,
 embd-wrap.EMBD-IFR.LOADERR {
   padding-top: 200px; /* this put the media to bottom of frame */
 }
-/*
-embd-wrap.EMBD-VER {
-  width: 240px; height: 480px;
-}
-embd-wrap.EMBD-VER iframe {
-  width: 240px; height: 420px;
-}
-*/
 embd-wrap.EMBD-DNL {
   width: 450px; height: 50px;
   margin: 0;
@@ -2508,11 +2531,13 @@ embd-wrap.EMBD-DNL::before {
   opacity: .5;
 }
 @media (max-width: 824px) {
+  embd-wrap {
+    margin: 3px 0;
+  }
   embd-wrap a {
     line-height: 10px;
     font-size: 13px;
-
-    padding: 5px 0 10px 0;
+    margin: 5px 0 12px 0;
   }
   embd-wrap img {
     max-width: 280px; max-height: 158px;
