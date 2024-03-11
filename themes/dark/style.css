@@ -132,19 +132,16 @@ a:active {
   /*transition: opacity 200ms, color 200ms, border-color 200ms, background-color 200ms ease-out;*/
 }
 
-emoj,
 emo-ji {
   display: inline;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
   font-size: 1.3em;
-  line-height: 25px;
+  line-height: 20px;
   vertical-align: top;
 }
 @media (max-width: 824px) {
-  emoj,
   emo-ji {
     font-size: 1.2em;
-    line-height: 16px;
   }
 }
 dialog {
@@ -509,6 +506,62 @@ btn-close:hover {
   transition: width 0.5s ease;
 }
 /* ------------------------------------------------------------------ */
+/* Common Menu & Drop */
+/* ------------------------------------------------------------------ */
+menu-drop {
+  padding: 0;
+  z-index: 3;
+  border-radius: 4px;
+  background-color: var(--base-tone0);
+  border-color: var(--base-tone0);
+  box-shadow: 0 0 15px 0 rgba(0,0,0,0.5);
+  overflow: visible;
+}
+menu-drop::after {
+  content: "";
+  position: absolute;
+  bottom: -32px;
+  display: block;
+  border-style: solid;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-top-color: inherit;
+  border-width: 16px;
+}
+menu-drop ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+menu-drop li {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 4px 0;
+  border-radius: 3px;
+  cursor:pointer;
+}menu-drop li:hover {
+  background-color: var(--base-tone4);
+}
+.menu-icon {
+  display: inline-block;
+  position:relative;
+  vertical-align: middle;
+  width:22px; height:100%;
+  margin: 0 5px;
+  border-color: inherit;
+}
+.menu-text {
+  display: inline;
+  vertical-align: middle;
+  font-size: 0.8em;
+  margin: 0 0 0 5px;
+}
+.menu-separ {
+  border-bottom: 1px solid var(--base-tone4);
+}
+/* ------------------------------------------------------------------ */
 /* Presence (Show level) Badge */
 /* ------------------------------------------------------------------ */
 badg-show {
@@ -867,13 +920,13 @@ mbox-acts {
   display: flex;
   flex-direction: row;
   height: 100%;
-  padding: 60px 20px 20px 20px;
+  padding: 50px;
 }
 #view_wrap button {
   position:absolute;
-  width: 32px; height: 32px;
+  width: 42px; height: 42px;
   border-radius: 50%;
-  background-size: 16px;
+  background-size: 20px;
   background-repeat: no-repeat;
   background-position: center;
   background-color: rgba(255,255,255,0.0);
@@ -884,16 +937,17 @@ mbox-acts {
   background-color: rgba(255,255,255,0.2);
 }
 #view_optab {
-  top: 13px; right: 20px;
+  top: 13px; right: 13px;
   background-image: url("images/detach.svg");
 }
 #view_img {
   margin: auto;
+  border-radius: 10px;
   max-width: 100%;
   max-height: 100%;
 }
 #view_close {
-  top: 13px; left: 20px;
+  top: 13px; left: 13px;
   background-image: url("images/delete.svg");
 }
 /* ------------------------------------------------------------------ */
@@ -1332,48 +1386,7 @@ rost-tab.SELECTED badg-call {
 rost-tab.SELECTED.RINGING {
   animation-name: none;
 }
-/* ------------------------------------------------------------------ */
-/* Main Page - Menu & Drop */
-/* ------------------------------------------------------------------ */
-.menu-icon {
-  display: inline-block;
-  position:relative;
-  vertical-align: middle;
-  width:22px; height:100%;
-  margin: 0 5px;
-  border-color: inherit;
-}
-.menu-text {
-  display: inline;
-  vertical-align: middle;
-  font-size: 0.8em;
-  margin: 0 0 0 5px;
-}
-.menu-drop {
-  padding: 0;
-  z-index: 3;
-  border-radius: 4px;
-  background-color: var(--base-tone0);
-  overflow: visible;
-}
-.menu-drop ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.menu-drop li {
-  display: block;
-  width: 100%;
-  margin: 0;
-  padding: 4px 0;
-  border-radius: 3px;
-  cursor:pointer;
-}.menu-drop li:hover {
-  background-color: var(--base-tone4);
-}
-.menu-separ {
-  border-bottom: 1px solid var(--base-tone4);
-}
+
 /* ------------------------------------------------------------------ */
 /* Main Page - Header common elements */
 /* ------------------------------------------------------------------ */
@@ -1515,7 +1528,6 @@ li-peer {
   flex-direction: row;
   align-items: center;
   width: 100%; height: 40px;
-  border-radius: 4px;
   overflow: hidden;
   cursor: pointer !important;
 } li-peer:hover {
@@ -1662,6 +1674,7 @@ li-peer.PEER-ROOM peer-avat {
   flex-direction: row;
   align-items: center;
   height: 44px;
+  cursor: default;
 }
 .user-cont peer-name {
   color: var(--text-hligh);
@@ -1697,24 +1710,27 @@ stat-inpt:focus {
   color: var(--text-tone3);
   outline: 1px solid var(--base-tone0);
 }
-.drop-show {
+#drop_show {
   position:absolute;
-  left:47px; bottom:83px;
+  left:47px; bottom:90px;
   width: 232px;
   padding: 5px;
   border-radius: 6px;
-  box-shadow: 0 0 15px 0 rgba(0,0,0,0.4);
   border-left: 6px solid var(--link-base);
 }
-.drop-show li {
+#drop_show li {
   padding: 10px 0;
 }
-.drop-show .menu-icon {
+#drop_show .menu-icon {
   position: unset;
   width: 14px; height: 14px;
   border: 2px solid var(--base-tone0);
   border-radius: 50%;
   margin: 4px 6px;
+}
+#drop_show::after {
+  display: block;
+  left: 2px;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Head Frame */
@@ -1809,15 +1825,13 @@ head-info badg-show {
 /* Main Page - Center Col - Main Frame - Chat Windows */
 /* ------------------------------------------------------------------ */
 #chat_main {
-  padding: 0 0;
+  padding: 0;
   background-color: var(--base-tone4);
   scrollbar-color: var(--base-tone1) transparent;
   /*scroll-snap-type: y mandatory;*/
 }
 @media (max-width: 824px) {
-  #chat_main {
-    padding: 0 5px;
-  }
+
 }
 #chat_main::-webkit-scrollbar-thumb {
   background-color: var(--base-tone1);
@@ -2021,7 +2035,7 @@ call-geom button:hover {
 }
 #chat_hist ul {
   list-style: none;
-  margin: 0;
+  margin: 0 0 15px 0;
   padding: 0;
 }
 hist-bound {
@@ -2031,7 +2045,7 @@ hist-bound {
   font-weight: bold;
   text-transform: uppercase;
   color: var(--base-tone6);
-  margin: auto 13px 0 13px;
+  margin: auto 16px 0 16px;
   background-color: transparent;
   background-size: 1000px;
   background-repeat: no-repeat;
@@ -2047,6 +2061,11 @@ hist-bound {
 #hist_beg.HIST-START::before {
   content: attr(data-text);
 }
+@media (max-width: 824px) {
+  hist-bound {
+    margin: auto 8px 0 8px;
+  }
+}
 /* ------------------------------------------------------------------ */
 /* Chat history - Incoming call dialog */
 /* ------------------------------------------------------------------ */
@@ -2055,8 +2074,9 @@ hist-bound {
   align-items: center;
   border-radius: 5px;
   height: 75px;
-  margin: 10px 13px 5px 13px;
+  margin: 0 16px 4px 16px;
   background-color: var(--base-tone5);
+  cursor: default;
 }
 @keyframes hist-ringing {
   0% {
@@ -2073,6 +2093,7 @@ ring-icon {
   background-color: transparent;
   background-position: center;
   background-repeat: no-repeat;
+  background-image: url("images/call.svg");
 }
 ring-text {
   display: inline-block;
@@ -2123,17 +2144,22 @@ ring-acts btn-close {
 }
 @media (max-width: 824px) {
   #hist_ring {
-    margin: 10px 6px 0 8px;
+    height: 60px;
+    margin: 0 8px 4px 8px;
   }
-  #hist_ring figure {
-    width: 32px;
-    background-size: 24px;
+  ring-icon {
+    width: 40px;
+    background-size: 20px;
   }
-  #hist_ring section {
+  ring-acts {
     margin-left: 0;
   }
-  #hist_ring h3 {
-    font-size: .7em;
+  ring-acts button {
+    width: 32px; height: 32px;
+    background-size: 14px;
+  }
+  ring-text {
+    font-size: .8em;
     margin: 14px 0;
   }
 }
@@ -2143,8 +2169,8 @@ ring-acts btn-close {
 #hist_upld {
   display: flex;
   align-items: end;
-  padding: 0 10px;
-  margin: 15px 13px 15px 13px;
+  padding: 0 22px 15px 22px;
+  cursor: default;
 }
 #hist_upld section {
   flex: auto;
@@ -2152,7 +2178,7 @@ ring-acts btn-close {
 #hist_upld h3 {
  font-size: 0.8em;
  text-transform: uppercase;
- margin: 0 20px 10px 0;
+ margin: 0 16px 10px 0;
 }
 #hist_upld p {
   font-size: 0.8em;
@@ -2164,19 +2190,21 @@ ring-acts btn-close {
   border: 0;
   text-align: right;
   padding: 0;
-  margin: 0 0 0 15px;
+  margin: 0 0 0 16px;
 }
 @media (max-width: 824px) {
   #hist_upld {
-    padding: 0 5px;
-    margin: 15px 5px;
+   padding: 0 12px 15px 12px;
   }
   #hist_upld h3 {
    font-size: 0.7em;
-   margin: 0 10px 5px 0;
+   margin: 0 8px 5px 0;
   }
   #hist_upld p {
     font-size: 0.7em;
+  }
+  #hist_upld fieldset {
+    margin: 0 0 0 8px;
   }
 }
 /* ------------------------------------------------------------------ */
@@ -2197,7 +2225,7 @@ ring-acts btn-close {
   opacity: 0.9;
   cursor:pointer;
   transition: background-color 200ms ease;
-  margin: -26px 2px 0 2px;
+  margin: -26px 16px 0 16px;
 }
 #hist_nav::before,
 #hist_nav::after {
@@ -2217,7 +2245,8 @@ ring-acts btn-close {
 }
 @media (max-width: 824px) {
   #hist_nav {
-    font-size: 0.7em;
+    font-size: 0.8em;
+    margin: -26px 8px 0 8px;
   }
 }
 
@@ -2227,43 +2256,40 @@ ring-acts btn-close {
 li-mesg {
   display: flex;
   flex-direction: row;
-  border-radius: 6px;
-  padding: 4px 0;
-  margin: 15px 10px 0 10px;
-  border: 1px solid  transparent;
+  margin: 16px 0 1px 0;
+  padding: 2px 16px;
   position: relative;
-  cursor: pointer;
+  cursor: default;
 }
 li-mesg:hover {
   background-color: var(--base-tone7);
 }
 li-mesg.SELECTED {
   background-color: var(--base-tone7);
-  border: 1px dashed var(--base-tone1);
 }
 mesg-head {
-  flex: 0 0 70px;
-  text-align: center;
-  padding: 2px 0 0 0;
+  flex: 0 0 57px;
+  padding: 0 0 0 0;
 }
 mesg-main {
   flex: 1 0 auto;
   width: 0; /* DO NOT TOUCH THIS ! */
-  padding: 0 20px 0 0;
+  padding: 0 32px 0 0;
+  min-height: 24px;
 }
 mesg-avat {
-  display: inline-block;
+  display: block;
   width: 40px; height: 40px;
   background-size: cover;
   border-radius: 50%;
+  margin: 1px 0 0 0;
 }
 mesg-hour {
   display: none;
   width: 40px;
-  text-align:center;
   font-size: 0.7em;
   color: var(--text-tone3);
-  vertical-align: middle;
+  text-align: center;
 }
 mesg-info {
   display: block;
@@ -2275,6 +2301,7 @@ mesg-date {
   color: var(--text-tone3);
   margin-left: 11px;
   vertical-align: middle;
+  
 }
 mesg-from {
   font-size: 0.9em;
@@ -2284,9 +2311,8 @@ mesg-from {
 }
 mesg-body {
   display: inline;
-  /*! margin: 0 0 5px 0; */
   font-size: .95em;
-  line-height: 24px;
+  line-height: 20px;
   color: var(--text-tone1);
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   word-break: normal;
@@ -2301,52 +2327,33 @@ mesg-body::after {
   color: var(--text-tone3);
   margin-left: 1em;
   line-height: 12px;
-  vertical-align: middle;
 }
 mesg-acts {
   visibility: hidden;
   position: absolute;
-  top: -15px; right: 6px;
-  border: 1px solid var(--base-tone1);
-  background: var(--base-tone2);
-  /*box-shadow: 0 0 2px var(--base-tone0);*/
+  top: -15px; right: 16px;
+  border: 1px solid var(--base-tone3);
+  background: var(--base-tone4);
   display: flex;
   align-items: center;
   line-height: 5px;
-  border-radius: 5px;
+  border-radius: 6px;
 }
 li-mesg:hover mesg-acts,
 li-mesg.SELECTED mesg-acts {
   visibility: visible;
 }
 li-mesg.SELECTED mesg-acts {
-  box-shadow: 0 0 5px var(--base-tone1);
+  box-shadow: 0 0 2px var(--base-tone2);
 }
 mesg-acts button {
-  width: 30px; height: 30px;
-  background-color: transparent;
+  width: 32px; height: 32px;
   background-size: 19px;
+  background-color: transparent;
   background-repeat: no-repeat;
   background-position: center;
   opacity: .6;
 }mesg-acts button:hover {
-  opacity: 1;
-}
-mesg-dial {
-  margin-left: -5px;
-}
-mesg-dial button {
-  width: 32px; height: 19px;
-  border-radius: 4px;
-  border: 1px solid var(--base-tone1);
-  background-color: var(--base-tone2);
-  background-size: 16px;
-  background-repeat: no-repeat;
-  background-position: center;
-  opacity: .7;
-  margin: 4px 10px 0 0;
-  padding: 0;
-}mesg-dial button:hover{
   opacity: 1;
 }
 button.mesg-bt-save {
@@ -2360,7 +2367,8 @@ button.mesg-bt-edit {
   background-image: url("images/edit.svg");
 }
 li-mesg.MESG-APPEND {
-  margin: 0 10px 0 10px;
+  margin: 0 0 1px 0;
+  padding: 1px 16px;
 }
 li-mesg.MESG-APPEND mesg-info,
 li-mesg.MESG-APPEND mesg-avat {
@@ -2399,17 +2407,18 @@ li-mesg.MESG-SENT.MESG-RECP mesg-body {
 }
 @media (max-width: 824px) {
   li-mesg {
-    padding: 3px 0;
-    margin: 5px 5px 0 5px;
+    margin: 8px 0 1px 0;
+    padding: 2px 8px;
   }
   li-mesg.MESG-APPEND {
-    margin: 0 5px 0 5px;
+    padding: 1px 8px;
   }
   mesg-head {
     flex: 0 0 44px;
   }
   mesg-avat {
-    width: 32px; height: 32px;
+    width: 34px; height: 34px;
+    margin: 4px 0 0 0;
   }
   mesg-hour {
     width: 32px;
@@ -2421,9 +2430,19 @@ li-mesg.MESG-SENT.MESG-RECP mesg-body {
   mesg-from {
     font-size: 0.8em;
   }
+  mesg-main {
+    padding: 0 8px 0 0;
+  }
   mesg-body {
     font-size: 0.8em;
     line-height: 22px;
+  }
+  mesg-acts {
+    right: 8px;
+  }
+  mesg-acts button {
+    width: 28px; height: 28px;
+    background-size: 17px;
   }
 }
 /* ------------------------------------------------------------------ */
@@ -2440,7 +2459,7 @@ embd-wrap {
   background-color: var(--base-tone3);
   cursor: pointer;
   border-radius: 10px;
-  margin: 5px 0;
+  margin: 3px 0 3px 0;
 }
 embd-wrap a,
 embd-wrap a:visited {
@@ -2580,12 +2599,38 @@ mesg-inpt {
   word-break: normal;
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   white-space: break-spaces; /* DO NOT TOUCH THIS ! */
+  cursor: text;
 }
 mesg-inpt:focus {
   outline: 1px solid var(--base-tone5);
 }
 mesg-dial {
   display: block;
+  margin-left: -5px;
+}
+mesg-dial button {
+  width: 31px; height: 19px;
+  border-radius: 4px;
+  border: 1px solid var(--base-tone1);
+  background-color: var(--base-tone2);
+  background-size: 13px;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: .7;
+  margin: 2px 5px 2px 0;
+  padding: 0;
+}mesg-dial button:hover{
+  opacity: 1;
+}
+@media (max-width: 824px) {
+  mesg-inpt {
+    margin: 3px 0 0 -5px;
+    padding: 0 4px 2px 4px;
+  }
+  mesg-edit {
+    font-size: 0.8em;
+    line-height: 22px;
+  }
 }
 /* ------------------------------------------------------------------ */
 /* Chat Frame - Chat Foot */
@@ -2600,7 +2645,12 @@ mesg-dial {
 #chat_foot aside {
   position: absolute;
   width: 100%; height: 0;
-  padding: 0 15px;
+  padding: 0 16px;
+}
+@media (max-width: 824px) {
+  #chat_foot aside {
+    padding: 0 8px;
+  }
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Chat Controls & Inputs */
@@ -2609,7 +2659,7 @@ mesg-dial {
   display: flex;
   min-width: 100px;
   padding: 10px;
-  margin: 8px 12px 0 12px;
+  margin: 2px 16px 0 16px;
   border-radius: 5px;
   background-color: var(--base-tone5);
   cursor: text;
@@ -2649,6 +2699,9 @@ chat-inpt {
   white-space: break-spaces; /* DO NOT TOUCH THIS ! */
 }
 @media (max-width: 824px) {
+  #chat_edit {
+    margin: 2px 8px 0 8px;
+  }
   chat-inpt {
     font-size: 0.8em;
   }
@@ -2677,12 +2730,13 @@ chat-inpt {
   text-align: left;
   position:relative;
   float: right;
-  /*! right: 15px; */ bottom: 305px;
-  width: 420px; height: 305px;
-  border: 10px solid var(--base-tone1);
-  border-right: 0;
-  border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.4);
+  bottom: 300px;
+  width: 410px; height: 300px;
+  border-color: var(--base-tone1);
+  border-style: solid;
+  border-width: 10px 0 10px 5px;
+  border-radius: 6px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
   background-color: var(--base-tone1);
   overflow-y: scroll;
@@ -2701,9 +2755,9 @@ chat-inpt {
 #drop_emoj li {
   display: inline-block;
   width: 32px; height: 32px;
-  font-size: 2.0em;
+  font-size: 1.6em;
   margin: 2px;
-  padding: 1px;
+  padding: 2px;
   text-align: center;
   border-radius: 4px;
   cursor:pointer;
@@ -2716,12 +2770,13 @@ chat-inpt {
 }
 @media (max-width: 824px) {
   #drop_emoj {
-    width: 240px;
+    bottom: 365px;
+    width: 260px; height: 365px;
+    border-width: 5px 0 5px 2px;
   }
   #drop_emoj li {
-    width: 26px; height: 25px;
-    font-size: 1.8em;
-    margin: 5px;
+    width: 32px; height: 32px;
+    font-size: 1.5em;
   }
 }
 /* ------------------------------------------------------------------ */

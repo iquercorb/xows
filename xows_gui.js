@@ -632,7 +632,7 @@ function xows_gui_disconnect()
 {
   // Send chat state to notify current user
   if(xows_gui_peer)
-    xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_GONE);
+    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_GONE);
 
   // Hangup and clear any Media Call
   xows_gui_call_terminate();
@@ -1041,7 +1041,7 @@ function xows_gui_switch_peer(jid)
     // Do no switch to same contact
     if(jid === prev.bare) return;
     // Send chat state to notify current user
-    xows_cli_chatstate_set(prev, XOWS_CHAT_GONE);
+    xows_cli_chatstate_define(prev, XOWS_CHAT_GONE);
     // Abort any uploading file
     xows_gui_upld_onclose();
   }
@@ -1535,10 +1535,6 @@ function xows_gui_unread_tab_update(peer, mesg, call, ring)
   // Update ringing animation class
   tab_rost.classList.toggle("RINGING", remain_ring > 0);
 
-  // Update notification classes
-  //badg_noti.classList.toggle("RINGING", remain_ring > 0);
-  //badg_noti.classList.toggle("BADG-CALL", remain_call > 0);
-
   // Show or hide notification spot
   let has_notif = (remain_mesg > 0 || remain_call > 0 || remain_ring > 0);
   badg_noti.hidden = !has_notif;
@@ -1591,9 +1587,6 @@ function xows_gui_unread_call(peer, ring)
   const had_ring = (parseInt(badg_noti.dataset.ring) > 0);
   badg_noti.dataset.ring = ring ? 1 : 0;
   badg_noti.dataset.call = ring ? 0 : 1;
-  //badg_noti.classList.toggle("RINGING", ring);
-  //badg_noti.classList.toggle("BADG-CALL", !ring);
-  //badg_noti.hidden = false; //< show
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, null, ring ? 0 : 1, (ring ? 1 : (had_ring ? -1 : 0)));
@@ -1621,15 +1614,11 @@ function xows_gui_unread_reset(peer)
   const mesg = - parseInt(badg_noti.dataset.mesg);
   const ring = - parseInt(badg_noti.dataset.ring);
   const call = - parseInt(badg_noti.dataset.call);
-  //const ring = badg_noti.classList.contains("RINGING") ? 0 : -1;
-  //const call = badg_noti.classList.contains("BADG-CALL") ? 0 : -1;
 
   // Reset the unread spot <div> properties
   badg_noti.dataset.mesg = 0;
   badg_noti.dataset.ring = 0;
   badg_noti.dataset.call = 0;
-  //badg_noti.classList.remove("RINGING");
-  //badg_noti.classList.remove("BADG-CALL");
 
   badg_noti.hidden = true; //< hide
 
@@ -1638,46 +1627,42 @@ function xows_gui_unread_reset(peer)
 }
 
 /* -------------------------------------------------------------------
- * Main screen - Roster - Main management
+ * Main screen - Roster - Interactions
  * -------------------------------------------------------------------*/
-
 /**
- * Roster Header on-click callback function
+ * Roster frame (headers and lists) on-click callback function
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_rost_head_onclick(event)
+function xows_gui_rost_fram_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
-  switch(event.target.id)
-  {
-  case "cont_bt_add":
-    // Open contact Add page
-    xows_gui_page_cont_open();
-    break;
-  case "room_bt_add":
-    // Open Join Room page
-    xows_gui_page_join_open();
-    break;
-  case "room_bt_upd":
-    // Refresh Room list
-    xows_gui_room_list_reload();
-    break;
+  // Check whether this is click on header buttons
+  if(event.target.closest("HEAD-ACTS")) {
+    
+    switch(event.target.id)
+    {
+    case "cont_bt_add":
+      // Open contact Add page
+      xows_gui_page_cont_open();
+      break;
+    case "room_bt_add":
+      // Open Join Room page
+      xows_gui_page_join_open();
+      break;
+    case "room_bt_upd":
+      // Refresh Room list
+      xows_gui_room_list_reload();
+      break;
+    }
+    
+    return;
   }
-}
-
-/**
- * Roster Contact/Room/Subscribe List on-click callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_rost_list_onclick(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
 
   // Search for <li-peer> parent element
   const li_peer = event.target.closest("LI-PEER");
+  if(!li_peer) return;
 
   if(event.target.tagName === "BUTTON") {
 
@@ -2007,40 +1992,58 @@ function xows_gui_cli_onselfchange(user)
 }
 
 /**
+ * User Panel on-click callback
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_user_panl_onclick(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  if(event.target.id === "user_bt_menu") 
+    // Open user porfile page
+    xows_gui_page_user_open();
+    
+  if(event.target.closest("#menu_show")) 
+    // Open user show/presence level menu drop
+    xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show", 
+                          xows_gui_menu_show_onclick);
+}
+
+/**
  * User Presence (show) menu button/drop on-click callback
  *
  * @param   {object}    event     Event object associated with trigger
  */
 function xows_gui_menu_show_onclick(event)
 {
+  xows_cli_activity_wakeup(); //< Wakeup presence
+  
   // Retreive the parent <li> element of the event target
   const li = event.target.closest("LI");
-
+  if(!li) return;
+  
   // Set presence as selected level
-  if(li) {
-    const show = parseInt(li.value);
-    if(show > 0) {
-      xows_cli_change_presence(show);
-    } else {
-      // Reset login page
-      xows_doc("auth_user").value = "";
-      xows_doc("auth_pass").value = "";
+  const show = parseInt(li.value);
+  if(show > 0) {
+    xows_cli_show_select(show);
+  } else {
+    // Reset login page
+    //xows_doc("auth_user").value = ""; //< FIXE : ?
+    //xows_doc("auth_pass").value = "";
 
-      // Disable credentials (request again for login)
-      if(navigator.credentials)
-        navigator.credentials.preventSilentAccess();
+    // Disable credentials (request again for login)
+    //if(navigator.credentials) 
+      //navigator.credentials.preventSilentAccess(); //< FIXE : ?
 
-      // Disconnect
-      xows_gui_disconnect();
+    // Disconnect
+    xows_gui_disconnect();
 
-      return;
-    }
+    return;
   }
 
   // Toggle menu drop and focus button
   xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show");
-
-  xows_cli_activity_wakeup(); //< Wakeup presence
 }
 
 /* -------------------------------------------------------------------
@@ -2100,7 +2103,7 @@ function xows_gui_stat_inpt_enter(input)
 
   // If changed, inform of the new status
   if(stat != xows_cli_self.stat)
-    xows_cli_change_status(stat);
+    xows_cli_status_define(stat);
 
   // Unfocus input, this will throw blur event
   input.blur();
@@ -3204,7 +3207,7 @@ function xows_gui_chat_main_onscroll(event)
 }
 
 /**
- * Callback function to handle user click into the chat history
+ * Callback function to handle user click in chat history
  *
  * @param   {object}    event     Event object associated with trigger
  */
@@ -3230,25 +3233,33 @@ function xows_gui_chat_hist_onclick(event)
       return;
     }
   }
-  
-  // Check for closted <li-mesg> parent
-  const li_mesg = event.target.closest("LI-MESG");
-  if(!li_mesg) 
-    return;
-  
-  // Select message
-  xows_gui_mesg_select(li_mesg);
-  
+
   // Check for click on New Message notification banner
   if(event.target.tagName === "IMG") {
     // Open image viewer
     xows_doc_view_open(event.target);
     return;
   }
+  
+  // Check for closted <li-mesg> parent
+  const li_mesg = event.target.closest("LI-MESG");
+  if(!li_mesg) 
+    return;
+  
+  // Special behavior for mobile devices to allow message interaction
+  if(event.type.startsWith("touch")) {
+    
+    // Unselect any previousely selected message
+    const li_selected = xows_doc("hist_ul").querySelector("LI-MESG.SELECTED");
+    if(li_selected) li_selected.classList.remove("SELECTED");
 
+    // Select the 'touched' message
+    if(mesg) mesg.classList.add("SELECTED");
+  }
+  
   // Check for click on <button> element
   if(event.target.tagName === "BUTTON") {
-
+  
      // If button has a valid name, this is history message button
      if(event.target.name) {
 
@@ -3273,21 +3284,6 @@ function xows_gui_chat_hist_onclick(event)
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - History - Messages
  * -------------------------------------------------------------------*/
- 
-/**
- * Select the specified history message
- *
- * @param   {object}      mesg    Instance of <li-mesg> or null
- */
-function xows_gui_mesg_select(mesg)
-{
-  // Unselect any selected message
-  const li_selected = xows_doc("hist_ul").querySelector("LI-MESG.SELECTED");
-  if(li_selected) li_selected.classList.remove("SELECTED");
-
-  // Select the specified message
-  if(mesg) mesg.classList.add("SELECTED");
-}
 
 /**
  * History message correction Cancel function
@@ -3925,7 +3921,7 @@ function xows_gui_chat_inpt_enter(input)
     }
 
     // Reset chatsate to active
-    xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_ACTI);
+    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_ACTI);
   }
 }
 
@@ -3945,7 +3941,7 @@ function xows_gui_chat_panl_oninput(event)
 
   // Set composing
   if(xows_gui_peer)
-    xows_cli_chatstate_set(xows_gui_peer, XOWS_CHAT_COMP);
+    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_COMP);
 
   // Store selection range
   xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
@@ -3996,9 +3992,9 @@ function xows_gui_chat_panl_onclick(event)
       const rng = xows_doc_sel_rng(0);
       if(rng.collapsed) {
         const txt = rng.endContainer;
-        // Checks whether current selection is within <emoj> node
-        if(txt.parentNode.tagName === "EMOJ") {
-          // Move caret before or after the <emoj> node
+        // Checks whether current selection is within <emo-ji> node
+        if(txt.parentNode.tagName === "EMO-JI") {
+          // Move caret before or after the <emo-ji> node
           xows_doc_caret_around(txt.parentNode, !rng.endOffset);
           return; //< return now
         }
@@ -4091,7 +4087,7 @@ function xows_gui_drop_emoj_onclick(event)
   const li = event.target.closest("LI");
 
   // Check whether we got click from drop or button
-  if(li) xows_gui_chat_inpt_insert(li.childNodes[0].nodeValue, "emoj"); //< Insert selected Emoji
+  if(li) xows_gui_chat_inpt_insert(li.childNodes[0].nodeValue, "EMO-JI"); //< Insert selected Emoji
 }
 
 /* -------------------------------------------------------------------

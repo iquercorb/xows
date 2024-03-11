@@ -391,90 +391,72 @@ function xows_doc_sel_rng(index)
 function xows_doc_init(onready)
 {
   // Main Page "scr_main" event listeners
-  xows_doc_listener_add(xows_doc("main_tabs"),  "click",    xows_gui_rost_widen); //< capture mode
+  xows_doc_listener_add(xows_doc("main_tabs"),  "click",    xows_gui_rost_widen);
   xows_doc_listener_add(xows_doc("main_hndr"),  "click",    xows_gui_main_open);
   xows_doc_listener_add(xows_doc("main_hndl"),  "click",    xows_gui_main_open);
-
+  // Roster frame
   xows_doc_listener_add(xows_doc("rost_tabs"),  "click",    xows_gui_rost_tabs_onclick);
-  xows_doc_listener_add(xows_doc("cont_acts"),  "click",    xows_gui_rost_head_onclick);
-  xows_doc_listener_add(xows_doc("room_acts"),  "click",    xows_gui_rost_head_onclick);
-  xows_doc_listener_add(xows_doc("cont_list"),  "click",    xows_gui_rost_list_onclick);
-  xows_doc_listener_add(xows_doc("room_list"),  "click",    xows_gui_rost_list_onclick);
-
-  xows_doc_listener_add(xows_doc("menu_show"),  "click",    xows_gui_menu_show_onclick);
-  xows_doc_listener_add(xows_doc("drop_show"),  "click",    xows_gui_menu_show_onclick);
-  xows_doc_listener_add(xows_doc("user_bt_menu"),  "click",    xows_gui_page_user_open);
+  xows_doc_listener_add(xows_doc("rost_fram"),  "click",    xows_gui_rost_fram_onclick);
+  // User panel
+  xows_doc_listener_add(xows_doc("user_panl"),  "click",    xows_gui_user_panl_onclick);
   xows_doc_listener_add(xows_doc("stat_inpt"),  "input",    xows_gui_stat_inpt_oninput);
   xows_doc_listener_add(xows_doc("stat_inpt"),  "blur",     xows_gui_stat_inpt_onblur);
-
   // Chat header
   const chat_head = xows_doc("chat_head");
   xows_doc_listener_add(chat_head,              "click",    xows_gui_chat_head_onclick);
   xows_doc_listener_add(chat_head,              "focusout", xows_gui_chat_head_onfocus);
   xows_doc_listener_add(chat_head,              "input",    xows_gui_chat_head_oninput);
-
   // Chat main
   xows_doc_listener_add(xows_doc("chat_main"),  "scroll",   xows_gui_chat_main_onscroll);
   xows_doc_listener_add(xows_doc("chat_hist"),  "click",    xows_gui_chat_hist_onclick);
+  xows_doc_listener_add(xows_doc("chat_hist"),  "touchstart", xows_gui_chat_hist_onclick);
   // Add Resize observer
   const observer = new ResizeObserver(xows_gui_chat_main_onresize);
   observer.observe(xows_doc("chat_main"));
   observer.observe(xows_doc("chat_hist"));
-
   // Chat foot
   const chat_panl = xows_doc("chat_panl");
   xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
   xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
   xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_panl_oninput);
   xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
-
-  // Room header
+  // Room Frame
   const room_head = xows_doc("room_head");
   xows_doc_listener_add(room_head,              "click",    xows_gui_room_head_onclick);
-
-  // Room Occupants list
   xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);
 
   // Page screen "scr_page" event listener
   xows_doc_listener_add(xows_doc("scr_page"),   "keyup",    xows_doc_page_onkeyu);
-
   // Close page button "page_exit" event listener
   xows_doc_listener_add(xows_doc("page_exit"),  "click",    xows_doc_page_onclose);
-
   // Check whether Registering option is enabled
   if(xows_options.allow_register)
     xows_doc_show("auth_regi"); //< The link in Login Page
 
   // Modal screen "scr_void" event listener
   xows_doc_listener_add(xows_doc("scr_void"),   "click",    xows_doc_void_onclick);
-
   // Image viewer "over_view" event listener
   xows_doc_listener_add(xows_doc("over_view"),  "click",    xows_doc_view_onclick);
-
   // Message Box "over_mbox" event listeners
   xows_doc_listener_add(xows_doc("mbox_close"), "click",    xows_doc_mbox_close);
   xows_doc_listener_add(xows_doc("mbox_abort"), "click",    xows_doc_mbox_onabort);
   xows_doc_listener_add(xows_doc("mbox_valid"), "click",    xows_doc_mbox_onvalid);
-
   // Set event listener to handle user keyboard
-  xows_doc_listener_add(document,   "keydown",            xows_gui_wnd_onkey, false); //< need preventDefault()
-  xows_doc_listener_add(document,   "keyup",              xows_gui_wnd_onkey);
-
+  xows_doc_listener_add(document,               "keydown",  xows_gui_wnd_onkey, false); //< need preventDefault()
+  xows_doc_listener_add(document,               "keyup",    xows_gui_wnd_onkey);
   // Set event listener to handle user presence and GUI focus
-  xows_doc_listener_add(document,   "visibilitychange",   xows_gui_wnd_onfocus);
-  xows_doc_listener_add(window,     "pagehide",           xows_gui_wnd_onfocus);
-  xows_doc_listener_add(window,     "focus",              xows_gui_wnd_onfocus);
-  xows_doc_listener_add(window,     "blur",               xows_gui_wnd_onfocus);
-
+  xows_doc_listener_add(document,               "visibilitychange", xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window,                 "pagehide", xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window,                 "focus",    xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window,                 "blur",     xows_gui_wnd_onfocus);
   // Set event listener to handle page quit or reload
-  xows_doc_listener_add(window,     "beforeunload",       xows_cli_flyyoufools);
-  xows_doc_listener_add(window,     "unload",             xows_cli_flyyoufools);
-
+  xows_doc_listener_add(window,                 "beforeunload", xows_cli_flyyoufools);
+  xows_doc_listener_add(window,                 "unload",    xows_cli_flyyoufools);
   // Set event listener to hook browser "nav back"
-  xows_doc_listener_add(window,     "popstate",           xows_gui_nav_onpopstate);
+  xows_doc_listener_add(window,                 "popstate",  xows_gui_nav_onpopstate);
 
   // Set template callback
-  xows_tpl_set_callback("embload", xows_doc_media_onload);
+  xows_tpl_set_callback("embload",  xows_doc_media_onload);
   xows_tpl_set_callback("emberror", xows_doc_media_onerror);
 
   xows_log(2,"doc_init","document ready");
@@ -886,24 +868,34 @@ function xows_doc_page_opened(page)
 /**
  * Currently opened menu elements
  */
-const xows_doc_menu = {btn:null,drop:null};
+const xows_doc_menu_param = {bttn:null,drop:null};
 
 /**
  * Close current opened menu
  */
 function xows_doc_menu_close()
 {
+  const bttn = xows_doc_menu_param.bttn;
+  const drop = xows_doc_menu_param.drop;
+
+  if(drop) {
+
+    // Hide drop element
+    drop.hidden = true;
+
+    // Remove event listener from menu drop element
+    xows_doc_listener_rem(drop, "click", onclick);
+  }
+
+  // Unfocus button element
+  if(bttn) bttn.blur();
+
   // hide the 'void' screen
   xows_doc_hide("scr_void");
 
-  if(xows_doc_menu.drop)
-    xows_doc_hide(xows_doc_menu.drop);
-
-  if(xows_doc_menu.btn)
-    xows_doc_menu.btn.blur();
-
-  xows_doc_menu.btn = null;
-  xows_doc_menu.drop = null;
+  // Reset parameters
+  xows_doc_menu_param.bttn = null;
+  xows_doc_menu_param.drop = null;
 }
 
 /**
@@ -912,20 +904,42 @@ function xows_doc_menu_close()
  * This function toggle the specified menu and show the invisible menu
  * screen to gather click event outside menu.
  *
- * @param   {object}    btn       Menu button object
- * @param   {string}    drop      Menu drop object Id
+ * @param   {string}    button    Menu button reference object
+ * @param   {string}    dropid    Menu drop object Id
+ * @param   {function}  onclick   Menu onclick callback
  */
-function xows_doc_menu_toggle(btn, drop)
+function xows_doc_menu_toggle(button, dropid, onclick)
 {
-  if(xows_doc_menu.btn) {
+  // Check whether menu is already open
+  if(xows_doc_menu_param.bttn) {
+
+    // Close openned menu
     xows_doc_menu_close();
+
   } else {
+
+    // Save parameters
+    const drop = xows_doc(dropid);
+
+    if(!button || !drop)
+      return;
+
+    console.log(button);
+
+    xows_doc_menu_param.bttn = button;
+    xows_doc_menu_param.drop = drop;
+
     // show the 'void' screen to catch clicks outside menu
     xows_doc_show("scr_void");
-    xows_doc_show(drop);
-    btn.focus();
-    xows_doc_menu.btn = btn;
-    xows_doc_menu.drop = drop;
+
+    // Add event listener to menu drop element
+    xows_doc_listener_add(drop, "click", onclick);
+
+    // Show menu drop element
+    drop.hidden = false;
+
+    // Focus on button element
+    button.focus();
   }
 }
 
@@ -996,7 +1010,7 @@ function xows_doc_view_onclick(event)
 function xows_doc_void_onclick(event)
 {
   // check whether a menu is opened, and close it
-  if(xows_doc_menu.btn)
+  if(xows_doc_menu_param.bttn)
     xows_doc_menu_close();
 
   // Close potentially opened media viewer screen
