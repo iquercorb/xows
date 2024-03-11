@@ -562,9 +562,17 @@ function xows_tpl_parse_styling(raw)
       continue;
     }
 
-    // Raw emoji unicode
-    if((c >= 0x2300 && c <= 0x2BFF) || (c >= 0x1F000 && c <= 0x1FB00)) {
-      result += "<emo-ji>&#x"+c+";</emo-ji>";
+    // Check for UTF-16 surrogate pair
+    if((c > 0xD7FF && c < 0xE000)) {
+
+      // Convert to 4 bytes codepoint
+      c = 0x10000 + (((c & 0x3FF) << 10) | (raw.charCodeAt(i+1) & 0x3FF));
+
+      // Check for raw emoji unicode
+      if((c >= 0x2300 && c <= 0x2BFF) || (c >= 0x1F000 && c <= 0x1FB00))
+        result += "<emo-ji>&#x"+c.toString(16)+";</emo-ji>";
+
+      i += 2; //< step after the surrogate pair
       continue;
     }
 
