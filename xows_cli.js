@@ -39,11 +39,6 @@
  * ------------------------------------------------------------------ */
 
 /**
- * Default size for generated avatars
- */
-const XOWS_AVAT_SIZE  = 48;
-
-/**
  * List of available own account feature
  */
 const xows_cli_feat_own = [];
@@ -452,7 +447,9 @@ function xows_cli_occu_any(room, jid)
   return xows_cli_occu_new(room, jid, null, null, null, avat, 0, "");
 }
 /* -------------------------------------------------------------------
- * Client API - Internal data - General PEER object routines
+ *
+ * Client API - General Peers management routines
+ *
  * -------------------------------------------------------------------*/
 /**
  * Returns the Room or Contact object with the specified JID
@@ -560,54 +557,9 @@ let xows_cli_fw_onconnect = function() {};
 let xows_cli_fw_onselfpush = function() {};
 
 /**
- * Callback function for Contact added or refreshed
- */
-let xows_cli_fw_oncontpush = function() {};
-
-/**
- * Callback function for Contact removed
- */
-let xows_cli_fw_oncontrem = function() {};
-
-/**
- * Callback function for Subscription added
- */
-let xows_cli_fw_onsubspush = function() {};
-
-/**
- * Callback function for Subscription removed
- */
-let xows_cli_fw_onsubsrem = function() {};
-
-/**
- * Callback function for Room added or refreshed
- */
-let xows_cli_fw_onroompush = function() {};
-
-/**
- * Callback function for Room removed
- */
-let xows_cli_fw_onroomrem = function() {};
-
-/**
- * Callback function for Room Occupant added or refreshed
- */
-let xows_cli_fw_onoccupush = function() {};
-
-/**
- * Callback function for Room Occupant removed
- */
-let xows_cli_fw_onoccurem = function() {};
-
-/**
  * Callback function for connection or login error
  */
 let xows_cli_fw_onerror = function() {};
-
-/**
- * Callback function for connect or reconnect timeout
- */
-let xows_cli_fw_ontimeout = function() {};
 
 /**
  * Callback function for session closed
@@ -840,13 +792,15 @@ function xows_cli_discoinfo_query(to, node = null)
  */
 function xows_cli_discoinfo_parse(from, iden, feat, form)
 {
-  xows_log(2,"cli_discoinfo_parse","discovered entiy",from+" (category:"+iden[0].category+" type:"+iden[0].type+")");
+  xows_log(2,"cli_discoinfo_parse","discovered entiy",from);
 
   xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
 
-  // Check whether entity is a MUC Room
-  if(from.includes("@") && iden[0].category === "conference")
-    xows_cli_muc_discoinfo_parse(from, iden, feat, form); //< Parse MUC Room
+  if(iden.length) { //< let this check ! sever may respond without "<identity>"
+    // Check whether entity is a MUC Room
+    if(from.includes("@") && iden[0].category === "conference")
+      xows_cli_muc_discoinfo_parse(from, iden, feat, form); //< Parse MUC Room
+  }
 
   // Search whether entity has http://jabber.org/protocol/disco#items
   if(feat.includes(XOWS_NS_DISCOITEMS)) {
@@ -1120,6 +1074,11 @@ function xows_cli_initialize(item)
  *
  * -------------------------------------------------------------------*/
 /**
+ * Callback function for connect or reconnect timeout
+ */
+let xows_cli_fw_ontimeout = function() {};
+
+/**
  * Flag for client connexion loss
  */
 let xows_cli_connect_loss = false;
@@ -1291,6 +1250,16 @@ function xows_cli_flyyoufools()
  *
  * -------------------------------------------------------------------*/
 /**
+ * Callback function for Contact added or refreshed
+ */
+let xows_cli_fw_oncontpush = function() {};
+
+/**
+ * Callback function for Contact removed
+ */
+let xows_cli_fw_oncontrem = function() {};
+
+/**
  * Proceeds incoming XMPP roster push
  *
  * @param   {string}    bare      Contact bare JID
@@ -1427,9 +1396,19 @@ function xows_cli_rost_edit(bare, name)
 
 /* -------------------------------------------------------------------
  *
- * Client API - Recieved Presences and Client-to-Client routines
+ * Client API - Presences and Subscription routines
  *
  * -------------------------------------------------------------------*/
+/**
+ * Callback function for Subscription added
+ */
+let xows_cli_fw_onsubspush = function() {};
+
+/**
+ * Callback function for Subscription removed
+ */
+let xows_cli_fw_onsubsrem = function() {};
+
 /**
  * Handles received presence (<presence> stanza) status from
  * other contacts
@@ -1555,6 +1534,95 @@ function xows_cli_entity_caps_test(node, xmlns)
     return xows_cach_caps_get(node).includes(xmlns);
 
   return false;
+}
+/* -------------------------------------------------------------------
+ * Client API - Contacts subscription routines
+ * -------------------------------------------------------------------*/
+/**
+ * Handles received subscribe (<presence> stanza) request or result
+ * from orher contacts
+ *
+ * This function is called by xows_xmp_presence_recv.
+ *
+ * @param   {string}    from      Sender JID
+ * @param   {string}    type      Subscribe request/result type
+ * @param   {string}   [nick]     Contact prefered nickname if available
+ */
+function xows_cli_xmp_onsubscribe(from, type, nick)
+{
+  let log_str;
+
+  switch(type)
+  {
+  // The sender wishes to subscribe to us
+  case "subscribe": log_str = "request"; break;
+  // The sender deny our subscribe request
+  case "unsubscribed": log_str = "denied"; break;
+  // The sender has allowed us to subscribe
+  case "subscribed": log_str = "allowed"; break;
+  // The sender is unsubscribing us
+  case "unsubscribe": log_str = "removed"; break;
+  }
+
+  // Simply log output
+  xows_log(2,"cli_xmp_onsubscribe","Subscription "+log_str+" by",from);
+
+  if(type === "subscribe") {
+    // Try to find the contact
+    const cont = xows_cli_cont_get(from);
+    if(cont) {
+      xows_log(2,"cli_xmp_onsubscribe","request automatically allowed","Contact in Roster");
+      // If we already have contact in roster we accept and allow
+      xows_cli_subscribe_allow(cont.bare, true, nick);
+    } else { // This mean someone is adding us to its roster
+      // Forward add subscription request
+      xows_cli_fw_onsubspush(xows_jid_bare(from), nick);
+    }
+  }
+}
+
+/**
+ * Send presence subscribe request to contact
+ *
+ * @param   {object}    bare      Contact bare JID to send subsribe request
+ */
+function xows_cli_subscribe_request(bare)
+{
+  xows_log(2,"cli_subscribe_request","request subscribe to",bare);
+  // Send or resent subscribe request to contact
+  xows_xmp_presence_send(bare, "subscribe");
+}
+
+/**
+ * Send presence subscribtion allow or deny to contact
+ *
+ * @param   {string}    bare      Contact JID bare
+ * @param   {boolean}   allow     True to allow, false to deny
+ * @param   {string}   [nick]     Preferend nickname if available
+ */
+function xows_cli_subscribe_allow(bare, allow, nick)
+{
+  // Send an allow or deny subscription to contact
+  xows_xmp_presence_send(bare, allow?"subscribed":"unsubscribed");
+  xows_log(2,"cli_subscribe_request",(allow?"allow":"deny")+" subscription from",bare);
+  // If subscription is allowed, we add the contact
+  if(allow) {
+    // Check whether we must add this contact
+    if(!xows_cli_cont_get(bare)) {
+      // Compose displayed name from JID
+      let name;
+      if(nick) {
+        name = nick;
+      } else {
+        const userid = bare.split("@")[0];
+        name = userid[0].toUpperCase() + userid.slice(1);
+      }
+      // We add the contact to roster (and send back subscription request)
+      xows_cli_rost_edit(bare, name);
+    }
+  }
+  // Forward subscription request to be removed
+  xows_cli_fw_onsubsrem(bare);
 }
 
 /* -------------------------------------------------------------------
@@ -1813,98 +1881,6 @@ function xows_cli_chatstate_define(peer, chat)
     xows_xmp_message_chatstate_send(peer.lock, type, chat);
   }
 }
-/* -------------------------------------------------------------------
- *
- * Client API - Contacts subscribes routines
- *
- * -------------------------------------------------------------------*/
-/**
- * Handles received subscribe (<presence> stanza) request or result
- * from orher contacts
- *
- * This function is called by xows_xmp_presence_recv.
- *
- * @param   {string}    from      Sender JID
- * @param   {string}    type      Subscribe request/result type
- * @param   {string}   [nick]     Contact prefered nickname if available
- */
-function xows_cli_xmp_onsubscribe(from, type, nick)
-{
-  let log_str;
-
-  switch(type)
-  {
-  // The sender wishes to subscribe to us
-  case "subscribe": log_str = "request"; break;
-  // The sender deny our subscribe request
-  case "unsubscribed": log_str = "denied"; break;
-  // The sender has allowed us to subscribe
-  case "subscribed": log_str = "allowed"; break;
-  // The sender is unsubscribing us
-  case "unsubscribe": log_str = "removed"; break;
-  }
-
-  // Simply log output
-  xows_log(2,"cli_xmp_onsubscribe","Subscription "+log_str+" by",from);
-
-  if(type === "subscribe") {
-    // Try to find the contact
-    const cont = xows_cli_cont_get(from);
-    if(cont) {
-      xows_log(2,"cli_xmp_onsubscribe","request automatically allowed","Contact in Roster");
-      // If we already have contact in roster we accept and allow
-      xows_cli_subscribe_allow(cont.bare, true, nick);
-    } else { // This mean someone is adding us to its roster
-      // Forward add subscription request
-      xows_cli_fw_onsubspush(xows_jid_bare(from), nick);
-    }
-  }
-}
-
-/**
- * Send presence subscribe request to contact
- *
- * @param   {object}    bare      Contact bare JID to send subsribe request
- */
-function xows_cli_subscribe_request(bare)
-{
-  xows_log(2,"cli_subscribe_request","request subscribe to",bare);
-  // Send or resent subscribe request to contact
-  xows_xmp_presence_send(bare, "subscribe");
-}
-
-/**
- * Send presence subscribtion allow or deny to contact
- *
- * @param   {string}    bare      Contact JID bare
- * @param   {boolean}   allow     True to allow, false to deny
- * @param   {string}   [nick]     Preferend nickname if available
- */
-function xows_cli_subscribe_allow(bare, allow, nick)
-{
-  // Send an allow or deny subscription to contact
-  xows_xmp_presence_send(bare, allow?"subscribed":"unsubscribed");
-  xows_log(2,"cli_subscribe_request",(allow?"allow":"deny")+" subscription from",bare);
-  // If subscription is allowed, we add the contact
-  if(allow) {
-    // Check whether we must add this contact
-    if(!xows_cli_cont_get(bare)) {
-      // Compose displayed name from JID
-      let name;
-      if(nick) {
-        name = nick;
-      } else {
-        const userid = bare.split("@")[0];
-        name = userid[0].toUpperCase() + userid.slice(1);
-      }
-      // We add the contact to roster (and send back subscription request)
-      xows_cli_rost_edit(bare, name);
-    }
-  }
-  // Forward subscription request to be removed
-  xows_cli_fw_onsubsrem(bare);
-}
-
 
 /* -------------------------------------------------------------------
  *
@@ -2313,6 +2289,11 @@ function xows_cli_nick_publish()
 /* -------------------------------------------------------------------
  * Client API - PubSub - Avatar routines and interface
  * -------------------------------------------------------------------*/
+/**
+ * Default size for generated avatars
+ */
+const XOWS_AVAT_SIZE  = 48;
+
 /**
  * Stores received XEP-0084 avatar metadata
  */
@@ -2925,6 +2906,26 @@ function xows_cli_upld_query(file, onerror, onload, onprogress, onabort)
  * Client API - MUC routines and interface
  *
  * -------------------------------------------------------------------*/
+/**
+ * Callback function for Room added or refreshed
+ */
+let xows_cli_fw_onroompush = function() {};
+
+/**
+ * Callback function for Room removed
+ */
+let xows_cli_fw_onroomrem = function() {};
+
+/**
+ * Callback function for Room Occupant added or refreshed
+ */
+let xows_cli_fw_onoccupush = function() {};
+
+/**
+ * Callback function for Room Occupant removed
+ */
+let xows_cli_fw_onoccurem = function() {};
+
 /**
  * Callback function for received Room Subject
  */
