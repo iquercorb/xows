@@ -438,12 +438,22 @@ const xows_tpl_reg_code = /^`(\S.+?\S)`/;
 /**
  * Regular expression to match strong span
  */
-const xows_tpl_reg_strong = /^\*\S.+?\S\*/;
+const xows_tpl_reg_italic = /(^\*\S.*?[^\s\*]\*)(?:[^\*]|$)/;
+
+/**
+ * Regular expression to match strong span
+ */
+const xows_tpl_reg_strong = /(^\*{2}\S.+?\S\*{2})(?:[^\*]|$)/;
+
+/**
+ * Regular expression to match strong span
+ */
+const xows_tpl_reg_emphas = /(^\*\S.+?\S\*)/;
 
 /**
  * Regular expression to match emphasis span
  */
-const xows_tpl_reg_emphas = /^_\S.+?\S_/;
+const xows_tpl_reg_underl = /^_\S.+?\S_/;
 
 /**
  * Regular expression to match strike span
@@ -489,8 +499,9 @@ function xows_tpl_parse_styling(raw)
 {
   let match;
   let lead_sp, lead_lf = true;
-  let span_b = false;
-  let span_i = false;
+  let span_i = 0;
+  let span_b = 0;
+  let span_u = false;
   let span_s = false;
   let quote_depth = 0;
 
@@ -576,29 +587,56 @@ function xows_tpl_parse_styling(raw)
       continue;
     }
 
-    // Bold/Strong span
+    // Ephasis span (italic, bold)
     if(c === 0x2A) { //< '*'
+
       if(span_b) {
-        span_b = false;
-        result += "</b>"; //< close span
-        i++; continue;
+        if(span_b === i) {
+          result += "</b>"; //< close span
+          span_b = 0;
+          i += 2; continue;
+        }
       } else {
-        if(span_b = xows_tpl_reg_strong.test(raw.substring(i))) {
-          result += "<b>"; //< open span
+        if(raw.charCodeAt(i+1) === 0x2A) {
+          match = xows_tpl_reg_strong.exec(raw.substring(i));
+          if(match) {
+            span_b = i + (match[1].length - 2);
+            result += "<b>"; //< open span
+            i += 2; continue;
+          }
+        }
+      }
+
+      if(span_i) {
+        if(span_i === i) {
+          result += "</i>"; //< close span
+          span_i = 0;
+          i++; continue;
+        }
+      } else {
+        if(span_b) {
+          match = xows_tpl_reg_emphas.exec(raw.substring(i));
+        } else {
+          match = xows_tpl_reg_italic.exec(raw.substring(i));
+        }
+        if(match) {
+          span_i = i + (match[1].length - 1);
+          result += "<i>"; //< open span
           i++; continue;
         }
       }
+
     }
 
-    // Emphasis span
+    // Underline span
     if(c === 0x5F) { //< '_'
-      if(span_i) {
-        span_i = false;
-        result += "</i>"; //< close span
+      if(span_u) {
+        span_u = false;
+        result += "</u>"; //< close span
         i++; continue;
       } else {
-        if(span_i = xows_tpl_reg_emphas.test(raw.substring(i))) {
-          result += "<i>"; //< open span
+        if(span_u = xows_tpl_reg_underl.test(raw.substring(i))) {
+          result += "<u>"; //< open span
           i++; continue;
         }
       }
