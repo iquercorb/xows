@@ -140,7 +140,19 @@
   "Edit user profile":
   "",
 
-  "Define a status ...":
+  "Status message":
+  "",
+
+  "Define a status message...":
+  "",
+
+  "Edit status message":
+  "",
+
+  "Indicate anything you want to mention about your current situation.":
+  "",
+
+  "Enter a status message...":
   "",
 
   "Available For Chat":
@@ -161,7 +173,13 @@
   "Disconnect":
   "",
 
-  "Set Room topic ...":
+  "Set topic of":
+  "",
+  
+  "Enter a topic...":
+  "",
+  
+  "Set the message of the day, a welcome message or the discussion subject.":
   "",
 
   "Video call":
@@ -402,6 +420,9 @@
   "",
 
   "Error":
+  "",
+
+  "Apply":
   "",
 
   "Abort":

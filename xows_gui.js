@@ -994,11 +994,11 @@ function xows_gui_reset()
   cont_noti.innerText = "";
 
   // clean user frame
-  xows_doc("user_show").dataset.show = 0;
-  xows_doc("user_name").innerText = "";
-  xows_doc("user_addr").innerText = "";
+  xows_doc("self_show").dataset.show = 0;
+  xows_doc("self_name").innerText = "";
+  xows_doc("self_addr").innerText = "";
   xows_doc("stat_inpt").innerText = "";
-  xows_doc("user_avat").className = "";
+  xows_doc("self_avat").className = "";
 
   // Reset Peer related elements
   xows_gui_switch_peer(null);
@@ -1640,7 +1640,7 @@ function xows_gui_rost_fram_onclick(event)
 
   // Check whether this is click on header buttons
   if(event.target.closest("HEAD-ACTS")) {
-    
+
     switch(event.target.id)
     {
     case "cont_bt_add":
@@ -1656,7 +1656,7 @@ function xows_gui_rost_fram_onclick(event)
       xows_gui_room_list_reload();
       break;
     }
-    
+
     return;
   }
 
@@ -1971,19 +1971,45 @@ function xows_gui_cli_onroomrem(bare)
 function xows_gui_cli_onselfchange(user)
 {
   // Compose status string
+  /*
   if(user.stat) {
     const stat_inpt = xows_doc("stat_inpt");
     stat_inpt.innerText = user.stat;
     stat_inpt.className = "";
   }
+  */
+  const user_panl = xows_doc("user_panl");
+
+  xows_doc("self_show").dataset.show = user.show;
+
+  xows_tpl_spawn_avat_cls(user.avat); //< Add avatar CSS class
+  const peer_avat = user_panl.querySelectorAll("PEER-AVAT");
+  for(let i = 0; i < peer_avat.length; ++i)
+    peer_avat[i].className = "h-"+user.avat;
+
+  const peer_name = user_panl.querySelectorAll("PEER-NAME");
+  for(let i = 0; i < peer_name.length; ++i)
+    peer_name[i].innerText = user.name;
+
+  const peer_meta = user_panl.querySelectorAll("PEER-META");
+  for(let i = 0; i < peer_meta.length; ++i) {
+    peer_meta[i].innerText = user.stat;
+    peer_meta[i].className = (user.stat) ? "" : "PLACEHOLD";
+  }
+
+  const peer_addr = user_panl.querySelectorAll("PEER-ADDR");
+  for(let i = 0; i < peer_addr.length; ++i)
+    peer_addr[i].innerText = user.bare;
+
+  /*
   // Change Show Status displays
-  xows_doc("user_show").dataset.show = user.show;
-  xows_doc("user_name").innerText = user.name;
-  xows_doc("user_addr").innerText = "("+user.bare+")";
+
+  xows_doc("self_name").innerText = user.name;
+  xows_doc("self_addr").innerText = "("+user.bare+")";
   // Update avatar
   xows_tpl_spawn_avat_cls(user.avat); //< Add avatar CSS class
-  xows_doc("user_avat").className = "h-"+user.avat;
-
+  xows_doc("self_avat").className = "h-"+user.avat;
+  */
   // Update all opened chat history
   let i = xows_cli_cont.length;
   while(i--) xows_gui_hist_update(xows_cli_cont[i], user.bare, user.name, user.avat);
@@ -2000,13 +2026,13 @@ function xows_gui_user_panl_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
-  if(event.target.id === "user_bt_menu") 
+  if(event.target.id === "self_bt_conf")
     // Open user porfile page
     xows_gui_page_user_open();
-    
-  if(event.target.closest("#menu_show")) 
+
+  if(event.target.closest("#menu_show"))
     // Open user show/presence level menu drop
-    xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show", 
+    xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show",
                           xows_gui_menu_show_onclick);
 }
 
@@ -2018,95 +2044,67 @@ function xows_gui_user_panl_onclick(event)
 function xows_gui_menu_show_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-  
-  // Retreive the parent <li> element of the event target
-  const li = event.target.closest("LI");
-  if(!li) return;
-  
-  // Set presence as selected level
-  const show = parseInt(li.value);
-  if(show > 0) {
-    xows_cli_show_select(show);
-  } else {
-    // Reset login page
-    //xows_doc("auth_user").value = ""; //< FIXE : ?
-    //xows_doc("auth_pass").value = "";
-
-    // Disable credentials (request again for login)
-    //if(navigator.credentials) 
-      //navigator.credentials.preventSilentAccess(); //< FIXE : ?
-
-    // Disconnect
-    xows_gui_disconnect();
-
-    return;
-  }
 
   // Toggle menu drop and focus button
   xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show");
+
+  if(event.target.id === "self_bt_edit")
+    xows_gui_page_user_open();
+
+  if(event.target.closest("#menu_stat"))
+    xows_gui_ibox_stat_open();
+
+  // Retreive the parent <li> element of the event target
+  const li = event.target.closest("LI");
+  if(li) {
+    // Set presence as selected level
+    const show = parseInt(li.value);
+    if(show > 0) {
+      xows_cli_show_select(show);
+    } else {
+      // Reset login page
+      //xows_doc("auth_user").value = ""; //< FIXE : ?
+      //xows_doc("auth_pass").value = "";
+
+      // Disable credentials (request again for login)
+      //if(navigator.credentials)
+        //navigator.credentials.preventSilentAccess(); //< FIXE : ?
+
+      // Disconnect
+      xows_gui_disconnect();
+
+      return;
+    }
+  }
 }
 
 /* -------------------------------------------------------------------
  * Main Screen - User Panel - User status edition
  * -------------------------------------------------------------------*/
-/**
- * User Presence Status on-blur callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_stat_inpt_onblur(event)
-{
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  // Set value to current stat
-  xows_doc("stat_inpt").innerText = xows_cli_self.stat;
-}
 
 /**
- * Chat Panel on-input callback function
+ * Self status message input box on-valid callback
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {string}    value     Input content
  */
-function xows_gui_stat_inpt_oninput(event)
+function xows_gui_ibox_stat_ovalid(value)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  const stat_inpt = xows_doc("stat_inpt");
-
-  // Check inner text content to show placeholder
-  if(stat_inpt.innerText.length < 2) {
-
-    if(stat_inpt.innerText.trim().length === 0) {
-
-      // Add CSS class to show placeholder
-      stat_inpt.className = "PLACEHOLD";
-      stat_inpt.innerText = ""; //< Empty any residual <br>
-
-      return; //< Return now
-    }
-  }
-
-  // Hide the placeholder text
-  stat_inpt.className = "";
-}
-
-/**
- * User Presence Status validation (enter) function, called when user
- * press the Enter key (see xows_gui_wnd_onkey() function).
- *
- * @param   {object}    input     Input object to validate
- */
-function xows_gui_stat_inpt_enter(input)
-{
-  // Get and reset value
-  const stat = input.innerText;
-
   // If changed, inform of the new status
-  if(stat != xows_cli_self.stat)
-    xows_cli_status_define(stat);
+  if(value != xows_cli_self.stat)
+    xows_cli_status_define(value);
+}
 
-  // Unfocus input, this will throw blur event
-  input.blur();
+/**
+ * Open self status message input box
+ */
+function xows_gui_ibox_stat_open()
+{
+  // Open the input box dialog
+  xows_doc_ibox_open(xows_l10n_get("Edit status message"),
+    xows_l10n_get("Indicate anything you want to mention about your current situation."),
+    xows_l10n_get("Enter a status message..."),
+    xows_cli_self.stat,
+    xows_gui_ibox_stat_ovalid, null, true);
 }
 
 /* -------------------------------------------------------------------
@@ -2149,10 +2147,8 @@ function xows_gui_chat_cnfg_update(room)
   // Setup privilieges
   const topic = (room.role > XOWS_ROLE_PART);
 
-  // Room topic edition
-  const meta_inpt = xows_gui_peer_doc(room,"meta_inpt");
-  meta_inpt.setAttribute("contenteditable", topic);
-  meta_inpt.setAttribute("spellcheck", topic);
+  const chat_bt_subj = xows_gui_peer_doc(room,"chat_bt_subj");
+  chat_bt_subj.hidden = (room.role < XOWS_ROLE_MODO);
 
   // Room configuration button
   const chat_bt_cnfg = xows_gui_peer_doc(room,"chat_bt_cnfg");
@@ -2224,60 +2220,105 @@ function xows_gui_chat_head_onclick(event)
 
   switch(event.target.id)
   {
-    case "chat_bt_bkmk": {
-      // Open confirmation dialog
-      if(xows_gui_peer) xows_gui_mbox_bookmark_open(xows_gui_peer);
-      break;
+  case "chat_bt_subj": {
+    // Open Room topic input box
+    xows_gui_ibox_subj_open(xows_gui_peer);
+    break;
+  }
+  case "chat_bt_bkmk": {
+    // Open confirmation dialog
+    if(xows_gui_peer) xows_gui_mbox_bookmark_open(xows_gui_peer);
+    break;
+  }
+  case "chat_bt_noti": {
+    // Set notification for this Peer
+    xows_gui_peer.noti = !event.target.classList.toggle("DISABLED");
+    // Save parameter in localstorage
+    xows_cach_peer_save(xows_gui_peer.bare, null, null, null, xows_gui_peer.noti);
+    // Check for browser notification permission
+    if(xows_gui_notify_permi("granted")) {
+      xows_gui_chat_noti_update(xows_gui_peer); //< update notify button
+    } else {
+      xows_gui_notify_query(); //< request permission
     }
-    case "chat_bt_noti": {
-      // Set notification for this Peer
-      xows_gui_peer.noti = !event.target.classList.toggle("DISABLED");
-      // Save parameter in localstorage
-      xows_cach_peer_save(xows_gui_peer.bare, null, null, null, xows_gui_peer.noti);
-      // Check for browser notification permission
-      if(xows_gui_notify_permi("granted")) {
-        xows_gui_chat_noti_update(xows_gui_peer); //< update notify button
-      } else {
-        xows_gui_notify_query(); //< request permission
-      }
-      break;
+    break;
+  }
+  case "chat_bt_cnfg": {
+    // Query for Room configuration, will open Room config page
+    xows_cli_muc_getcfg_query(xows_gui_peer, xows_gui_page_room_open);
+    break;
+  }
+  case "chat_bt_occu": {
+    // Checks whether we are in narrow-screen mode
+    if(window.matchMedia("(max-width: 799px)").matches) {
+      // Widen right panel
+      xows_doc_cls_add("main_wrap", "COLR-WIDE");
+    } else {
+      // Toggle hide right pannel
+      xows_doc_cls_tog("main_colr", "COL-HIDE");
     }
-    case "chat_bt_cnfg": {
-      // Query for Room configuration, will open Room config page
-      xows_cli_muc_getcfg_query(xows_gui_peer, xows_gui_page_room_open);
-      break;
-    }
-    case "chat_bt_occu": {
-      // Checks whether we are in narrow-screen mode
-      if(window.matchMedia("(max-width: 799px)").matches) {
-        // Widen right panel
-        xows_doc_cls_add("main_wrap", "COLR-WIDE");
-      } else {
-        // Toggle hide right pannel
-        xows_doc_cls_tog("main_colr", "COL-HIDE");
-      }
-      break;
-    }
+    break;
+  }
 
-    case "chat_bt_calv":
-    case "chat_bt_cala": {
-      const video = (event.target.id === "chat_bt_calv");
-      // Initiate call
-      xows_gui_call_invite(xows_gui_peer, {"audio": true,"video": video});
-      break;
-    }
+  case "chat_bt_calv":
+  case "chat_bt_cala": {
+    const video = (event.target.id === "chat_bt_calv");
+    // Initiate call
+    xows_gui_call_invite(xows_gui_peer, {"audio": true,"video": video});
+    break;
+  }
   }
 }
 
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - Header - Room Subject
  * -------------------------------------------------------------------*/
+/**
+ * Room subject/topic input box param
+ */
+let xows_gui_ibox_subj_room = null;
+
+/**
+ * Room subject/topic input box on-valid callback
+ *
+ * @param   {string}    value     Input content
+ */
+function xows_gui_ibox_subj_onvalid(value)
+{
+  const room = xows_gui_ibox_subj_room;
+
+  // Get entered subject
+  const subj = value.trimEnd();
+
+  // If changed, inform of the new room topic
+  if(subj != room.subj)
+    xows_cli_muc_set_subject(room, subj);
+}
+
+/**
+ * Open Room subject/topic input box
+ */
+function xows_gui_ibox_subj_open(room)
+{
+  if(room.type !== XOWS_PEER_ROOM)
+    return;
+
+  xows_gui_ibox_subj_room = room;
+
+  // Open the input box dialog
+  xows_doc_ibox_open(xows_l10n_get("Set topic of") + " #" + room.name,
+    xows_l10n_get("Set the message of the day, a welcome message or the discussion subject."),
+    xows_l10n_get("Enter a topic..."),
+    room.subj,
+    xows_gui_ibox_subj_onvalid, null, true);
+}
 
 /**
  * Chat Panel on-input callback function
  *
  * @param   {object}    event     Event object associated with trigger
  */
+/*
 function xows_gui_chat_head_oninput(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
@@ -2300,24 +2341,26 @@ function xows_gui_chat_head_oninput(event)
   // Hide the placeholder text
   meta_inpt.className = "";
 }
-
+*/
 /**
  * Chat Meta (Room Topic) on-focus(out) callback function
  *
  * @param   {object}    event     Event object associated with trigger
  */
+/*
 function xows_gui_chat_head_onfocus(event)
 {
   // Set or reset saved subject
   document.getElementById("meta_inpt").innerText = xows_gui_peer.subj;
 }
-
+*/
 /**
  * Chat Meta (Room Topic) validation (enter) function, called when user
  * press the Enter key (see xows_gui_wnd_onkey() function).
  *
  * @param   {object}    inpt     Instance of <meta-inpt> element
  */
+/*
 function xows_gui_meta_inpt_enter(inpt)
 {
   // Get entered subject
@@ -2330,7 +2373,7 @@ function xows_gui_meta_inpt_enter(inpt)
   // Unfocus input, this will throw blur event
   inpt.blur();
 }
-
+*/
 /**
  * Handle incomming room subjec from MUC room
  *
@@ -3240,15 +3283,15 @@ function xows_gui_chat_hist_onclick(event)
     xows_doc_view_open(event.target);
     return;
   }
-  
+
   // Check for closted <li-mesg> parent
   const li_mesg = event.target.closest("LI-MESG");
-  if(!li_mesg) 
+  if(!li_mesg)
     return;
-  
+
   // Special behavior for mobile devices to allow message interaction
   if(event.type.startsWith("touch")) {
-    
+
     // Unselect any previousely selected message
     const li_selected = xows_doc("hist_ul").querySelector("LI-MESG.SELECTED");
     if(li_selected) li_selected.classList.remove("SELECTED");
@@ -3256,10 +3299,10 @@ function xows_gui_chat_hist_onclick(event)
     // Select the 'touched' message
     if(mesg) mesg.classList.add("SELECTED");
   }
-  
+
   // Check for click on <button> element
   if(event.target.tagName === "BUTTON") {
-  
+
      // If button has a valid name, this is history message button
      if(event.target.name) {
 
@@ -3736,7 +3779,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,mesg.sent,mesg.sndr,rpl_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(mesg.rpid) {
+    if(rpl_li) {
       hist_ul.insertBefore(new_li, rpl_li.nextSibling);
     } else {
       pre_li = hist_ul.insertBefore(new_li, ref_li);

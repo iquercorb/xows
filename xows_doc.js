@@ -399,13 +399,13 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("rost_fram"),  "click",    xows_gui_rost_fram_onclick);
   // User panel
   xows_doc_listener_add(xows_doc("user_panl"),  "click",    xows_gui_user_panl_onclick);
-  xows_doc_listener_add(xows_doc("stat_inpt"),  "input",    xows_gui_stat_inpt_oninput);
-  xows_doc_listener_add(xows_doc("stat_inpt"),  "blur",     xows_gui_stat_inpt_onblur);
+  //xows_doc_listener_add(xows_doc("stat_inpt"),  "input",    xows_gui_stat_inpt_oninput);
+  //xows_doc_listener_add(xows_doc("stat_inpt"),  "blur",     xows_gui_stat_inpt_onblur);
   // Chat header
   const chat_head = xows_doc("chat_head");
   xows_doc_listener_add(chat_head,              "click",    xows_gui_chat_head_onclick);
-  xows_doc_listener_add(chat_head,              "focusout", xows_gui_chat_head_onfocus);
-  xows_doc_listener_add(chat_head,              "input",    xows_gui_chat_head_oninput);
+  //xows_doc_listener_add(chat_head,              "focusout", xows_gui_chat_head_onfocus);
+  //xows_doc_listener_add(chat_head,              "input",    xows_gui_chat_head_oninput);
   // Chat main
   xows_doc_listener_add(xows_doc("chat_main"),  "scroll",   xows_gui_chat_main_onscroll);
   xows_doc_listener_add(xows_doc("chat_hist"),  "click",    xows_gui_chat_hist_onclick);
@@ -441,6 +441,10 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("mbox_close"), "click",    xows_doc_mbox_close);
   xows_doc_listener_add(xows_doc("mbox_abort"), "click",    xows_doc_mbox_onabort);
   xows_doc_listener_add(xows_doc("mbox_valid"), "click",    xows_doc_mbox_onvalid);
+  // Input Box "over_ibox" event listeners
+  xows_doc_listener_add(xows_doc("ibox_close"), "click",    xows_doc_ibox_close);
+  xows_doc_listener_add(xows_doc("ibox_abort"), "click",    xows_doc_ibox_onabort);
+  xows_doc_listener_add(xows_doc("ibox_valid"), "click",    xows_doc_ibox_onvalid);
   // Set event listener to handle user keyboard
   xows_doc_listener_add(document,               "keydown",  xows_gui_wnd_onkey, false); //< need preventDefault()
   xows_doc_listener_add(document,               "keyup",    xows_gui_wnd_onkey);
@@ -458,6 +462,9 @@ function xows_doc_init(onready)
   // Set template callback
   xows_tpl_set_callback("embload",  xows_doc_media_onload);
   xows_tpl_set_callback("emberror", xows_doc_media_onerror);
+
+  // Set application "About" content
+  xows_doc("app_about").innerText = XOWS_APP_NAME.toUpperCase()+" v"+XOWS_APP_VERS;
 
   xows_log(2,"doc_init","document ready");
 
@@ -515,6 +522,20 @@ function xows_doc_blink(id, duration)
   }
 }
 
+/* -------------------------------------------------------------------
+ *
+ * Message Box routines and definitions
+ *
+ * -------------------------------------------------------------------*/
+
+/**
+ * Message box style codes definition
+ */
+const XOWS_MBOX_ERR = -1; //< same as XOWS_SIG_ERR
+const XOWS_MBOX_WRN = 0;  //< same as XOWS_SIG_WRN
+const XOWS_MBOX_SCS = 1;
+const XOWS_MBOX_ASK = 2;
+
 /**
  * Dialog Page reference to custom init function
  */
@@ -526,7 +547,24 @@ let xows_doc_mbox_cb_onabort = null;
 let xows_doc_mbox_cb_onvalid = null;
 
 /**
- * Dialog Page Abort (click on Abort button) callback
+ * Message Box Dialog close.
+ */
+function xows_doc_mbox_close()
+{
+  // reset references
+  xows_doc_mbox_cb_onabort = null;
+  xows_doc_mbox_cb_onvalid = null;
+
+  // hide message box stuff
+  xows_doc_hide("over_mbox");
+
+  // remove 'dark' filter and hide 'void' screen
+  xows_doc_cls_rem("scr_void", "VOID-DARK");
+  xows_doc_hide("scr_void");
+}
+
+/**
+ * Message Box Abort (click on Abort button) callback
  *
  * @param   {object}    event     Event data
  */
@@ -539,7 +577,7 @@ function xows_doc_mbox_onabort(event)
 }
 
 /**
- * Dialog Page Valid (click on valid button) callback
+ * Message Box Valid (click on valid button) callback
  *
  * @param   {object}    event     Event data
  */
@@ -552,19 +590,7 @@ function xows_doc_mbox_onvalid(event)
 }
 
 /**
- * Message box style codes definition
- */
-const XOWS_MBOX_ERR = -1; //< same as XOWS_SIG_ERR
-const XOWS_MBOX_WRN = 0;  //< same as XOWS_SIG_WRN
-const XOWS_MBOX_SCS = 1;
-const XOWS_MBOX_ASK = 2;
-
-/**
  * Message Box Dialog open
- *
- * If any of the "onvalid" or "onabort" parameters is not-null, the
- * Message Box turn in "modal mode", forcing user to interact with
- * the dialog before continue.
  *
  * @param   {number}    style     Message box style or null for default
  * @param   {string}    text      Message to display
@@ -631,23 +657,6 @@ function xows_doc_mbox_open_for_save(onvalid, onabort)
 }
 
 /**
- * Message Box Dialog close.
- */
-function xows_doc_mbox_close()
-{
-  // reset references
-  xows_doc_mbox_cb_onabort = null;
-  xows_doc_mbox_cb_onvalid = null;
-
-  // hide message box stuff
-  xows_doc_hide("over_mbox");
-
-  // remove 'dark' filter and hide 'void' screen
-  xows_doc_cls_rem("scr_void", "VOID-DARK");
-  xows_doc_hide("scr_void");
-}
-
-/**
  * Message Box Dialog modal check and blink
  *
  * This function is used in context where message box act as modal
@@ -658,18 +667,172 @@ function xows_doc_mbox_close()
  * is assumed that the dialog is at least semi-modal, then, the
  * message box blink, and the function returns true to tell the caller
  * that message box 'is' modal, and must deny user to continue.
- *
- * @return {boolean}    True if dialog 'is' modal, false otherwise
  */
 function xows_doc_mbox_modal()
 {
   if(!xows_doc_hidden("over_mbox") && xows_doc_mbox_cb_onabort) {
-    xows_doc_blink("over_mbox", 400); //< blinking Message box
+    xows_doc_blink("over_mbox", 600); //< blinking Message box
     return true;
   }
   return false;
 }
 
+/* -------------------------------------------------------------------
+ *
+ * Input Box routines and definitions
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Input Box reference to custom init function
+ */
+let xows_doc_ibox_cb_onabort = null;
+
+/**
+ * Input Box reference to custom save function
+ */
+let xows_doc_ibox_cb_onvalid = null;
+
+/**
+ * Input Box Dialog close.
+ */
+function xows_doc_ibox_close()
+{
+  xows_doc_listener_rem(document,  "keyup",    xows_doc_ibox_onkey);
+
+  // reset references
+  xows_doc_ibox_cb_onabort = null;
+  xows_doc_ibox_cb_onvalid = null;
+
+  // hide message box stuff
+  xows_doc_hide("over_ibox");
+
+  const src_void = xows_doc("scr_void");
+  if(!src_void.hidden) {
+    // remove 'dark' filter and hide 'void' screen
+    src_void.className = "";
+    src_void.hidden = true;
+
+    // Remove keyboard input event listener
+    xows_doc_listener_rem(document, "keyup", xows_doc_ibox_onkey);
+  }
+}
+
+/**
+ * Input Box Abort (click on Abort button) callback
+ *
+ * @param   {object}    event     Event data
+ */
+function xows_doc_ibox_onabort(event)
+{
+  if(xows_doc_ibox_cb_onabort)
+    xows_doc_ibox_cb_onabort();
+
+  xows_doc_ibox_close(); //< Close message box dialog
+}
+
+/**
+ * Input Box Valid (click on valid button) callback
+ *
+ * @param   {object}    event     Event data
+ */
+function xows_doc_ibox_onvalid(event)
+{
+  if(xows_doc_ibox_cb_onvalid)
+    xows_doc_ibox_cb_onvalid(xows_doc("ibox_inpt").value);
+
+  xows_doc_ibox_close(); //< Close message box dialog
+}
+
+/**
+ * Input Box keyboard input callback
+ *
+ * @param   {object}    event     Event data
+ */
+function xows_doc_ibox_onkey(event)
+{
+  // Check for pressed Enter
+  if(event.keyCode === 13)
+    xows_doc_ibox_onvalid();
+
+  // Check for pressed Esc
+  if(event.keyCode === 27)
+    xows_doc_ibox_onabort();
+}
+
+/**
+ * Input Box Dialog open
+ *
+ * @param   {string}    title     Input dialog title
+ * @param   {string}    hint      Input hint text
+ * @param   {string}    phold     Input placeholder text
+ * @param   {string}    value     Input default value text
+ * @param   {function}  onvalid   Optional callback function for valid/save
+ * @param   {function}  onabort   Optional callback function for abort/reset
+ * @param   {boolean}  [modal]    Optional open in 'modal' dialog mode
+ */
+function xows_doc_ibox_open(title, hint, phold, value, onvalid, onabort, modal)
+{
+  // Checks for already opened Input Box
+  if(xows_doc_ibox_modal()) {
+    return; //< do not close modal ones
+  } else {
+    xows_doc_ibox_close();
+  }
+
+  xows_doc("ibox_text").innerHTML = xows_l10n_get(title);
+  xows_doc("ibox_hint").innerHTML = xows_l10n_get(hint);
+
+  const ibox_inpt = xows_doc("ibox_inpt");
+  ibox_inpt.placeholder = phold;
+  ibox_inpt.value = value;
+
+  // set callbacks
+  xows_doc_ibox_cb_onabort = onabort;
+  xows_doc_ibox_cb_onvalid = onvalid;
+
+  // if 'modal' show the 'void screen' to catch mouse clicks
+  if(modal) {
+
+    // show the 'void' screen with dark filter
+    const src_void = xows_doc("scr_void");
+    src_void.className = "VOID-DARK";
+    src_void.hidden = false;
+
+    // Add event listener for keyboard input
+    xows_doc_listener_add(document, "keyup", xows_doc_ibox_onkey);
+  }
+
+  xows_doc_show("over_ibox");
+}
+
+/**
+ * Input Box Dialog modal check and blink
+ *
+ * This function is used in context where input box act as modal
+ * or semi-modal dialog (eg. page cannot be closed without valid
+ * or abort).
+ *
+ * If the input box is openned and have a valid onabort callback, it
+ * is assumed that the dialog is at least semi-modal, then, the
+ * input box blink, and the function returns true to tell the caller
+ * that input box 'is' modal, and must deny user to continue.
+ *
+ * @return {boolean}    True if dialog 'is' modal, false otherwise
+ */
+function xows_doc_ibox_modal()
+{
+  if(!xows_doc_hidden("over_ibox")) {
+    xows_doc_blink("over_ibox", 600); //< blinking Message box
+    return true;
+  }
+  return false;
+}
+
+/* -------------------------------------------------------------------
+ *
+ * Dialog/Config Pages routines and definitions
+ *
+ * -------------------------------------------------------------------*/
 /**
  * Current opened dialog pages array
  */
@@ -924,8 +1087,6 @@ function xows_doc_menu_toggle(button, dropid, onclick)
     if(!button || !drop)
       return;
 
-    console.log(button);
-
     xows_doc_menu_param.bttn = button;
     xows_doc_menu_param.drop = drop;
 
@@ -970,13 +1131,20 @@ function xows_doc_view_open(media)
  */
 function xows_doc_view_close()
 {
-  // hide the media overlay element
-  xows_doc_hide("over_view");
-  // reset image reference
-  xows_doc("view_img").src = "";
-  // remove 'dark' filter and hide 'void' screen
-  xows_doc_cls_rem("scr_void", "VOID-DARK");
-  xows_doc_hide("scr_void");
+  const over_view = xows_doc("over_view");
+
+  if(!over_view.hidden) {
+
+    // hide the media overlay element
+    over_view.hidden = true;
+
+    // reset image reference
+    xows_doc("view_img").src = "";
+
+    // remove 'dark' filter and hide 'void' screen
+    xows_doc_cls_rem("scr_void", "VOID-DARK");
+    xows_doc_hide("scr_void");
+  }
 }
 
 /**
@@ -1018,6 +1186,6 @@ function xows_doc_void_onclick(event)
 
   // Make potentially opened modal Message Box blinking
   xows_doc_mbox_modal();
-
+  xows_doc_ibox_modal();
 }
 

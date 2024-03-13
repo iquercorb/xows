@@ -168,11 +168,11 @@ button:disabled {
 }
 @keyframes blink-anim {
   0% {
-    background-color: var(--link-base);
+    background-color: var(--base-tone6);
   }
 }
 .BLINK {
-  animation: blink-anim 400ms ease-out infinite;
+  animation: blink-anim 150ms ease-out infinite;
 }
 @keyframes ringing-background {
   0% {
@@ -905,7 +905,6 @@ mbox-acts {
     bottom: 10px;
   }
 }
-
 /* ------------------------------------------------------------------ */
 /* Media Viewer - Commons */
 /* ------------------------------------------------------------------ */
@@ -949,6 +948,71 @@ mbox-acts {
 #view_close {
   top: 13px; left: 13px;
   background-image: url("images/delete.svg");
+}
+/* ------------------------------------------------------------------ */
+/* Input Dialog - Commons */
+/* ------------------------------------------------------------------ */
+#over_ibox {
+  display: flex;
+  flex-direction: column;
+  top: 50%;
+  transform: translate(0, -50%);
+  z-index: 4;
+  width: 90%;
+  min-width: 300px;
+  max-width: 500px;
+  padding: 20px;
+  border-radius: 8px;
+  font-size:0.9em;
+  color: var(--text-tone1);
+  background-color: var(--base-tone4);
+  transition: bottom 300Ms cubic-bezier(.47,1.64,.41,.8);
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  border: 1px solid var(--base-tone2);
+}
+#ibox_close {
+  position: absolute;
+  right: 20px;
+}
+#ibox_text {
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 0.95em;
+  font-weight: bold;
+  margin: 10px 0;
+  color: var(--text-tone0);
+}
+#ibox_inpt {
+  display: block;
+  width: 100%;
+  border-radius: 5px;
+  margin: 0 10px 10px 0;
+  font-size: 1.0em;
+  border: 2px solid var(--base-tone2);
+  margin: 15px auto;
+  padding: 10px 20px;
+  border: 0;
+  color: var(--text-tone1);
+  background-color: var(--base-tone3);
+}
+#ibox_inpt::placeholder {
+  color: var(--text-tone3);
+  font-style:italic;
+}
+#ibox_inpt:focus {
+  outline: 1px solid var(--base-tone5);
+}
+#ibox_hint {
+  margin: 5px 0 30px 0;
+  font-size: 0.9em;
+  color: var(--text-tone3);
+}
+ibox-acts {
+  display: block;
+  /*! text-align: right; */
+}
+ibox-acts button {
+  margin: 0 5px !important;
 }
 /* ------------------------------------------------------------------ */
 /* Dialog Page - columns layout */
@@ -1503,18 +1567,30 @@ peer-avat badg-call {
 }
 peer-name {
   display: block;
+  max-height: 20px;
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: 0.85em;
+  line-height: 20px;
   overflow:hidden;
   white-space:nowrap;
   text-overflow: ellipsis;
-  color: var(--text-tone1);
+  color: var(--text-tone2);
+}
+peer-addr {
+  display: block;
+  max-height: 22px;
+  font-size: 0.8em;
+  line-height: 16px;
+  color: var(--text-tone2);
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow: ellipsis;
 }
 peer-meta {
   display: block;
-  max-height: 14px;
+  max-height: 16px;
   font-size: 0.7em;
-  line-height: 0.9em;
+  line-height: 16px;
   color: var(--text-tone3);
   overflow:hidden;
   white-space:nowrap;
@@ -1555,6 +1631,9 @@ li-peer.SELECTED::before {
   visibility: visible;
   height: 35px;
 }
+li-peer.SELECTED peer-name {
+  color: var(--text-tone1);
+}
 li-peer.RINGING {
   animation: ringing-background 1s ease-out infinite;
 }
@@ -1565,15 +1644,14 @@ li-peer.RINGING badg-show {
 }
 peer-info {
   flex: auto;
-  display: inline;
-  max-height: 32px;
+  max-height: 40px;
   overflow: hidden;
   cursor: inherit;
 }
 peer-acts {
   flex: none;
   visibility: hidden;
-  /*width: 16px;*/
+  width: 16px;
   padding: 0;
   margin: 0 5px;
   text-align: center;
@@ -1660,63 +1738,85 @@ li-peer.PEER-ROOM peer-avat {
 /* ------------------------------------------------------------------ */
 #user_panl {
   background-color: var(--base-tone2);
-  padding: 0 5px 0 4px;
+  padding: 4px 4px 4px 2px;
   height: 78px;
+}
+#self_name {
+  font-weight: normal;
+  color: var(--text-tone0);
+  font-size: .95em;
 }
 #user_panl peer-acts {
   visibility: visible;
+  /*! margin: 0 4px; */
+  width: 30px;
 }
 #user_panl badg-show {
   border-color: var(--base-tone2);
 }
-.user-cont {
+.self-cont {
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: 44px;
+  width: 100%;
+}
+#self_acts button {
+  display: block;
+  width: 32px; height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(255,255,255,0.0);
+  background-size: 19px;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  opacity: .7;
+}#self_acts button:hover  {
+  opacity: 1;
+  background-color: rgba(220,220,255,0.2);
+}#self_acts button:disabled  {
+  opacity: .4;
   cursor: default;
 }
-.user-cont peer-name {
-  color: var(--text-hligh);
-}
 #menu_show {
+  display: flex;
+  flex-direction: row;
+  height: 44px; width: 210px;
+  border-radius: 3px;
+  align-items: center;
   cursor: pointer;
 }
-.user-cont button {
-  display: block;
-  background-size: 20px;
-  opacity: .7;
+#menu_show:hover {
+  background-color: var(--base-tone4);
+}
+#menu_show:hover badg-show {
+  border-color: var(--base-tone4);
+}
+#self_bt_conf {
+  background-image: url("images/gear.svg");
+}
+#app_about {
+  width: 100%;
+  height: 20px;
+  /*text-transform: uppercase;*/
+  margin: 5px 0 0 0;
+  text-align: center;
+  font-size: 0.9em;
+  color: var(--base-tone5);
+  cursor: default;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control elements  */
 /* ------------------------------------------------------------------ */
-#user_bt_menu {
-  background-image: url("images/gear.svg");
-}
-stat-inpt {
-  display: inline-block;
-  width: 100%;
-  padding: 3px 5px;
-  margin: 5px 0 0 0;
-  border: 1px solid var(--base-tone1);
-  border-radius: 2px;
-  font-size: .75em;
-  color: var(--text-tone3);
-  background-color: var(--base-tone1);
-  overflow-x: hidden;
-  white-space: nowrap;
-}
-stat-inpt:focus {
-  color: var(--text-tone3);
-  outline: 1px solid var(--base-tone0);
-}
+
 #drop_show {
   position:absolute;
-  left:47px; bottom:90px;
-  width: 232px;
+  left:27px; bottom:90px;
+  width: 275px;
   padding: 5px;
-  border-radius: 6px;
-  border-left: 6px solid var(--link-base);
+  border-radius: 15px 15px 15px 15px;
+  border-top: 15px solid var(--link-base);
 }
 #drop_show li {
   padding: 10px 0;
@@ -1730,7 +1830,72 @@ stat-inpt:focus {
 }
 #drop_show::after {
   display: block;
-  left: 2px;
+  border-top-color: var(--base-tone0);
+  left:70px; bottom: -32px;
+}
+
+.menu-cont {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 80px;
+  border-bottom: 1px solid var(--base-tone4);
+  cursor: default;
+}
+#drop_show peer-avat {
+  width: 48px; height: 48px;
+}
+#drop_show peer-name {
+  color: var(--text-tone0);
+  font-weight: normal;
+  font-size: 1.2em;
+  max-height: 24px;
+  line-height: 24px;
+}
+#menu_stat {
+  padding: 10px 10px;
+  border-radius: 2px;
+  border-bottom: 1px solid var(--base-tone4);
+  cursor: pointer;
+}
+#menu_stat:hover {
+  background-color: var(--base-tone2);
+}
+#menu_stat h5 {
+  margin: 5px 0;
+  font-weight: normal;
+  font-size: 0.85em;
+}
+#menu_stat peer-meta {
+  max-height: unset;
+  white-space: unset;
+  padding: 0 0 10px 0;
+  font-size: 0.8em;
+  color: var(--text-tone2);
+}
+#menu_stat.PLACEHOLD peer-meta::before {
+
+}
+#drop_show button {
+  display: block;
+  width: 35px; height: 35px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-size: 20px;
+  background-color: rgba(255,255,255,0.0);
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  opacity: .7;
+}#drop_show button:hover  {
+  opacity: 1;
+  background-color: rgba(220,220,255,0.2);
+}
+#self_bt_edit {
+  margin-bottom: 15px;
+  background-image: url("images/edit.svg");
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Head Frame */
@@ -1740,6 +1905,7 @@ stat-inpt:focus {
 }
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
+#chat_fram.CHAT-CONT #chat_bt_subj,
 #chat_fram.CHAT-ROOM #chat_bt_calv,
 #chat_fram.CHAT-ROOM #chat_bt_cala,
 #chat_fram.CHAT-CONT #chat_bt_cnfg,
@@ -1799,6 +1965,9 @@ head-info badg-show {
   margin-left: 10px;
   position: unset;
   border: none;
+}
+#chat_bt_subj {
+  background-image: url("images/topic.svg");
 }
 #chat_bt_noti {
   background-image: url("images/notify_on.svg");
@@ -2304,7 +2473,7 @@ mesg-date {
   
 }
 mesg-from {
-  font-size: 0.9em;
+  font-size: 0.95em;
   font-weight: bold;
   color: var(--text-tone0);
   white-space: nowrap;
@@ -2392,9 +2561,6 @@ li-mesg.MESG-EDITOR mesg-acts {
 }
 li-mesg.MESG-EDITOR mesg-edit {
   display: block;
-}
-li-mesg.MESG-SENT mesg-from {
-  color: var(--text-hligh);
 }
 li-mesg.MESG-SENT .mesg-bt-edit {
   display: block;

@@ -140,8 +140,20 @@
   "Edit user profile":
   "Modifier le profil utilisateur",
 
-  "Define a status ...":
-  "Définir un état ...",
+  "Status message":
+  "Message d'état",
+  
+  "Define a status message...":
+  "Définir un message d'état...",
+
+  "Edit status message":
+  "Modifier le message d'état",
+
+  "Indicate anything you want to mention about your current situation.":
+  "Indiquez ce que vous souhaitez mentionner à propos de votre situation actuelle.",
+
+  "Enter a status message...":
+  "Entrez un message d'état...",
 
   "Available For Chat":
   "Disponible pour discuter",
@@ -161,9 +173,15 @@
   "Disconnect":
   "Se déconnecter",
 
-  "Set Room topic ...":
-  "Définir le sujet du Salon ...",
-
+  "Set topic of":
+  "Définir le sujet de",
+  
+  "Enter a topic...":
+  "Entrez un sujet...",
+  
+  "Set the message of the day, a welcome message or the discussion subject.":
+  "Définissez le message du jour, un message de bienvenue ou le sujet de discussion.",
+  
   "Video call":
   "Appel vidéo",
 
@@ -400,7 +418,10 @@
 
   "Error":
   "Erreur",
-
+  
+  "Apply":
+  "Appliquer",
+  
   "Abort":
   "Annuler",
 

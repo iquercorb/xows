@@ -76,21 +76,23 @@
       <!-- Froot Frame (User profil) -->
       <row-foot id="user_panl">
         <menu-drop hidden id="drop_show" XOWS_TPL_IMPORT></menu-drop>
-        <div class="user-cont">
+        <div class="self-cont">
           <div id="menu_show">
-            <peer-avat id="user_avat">
-              <badg-show id="user_show" data-show=0></badg-show>
+            <peer-avat id="self_avat">
+              <badg-show id="self_show" data-show=0></badg-show>
             </peer-avat>
+            <peer-info>
+              <peer-name id="self_name"></peer-name>
+              <peer-meta id="self_meta"></peer-meta>
+            </peer-info>
           </div>
-          <peer-info>
-            <peer-name id="user_name"></peer-name>
-            <peer-meta id="user_addr"></peer-meta>
-          </peer-info>
-          <peer-acts id="user_acts">
-            <button id="user_bt_menu" title="${'Edit user profile'}"></button>
+          <peer-acts id="self_acts">
+            <button disabled id="self_bt_conf" title="${'Edit configuration'}"></button>
           </peer-acts>
         </div>
-        <stat-inpt id="stat_inpt" class="PLACEHOLD" placeholder="${'Define a status ...'}" contenteditable=true spellcheck=false></stat-inpt>
+        <div id="app_about">
+        </div>
+        <!-- <stat-inpt id="stat_inpt" class="PLACEHOLD" placeholder="${'Define a status ...'}" contenteditable=true spellcheck=false></stat-inpt> -->
         <!-- <button></button> -->
       </row-foot>
     </col-frame>
@@ -107,8 +109,9 @@
           <chat-addr id="chat_addr"></chat-addr>
           <badg-show id="chat_show" data-show=0></badg-show>
         </head-info>
-        <head-meta id="meta_inpt" placeholder="${'Set Room topic ...'}"></head-meta>
+        <head-meta id="meta_inpt"></head-meta>
         <head-acts>
+          <button id="chat_bt_subj" title="${'Edit Room topic'}"></button>
           <button id="chat_bt_calv" title="${'Video call'}"></button>
           <button id="chat_bt_cala" title="${'Audio call'}"></button>
           <button id="chat_bt_cnfg" title="${'Room configuration'}"></button>
