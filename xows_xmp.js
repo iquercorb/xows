@@ -803,7 +803,7 @@ function xows_xmp_session_query()
 
 /* -------------------------------------------------------------------
  *
- * XMPP API - IQ stanza semantics routines
+ * XMPP API - XMPP Core (RFC-6120) - IQ stanza semantics routines
  *
  * -------------------------------------------------------------------*/
 /**
@@ -960,223 +960,10 @@ function xows_xmp_iq_error_text(stanza)
   return str;
 }
 
-/* -------------------------------------------------------------------
- *
- * XMPP API - Presence stanza semantics routines
- *
- * -------------------------------------------------------------------*/
-/**
- * List of presence show level
- */
-const XOWS_SHOW_OFF     = 0;
-const XOWS_SHOW_DND     = 1;
-const XOWS_SHOW_XA      = 2;
-const XOWS_SHOW_AWAY    = 3;
-const XOWS_SHOW_ON      = 4;
-const XOWS_SHOW_CHAT    = 5;
-
-/**
- * List of presence subscrition values/mask bits
- */
-const XOWS_SUBS_REM     = -1;
-const XOWS_SUBS_NONE    = 0;
-const XOWS_SUBS_FROM    = 1;
-const XOWS_SUBS_TO      = 2;
-const XOWS_SUBS_BOTH    = 3;
-
-/**
- * Correspondance map array for presence subscription string to value
- */
-const xows_xmp_subs_mask_map = {
-  "remove": -1,
-  "none"  : 0,
-  "from"  : 1,
-  "to"    : 2,
-  "both"  : 3
-};
-
-/**
- * Correspondance map array for presence show string to level
- */
-const xows_xmp_show_level = new Map([["dnd",1],["xa",2],["away",3],["chat",5]]);
-
-/**
- * Correspondance map array for presence show level to string
- */
-const xows_xmp_show_name = ["","dnd","xa","away","","chat"];
-
-/**
- * Reference to callback function for received presence
- */
-let xows_xmp_fw_onpresence = function() {};
-
-/**
- * Reference to callback function for received subscribe presence
- */
-let xows_xmp_fw_onsubscrib = function() {};
-
-/**
- * Multi-User Chat (XEP-0045) received presence event callback
- */
-let xows_xmp_fw_onoccupant = function() {};
-
-/**
- * Function to proceed an received <presence> stanza
- *
- * @param   {object}    stanza    Received <presence> stanza
- */
-function xows_xmp_presence_recv(stanza)
-{
-  const from = stanza.getAttribute("from"); //< Sender JID/Ress
-
-  // Usual presence informations
-  let show, prio, stat;
-
-  if(stanza.hasAttribute("type")) {
-    const type = stanza.getAttribute("type"); //< Presence type
-    if(type === "unavailable") show = -1; // unavailabel <presence>
-    if(type.includes("subscrib")) { //< subscription <presence>
-      xows_log(2,"xmp_presence_recv","received subscrib",from+" type:"+type);
-      // Check for <nick> child
-      const node = stanza.querySelector("nick");
-      const nick = node ? xows_xml_innertext(node) : null;
-      // Foward subscription
-      xows_xmp_fw_onsubscrib(from, type, nick);
-      return true;
-    }
-    if(type === "error") { //<  an error occurred
-      const err_msg = "("+from+") "+xows_xmp_iq_error_text(stanza);
-      xows_log(1,"xmp_presence_recv","error",from+" - "+err_msg);
-      xows_xmp_fw_onerror(XOWS_SIG_ERR,err_msg);
-      return true;
-    }
-  }
-
-  // Additionnal <presence> informations or data
-  let node, muc, phot;
-
-  let child, i = stanza.childNodes.length;
-  while(i--) {
-    child = stanza.childNodes[i];
-
-    if(child.nodeType !== 1)
-      continue;
-
-    // Check for usual presence informations
-    if(child.tagName === "show") {
-      const text = xows_xml_innertext(child);
-      show = text ? xows_xmp_show_level.get(text) : XOWS_SHOW_ON; //< No text mean simply "available"
-      continue;
-    }
-    if(child.tagName === "priority") {
-      prio = xows_xml_innertext(child); continue;
-    }
-    if(child.tagName === "status") {
-      stat = xows_xml_innertext(child); continue;
-    }
-    // Check for entity capabilities (XEP-0115)
-    if(child.tagName === "c") {
-      if(child.getAttribute("xmlns") === XOWS_NS_CAPS) {
-        node = {"node":child.getAttribute("node"),
-                "ver" :child.getAttribute("ver")};
-      }
-      continue;
-    }
-    // Check for <x> element
-    if(child.tagName === "x") {
-      const xmlns = child.getAttribute("xmlns");
-      // Check whether we received a MUC presence protocole
-      if(xmlns === XOWS_NS_MUCUSER) {
-        const item = child.querySelector("item"); //< should be an <item>
-        muc = { "affi" : xows_xmp_affi_level_map[item.getAttribute("affiliation")],
-                "role" : xows_xmp_role_level_map[item.getAttribute("role")],
-                "full" : item.getAttribute("jid"),
-                "nick" : item.getAttribute("nickname"),
-                "code" : []};
-        const status = child.querySelectorAll("status"); //< search for <status>
-        let j = status.length;
-        while(j--) muc.code.push(parseInt(status[j].getAttribute("code")));
-      }
-      // Check whether we have a vcard-temp element (avatar)
-      if(xmlns === XOWS_NS_VCARDXUPDATE) {
-        phot = xows_xml_innertext(child.firstChild); //< should be an <photo>
-      }
-    }
-  }
-
-  // Check whether this a presence from MUC
-  if(muc !== undefined) {
-    xows_log(2,"xmp_presence_recv","received MUC presence",from);
-    xows_xmp_fw_onoccupant(from, show, stat, muc, phot);
-    return true;
-  }
-
-  // Default is usual contact presence
-  xows_log(2,"xmp_presence_recv","received presence",from+" show:"+show);
-  xows_xmp_fw_onpresence(from, show, prio, stat, node, phot);
-  return true;
-}
-
-/**
- * Send common <presence> stanza to server or MUC room to update
- * client availability and/or join or exit MUC room
- *
- * @param   {string}    to        Destination JID (can be null)
- * @param   {string}    type      Presence type attribute (can be null)
- * @param   {number}    level     Availability level 0 to 4 (can be null)
- * @param   {string}    status    Status string tu set
- * @param   {string}    [photo]   Optionnal photo data hash to send
- * @param   {boolean}   [muc]     Append MUC xmlns child to stanza
- * @param   {string}    [nick]    Optional nickname for subscribe request
- */
-function xows_xmp_presence_send(to, type, level, status, photo, muc, nick)
-{
-  // Create the initial and default <presence> stanza
-  const stanza = xows_xml_node("presence");
-
-  // Add destination attribute
-  if(to) stanza.setAttribute("to", to);
-
-  // Add type attribute
-  if(type) stanza.setAttribute("type", type);
-
-  // Append the <show> and <priority> children
-  if(level > XOWS_SHOW_OFF) {
-    // Translate show level number to string
-    xows_xml_parent(stanza, xows_xml_node("show",null,xows_xmp_show_name[level]));
-    // Set priority according show level
-    xows_xml_parent(stanza, xows_xml_node("priority",null,(level * 20)));
-    // Append <status> child
-    if(status) xows_xml_parent(stanza, xows_xml_node("status",null,status));
-
-    //if(xows_cli_feat_srv_has(XOWS_NS_VCARD)) {
-      // Append vcard-temp:x:update for avatar update child
-      xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
-                                  (photo)?xows_xml_node("photo",null,photo):null));
-    //}
-
-    // Append <c> (caps) child
-    xows_xml_parent(stanza, xows_xml_node("c",{ "xmlns":XOWS_NS_CAPS,
-                                                "hash":"sha-1",
-                                                "node":XOWS_APP_NODE,
-                                                "ver":xows_xmp_caps_self_verif()}));
-  }
-
-  // Append the proper <x> child for MUC protocole
-  if(muc) xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_MUC}));
-
-  // Append <nick> child if required
-  if(nick) xows_xml_parent(stanza, xows_xml_node("nick",{"xmlns":XOWS_NS_NICK},nick));
-
-  xows_log(2,"xmp_presence_send",type ? type : "show", to ? to : level);
-
-  // Send the final <presence> stanza
-  xows_xmp_send(stanza);
-}
 
 /* -------------------------------------------------------------------
  *
- * XMPP API - Message stanza semantics routines
+ * XMPP API - XMPP Core (RFC-6120) - Message stanza semantics routines
  *
  * -------------------------------------------------------------------*/
 /**
@@ -1431,6 +1218,337 @@ const XOWS_NS_CORRECT = "urn:xmpp:message-correct:0";
  * Message Styling (XEP-0393) XMLNS constants
  */
 const XOWS_NS_STYLING      = "urn:xmpp:styling:0";
+
+/* -------------------------------------------------------------------
+ *
+ * XMPP API - IM and Presence (RFC-6121) - Roster Management
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Roster Management (XEP-0321) XMLNS constants
+ */
+const XOWS_NS_ROSTER       = "jabber:iq:roster";
+
+/**
+ * Roster Management (XEP-0321) roster push event callback
+ */
+let xows_xmp_fw_onrostpush = function() {};
+
+/**
+ * Function to proceed an received roster push <iq> stanza
+ *
+ * @param   {object}    stanza    Received <iq> stanza
+ */
+function xows_xmp_rost_push_recv(stanza)
+{
+  // Get iq Id to create response
+  const id = stanza.getAttribute("id");
+
+  // Send response iq
+  xows_xmp_send(  xows_xml_node("iq",{"id":id,"type":"result"},
+                    xows_xml_node("query",{"xmlns":XOWS_NS_ROSTER})));
+
+  // Parse <item> child, it should be alone
+  const item = stanza.querySelector("item");
+
+  const bare = item.getAttribute("jid");
+  const name = item.getAttribute("name");
+  const subs = xows_xmp_subs_mask_map[item.getAttribute("subscription")];
+  let group = item.querySelector("group");
+  group = group ? xows_xml_innertext(group) : null;
+
+  xows_log(2,"xmp_rost_push_recv","received Roster Push");
+
+  // Forward parse result
+  xows_xmp_fw_onrostpush(bare, name, subs, group);
+}
+
+/**
+ * Function to parse result of get roster query
+ *
+ * @param   {object}    stanza    Received query response stanza
+ * @param   {function}  onparse   Callback to forward parse result
+ */
+function xows_xmp_rost_get_parse(stanza, onparse)
+{
+  if(stanza.getAttribute("type") === "error") {
+    xows_log(1,"xmp_rost_get_parse","parse get Roster",xows_xmp_iq_error_text(stanza));
+    return;
+  }
+
+  // Turn <item> to object's array
+  const nodes = stanza.getElementsByTagName("item");
+  const item = [];
+  for(let i = 0, n = nodes.length; i < n; ++i) {
+    item.push({ "bare"  : nodes[i].getAttribute("jid"),
+                "name"  : nodes[i].getAttribute("name"),
+                "subs"  : xows_xmp_subs_mask_map[nodes[i].getAttribute("subscription")],
+                "group" : xows_xml_innertext(nodes[i].querySelector("group"))});
+  }
+
+  // Forward result to client
+  if(xows_isfunc(onparse))
+    onparse(item);
+}
+
+/**
+ * Send query to get roster content to the server
+ *
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_rost_get_query(onparse)
+{
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"type":"get"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_ROSTER}));
+
+  xows_xmp_send(iq, xows_xmp_rost_get_parse, onparse);
+}
+
+/**
+ * Send query to add or remove item to/from roster
+ *
+ * @param   {string}    jid       Contact or Room JID to add
+ * @param   {string}    name      Item Display name or null to remove item
+ * @param   {string}    group     Group name where to add contact or null to ignore
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_rost_set_query(jid, name, group, onparse)
+{
+  xows_log(2,"xmp_rost_set_query","query set Roster",jid);
+
+  // Create the item child
+  const item = xows_xml_node("item",{"jid":jid});
+
+  // Null name means item to be removed
+  if(!name) {
+    item.setAttribute("subscription","remove");
+  } else {
+    item.setAttribute("name",name);
+    if(group) xows_xml_parent(item,xows_xml_node("group",null,group));
+  }
+
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"type":"set"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_ROSTER},item));
+
+  // Use generic parse function
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/* -------------------------------------------------------------------
+ *
+ * XMPP API - IM and Presence (RFC-6121) - Presence exchange & Subscriptions
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * List of presence show level
+ */
+const XOWS_SHOW_OFF     = 0;
+const XOWS_SHOW_DND     = 1;
+const XOWS_SHOW_XA      = 2;
+const XOWS_SHOW_AWAY    = 3;
+const XOWS_SHOW_ON      = 4;
+const XOWS_SHOW_CHAT    = 5;
+
+/**
+ * List of presence subscrition values/mask bits
+ */
+const XOWS_SUBS_REM     = -1;
+const XOWS_SUBS_NONE    = 0;
+const XOWS_SUBS_FROM    = 1;
+const XOWS_SUBS_TO      = 2;
+const XOWS_SUBS_BOTH    = 3;
+
+/**
+ * Correspondance map array for presence subscription string to value
+ */
+const xows_xmp_subs_mask_map = {
+  "remove": -1,
+  "none"  : 0,
+  "from"  : 1,
+  "to"    : 2,
+  "both"  : 3
+};
+
+/**
+ * Correspondance map array for presence show string to level
+ */
+const xows_xmp_show_level = new Map([["dnd",1],["xa",2],["away",3],["chat",5]]);
+
+/**
+ * Correspondance map array for presence show level to string
+ */
+const xows_xmp_show_name = ["","dnd","xa","away","","chat"];
+
+/**
+ * Reference to callback function for received presence
+ */
+let xows_xmp_fw_onpresence = function() {};
+
+/**
+ * Reference to callback function for received subscribe presence
+ */
+let xows_xmp_fw_onsubscrib = function() {};
+
+/**
+ * Multi-User Chat (XEP-0045) received presence event callback
+ */
+let xows_xmp_fw_onoccupant = function() {};
+
+/**
+ * Function to proceed an received <presence> stanza
+ *
+ * @param   {object}    stanza    Received <presence> stanza
+ */
+function xows_xmp_presence_recv(stanza)
+{
+  const from = stanza.getAttribute("from"); //< Sender JID/Ress
+
+  // Usual presence informations
+  let show, prio, stat;
+
+  if(stanza.hasAttribute("type")) {
+    const type = stanza.getAttribute("type"); //< Presence type
+    if(type === "unavailable") show = -1; // unavailabel <presence>
+    if(type.includes("subscrib")) { //< subscription <presence>
+      xows_log(2,"xmp_presence_recv","received subscrib",from+" type:"+type);
+      // Check for <nick> child
+      const node = stanza.querySelector("nick");
+      const nick = node ? xows_xml_innertext(node) : null;
+      // Foward subscription
+      xows_xmp_fw_onsubscrib(from, type, nick);
+      return true;
+    }
+    if(type === "error") { //<  an error occurred
+      const err_msg = "("+from+") "+xows_xmp_iq_error_text(stanza);
+      xows_log(1,"xmp_presence_recv","error",from+" - "+err_msg);
+      xows_xmp_fw_onerror(XOWS_SIG_ERR,err_msg);
+      return true;
+    }
+  }
+
+  // Additionnal <presence> informations or data
+  let node, muc, phot;
+
+  let child, i = stanza.childNodes.length;
+  while(i--) {
+    child = stanza.childNodes[i];
+
+    if(child.nodeType !== 1)
+      continue;
+
+    // Check for usual presence informations
+    if(child.tagName === "show") {
+      const text = xows_xml_innertext(child);
+      show = text ? xows_xmp_show_level.get(text) : XOWS_SHOW_ON; //< No text mean simply "available"
+      continue;
+    }
+    if(child.tagName === "priority") {
+      prio = xows_xml_innertext(child); continue;
+    }
+    if(child.tagName === "status") {
+      stat = xows_xml_innertext(child); continue;
+    }
+    // Check for entity capabilities (XEP-0115)
+    if(child.tagName === "c") {
+      if(child.getAttribute("xmlns") === XOWS_NS_CAPS) {
+        node = {"node":child.getAttribute("node"),
+                "ver" :child.getAttribute("ver")};
+      }
+      continue;
+    }
+    // Check for <x> element
+    if(child.tagName === "x") {
+      const xmlns = child.getAttribute("xmlns");
+      // Check whether we received a MUC presence protocole
+      if(xmlns === XOWS_NS_MUCUSER) {
+        const item = child.querySelector("item"); //< should be an <item>
+        muc = { "affi" : xows_xmp_affi_level_map[item.getAttribute("affiliation")],
+                "role" : xows_xmp_role_level_map[item.getAttribute("role")],
+                "full" : item.getAttribute("jid"),
+                "nick" : item.getAttribute("nickname"),
+                "code" : []};
+        const status = child.querySelectorAll("status"); //< search for <status>
+        let j = status.length;
+        while(j--) muc.code.push(parseInt(status[j].getAttribute("code")));
+      }
+      // Check whether we have a vcard-temp element (avatar)
+      if(xmlns === XOWS_NS_VCARDXUPDATE) {
+        phot = xows_xml_innertext(child.firstChild); //< should be an <photo>
+      }
+    }
+  }
+
+  // Check whether this a presence from MUC
+  if(muc !== undefined) {
+    xows_log(2,"xmp_presence_recv","received MUC presence",from);
+    xows_xmp_fw_onoccupant(from, show, stat, muc, phot);
+    return true;
+  }
+
+  // Default is usual contact presence
+  xows_log(2,"xmp_presence_recv","received presence",from+" show:"+show);
+  xows_xmp_fw_onpresence(from, show, prio, stat, node, phot);
+  return true;
+}
+
+/**
+ * Send common <presence> stanza to server or MUC room to update
+ * client availability and/or join or exit MUC room
+ *
+ * @param   {string}    to        Destination JID (can be null)
+ * @param   {string}    type      Presence type attribute (can be null)
+ * @param   {number}    level     Availability level 0 to 4 (can be null)
+ * @param   {string}    status    Status string tu set
+ * @param   {string}    [photo]   Optionnal photo data hash to send
+ * @param   {boolean}   [muc]     Append MUC xmlns child to stanza
+ * @param   {string}    [nick]    Optional nickname for subscribe request
+ */
+function xows_xmp_presence_send(to, type, level, status, photo, muc, nick)
+{
+  // Create the initial and default <presence> stanza
+  const stanza = xows_xml_node("presence");
+
+  // Add destination attribute
+  if(to) stanza.setAttribute("to", to);
+
+  // Add type attribute
+  if(type) stanza.setAttribute("type", type);
+
+  // Append the <show> and <priority> children
+  if(level > XOWS_SHOW_OFF) {
+    // Translate show level number to string
+    xows_xml_parent(stanza, xows_xml_node("show",null,xows_xmp_show_name[level]));
+    // Set priority according show level
+    xows_xml_parent(stanza, xows_xml_node("priority",null,(level * 20)));
+    // Append <status> child
+    if(status) xows_xml_parent(stanza, xows_xml_node("status",null,status));
+
+    //if(xows_cli_feat_srv_has(XOWS_NS_VCARD)) {
+      // Append vcard-temp:x:update for avatar update child
+      xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
+                                  (photo)?xows_xml_node("photo",null,photo):null));
+    //}
+
+    // Append <c> (caps) child
+    xows_xml_parent(stanza, xows_xml_node("c",{ "xmlns":XOWS_NS_CAPS,
+                                                "hash":"sha-1",
+                                                "node":XOWS_APP_NODE,
+                                                "ver":xows_xmp_caps_self_verif()}));
+  }
+
+  // Append the proper <x> child for MUC protocole
+  if(muc) xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_MUC}));
+
+  // Append <nick> child if required
+  if(nick) xows_xml_parent(stanza, xows_xml_node("nick",{"xmlns":XOWS_NS_NICK},nick));
+
+  xows_log(2,"xmp_presence_send",type ? type : "show", to ? to : level);
+
+  // Send the final <presence> stanza
+  xows_xmp_send(stanza);
+}
 
 /* -------------------------------------------------------------------
  *
@@ -1731,123 +1849,6 @@ function xows_xmp_extdisco_query(to, type, onparse)
   const iq =  xows_xml_node("iq",{"type":"get","to":to},services);
 
   xows_xmp_send(iq, xows_xmp_extdisco_parse, onparse);
-}
-
-/* -------------------------------------------------------------------
- *
- * XMPP API - Roster Management (XEP-0321)
- *
- * -------------------------------------------------------------------*/
-/**
- * Roster Management (XEP-0321) XMLNS constants
- */
-const XOWS_NS_ROSTER       = "jabber:iq:roster";
-
-/**
- * Roster Management (XEP-0321) roster push event callback
- */
-let xows_xmp_fw_onrostpush = function() {};
-
-/**
- * Function to proceed an received roster push <iq> stanza
- *
- * @param   {object}    stanza    Received <iq> stanza
- */
-function xows_xmp_rost_push_recv(stanza)
-{
-  // Get iq Id to create response
-  const id = stanza.getAttribute("id");
-
-  // Send response iq
-  xows_xmp_send(  xows_xml_node("iq",{"id":id,"type":"result"},
-                    xows_xml_node("query",{"xmlns":XOWS_NS_ROSTER})));
-
-  // Parse <item> child, it should be alone
-  const item = stanza.querySelector("item");
-
-  const bare = item.getAttribute("jid");
-  const name = item.getAttribute("name");
-  const subs = xows_xmp_subs_mask_map[item.getAttribute("subscription")];
-  let group = item.querySelector("group");
-  group = group ? xows_xml_innertext(group) : null;
-
-  xows_log(2,"xmp_rost_push_recv","received Roster Push");
-
-  // Forward parse result
-  xows_xmp_fw_onrostpush(bare, name, subs, group);
-}
-
-/**
- * Function to parse result of get roster query
- *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
- */
-function xows_xmp_rost_get_parse(stanza, onparse)
-{
-  if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_rost_get_parse","parse get Roster",xows_xmp_iq_error_text(stanza));
-    return;
-  }
-
-  // Turn <item> to object's array
-  const nodes = stanza.getElementsByTagName("item");
-  const item = [];
-  for(let i = 0, n = nodes.length; i < n; ++i) {
-    item.push({ "bare"  : nodes[i].getAttribute("jid"),
-                "name"  : nodes[i].getAttribute("name"),
-                "subs"  : xows_xmp_subs_mask_map[nodes[i].getAttribute("subscription")],
-                "group" : xows_xml_innertext(nodes[i].querySelector("group"))});
-  }
-
-  // Forward result to client
-  if(xows_isfunc(onparse))
-    onparse(item);
-}
-
-/**
- * Send query to get roster content to the server
- *
- * @param   {function}  onparse   Callback to receive parse result
- */
-function xows_xmp_rost_get_query(onparse)
-{
-  // Create and launch the query
-  const iq = xows_xml_node("iq",{"type":"get"},
-              xows_xml_node("query",{"xmlns":XOWS_NS_ROSTER}));
-
-  xows_xmp_send(iq, xows_xmp_rost_get_parse, onparse);
-}
-
-/**
- * Send query to add or remove item to/from roster
- *
- * @param   {string}    jid       Contact or Room JID to add
- * @param   {string}    name      Item Display name or null to remove item
- * @param   {string}    group     Group name where to add contact or null to ignore
- * @param   {function}  onparse   Callback to receive parse result
- */
-function xows_xmp_rost_set_query(jid, name, group, onparse)
-{
-  xows_log(2,"xmp_rost_set_query","query set Roster",jid);
-
-  // Create the item child
-  const item = xows_xml_node("item",{"jid":jid});
-
-  // Null name means item to be removed
-  if(!name) {
-    item.setAttribute("subscription","remove");
-  } else {
-    item.setAttribute("name",name);
-    if(group) xows_xml_parent(item,xows_xml_node("group",null,group));
-  }
-
-  // Create and launch the query
-  const iq = xows_xml_node("iq",{"type":"set"},
-              xows_xml_node("query",{"xmlns":XOWS_NS_ROSTER},item));
-
-  // Use generic parse function
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
 /* -------------------------------------------------------------------
