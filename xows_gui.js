@@ -4997,7 +4997,7 @@ function xows_gui_page_join_open()
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_doc_page_room_param = {room:null,form:null};
+const xows_doc_page_room_param = {room:null,form:null,cancel:true};
 
 /**
  * Room Configuration page query result callback function
@@ -5007,8 +5007,10 @@ const xows_doc_page_room_param = {room:null,form:null};
  */
 function xows_gui_page_room_onresult(room, type)
 {
-  if(type === "result")
+  if(type === "result") {
+    xows_doc_page_room_param.cancel = false;
     xows_doc_page_close();
+  }
 }
 
 /**
@@ -5161,7 +5163,8 @@ function xows_gui_page_room_onclose()
   } else {
 
     // Cancel Room configuration
-    xows_cli_muc_setcfg_cancel(room);
+    if(xows_doc_page_room_param.cancel)
+      xows_cli_muc_setcfg_cancel(room);
   }
 
   // unreference data
@@ -5182,10 +5185,10 @@ function xows_gui_page_room_onclose()
 function xows_gui_page_room_open(room, form)
 {
   // Store Room object
-  xows_doc_page_room.room = room;
+  xows_doc_page_room_param.room = room;
 
   // Store the current config form
-  xows_doc_page_room.form = form;
+  xows_doc_page_room_param.form = form;
 
   // Set the Room ID in the page header frame
   xows_doc("room_bare").innerText = room.bare;

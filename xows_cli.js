@@ -953,6 +953,9 @@ function xows_cli_disco_ended(jid)
   if(!xows_cli_disco_stk.length) {
     if(xows_isfunc(xows_cli_disco_onend))
       xows_cli_disco_onend();
+
+    // Reset callback
+    xows_cli_disco_onend = null;
   }
 }
 
@@ -3068,32 +3071,32 @@ function xows_cli_muc_getcfg_query(room, onresult)
  */
 function xows_cli_muc_setcfg_result(from, type)
 {
-  if(type === "result") {
+  if(type !== "result")
+    return;
 
-    // Retreive the contact related to this query
-    const room = xows_cli_room_get(from);
-    if(!room) {
-      xows_log(1,"cli_muc_cfg_set_parse","unknown/unsubscribed Room",from);
-      return;
-    }
-
-    // Update Room infos
-    xows_cli_discoinfo_query(room.bare);
-
-    // Retreive onresult callback
-    const onresult = xows_cli_muc_roomcfg_param.get(room);
-
-    // Forward submit result
-    if(xows_isfunc(onresult))
-      onresult(room, type);
-
-    // Notice: room.init is set to false AFTER call to callback to
-    // prevent double-cancel (that throw bad-request error) by GUI
-    // during initial config procedure.
-
-    // Room configured, no longer need init process.
-    room.init = false;
+  // Retreive the contact related to this query
+  const room = xows_cli_room_get(from);
+  if(!room) {
+    xows_log(1,"cli_muc_cfg_set_parse","unknown/unsubscribed Room",from);
+    return;
   }
+
+  // Update Room infos
+  xows_cli_discoinfo_query(room.bare);
+
+  // Retreive onresult callback
+  const onresult = xows_cli_muc_roomcfg_param.get(room);
+
+  // Forward submit result
+  if(xows_isfunc(onresult))
+    onresult(room, type);
+
+  // Notice: room.init is set to false AFTER call to callback to
+  // prevent double-cancel (that throw bad-request error) by GUI
+  // during initial config procedure.
+
+  // Room configured, no longer need init process.
+  room.init = false;
 
   // Allow new query
   xows_cli_muc_roomcfg_param.delete(room);
