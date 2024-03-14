@@ -840,15 +840,15 @@ col-page {
   bottom: -140px;
 }
 #over_mbox::before {
-  flex: 0 0 40px;
+  flex: 0 0 24px;
   display: none;
   content:"";
-  width:42px; height:24px;
+  width:24px; height:24px;
   line-height: 24px;
-  background-size: 24px;
+  background-size: 19px;
   background-position: center;
   background-repeat: no-repeat;
-  margin-right: 5px;
+  margin: 0 0 0 10px;
 }
 #over_mbox.MBOX-WRN::before {
   display: inline-block;
@@ -871,6 +871,7 @@ mbox-text {
   text-align: center;
   font-size: 1.1em;
   color: var(--text-tone0);
+  margin: 0 0 0 10px;
 }
 #over_mbox.MBOX-ERR mbox-text {
   color: var(--text-error) !important;
