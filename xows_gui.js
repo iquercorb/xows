@@ -4997,7 +4997,7 @@ function xows_gui_page_join_open()
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_doc_page_room = {};
+const xows_doc_page_room_param = {room:null,form:null};
 
 /**
  * Room Configuration page query result callback function
@@ -5016,8 +5016,8 @@ function xows_gui_page_room_onresult(room, type)
  */
 function xows_gui_page_room_onvalid()
 {
-  const room = xows_doc_page_room.room;
-  const form = xows_doc_page_room.form;
+  const room = xows_doc_page_room_param.room;
+  const form = xows_doc_page_room_param.form;
 
   // Fill configuration from with input values
   for(let i = 0, n = form.length; i < n; ++i) {
@@ -5058,7 +5058,7 @@ function xows_gui_page_room_onvalid()
  */
 function xows_gui_page_room_onabort()
 {
-  const form = xows_doc_page_room.form;
+  const form = xows_doc_page_room_param.form;
 
   // Setup page inputs according received config from
   for(let i = 0, n = form.length; i < n; ++i) {
@@ -5105,7 +5105,7 @@ function xows_gui_page_room_oninput(target)
 {
   let change = false;
 
-  const form = xows_doc_page_room.form;
+  const form = xows_doc_page_room_param.form;
 
   // Compare page inputs and received form values
   for(let i = 0, n = form.length; i < n; ++i) {
@@ -5149,7 +5149,7 @@ function xows_gui_page_room_oninput(target)
  */
 function xows_gui_page_room_onclose()
 {
-  const room = xows_doc_page_room.room;
+  const room = xows_doc_page_room_param.room;
 
   // Checks whether we are in Room initial config scenario, happening
   // when user Join a non-existing Room that is created on the fly.
@@ -5165,8 +5165,8 @@ function xows_gui_page_room_onclose()
   }
 
   // unreference data
-  xows_doc_page_room.form = null;
-  xows_doc_page_room.room = null;
+  xows_doc_page_room_param.form = null;
+  xows_doc_page_room_param.room = null;
 }
 
 /**
@@ -5195,5 +5195,6 @@ function xows_gui_page_room_open(room, form)
 
   // Open dialog page
   xows_doc_page_open("page_room",true,xows_gui_page_room_onclose,
+                                      xows_gui_page_room_oninput,
                                       xows_gui_page_room_oninput);
 }
