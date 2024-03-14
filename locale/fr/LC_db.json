@@ -142,7 +142,7 @@
 
   "Status message":
   "Message d'état",
-  
+
   "Define a status message...":
   "Définir un message d'état...",
 
@@ -175,13 +175,13 @@
 
   "Set topic of":
   "Définir le sujet de",
-  
+
   "Enter a topic...":
   "Entrez un sujet...",
-  
+
   "Set the message of the day, a welcome message or the discussion subject.":
   "Définissez le message du jour, un message de bienvenue ou le sujet de discussion.",
-  
+
   "Video call":
   "Appel vidéo",
 
@@ -418,10 +418,10 @@
 
   "Error":
   "Erreur",
-  
+
   "Apply":
   "Appliquer",
-  
+
   "Abort":
   "Annuler",
 
@@ -480,5 +480,8 @@
   "Fin d'appel innatendu",
 
   "modified":
-  "modifié"
+  "modifié",
+
+  "Do you really want to disconnect current session ?":
+  "Voulez-vous vraiment vous déconnecter de la session actuelle ?"
 }

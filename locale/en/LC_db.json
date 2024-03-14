@@ -175,10 +175,10 @@
 
   "Set topic of":
   "",
-  
+
   "Enter a topic...":
   "",
-  
+
   "Set the message of the day, a welcome message or the discussion subject.":
   "",
 
@@ -481,10 +481,13 @@
 
   "You missed a call":
   "",
-  
+
   "Unexpected end of call":
   "",
 
   "modified":
+  "",
+
+  "Do you really want to disconnect current session ?":
   ""
 }
