@@ -2509,6 +2509,7 @@ mesg-acts {
   align-items: center;
   line-height: 5px;
   border-radius: 6px;
+  padding: 0 4px;
 }
 li-mesg:hover mesg-acts,
 li-mesg.SELECTED mesg-acts {
@@ -2519,11 +2520,12 @@ li-mesg.SELECTED mesg-acts {
 }
 mesg-acts button {
   width: 32px; height: 32px;
-  background-size: 19px;
+  background-size: 16px;
   background-color: transparent;
   background-repeat: no-repeat;
   background-position: center;
   opacity: .6;
+  padding: 0;
 }mesg-acts button:hover {
   opacity: 1;
 }
