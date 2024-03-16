@@ -1646,6 +1646,7 @@ li-peer.RINGING badg-show {
 peer-info {
   flex: auto;
   max-height: 40px;
+  width: 160px;
   overflow: hidden;
   cursor: inherit;
 }
@@ -1749,7 +1750,7 @@ li-peer.PEER-ROOM peer-avat {
 }
 #user_panl peer-acts {
   visibility: visible;
-  /*! margin: 0 4px; */
+  margin: 0 0 0 2px;
   width: 30px;
 }
 #user_panl badg-show {
@@ -2445,7 +2446,7 @@ mesg-main {
   flex: 1 0 auto;
   width: 0; /* DO NOT TOUCH THIS ! */
   padding: 0 32px 0 0;
-  min-height: 24px;
+  /*! min-height: 24px; */
 }
 mesg-avat {
   display: block;
@@ -2482,7 +2483,7 @@ mesg-from {
 mesg-body {
   display: inline;
   font-size: .95em;
-  line-height: 20px;
+  line-height: 24px;
   color: var(--text-tone1);
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   word-break: normal;
@@ -2536,6 +2537,10 @@ button.mesg-bt-edit {
   display: none;
   background-image: url("images/edit.svg");
 }
+button.mesg-bt-dele {
+  display: none;
+  background-image: url("images/delete.svg");
+}
 li-mesg.MESG-APPEND {
   margin: 0 0 1px 0;
   padding: 1px 16px;
@@ -2563,7 +2568,8 @@ li-mesg.MESG-EDITOR mesg-acts {
 li-mesg.MESG-EDITOR mesg-edit {
   display: block;
 }
-li-mesg.MESG-SENT .mesg-bt-edit {
+li-mesg.MESG-SENT .mesg-bt-edit,
+li-mesg.MESG-SENT .mesg-bt-dele {
   display: block;
 }
 li-mesg.MESG-SENT mesg-body {

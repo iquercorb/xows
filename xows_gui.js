@@ -525,6 +525,7 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("message", xows_gui_cli_onmessage);
   xows_cli_set_callback("chatstate", xows_gui_cli_onchatstate);
   xows_cli_set_callback("receipt", xows_gui_cli_onreceipt);
+  xows_cli_set_callback("retract", xows_gui_cli_onretract);
   xows_cli_set_callback("subject", xows_gui_cli_onsubject);
   xows_cli_set_callback("error", xows_gui_cli_onerror);
   xows_cli_set_callback("close", xows_gui_cli_onclose);
@@ -834,6 +835,9 @@ function xows_gui_notify_permi(status)
  */
 function xows_gui_notify_push(peer, body)
 {
+  if(!peer.noti)
+    return;
+
   xows_log(2,"gui_notify_push", peer.name, Notification.permission);
 
   switch(Notification.permission)
@@ -3317,6 +3321,9 @@ function xows_gui_chat_hist_onclick(event)
       case "mesg_bt_save":
         xows_gui_mesg_edit_valid(li_mesg.querySelector("MESG-INPT"));
         break;
+      case "mesg_bt_dele":
+        xows_gui_mesg_retract(li_mesg);
+        break;
       }
 
       return;
@@ -3394,6 +3401,28 @@ function xows_gui_mesg_edit_valid(inpt)
 }
 
 /**
+ * History message retraction
+ *
+ * @param   {object}    mesg     Instance of <li-mesg> to retract
+ */
+function xows_gui_mesg_retract(mesg)
+{
+  let rtid = null;
+
+  // Get origin-id or stanza-id depending we are in MUC context
+  if(xows_gui_peer.type == XOWS_PEER_ROOM) {
+    if(mesg.dataset.szid)
+      rtid = mesg.dataset.szid;
+  } else {
+    if(mesg.dataset.orid)
+      rtid = mesg.dataset.orid;
+  }
+
+  // Send message retraction
+  xows_cli_message_retract(xows_gui_peer, rtid);
+}
+
+/**
  * Callback function to handle chat frame resizing
  *
  * @param   {object[]}  entries   Array of ResizeObserverEntry entries
@@ -3442,68 +3471,8 @@ function xows_gui_hist_nav_close(peer)
 }
 
 /* -------------------------------------------------------------------
- * Main Screen - Chat Frame - History - Message Insertion
+ * Main Screen - Chat Frame - History - Alterations
  * -------------------------------------------------------------------*/
-
-/**
- * Create new message DOM object to be inserted in history
- *
- * @param   {object}    prev      Previous message of history
- * @param   {string}    id        Message ID
- * @param   {string}    from      Message sender JID
- * @param   {string}    body      Message content
- * @param   {string}    time      Message timestamp
- * @param   {boolean}   sent      Marks message as sent by client
- * @param   {boolean}   recp      Marks message as receipt received
- * @param   {object}    sndr      Message sender Peer object
- * @param   {object}   [disc]     Optionnal discarded message
- */
-function xows_gui_hist_gen_mesg(prev, id, from, body, time, sent, recp, sndr, disc)
-{
-  // Default is to add a simple aggregated message without author
-  // name and avatar
-  let aggregate = true;
-  let replace = false;
-
-  // If this sis a correction message, we kee the same style as the
-  // discarded one
-  if(disc) {
-    replace = true;
-    aggregate = disc.classList.contains("MESG-APPEND");
-  } else if(prev) {
-    // If previous message sender is different or if elapsed time is
-    // greater than # minutes, we create a new full message block
-    const d = time - prev.dataset.time;
-    if(d > XOWS_MESG_AGGR_THRESHOLD || prev.dataset.from !== from)
-      aggregate = false;
-  } else {
-    aggregate = false;
-  }
-
-  // Create a simple aggregated message
-  return xows_tpl_mesg_spawn(id, from, body, time, sent, recp, aggregate ? null : sndr, replace);
-}
-
-/**
- * Discard history message with the specified ID
- *
- * @param   {object}    peer      Chat history Peer, Room or Contact
- * @param   {string}    id        Message ID
- *
- * @return  {object}    Discarded message element or null if not found
- */
-function xows_gui_hist_discard(peer, id)
-{
-  const li = xows_gui_peer_mesg_li(peer, id);
-  if(li) {
-    li.hidden = true;
-    li.innerHTML = "";
-    return li;
-  }
-
-  return null;
-}
-
 /**
  * Update chat history messages avatar and nickname of the specified
  * author.
@@ -3540,44 +3509,138 @@ function xows_gui_hist_update(peer, bare, nick, avat)
   while(i--) if(cls != fig[i].className) fig[i].className = cls;
 }
 
+/* -------------------------------------------------------------------
+ * Main Screen - History - Message edition
+ * -------------------------------------------------------------------*/
+/**
+ * Create new message DOM object to be inserted in history
+ *
+ * @param   {object}    sndr      Sender Peer object
+ * @param   {string}    mesg      Message object
+ * @param   {boolean}   recp      Receipt required flag
+ * @param   {boolean}   sent      Sent by clent flag
+ * @param   {object}    pre_li    Previous message element from history
+ * @param   {object}   [rpl_li]   Optionnal replaced message element from history
+ */
+function xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, pre_li, rpl_li)
+{
+  // Default is to add a simple aggregated message without author
+  // name and avatar
+  let apnd;
+
+  // If this sis a correction message, we kee the same style as the
+  // discarded one
+  if(rpl_li) {
+    apnd = rpl_li.classList.contains("MESG-APPEND");
+  } else if(pre_li) {
+    // If previous message sender is different or if elapsed time is
+    // greater than # minutes, we create a new full message block
+    if((mesg.time - pre_li.dataset.time) < XOWS_MESG_AGGR_THRESHOLD && pre_li.dataset.from === mesg.from)
+      apnd = true;
+  }
+
+  // Create message from template
+  return xows_tpl_mesg_spawn(sndr, mesg, recp, sent, apnd);
+}
+
+/**
+ * Discard history message with the specified ID
+ *
+ * @param   {object}    peer      Chat history Peer, Room or Contact
+ * @param   {string}    id        Message ID
+ *
+ * @return  {object}    Discarded message element or null if not found
+ */
+function xows_gui_hist_mesg_discard(peer, id)
+{
+  const li = xows_gui_peer_mesg_li(peer, id);
+  if(li) {
+    li.hidden = true;
+    li.innerHTML = "";
+    return li;
+  }
+
+  return null;
+}
+
+/**
+ * Handle incomming receipts from the server to update history message
+ * element style
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    sid       Retracted message SID (origin-id or stanza-id)
+ */
+function xows_gui_hist_mesg_delete(peer, sid)
+{
+  const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
+
+  // Depending situation we search for origin-id or stanza-id
+  let li_mesg, from;
+  if(peer.type === XOWS_PEER_CONT) {
+    li_mesg = hist_ul.querySelector("[data-orid="+sid+"]");
+  } else {
+    li_mesg = hist_ul.querySelector("[data-szid="+sid+"]");
+  }
+
+  // Discard message
+  if(li_mesg) {
+    li_mesg.hidden = true;
+    li_mesg.innerHTML = "";
+  }
+
+  // If next message is same author, adjust the "Append" style
+  const next_li = li_mesg.nextSibling;
+  if(next_li) {
+    if(next_li.dataset.from === li_mesg.dataset.from)
+      next_li.classList.toggle("MESG-APPEND", li_mesg.classList.contains("MESG-APPEND"));
+  }
+}
+
 /**
  * Callback function to add sent or received message to the history
  * window
  *
- * @param   {object}    peer      Message Peer
- * @param   {string}    id        Message ID
- * @param   {string}    from      Message sender JID
- * @param   {string}    body      Message content
- * @param   {string}    time      Message timestamp
- * @param   {boolean}   sent      Marks message as sent by client
- * @param   {boolean}   recp      Marks message as receipt received
- * @param   {object}    sndr      Message sender Peer object
- * @param   {string}   [repl]     Optionnal message ID to replace
+ * @param   {object}    peer      Related Peer object
+ * @param   {object}    sndr      Sender Peer object
+ * @param   {object}    mesg      Message object
+ * @param   {boolean}   recp      Receipt required flag
+ * @param   {boolean}   muc       Multi-User-Chat flag
  */
-function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, repl)
+function xows_gui_cli_onmessage(peer, sndr, mesg, recp, muc)
 {
-  // If message with id alread exists, return now to prevent double
-  if(xows_gui_peer_mesg_li(peer, id))
-    return;
+  // Store whether message is sent by ourself
+  const sent = (sndr === xows_cli_self);
+
+  // Special case of MUC, we way receive message from ourself as
+  // confirmation of reception with server additionnal data
+  if(sent && muc) {
+    // Message to update
+    const upd_li = xows_gui_peer_mesg_li(peer, mesg.id);
+    if(upd_li) {
+      xows_tpl_mesg_update(upd_li, mesg, true);
+      return;
+    }
+  }
 
   // Search for corrected message to be discarded
   let rpl_li = null;
-  if(repl) {
-    rpl_li = xows_gui_hist_discard(peer, repl);
+  if(mesg.rpid) {
+    rpl_li = xows_gui_hist_mesg_discard(peer, mesg.rpid);
     // We ignore correction which are not in visible history or if correction
     // message have no body, in this case this mean message deletion
     if(!rpl_li) return;
   }
 
   // Avoid notifications for correction messages
-  if(!repl) {
+  if(!mesg.rpid) {
+
     // If off screen, add unread message badge to the roster contact
     if(peer !== xows_gui_peer)
-      xows_gui_unread_add(peer, id);
+      xows_gui_unread_add(peer, mesg.id);
 
     // Send browser notification popup
-    if(!xows_gui_has_focus && !sent && peer.noti)
-      xows_gui_notify_push(sndr, body);
+    if(!sent && !xows_gui_has_focus)
+      xows_gui_notify_push(peer, mesg.body);
   }
 
   // Check whether end of history is croped, in this case the new message
@@ -3593,10 +3656,11 @@ function xows_gui_cli_onmessage(peer, id, from, body, time, sent, recp, sndr, re
       xows_gui_peer_doc(peer,"hist_beg").className = ""; //< Allow query history
     }
 
-    const msg_li = xows_gui_hist_gen_mesg(hist_ul.lastChild, id, from, body, time, sent, recp, sndr, rpl_li);
+    // Create new message element
+    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, hist_ul.lastChild, rpl_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(repl) {
+    if(rpl_li) {
       hist_ul.insertBefore(msg_li, rpl_li.nextSibling);
     } else {
       hist_ul.appendChild(msg_li);
@@ -3626,6 +3690,18 @@ function xows_gui_cli_onreceipt(peer, id)
   } else {
     xows_log(1,"gui_cli_onreceipt","message not found",id);
   }
+}
+
+/**
+ * Handle incomming receipts from the server to update history message
+ * element style
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    sid       Retracted message SID
+ */
+function xows_gui_cli_onretract(peer, sid)
+{
+  xows_gui_hist_mesg_delete(peer, sid);
 }
 
 /* -------------------------------------------------------------------
@@ -3758,7 +3834,14 @@ function xows_gui_mam_parse(peer, result, count, complete)
 
   for(let i = 0, n = result.length; i < n; ++i) {
 
-    const mesg = result[i];
+    const sndr = result[i].sndr;
+    const mesg = result[i].mesg;
+
+    // Search for message retraction
+    if(mesg.rtid) {
+      xows_gui_hist_mesg_delete(peer, mesg.rtid);
+      continue;
+    }
 
     // Check whether message has body (this may be reciept or chatstate)
     if(!mesg.body) continue;
@@ -3768,21 +3851,21 @@ function xows_gui_mam_parse(peer, result, count, complete)
       continue;
 
     // Search for corrected message to be discarded
-    if(mesg.repl) {
-      rpl_li = xows_gui_hist_discard(peer, mesg.repl);
+    if(mesg.rpid) {
+      rpl_li = xows_gui_hist_mesg_discard(peer, mesg.rpid);
       if(!rpl_li) continue; //< ignore correction which are not in visible history
     } else {
       rpl_li = null;
     }
 
-    // Create new message
-    const new_li = xows_gui_hist_gen_mesg(pre_li,mesg.id,mesg.from,mesg.body,mesg.time,mesg.sent,mesg.sent,mesg.sndr,rpl_li);
+    // Create new message element
+    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, false, (sndr === xows_cli_self), pre_li, rpl_li);
 
     // Insert or append message, depending whether ref_li is null
     if(rpl_li) {
-      hist_ul.insertBefore(new_li, rpl_li.nextSibling);
+      hist_ul.insertBefore(msg_li, rpl_li.nextSibling);
     } else {
-      pre_li = hist_ul.insertBefore(new_li, ref_li);
+      pre_li = hist_ul.insertBefore(msg_li, ref_li);
     }
 
     // Increase added message count
@@ -3798,7 +3881,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     // was reached since "insert" will not necessarly be set
     if(count && !added) {
       // compare id of the last result with the last history message
-      if(result[0].id === hist_ul.firstChild.id)
+      if(result[0].mesg.id === hist_ul.firstChild.id)
         prepend = true; //< Set prepend to show history start
     }
     if(prepend) {

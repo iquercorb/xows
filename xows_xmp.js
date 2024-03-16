@@ -109,6 +109,7 @@ function xows_xmp_set_callback(type, callback)
     case "message":   xows_xmp_fw_onmessage = callback; break;
     case "chatstate": xows_xmp_fw_onchatstate = callback; break;
     case "receipt":   xows_xmp_fw_onreceipt = callback; break;
+    case "retract":   xows_xmp_fw_onretract = callback; break;
     case "subject":   xows_xmp_fw_onsubject = callback; break;
     case "pubsub":    xows_xmp_fw_onpubsub = callback; break;
     case "jingle":    xows_xmp_fw_onjingle = callback; break;
@@ -971,20 +972,43 @@ function xows_xmp_iq_error_text(stanza)
  */
 const XOWS_NS_DELAY = "urn:xmpp:delay";
 
+/* -------------------------------------------------------------------
+ * XMPP API - Message semantics - Last Message Correction (XEP-0308)
+ * -------------------------------------------------------------------*/
+/**
+ * Last Message Correction (XEP-0308) XMLNS constants
+ */
+const XOWS_NS_CORRECT = "urn:xmpp:message-correct:0";
+
+/* -------------------------------------------------------------------
+ * XMPP API - Message semantics - Last Message Correction (XEP-0308)
+ * -------------------------------------------------------------------*/
+/**
+ * Unique and Stable Stanza IDs (XEP-0359) XMLNS constants
+ */
+const XOWS_NS_SID = "urn:xmpp:sid:0";
+
+/* -------------------------------------------------------------------
+ * XMPP API - Message semantics - Last Message Correction (XEP-0308)
+ * -------------------------------------------------------------------*/
+/**
+ * Anonymous unique occupant identifiers for MUCs (XEP-0421) XMLNS constants
+ */
+const XOWS_NS_OCCUID = "urn:xmpp:occupant-id:0";
+
+/* -------------------------------------------------------------------
+ * XMPP API - Message semantics - Message Styling (XEP-0393)
+ * -------------------------------------------------------------------*/
+/**
+ * Message Styling (XEP-0393) XMLNS constants
+ */
+const XOWS_NS_STYLING = "urn:xmpp:styling:0";
+
 /**
  * Message stanza received body message event client callback
  */
 let xows_xmp_fw_onmessage = function() {};
 
-/**
- * Message stanza received chat sate message event client callback
- */
-let xows_xmp_fw_onchatstate = function() {};
-
-/**
- * Message stanza received receipt message event client callback
- */
-let xows_xmp_fw_onreceipt = function() {};
 
 /**
  * Multi-User Chat (XEP-0045) received subject event callback
@@ -999,31 +1023,43 @@ let xows_xmp_fw_onsubject = function() {};
 function xows_xmp_message_recv(stanza)
 {
   // Get message main attributes
-  const type = stanza.getAttribute("type");
-
   const id = stanza.getAttribute("id");
   const from = stanza.getAttribute("from");
   const to = stanza.getAttribute("to");
+  const type = stanza.getAttribute("type");
 
-  let body, subj, time, chat, rpid, rcid;
+  if(type === "error") {
+    const mesg = xows_xmp_iq_error_text(stanza);
+    xows_log(1,"xmp_message_recv","error message ("+from+")",xows_xmp_iq_error_text(stanza));
+    return true;
+  }
 
-  let xmlns, tag, node, i = stanza.childNodes.length;
+  let time, body, orid, szid, ocid, rpid;
+
+  let i = stanza.childNodes.length;
   while(i--) {
-    node = stanza.childNodes[i];
+    const node = stanza.childNodes[i];
+
     // Skip the non-object nodes
-    if(node.nodeType !== 1) continue;
-    // Store child xmlns attribute
-    xmlns = node.getAttribute("xmlns");
+    if(node.nodeType !== 1)
+      continue;
+
+    // Store child xmlns attribute and tagname
+    const tname = node.tagName;
+    const xmlns = node.getAttribute("xmlns");
+
     // Check whether this is a MAM archive query result
     if(xmlns === XOWS_NS_MAM) {
       xows_log(2,"xmp_message_recv","received Archive result");
       return xows_xmp_mam_result_recv(node);
     }
+
     // Check whether this is a PubSub event
     if(xmlns === XOWS_NS_PUBSUBEVENT) {
       xows_log(2,"xmp_message_recv","received PubSub Event");
       return xows_xmp_pubsub_recv(from, node);
     }
+
     // Check whether this is an encapsuled carbons copy
     if(xmlns === XOWS_NS_CARBONS) {
       xows_log(2,"xmp_message_recv","received forwarded Carbons");
@@ -1031,69 +1067,79 @@ function xows_xmp_message_recv(stanza)
       const message = node.querySelector("message");
       return message ? xows_xmp_message_recv(message) : false;
     }
-    tag = node.tagName;
+
     // Check whether this is a delivery receipt request or receive
     if(xmlns === XOWS_NS_RECEIPTS) {
-      if(tag === "request") {
-        xows_log(2,"xmp_message_recv","received Receipt request");
+      if(tname === "request") {
         xows_xmp_message_receipt_send(from, id);
-      } else if(tag === "received") {
-        rcid = node.getAttribute("id");
-        continue;
+      } else { //< we assume this is a <received>
+        xows_xmp_fw_onreceipt(id, from, to, node.getAttribute("id"));
+        return true;
       }
     }
+
     // Check for chat state notification
     if(xmlns === XOWS_NS_CHATSTATES) {
-      chat = xows_xmp_chatstate_value[tag];
-      continue;
+      xows_xmp_fw_onchatstate(id, from, type, xows_xmp_chatstate_value[node.tagName]);
+      return true;
     }
+
     // Check for <delay> node, meaning of offline storage delivery
     if(xmlns === XOWS_NS_DELAY) {
       time = new Date(node.getAttribute("stamp")).getTime();
       continue;
     }
-    // Check for <replace> node, meaning of replacement
+
+    // Check for Unique and Stable Stanza IDs (XEP-0359)
+    if(xmlns === XOWS_NS_SID) {
+      if(tname === "origin-id") orid = node.getAttribute("id");
+      if(tname === "stanza-id") szid = node.getAttribute("id");
+      continue;
+    }
+
+    // Check for Anonymous unique occupant identifiers for MUCs (XEP-0421)
+    if(xmlns === XOWS_NS_OCCUID) {
+      ocid = node.getAttribute("id");
+      continue;
+    }
+
+    // Check for Last Message Correction (XEP-0308)
     if(xmlns === XOWS_NS_CORRECT) {
       rpid = node.getAttribute("id");
       continue;
     }
+
+    // Check for Message Retraction (XEP-0424)
+    if(xmlns === XOWS_NS_RETRACT) {
+      xows_xmp_fw_onretract(id, from, type, node.getAttribute("id"));
+      continue;
+    }
+
+    // Check for <subject> node
+    if(tname === "subject") {
+      //subject = xows_xml_innertext(node);
+      xows_xmp_fw_onsubject(id, from, xows_xml_innertext(node));
+      return true;
+    }
+
     // Check for <body> node
-    if(tag === "body") {
+    if(tname === "body") {
       body = xows_xml_innertext(node);
       continue;
     }
-    // Check for <subject> node
-    if(tag === "subject") {
-      subj = xows_xml_innertext(node);
-    }
   }
 
-  // Forward message to proper callback
-  let handled = false;
-
-  if(chat !== undefined) {
-    xows_xmp_fw_onchatstate(id, type, from, to, chat, time);
-    handled = true;
-  }
   if(body !== undefined) {
-    xows_xmp_fw_onmessage(id, type, from, to, body, time, rpid);
-    handled = true;
-  }
-  if(rcid !== undefined) {
-    xows_xmp_fw_onreceipt(id, from, to, rcid, time);
-    handled = true;
-  }
-  if(subj !== undefined) {
-    xows_xmp_fw_onsubject(id, from, subj);
-    handled = true;
+    xows_xmp_fw_onmessage({ "id":id, "from":from, "to":to,
+                            "type":type, "body":body, "time":time, "rpid":rpid,
+                            "orid":orid, "szid":szid, "ocid":ocid});
+    return true;
   }
 
   // Write log
-  xows_log(2,"xmp_message_recv",
-    (handled) ? "Handling message" : "unhandled message",
-    "from "+from+" to "+to);
+  xows_log(1,"xmp_message_recv","unhandled message ("+from+")",type);
 
-  return handled;
+  return false;
 }
 
 /**
@@ -1116,11 +1162,16 @@ function xows_xmp_message_body_send(type, to, body, recp, corr)
   const stanza =  xows_xml_node("message",{"id":id,"to":to,"type":type},
                     xows_xml_node("body",null,body));
 
-  // Add receipt request
-  if(recp) xows_xml_parent(stanza, xows_xml_node("request",{"xmlns":XOWS_NS_RECEIPTS}));
+  // Add Origin ID (XEP-0359)
+  xows_xml_parent(stanza, xows_xml_node("origin-id",{"id":id,"xmlns":XOWS_NS_SID}));
+
+  // Add receipt request (only if one-to-one chat)
+  if(type === "chat" && recp)
+    xows_xml_parent(stanza, xows_xml_node("request",{"xmlns":XOWS_NS_RECEIPTS}));
 
   // Add replace
-  if(corr) xows_xml_parent(stanza, xows_xml_node("replace",{"id":corr,"xmlns":XOWS_NS_CORRECT}));
+  if(corr)
+    xows_xml_parent(stanza, xows_xml_node("replace",{"id":corr,"xmlns":XOWS_NS_CORRECT}));
 
   xows_log(2,"xmp_message_body_send","send message","type "+type+" to "+to);
 
@@ -1137,6 +1188,11 @@ function xows_xmp_message_body_send(type, to, body, recp, corr)
  * Chat State Notifications (XEP-0085) XMLNS constants
  */
 const XOWS_NS_CHATSTATES = "http://jabber.org/protocol/chatstates";
+
+/**
+ * Message stanza received chat sate message event client callback
+ */
+let xows_xmp_fw_onchatstate = function() {};
 
 /**
  * Chat State Notifications (XEP-0085) values constants
@@ -1189,6 +1245,11 @@ function xows_xmp_message_chatstate_send(to, type, chat)
 const XOWS_NS_RECEIPTS = "urn:xmpp:receipts";
 
 /**
+ * Message stanza received receipt message event client callback
+ */
+let xows_xmp_fw_onreceipt = function() {};
+
+/**
  * Send receipt for the specified message ID at the specified
  * destination.
  *
@@ -1207,17 +1268,45 @@ function xows_xmp_message_receipt_send(to, id)
  * XMPP API - Message semantics - Last Message Correction (XEP-0308)
  * -------------------------------------------------------------------*/
 /**
- * Last Message Correction (XEP-0308) XMLNS constants
+ * Message Retraction (XEP-0424) XMLNS constants
  */
-const XOWS_NS_CORRECT = "urn:xmpp:message-correct:0";
+const XOWS_NS_RETRACT = "urn:xmpp:message-retract:1";
 
-/* -------------------------------------------------------------------
- * XMPP API - Message semantics - Message Styling (XEP-0393)
- * -------------------------------------------------------------------*/
 /**
- * Message Styling (XEP-0393) XMLNS constants
+ * Message stanza received receipt message event client callback
  */
-const XOWS_NS_STYLING      = "urn:xmpp:styling:0";
+let xows_xmp_fw_onretract = function() {};
+
+/**
+ * Send retraction for the specified message ID at the specified
+ * destination.
+ *
+ * @param   {string}    to        Destnation JID
+ * @param   {string}    type      Message type to set
+ * @param   {string}    id        Message ID to retract
+ */
+function xows_xmp_message_retract_send(to, type, id)
+{
+  xows_log(2,"xmp_message_retract_send","send message Retraction",id+" to "+to);
+
+  // Base stanza
+  const message = xows_xml_node("message",{"to":to,"type":type});
+
+  // Adde <retract> node
+  xows_xml_parent(message, xows_xml_node("retract",{"id":id,"xmlns":XOWS_NS_RETRACT}));
+
+  // Adde <fallback> node
+  xows_xml_parent(message, xows_xml_node("fallback",{"xmlns":"urn:xmpp:fallback:0"}));
+
+  // Adde <body> node
+  xows_xml_parent(message, xows_xml_node("body",null,"Unsuported attempt to retract a previous message"));
+
+  // Adde <store> node
+  xows_xml_parent(message, xows_xml_node("store",{"xmlns":"urn:xmpp:hints"}));
+
+  // Send message
+  xows_xmp_send(message);
+}
 
 /* -------------------------------------------------------------------
  *
@@ -1227,7 +1316,7 @@ const XOWS_NS_STYLING      = "urn:xmpp:styling:0";
 /**
  * Roster Management (XEP-0321) XMLNS constants
  */
-const XOWS_NS_ROSTER       = "jabber:iq:roster";
+const XOWS_NS_ROSTER = "jabber:iq:roster";
 
 /**
  * Roster Management (XEP-0321) roster push event callback
@@ -2632,42 +2721,70 @@ function xows_xmp_mam_result_recv(result)
   const forward = result.querySelector("forwarded");
   if(!forward) return false;
 
-  let id, from, to, time, body, rpid, rcid;
+  let id, from, to, time, body, rpid, rtid, rcid, orid, szid, ocid;
 
   // We should found a <delay> node
   const delay = forward.querySelector("delay");
   if(delay) time = new Date(delay.getAttribute("stamp")).getTime();
+
   // We found found a <message> node
   const message = forward.querySelector("message");
   if(message) {
+
     // Get message common data
     id = message.getAttribute("id");
     from = message.getAttribute("from");
     to = message.getAttribute("to");
+
     // Loop over children
-    let node, xmlns, i = message.childNodes.length;
+    let xmlns, i = message.childNodes.length;
     while(i--) {
-      node = message.childNodes[i];
+
+      const node = message.childNodes[i];
+
       // Skip the non-object nodes
       if(node.nodeType !== 1)
         continue;
+
       // Get XMLNS
-      xmlns = node.getAttribute("xmlns");
+      const xmlns = node.getAttribute("xmlns");
+      const tagnm = node.tagName;
+
       // Check for chatstate
       if(xmlns === XOWS_NS_CHATSTATES)
         continue;
+
       // Check for delivery receipt
       if(xmlns === XOWS_NS_RECEIPTS) {
         rcid = node.getAttribute("id");
         continue;
       }
+
       // Check for correction
       if(xmlns === XOWS_NS_CORRECT) {
         rpid = node.getAttribute("id");
         continue;
       }
+
+      // Check for delivery receipt
+      if(xmlns === XOWS_NS_RETRACT) {
+        rtid = node.getAttribute("id");
+        continue;
+      }
+
+      if(xmlns === XOWS_NS_SID) {
+        if(tagnm === "origin-id") orid = node.getAttribute("id");
+        if(tagnm === "stanza-id") szid = node.getAttribute("id");
+        continue;
+      }
+
+      if(xmlns === XOWS_NS_OCCUID) {
+        ocid = node.getAttribute("id");
+        continue;
+      }
+
       // Check for <body> node
-      if(node.tagName === "body") {
+      if(tagnm === "body") {
         body = node.hasChildNodes() ? xows_xml_innertext(node) : "";
       }
     }
@@ -2676,11 +2793,16 @@ function xows_xmp_mam_result_recv(result)
     if(!time) time = new Date(0).getTime();
 
     // Add archived message to stack
-    xows_xmp_mam_stack.get(qid).push({"page":page,"id":id,"from":from,"to":to,"time":time,"body":body,"repl":rpid,"recp":rcid});
+    xows_xmp_mam_stack.get(qid).push({"page":page,
+                                      "id":id,"from":from,"to":to,"time":time,
+                                      "body":body,"rpid":rpid,"rtid":rtid,"rcid":rcid,
+                                      "orid":orid,"szid":szid,"ocid":ocid});
 
     xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
+
     return true; //< stanza processed
   }
+
   return false;
 }
 
@@ -3689,7 +3811,7 @@ function xows_xmp_caps_self_features()
     xows_xml_node("feature",{"var":XOWS_NS_RECEIPTS}),
     xows_xml_node("feature",{"var":XOWS_NS_CORRECT}),
     xows_xml_node("feature",{"var":XOWS_NS_STYLING}),
-    //xows_xml_node("feature",{"var":XOWS_NS_SID}),
+    xows_xml_node("feature",{"var":XOWS_NS_SID}),
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
     xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
     xows_xml_node("feature",{"var":vcard4}),

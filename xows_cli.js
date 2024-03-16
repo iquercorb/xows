@@ -613,6 +613,7 @@ function xows_cli_set_callback(type, callback)
     case "message":     xows_cli_fw_onmessage = callback; break;
     case "chatstate":   xows_cli_fw_onchatstate = callback; break;
     case "receipt":     xows_cli_fw_onreceipt = callback; break;
+    case "retract":     xows_cli_fw_onretract = callback; break;
     case "subject":     xows_cli_fw_onsubject = callback; break;
     case "callerror":   xows_cli_fw_oncallerror = callback; break;
     case "callinit":    xows_cli_fw_oncallinit = callback; break;
@@ -682,6 +683,7 @@ function xows_cli_connect(url, jid, password, register)
   xows_xmp_set_callback("message", xows_cli_xmp_onmessage);
   xows_xmp_set_callback("chatstate", xows_cli_xmp_onchatstate);
   xows_xmp_set_callback("receipt", xows_cli_xmp_onreceipt);
+  xows_xmp_set_callback("retract", xows_cli_xmp_onretract);
   xows_xmp_set_callback("subject", xows_cli_xmp_onsubject);
   xows_xmp_set_callback("pubsub", xows_cli_xmp_onpubsub);
   xows_xmp_set_callback("jingle", xows_cli_xmp_onjingle);
@@ -1641,56 +1643,53 @@ let xows_cli_fw_onmessage = function() {};
 /**
  * Handles an incoming chat message with content
  *
- * @param   {string}    id        Message ID
- * @param   {string}    type      Message type
- * @param   {string}    from      Sender JID
- * @param   {string}    to        Recipient JID
- * @param   {string}    body      Message content
- * @param   {number}   [time]     Optional provided time (Unix epoch)
- * @param   {string}   [rpid]     Optional message ID to replace
+ * @param   {object}      mesg      Message object
  */
-function xows_cli_xmp_onmessage(id, type, from, to, body, time, rpid)
+function xows_cli_xmp_onmessage(mesg)
 {
-  if(type !== "chat" && type !== "groupchat") {
-    xows_log(1,"cli_xmp_onmessage","invalid message type",type);
-    return;
-  }
-
-  let sent, peer, sndr;
-
-  // Retreive message peer and sender
-  if(type === "chat") {
-    sent = xows_cli_isself(from);
-    peer = xows_cli_cont_get(sent ? to : from);
-    sndr = sent ? xows_cli_self : peer;
-  } else {
-    peer = xows_cli_room_get(from);
-    sent = (from === peer.join);
-    // this is chat room, we return self or a Room Cccupant
-    if(sent) {
-      sndr = xows_cli_self;
-    } else {
-      // Find existing Occupant or create new from cached data
-      sndr = xows_cli_occu_any(peer, from);
-    }
-  }
-
-  if(!peer) {
-    xows_log(1,"cli_xmp_onmessage","unknown/unsubscribed JID",from);
+  if(mesg.type !== "chat" && mesg.type !== "groupchat") {
+    xows_log(1,"cli_xmp_onmessage","invalid message type",mesg.type);
     return;
   }
 
   // If no time is specified set as current
-  if(!time) time = new Date().getTime();
+  if(!mesg.time)
+    mesg.time = new Date().getTime();
 
-  // Update "locked" ressourceas as recommended in XEP-0296
-  if(peer.type === XOWS_PEER_CONT)
-    if(!sent) peer.lock = from;
+  let peer, sndr, muc;
 
-  xows_log(2,"cli_xmp_onmessage","chat message",from+" \""+body+"\"");
+  // Retreive message peer and sender
+  if(mesg.type === "chat") {
+
+    if(xows_cli_isself(mesg.from)) {
+      peer = xows_cli_cont_get(mesg.to);
+      sndr = xows_cli_self;
+    } else {
+      sndr = peer = xows_cli_cont_get(mesg.from);
+      // Update "locked" ressourceas as recommended in XEP-0296
+      peer.lock = mesg.from;
+    }
+
+  } else {
+
+    muc = true;
+    peer = xows_cli_room_get(mesg.from);
+    if(mesg.from === peer.join) {
+      sndr = xows_cli_self;
+    } else {
+      sndr = xows_cli_occu_any(peer, mesg.from);
+    }
+  }
+
+  if(!peer) {
+    xows_log(1,"cli_xmp_onmessage","unknown/unsubscribed JID",mesg.from);
+    return;
+  }
+
+  xows_log(2,"cli_xmp_onmessage","chat message",mesg.from+" \""+mesg.body+"\"");
 
   // Forward received message
-  xows_cli_fw_onmessage(peer, id, from, body, time, sent, sent, sndr, rpid);
+  xows_cli_fw_onmessage(peer, sndr, mesg, false, muc);
 }
 
 /**
@@ -1698,24 +1697,19 @@ function xows_cli_xmp_onmessage(id, type, from, to, body, time, rpid)
  *
  * @param   {string}    peer      Recipient peer (Room or Contact)
  * @param   {string}    body      Message content
- * @param   {string}   [corr]     Optionnal message ID this one replace
+ * @param   {string}   [rpid]     Optionnal message ID this one replace
  */
-function xows_cli_send_message(peer, body, corr)
+function xows_cli_send_message(peer, body, rpid)
 {
-  // Message with empty body are devil
-  if(!body.length) {
-    xows_log(1,"cli_user_send_message","message with empty body","who you gonna call ?");
-    return;
-  }
-
-  let type, from, to = peer.lock, use_recp = false;
+  let type, from, to = peer.lock, recp, muc;
 
   // Check whether peer is a MUC room or a subscribed Contact
   if(peer.type === XOWS_PEER_ROOM) {
 
+    muc = true;
     type = "groupchat";
     from = peer.join;
-    use_recp = true; //FIXME: Does MUC room always support receipt ?
+    recp = true;
 
   } else {
 
@@ -1728,17 +1722,22 @@ function xows_cli_send_message(peer, body, corr)
       // Get resource object of current locked
       const res = peer.ress.get(xows_jid_resc(peer.lock));
       // Check for receipt support
-      if(res) use_recp = xows_cli_entity_caps_test(res.node,XOWS_NS_RECEIPTS);
+      if(res) recp = xows_cli_entity_caps_test(res.node,XOWS_NS_RECEIPTS);
     }
   }
 
   xows_log(2,"cli_user_send_message","send "+type+" message",to+" \""+body+"\"");
 
   // Send message with body
-  const id = xows_xmp_message_body_send(type, to, body, use_recp, corr);
+  const id = xows_xmp_message_body_send(type, to, body, recp, rpid);
+
+  // Create message object
+  const mesg = {"id":id, "from":from, "to":to,
+                "type":type, "body":body, "time":new Date().getTime(),
+                "uoid":id, "usid":null, "rpid":rpid};
 
   // Forward sent message
-  xows_cli_fw_onmessage(peer, id, from, body, new Date().getTime(), true, !use_recp, xows_cli_self, corr);
+  xows_cli_fw_onmessage(peer, xows_cli_self, mesg, recp, muc);
 }
 /* -------------------------------------------------------------------
  * Client API - Message semantis - Message Receipt
@@ -1754,10 +1753,9 @@ let xows_cli_fw_onreceipt = function() {};
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
  * @param   {string}    to        Recipient JID
- * @param   {string}    rcid      Receipt message ID
- * @param   {number}   [time]     Optional provided time (Unix epoch)
+ * @param   {string}    receipt   Receipt message ID
  */
-function xows_cli_xmp_onreceipt(id, from, to, rcid, time)
+function xows_cli_xmp_onreceipt(id, from, to, receipt)
 {
   let peer;
   // Check whether message is a carbons copy of a message sent by
@@ -1773,10 +1771,10 @@ function xows_cli_xmp_onreceipt(id, from, to, rcid, time)
     return;
   }
 
-  xows_log(2,"cli_xmp_onreceipt","message receipt received",from+" "+rcid);
+  xows_log(2,"cli_xmp_onreceipt","message receipt received",from+" "+receipt);
 
   // Forward received Receipt
-  xows_cli_fw_onreceipt(peer, rcid);
+  xows_cli_fw_onreceipt(peer, receipt);
 }
 
 /* -------------------------------------------------------------------
@@ -1791,13 +1789,11 @@ let xows_cli_fw_onchatstate = function() {};
  * Handles an incoming chat state notification.
  *
  * @param   {string}    id        Message ID
- * @param   {string}    type      Message type
  * @param   {string}    from      Sender JID
- * @param   {string}    to        Recipient JID
- * @param   {number}    chat      Chat state
- * @param   {number}    time      Optional provided time (Unix epoch)
+ * @param   {string}    type      Message type
+ * @param   {number}    state     Chat state
  */
-function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
+function xows_cli_xmp_onchatstate(id, from, type, state)
 {
   // Retreive message peer and author
   let peer;
@@ -1821,15 +1817,15 @@ function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
 
   // Update Contact, Peer and Room according received  chatstat
   if(peer.type === XOWS_PEER_CONT) {
-    peer.chat = chat;
-    if(chat > 0) peer.lock = from;  //< Update "locked" ressource as recommended in XEP-0296
+    peer.chat = state;
+    if(state > 0) peer.lock = from;  //< Update "locked" ressource as recommended in XEP-0296
   } else {
     // search room occupant (must exists)
     const occu = xows_cli_occu_get(peer, from);
     if(occu) {
-      occu.chat = chat;
+      occu.chat = state;
       // add or remove Occupant to/from Room "writing list"
-      if(chat > XOWS_CHAT_PAUS) { //< Writing
+      if(state > XOWS_CHAT_PAUS) { //< Writing
         if(!peer.writ.includes(occu))
           peer.writ.push(occu);
       } else {                    //< Paused, Inactive, etc...
@@ -1839,10 +1835,10 @@ function xows_cli_xmp_onchatstate(id, type, from, to, chat, time)
     }
   }
 
-  xows_log(2,"cli_xmp_onchatstate","chat state",from+" "+chat);
+  xows_log(2,"cli_xmp_onchatstate","chat state",from+" "+state);
 
   // Forward changed Chat State
-  xows_cli_fw_onchatstate(peer, chat);
+  xows_cli_fw_onchatstate(peer, state);
 }
 
 /**
@@ -1883,6 +1879,54 @@ function xows_cli_chatstate_define(peer, chat)
     // Send new chat state
     xows_xmp_message_chatstate_send(peer.lock, type, chat);
   }
+}
+/* -------------------------------------------------------------------
+ * Client API - Message semantis - Message Retraction
+ * -------------------------------------------------------------------*/
+/**
+ * Callback function for received Chatstat notification
+ */
+let xows_cli_fw_onretract = function() {};
+
+/**
+ * Handles an incoming chat state notification.
+ *
+ * @param   {string}    id        Message ID
+ * @param   {string}    from      Sender JID
+ * @param   {string}    rtid      Retracted message ID
+ */
+function xows_cli_xmp_onretract(id, from, type, rtid)
+{
+  // Retreive message peer and author
+  let peer;
+  if(type === "chat") {
+    peer = xows_cli_cont_get(from);
+  } else {
+    peer = xows_cli_room_get(from);
+  }
+
+  if(!peer) {
+    xows_log(1,"cli_xmp_onretract","unknown/unsubscribed JID",from);
+    return;
+  }
+
+  // Forward retracted message
+  xows_cli_fw_onretract(peer, rtid);
+}
+
+/**
+ * Retract previous Message
+ *
+ * @param   {object}    peer      Related Peer object
+ * @param   {string}    rtid      Message ID to retract
+ */
+function xows_cli_message_retract(peer, rtid)
+{
+  // Store message stype according Peer type
+  const type = (peer.type === XOWS_PEER_ROOM) ? "groupchat" : "chat";
+
+  // Send retract
+  xows_xmp_message_retract_send(peer.lock, type, rtid);
 }
 
 /* -------------------------------------------------------------------
@@ -2563,11 +2607,11 @@ const xows_cli_mam_param = new Map();
  *
  * @param   {string}    from      Archives sender JID, may be Room or Null
  * @param   {string}    bare      With JID bare used as filter or Null
- * @param   {object[]}  result    Received archived messages
+ * @param   {object[]}  mesg      Received archived messages
  * @param   {number}    count     Total result count
  * @param   {boolean}   complete  Current result set is complete
  */
-function xows_cli_mam_collect(from, bare, result, count, complete)
+function xows_cli_mam_collect(from, bare, mesg, count, complete)
 {
   // Retreive the contact related to this query
   const peer = xows_cli_peer_get(from ? from : bare);
@@ -2576,32 +2620,25 @@ function xows_cli_mam_collect(from, bare, result, count, complete)
     return;
   }
 
+  const result = [];
+
   // re-parse result to add peer, sender and other various parameters
-  let i = result.length;
+  let i = mesg.length;
 
   if(peer.type === XOWS_PEER_CONT) {
 
-    while(i--) {
-      result[i].sent = xows_cli_isself(result[i].from);
-      result[i].sndr = result[i].sent ? xows_cli_self : peer;
+    //while(i--) {
+    for(let i = 0; i < mesg.length; ++i) {
+      const sndr = xows_cli_isself(mesg[i].from) ? xows_cli_self : peer;
+      result.push({"sndr":sndr, "mesg":mesg[i]});
     }
 
   } else { //<  === XOWS_PEER_ROOM
 
-    let from, sndr;
-
-    while(i--) {
-      from = result[i].from;
-      result[i].sent = (from === peer.join);
-      // this is chat room, we return self or a Room Cccupant
-      if(result[i].sent) {
-        sndr = xows_cli_self;
-      } else {
-        // Find existing Occupant or create new from cached data
-        sndr = xows_cli_occu_any(peer, from);
-      }
-      // assing sender
-      result[i].sndr = sndr;
+    for(let i = 0; i < mesg.length; ++i) {
+      const from = mesg[i].from;
+      const sndr = (from === peer.join) ? xows_cli_self : xows_cli_occu_any(peer, from);
+      result.push({"sndr":sndr, "mesg":mesg[i]});
     }
   }
 
@@ -2621,7 +2658,7 @@ function xows_cli_mam_collect(from, bare, result, count, complete)
   // Comput count of visible messages excluding replacements
   let bodies = 0;
   i = pool.length;
-  while(i--) if(pool[i].body && !pool[i].rpid) bodies++;
+  while(i--) if(pool[i].mesg.body && !pool[i].mesg.rpid) bodies++;
 
   if(!complete) {
 
@@ -2630,9 +2667,9 @@ function xows_cli_mam_collect(from, bare, result, count, complete)
       // Shift time to get more message after/before the last/first
       // recevied with 25ms time shift to prevent doubling
       if(param.start) {
-        param.start = pool[pool.length-1].time + 1;
+        param.start = pool[pool.length-1].mesg.time + 1;
       } else {
-        param.end = pool[0].time - 1;
+        param.end = pool[0].mesg.time - 1;
       }
 
       // Change the 'max' value to avoid querying too much, but

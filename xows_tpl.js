@@ -497,6 +497,9 @@ const xows_tpl_parsed_url = new Array();
  */
 function xows_tpl_parse_styling(raw)
 {
+  if(!raw || !raw.length)
+    return "";
+
   let match;
   let lead_sp, lead_lf = true;
   let span_i = 0;
@@ -1230,58 +1233,59 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
  * Build and returns a new instance of history Message <hist-mesg>
  * object from template to be added in the chat history list <ul>
  *
- * @param   {string}    id        Message ID
- * @param   {string}    from      Sender JID
- * @param   {string}    time      Message timestamp
- * @param   {string}    body      Message content
- * @param   {boolean}   sent      Marks message as sent by client
- * @param   {boolean}   recp      Marks message as receipt received
- * @param   {object}   [sndr]     Message sender Peer object or null
- * @param   {boolean}  [repl]     Message is replacement (marks as modified)
+ * @param   {object}    sndr      Sender Peer object
+ * @param   {object}    mesg      Message object
+ * @param   {boolean}   recp      Receipt required flag
+ * @param   {boolean}   sent      Sent by client flag
+ * @param   {boolean}   apnd      Append to group flag
  *
  * @return  {object}    History message <li> HTML Elements
  */
-function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
+function xows_tpl_mesg_spawn(sndr, mesg, recp, sent, apnd)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
 
-  inst.id = id;
-  inst.dataset.from = from;
-  inst.dataset.time = time;
+  inst.id = mesg.id;
+  inst.dataset.from = mesg.from;
+  inst.dataset.time = mesg.time;
+  if(mesg.orid) inst.dataset.orid = mesg.orid;
+  if(mesg.szid) inst.dataset.szid = mesg.szid;
+  if(mesg.ocid) inst.dataset.ocid = mesg.ocid;
 
   // Set proper value to message elements
   if(sent) {
     inst.classList.add("MESG-SENT");
-    if(recp) inst.classList.add("MESG-RECP");
+    // If receipt not required, mark message as receipt received
+    if(!recp) inst.classList.add("MESG-RECP");
     // Add raw body for message edition
-    inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(body);
+    inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(mesg.body);
   }
 
-  // Add time or date
-  if(sndr) {
-    inst.querySelector("MESG-DATE").innerText = xows_l10n_date(time);
-    const jid = xows_jid_bare(from);
-    // Set author name with JID data
-    const mesg_from = inst.querySelector("MESG-FROM");
-    mesg_from.dataset.jid = jid;
-    mesg_from.innerText = sndr.name;
-    // Set avatar class with JID data
-    const mesg_avat = inst.querySelector("MESG-AVAT");
-    mesg_avat.dataset.jid = jid;
-    mesg_avat.className = xows_tpl_spawn_avat_cls(sndr.avat);
-  } else {
-    inst.classList.add("MESG-APPEND");
-    inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(time);
-  }
+  // Set message "Append" style
+  if(apnd) inst.classList.add("MESG-APPEND");
 
-  if(repl) inst.classList.add("MESG-MODIFY");
+  // Set time stamp elements
+  inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(mesg.time);
+  inst.querySelector("MESG-DATE").innerText = xows_l10n_date(mesg.time);
+
+  // Set author name with JID data
+  const mesg_from = inst.querySelector("MESG-FROM");
+  mesg_from.dataset.jid = sndr.bare;
+  mesg_from.innerText = sndr.name;
+  // Set avatar class with JID data
+  const mesg_avat = inst.querySelector("MESG-AVAT");
+  mesg_avat.dataset.jid = sndr.bare;
+  mesg_avat.className = xows_tpl_spawn_avat_cls(sndr.avat);
+
+  // If Replace id exists, set message as Modified
+  if(mesg.rpid) inst.classList.add("MESG-MODIFY");
 
   const mesg_body = inst.querySelector("MESG-BODY");
   const mesg_embd = inst.querySelector("MESG-EMBD");
 
   // Parse body for styling
-  const styled = xows_tpl_parse_styling(body);
+  const styled = xows_tpl_parse_styling(mesg.body);
   mesg_body.innerHTML = styled;
 
   // Check whether we have URLs to embeds
@@ -1299,6 +1303,25 @@ function xows_tpl_mesg_spawn(id, from, body, time, sent, recp, sndr, repl)
 
   // Return final tree
   return inst;
+}
+
+/**
+ * Update the specified instance of Message <li-mesg> object.
+ *
+ * @param   {object}    li        Message <li-mesg> element to update
+ * @param   {object}    mesg      Message object
+ * @param   {boolean}   recp      Marks message as receipt received
+ *
+ * @return  {object}    History message <li> HTML Elements
+ */
+function xows_tpl_mesg_update(li, mesg, recp)
+{
+  if(mesg.orid) li.dataset.orid = mesg.orid;
+  if(mesg.szid) li.dataset.szid = mesg.szid;
+  if(mesg.ocid) li.dataset.ocid = mesg.ocid;
+
+  // Marks message à receipt received
+  if(recp) li.classList.add("MESG-RECP");
 }
 
 /**
