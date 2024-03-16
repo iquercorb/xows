@@ -1927,6 +1927,10 @@ function xows_cli_message_retract(peer, rtid)
 
   // Send retract
   xows_xmp_message_retract_send(peer.lock, type, rtid);
+
+  // If we are in one-to-one chat, discard own message now
+  if(peer.type === XOWS_PEER_CONT)
+    xows_cli_fw_onretract(peer, rtid);
 }
 
 /* -------------------------------------------------------------------

@@ -1361,13 +1361,57 @@ function xows_tpl_mesg_edit_remove(mesg)
   // Remove the <mesg-edit> element
   const mesg_main = mesg.querySelector("MESG-MAIN");
 
-  // It may happen that message is already empty du to DISCARD after
+  // It may happen that message is already empty du to discard after
   // correction, so we prevent Uncaught Error...
   if(mesg_main)
     mesg_main.removeChild(mesg_main.querySelector("MESG-EDIT"));
 
   // Remove the EDIT class
   mesg.classList.remove("MESG-EDITOR");
+}
+
+/**
+ * Build and insert new <mesg-trsh> element instance into the given
+ * <hist-mesg> element. The newly inserted element is returned.
+ *
+ * @param   {object}    mesg      History message element <hist-mesg>
+ *
+ * @return  {object}    Message delete <mesg-trsh> HTML Elements
+ */
+function xows_tpl_mesg_trsh_insert(mesg)
+{
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["mesg-trsh"].firstChild.cloneNode(true);
+
+  inst.dataset.id = mesg.id;
+
+  const mesg_embd = mesg.querySelector("MESG-EMBD");
+  mesg_embd.parentNode.insertBefore(inst, mesg_embd);
+
+  // Add the TRASH class
+  mesg.classList.add("MESG-TRASH");
+
+  return inst;
+}
+
+/**
+ * Remove <mesg-trsh> element instance from the given <hist-mesg>
+ * element.
+ *
+ * @param   {object}    mesg      History message element <hist-mesg>
+ */
+function xows_tpl_mesg_trsh_remove(mesg)
+{
+  // Remove the <mesg-trsh> element
+  const mesg_main = mesg.querySelector("MESG-MAIN");
+
+  // It may happen that message is already empty du to discard after
+  // retraction, so we prevent Uncaught Error...
+  if(mesg_main)
+    mesg_main.removeChild(mesg_main.querySelector("MESG-TRSH"));
+
+  // Remove the TRASH class
+  mesg.classList.remove("MESG-TRASH");
 }
 
 /**

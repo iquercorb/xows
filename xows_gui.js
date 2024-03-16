@@ -919,7 +919,9 @@ function xows_gui_wnd_onkey(event)
     // Check for pressed Esc
     if(event.keyCode === 27) {
       // Cancel any message correction
-      xows_gui_mesg_inpt_cancel(event.target);
+      xows_gui_mesg_edit_close(event.target);
+      // Cancel any message retraction
+      xows_gui_mesg_trsh_abort(event.target);
     }
 
     // Check for pressed Enter
@@ -3315,14 +3317,20 @@ function xows_gui_chat_hist_onclick(event)
       case "mesg_bt_edit":
         xows_gui_mesg_edit_open(li_mesg);
         break;
-      case "mesg_bt_canc":
+      case "edit_bt_abort":
         xows_gui_mesg_edit_close(li_mesg);
         break;
-      case "mesg_bt_save":
+      case "edit_bt_valid":
         xows_gui_mesg_edit_valid(li_mesg.querySelector("MESG-INPT"));
         break;
-      case "mesg_bt_dele":
-        xows_gui_mesg_retract(li_mesg);
+      case "mesg_bt_trsh":
+        xows_gui_mesg_trsh_open(li_mesg);
+        break;
+      case "trsh_bt_abort":
+        xows_gui_mesg_trsh_abort(li_mesg);
+        break;
+      case "trsh_bt_valid":
+        xows_gui_mesg_trsh_valid(li_mesg);
         break;
       }
 
@@ -3400,12 +3408,51 @@ function xows_gui_mesg_edit_valid(inpt)
   xows_tpl_mesg_edit_remove(li_mesg);
 }
 
+
 /**
- * History message retraction
+ * Cancel history message retraction (delete) (close dialog)
+ *
+ * @param   {object}     [mesg]    Instance of <li-mesg> or null
+ */
+function xows_gui_mesg_trsh_abort(mesg)
+{
+  let li_mesg;
+
+  // Check whether event directely reference object
+  if(mesg && mesg.tagName === "LI-MESG") {
+    // We got message directly
+    li_mesg = mesg;
+  } else {
+    // We need to search any message in edit mode
+    li_mesg = xows_doc("chat_hist").querySelector(".MESG-TRASH");
+  }
+
+  if(li_mesg)
+    xows_tpl_mesg_trsh_remove(li_mesg);
+}
+
+/**
+ * Open history message retraction (delete) dialog
+ *
+ * @param   {object}    mesg     Instance of <li-mesg> to open editor in
+ */
+function xows_gui_mesg_trsh_open(mesg)
+{
+  // Close any previousely opened editor
+  xows_gui_mesg_trsh_abort();
+
+  // Spawn <mesg-trsh> instance next to <mesg-body>
+  xows_tpl_mesg_trsh_insert(mesg);
+}
+
+
+/**
+ * History message correction validation (enter) function, called when
+ * user press the Enter key (see xows_gui_wnd_onkey() function).
  *
  * @param   {object}    mesg     Instance of <li-mesg> to retract
  */
-function xows_gui_mesg_retract(mesg)
+function xows_gui_mesg_trsh_valid(mesg)
 {
   let rtid = null;
 
@@ -3577,9 +3624,9 @@ function xows_gui_hist_mesg_delete(peer, sid)
   // Depending situation we search for origin-id or stanza-id
   let li_mesg, from;
   if(peer.type === XOWS_PEER_CONT) {
-    li_mesg = hist_ul.querySelector("[data-orid="+sid+"]");
+    li_mesg = hist_ul.querySelector("[data-orid='"+sid+"']");
   } else {
-    li_mesg = hist_ul.querySelector("[data-szid="+sid+"]");
+    li_mesg = hist_ul.querySelector("[data-szid='"+sid+"']");
   }
 
   // Discard message

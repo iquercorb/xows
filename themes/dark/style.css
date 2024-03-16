@@ -2529,17 +2529,12 @@ mesg-acts button {
 }mesg-acts button:hover {
   opacity: 1;
 }
-button.mesg-bt-save {
-  background-image: url("images/valid.svg");
-}
-button.mesg-bt-canc {
-  background-image: url("images/cancel.svg");
-}
+
 button.mesg-bt-edit {
   display: none;
   background-image: url("images/edit.svg");
 }
-button.mesg-bt-dele {
+button.mesg-bt-trsh {
   display: none;
   background-image: url("images/trash.svg");
 }
@@ -2567,11 +2562,8 @@ li-mesg.MESG-EDITOR mesg-body {
 li-mesg.MESG-EDITOR mesg-acts {
   visibility: hidden !important;
 }
-li-mesg.MESG-EDITOR mesg-edit {
-  display: block;
-}
 li-mesg.MESG-SENT .mesg-bt-edit,
-li-mesg.MESG-SENT .mesg-bt-dele {
+li-mesg.MESG-SENT .mesg-bt-trsh {
   display: block;
 }
 li-mesg.MESG-SENT mesg-body {
@@ -2579,6 +2571,18 @@ li-mesg.MESG-SENT mesg-body {
 }
 li-mesg.MESG-SENT.MESG-RECP mesg-body {
   color: var(--text-tone1);
+}
+li-mesg.MESG-TRASH {
+  background-color: var(--base-tone7);
+}
+li-mesg.MESG-TRASH mesg-acts {
+  visibility: hidden !important;
+}
+li-mesg.MESG-TRASH mesg-body,
+li-mesg.MESG-TRASH mesg-info,
+li-mesg.MESG-TRASH mesg-head,
+li-mesg.MESG-SENT.MESG-RECP.MESG-TRASH mesg-body {
+  opacity: .3;
 }
 @media (max-width: 824px) {
   li-mesg {
@@ -2779,7 +2783,7 @@ mesg-inpt {
 mesg-inpt:focus {
   outline: 1px solid var(--base-tone5);
 }
-mesg-dial {
+mesg-edit mesg-dial {
   display: block;
   margin-left: -5px;
 }
@@ -2797,12 +2801,42 @@ mesg-dial button {
 }mesg-dial button:hover{
   opacity: 1;
 }
+button.edit-bt-valid {
+  background-image: url("images/valid.svg");
+}
+button.edit-bt-abort {
+  background-image: url("images/cancel.svg");
+}
 @media (max-width: 824px) {
   mesg-inpt {
     margin: 3px 0 0 -5px;
     padding: 0 4px 2px 4px;
   }
   mesg-edit {
+    font-size: 0.8em;
+    line-height: 22px;
+  }
+}
+/* ------------------------------------------------------------------ */
+/* History Message - Message Delete dialog */
+/* ------------------------------------------------------------------ */
+mesg-trsh {
+  display: block;
+}
+mesg-trsh span {
+  margin: 0 5px 0 0;
+  font-weight: bold;
+  font-size: 0.85em;
+  color: var(--reje-hover);
+}
+button.trsh-bt-valid {
+  background-image: url("images/valid_red.svg");
+}
+button.trsh-bt-abort {
+  background-image: url("images/cancel_red.svg");
+}
+@media (max-width: 824px) {
+  mesg-trsh {
     font-size: 0.8em;
     line-height: 22px;
   }
