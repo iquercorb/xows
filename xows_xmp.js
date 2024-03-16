@@ -3812,6 +3812,7 @@ function xows_xmp_caps_self_features()
     xows_xml_node("feature",{"var":XOWS_NS_CORRECT}),
     xows_xml_node("feature",{"var":XOWS_NS_STYLING}),
     xows_xml_node("feature",{"var":XOWS_NS_SID}),
+    xows_xml_node("feature",{"var":XOWS_NS_RETRACT}),
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
     xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
     xows_xml_node("feature",{"var":vcard4}),
