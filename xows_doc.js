@@ -1160,7 +1160,7 @@ function xows_doc_view_onclick(event)
     // Get the <img> element and open in new tab
     window.open(event.target.parentNode.querySelector("IMG").src, '_blank').focus();
     break;
-  case "view_close":
+  default:
     // Close image view
     xows_doc_view_close();
     break;
