@@ -2524,7 +2524,7 @@ mesg-acts button {
   background-color: transparent;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: .6;
+  opacity: .8;
   padding: 0;
 }mesg-acts button:hover {
   opacity: 1;
@@ -2541,7 +2541,7 @@ button.mesg-bt-edit {
 }
 button.mesg-bt-dele {
   display: none;
-  background-image: url("images/delete.svg");
+  background-image: url("images/trash.svg");
 }
 li-mesg.MESG-APPEND {
   margin: 0 0 1px 0;

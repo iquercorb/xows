@@ -482,6 +482,12 @@
   "modified":
   "modifié",
 
+  "Edit message":
+  "Editer le message",
+
+  "Delete message":
+  "Supprimer le message",
+
   "Do you really want to disconnect current session ?":
   "Voulez-vous vraiment vous déconnecter de la session actuelle ?"
 }
