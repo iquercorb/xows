@@ -38,8 +38,6 @@
  *
  * ------------------------------------------------------------------ */
 
-//const XOWS_NS_RETRACT      = "urn:xmpp:message-retract:0";
-//const XOWS_NS_RETRACT      = "urn:xmpp:message-retract:1";
 //const XOWS_NS_MODERATE     = "urn:xmpp:message-moderate:0";
 //const XOWS_NS_SID          = "urn:xmpp:sid:0";                        //< XEP-0359
 //const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
@@ -1271,6 +1269,7 @@ function xows_xmp_message_receipt_send(to, id)
  * Message Retraction (XEP-0424) XMLNS constants
  */
 const XOWS_NS_RETRACT = "urn:xmpp:message-retract:1";
+const XOWS_NS_RETRACT_TOMB = "urn:xmpp:message-retract:1#tombstone";
 
 /**
  * Message stanza received receipt message event client callback
@@ -1283,27 +1282,23 @@ let xows_xmp_fw_onretract = function() {};
  *
  * @param   {string}    to        Destnation JID
  * @param   {string}    type      Message type to set
- * @param   {string}    id        Message ID to retract
+ * @param   {string}    usid      Unique and Stable ID if message to retract
  */
-function xows_xmp_message_retract_send(to, type, id)
+function xows_xmp_message_retract_send(to, type, usid)
 {
-  xows_log(2,"xmp_message_retract_send","send message Retraction",id+" to "+to);
+  xows_log(2,"xmp_message_retract_send","send message Retraction",usid+" to "+to);
 
   // Base stanza
-  const message = xows_xml_node("message",{"to":to,"type":type});
-
-  // Adde <retract> node
-  xows_xml_parent(message, xows_xml_node("retract",{"id":id,"xmlns":XOWS_NS_RETRACT}));
-
+  const message = xows_xml_node("message",{"to":to,"type":type},
+                    xows_xml_node("retract",{"id":usid,"xmlns":XOWS_NS_RETRACT}));
+/*
   // Adde <fallback> node
   xows_xml_parent(message, xows_xml_node("fallback",{"xmlns":"urn:xmpp:fallback:0"}));
-
   // Adde <body> node
-  xows_xml_parent(message, xows_xml_node("body",null,"Unsuported attempt to retract a previous message"));
-
+  xows_xml_parent(message, xows_xml_node("body",null,"[Unsupported message retraction]"));
   // Adde <store> node
   xows_xml_parent(message, xows_xml_node("store",{"xmlns":"urn:xmpp:hints"}));
-
+*/
   // Send message
   xows_xmp_send(message);
 }
@@ -2721,89 +2716,94 @@ function xows_xmp_mam_result_recv(result)
   const forward = result.querySelector("forwarded");
   if(!forward) return false;
 
-  let id, from, to, time, body, rpid, rtid, rcid, orid, szid, ocid;
+  // We found found a <message> node
+  const message = forward.querySelector("message");
+  if(!message) return false;
+
+  // Get message common data
+  const id = message.getAttribute("id");
+  const from = message.getAttribute("from");
+  const to = message.getAttribute("to");
+
+  let body, rpid, rtid, orid, szid, ocid, rcid;
+
+  // Notice for future implementation :
+  //
+  // It is important to NOT delete any received archive result, even
+  // "invisibles" ones such as Chat States, Receipts and Retractions in order
+  // to keep consistant sequence with precise timestamp to properly gather
+  // next or previous archives.
+
+  // Loop over children
+  const n = message.childNodes.length;
+  for(let i = 0; i < n; ++i) {
+
+    const node = message.childNodes[i];
+
+    // Skip the non-object nodes
+    if(node.nodeType !== 1)
+      continue;
+
+    // Get XMLNS
+    const xmlns = node.getAttribute("xmlns");
+    const tagnm = node.tagName;
+
+    // Check for chatstate
+    if(xmlns === XOWS_NS_CHATSTATES)
+      continue; //< We don't care chat states
+
+    // Check for delivery receipt
+    if(xmlns === XOWS_NS_RECEIPTS) {
+      rcid = node.getAttribute("id");
+      continue;
+    }
+
+    // Check for message retraction
+    if(xmlns === XOWS_NS_RETRACT) {
+      rtid = node.getAttribute("id");
+      continue; //< We do not need more data
+    }
+
+    // Check for correction
+    if(xmlns === XOWS_NS_CORRECT) {
+      rpid = node.getAttribute("id");
+      continue;
+    }
+
+    if(xmlns === XOWS_NS_SID) {
+      if(tagnm === "origin-id") orid = node.getAttribute("id");
+      if(tagnm === "stanza-id") szid = node.getAttribute("id");
+      continue;
+    }
+
+    if(xmlns === XOWS_NS_OCCUID) {
+      ocid = node.getAttribute("id");
+      continue;
+    }
+
+    // Check for <body> node
+    if(tagnm === "body") {
+      body = node.hasChildNodes() ? xows_xml_innertext(node) : "";
+    }
+  }
 
   // We should found a <delay> node
+  let time = null;
   const delay = forward.querySelector("delay");
   if(delay) time = new Date(delay.getAttribute("stamp")).getTime();
 
-  // We found found a <message> node
-  const message = forward.querySelector("message");
-  if(message) {
+  // If message is a retraction, delete the fallback body text
+  if(rtid) body = null;
 
-    // Get message common data
-    id = message.getAttribute("id");
-    from = message.getAttribute("from");
-    to = message.getAttribute("to");
+  // Add archived message to stack
+  xows_xmp_mam_stack.get(qid).push({"page":page,
+                                    "id":id,"from":from,"to":to,"time":time,
+                                    "body":body,"rpid":rpid,"rtid":rtid,"rcid":rcid,
+                                    "orid":orid,"szid":szid,"ocid":ocid});
 
-    // Loop over children
-    let xmlns, i = message.childNodes.length;
-    while(i--) {
+  xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
 
-      const node = message.childNodes[i];
-
-      // Skip the non-object nodes
-      if(node.nodeType !== 1)
-        continue;
-
-      // Get XMLNS
-      const xmlns = node.getAttribute("xmlns");
-      const tagnm = node.tagName;
-
-      // Check for chatstate
-      if(xmlns === XOWS_NS_CHATSTATES)
-        continue;
-
-      // Check for delivery receipt
-      if(xmlns === XOWS_NS_RECEIPTS) {
-        rcid = node.getAttribute("id");
-        continue;
-      }
-
-      // Check for correction
-      if(xmlns === XOWS_NS_CORRECT) {
-        rpid = node.getAttribute("id");
-        continue;
-      }
-
-      // Check for delivery receipt
-      if(xmlns === XOWS_NS_RETRACT) {
-        rtid = node.getAttribute("id");
-        continue;
-      }
-
-      if(xmlns === XOWS_NS_SID) {
-        if(tagnm === "origin-id") orid = node.getAttribute("id");
-        if(tagnm === "stanza-id") szid = node.getAttribute("id");
-        continue;
-      }
-
-      if(xmlns === XOWS_NS_OCCUID) {
-        ocid = node.getAttribute("id");
-        continue;
-      }
-
-      // Check for <body> node
-      if(tagnm === "body") {
-        body = node.hasChildNodes() ? xows_xml_innertext(node) : "";
-      }
-    }
-
-    // This should never happen
-    if(!time) time = new Date(0).getTime();
-
-    // Add archived message to stack
-    xows_xmp_mam_stack.get(qid).push({"page":page,
-                                      "id":id,"from":from,"to":to,"time":time,
-                                      "body":body,"rpid":rpid,"rtid":rtid,"rcid":rcid,
-                                      "orid":orid,"szid":szid,"ocid":ocid});
-
-    xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
-
-    return true; //< stanza processed
-  }
-
-  return false;
+  return true; //< stanza processed
 }
 
 /**

@@ -1893,9 +1893,9 @@ let xows_cli_fw_onretract = function() {};
  *
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
- * @param   {string}    rtid      Retracted message ID
+ * @param   {string}    rtid      Unique and Stable ID of message to retract
  */
-function xows_cli_xmp_onretract(id, from, type, rtid)
+function xows_cli_xmp_onretract(id, from, type, usid)
 {
   // Retreive message peer and author
   let peer;
@@ -1911,26 +1911,26 @@ function xows_cli_xmp_onretract(id, from, type, rtid)
   }
 
   // Forward retracted message
-  xows_cli_fw_onretract(peer, rtid);
+  xows_cli_fw_onretract(peer, usid);
 }
 
 /**
  * Retract previous Message
  *
  * @param   {object}    peer      Related Peer object
- * @param   {string}    rtid      Message ID to retract
+ * @param   {string}    usid      Unique and Stable ID of message to retract
  */
-function xows_cli_message_retract(peer, rtid)
+function xows_cli_retract_send(peer, usid)
 {
   // Store message stype according Peer type
   const type = (peer.type === XOWS_PEER_ROOM) ? "groupchat" : "chat";
 
   // Send retract
-  xows_xmp_message_retract_send(peer.lock, type, rtid);
+  xows_xmp_message_retract_send(peer.lock, type, usid);
 
   // If we are in one-to-one chat, discard own message now
   if(peer.type === XOWS_PEER_CONT)
-    xows_cli_fw_onretract(peer, rtid);
+    xows_cli_fw_onretract(peer, usid);
 }
 
 /* -------------------------------------------------------------------
@@ -2624,24 +2624,49 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
     return;
   }
 
-  const result = [];
+  const n = mesg.length;
 
-  // re-parse result to add peer, sender and other various parameters
-  let i = mesg.length;
+  // Store list of retracted message USID
+  const retrac = [];
+  let i = n;
+  while(i--) if(mesg[i].rtid) retrac.push(mesg[i].rtid);
+
+  // Notice for future implementation :
+  //
+  // It is important to NOT delete any received archive result, even
+  // "invisibles" ones such as Chat States, Receipts and Retractions in order
+  // to keep consistant sequence with precise timestamp to properly gather
+  // next or previous archives.
+  const result = [];
 
   if(peer.type === XOWS_PEER_CONT) {
 
-    //while(i--) {
-    for(let i = 0; i < mesg.length; ++i) {
+    for(i = 0; i < n; ++i) {
+
+      // Check whether message is found retracted
+      if(retrac.includes(mesg[i].orid))
+        mesg[i].body = null; //< delete body to exclude it from final counting
+
+      // Find proper sender
       const sndr = xows_cli_isself(mesg[i].from) ? xows_cli_self : peer;
+
+      // Add result entry
       result.push({"sndr":sndr, "mesg":mesg[i]});
     }
 
   } else { //<  === XOWS_PEER_ROOM
 
-    for(let i = 0; i < mesg.length; ++i) {
+    for(i = 0; i < n; ++i) {
+
+      // Check whether message is found retracted
+      if(retrac.includes(mesg[i].szid))
+        mesg[i].body = null; //< delete body to exclude it from final counting
+
+      // Find proper sender
       const from = mesg[i].from;
       const sndr = (from === peer.join) ? xows_cli_self : xows_cli_occu_any(peer, from);
+
+      // Add result entry
       result.push({"sndr":sndr, "mesg":mesg[i]});
     }
   }

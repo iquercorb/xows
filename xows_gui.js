@@ -3454,19 +3454,17 @@ function xows_gui_mesg_trsh_open(mesg)
  */
 function xows_gui_mesg_trsh_valid(mesg)
 {
-  let rtid = null;
+  let usid = null;
 
   // Get origin-id or stanza-id depending we are in MUC context
-  if(xows_gui_peer.type == XOWS_PEER_ROOM) {
-    if(mesg.dataset.szid)
-      rtid = mesg.dataset.szid;
+  if(xows_gui_peer.type === XOWS_PEER_ROOM) {
+    if(mesg.dataset.szid) usid = mesg.dataset.szid;
   } else {
-    if(mesg.dataset.orid)
-      rtid = mesg.dataset.orid;
+    if(mesg.dataset.orid) usid = mesg.dataset.orid;
   }
 
   // Send message retraction
-  xows_cli_message_retract(xows_gui_peer, rtid);
+  if(usid) xows_cli_retract_send(xows_gui_peer, usid);
 }
 
 /**
@@ -3617,7 +3615,7 @@ function xows_gui_hist_mesg_discard(peer, id)
  * @param   {object}    peer      Peer object
  * @param   {string}    sid       Retracted message SID (origin-id or stanza-id)
  */
-function xows_gui_hist_mesg_delete(peer, sid)
+function xows_gui_hist_mesg_retract(peer, sid)
 {
   const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
@@ -3629,11 +3627,12 @@ function xows_gui_hist_mesg_delete(peer, sid)
     li_mesg = hist_ul.querySelector("[data-szid='"+sid+"']");
   }
 
+  if(!li_mesg)
+    return;
+
   // Discard message
-  if(li_mesg) {
-    li_mesg.hidden = true;
-    li_mesg.innerHTML = "";
-  }
+  li_mesg.hidden = true;
+  li_mesg.innerHTML = "";
 
   // If next message is same author, adjust the "Append" style
   const next_li = li_mesg.nextSibling;
@@ -3748,7 +3747,7 @@ function xows_gui_cli_onreceipt(peer, id)
  */
 function xows_gui_cli_onretract(peer, sid)
 {
-  xows_gui_hist_mesg_delete(peer, sid);
+  xows_gui_hist_mesg_retract(peer, sid);
 }
 
 /* -------------------------------------------------------------------
@@ -3878,15 +3877,16 @@ function xows_gui_mam_parse(peer, result, count, complete)
   }
 
   let rpl_li, pre_li, added = 0;
-
-  for(let i = 0, n = result.length; i < n; ++i) {
+  
+  const n = result.length;
+  for(let i = 0; i < n; ++i) {
 
     const sndr = result[i].sndr;
     const mesg = result[i].mesg;
 
     // Search for message retraction
     if(mesg.rtid) {
-      xows_gui_hist_mesg_delete(peer, mesg.rtid);
+      xows_gui_hist_mesg_retract(peer, mesg.rtid);
       continue;
     }
 
