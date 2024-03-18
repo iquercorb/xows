@@ -1239,11 +1239,12 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
  * @param   {boolean}   receipt   Receipt required flag
  * @param   {boolean}   issent    Sent by client flag
  * @param   {boolean}   append    Append to group flag
+ * @param   {string}   [reply]    Optionnal replied message ID
  * @param   {string}   [quote]    Optionnal replied message text
  *
  * @return  {object}    History message <li> HTML Elements
  */
-function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, quote)
+function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, reply, quote)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
@@ -1256,8 +1257,11 @@ function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append
   if(message.occuid) inst.dataset.occuid = message.occuid;
 
   // Set Reply data
-  if(quote) {
-    inst.querySelector("MESG-RPLY").hidden = false;
+  if(reply) {
+    const mesg_rply = inst.querySelector("MESG-RPLY");
+    mesg_rply.hidden = false;
+    mesg_rply.dataset.to = recipient.bare;
+    mesg_rply.dataset.id = reply;
     const rply_avat = inst.querySelector("RPLY-AVAT");
     rply_avat.dataset.jid = recipient.bare;
     rply_avat.className = xows_tpl_spawn_avat_cls(recipient.avat);

@@ -3429,8 +3429,10 @@ function xows_gui_mesg_edit_valid(inpt)
 
   // Check for difference to prevent useless correction
   if(inpt_text !== li_mesg.querySelector("MESG-BODY").dataset.raw) {
+    // Get message reply
+    const rply = li_mesg.querySelector("MESG-RPLY");
     // Send message correction
-    xows_cli_send_message(xows_gui_peer, inpt_text, li_mesg.id);
+    xows_cli_send_message(xows_gui_peer, inpt_text, li_mesg.id, rply.dataset.id, rply.dataset.to);
   }
 
   // Close editor
@@ -3632,7 +3634,7 @@ function xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, p
 {
   // Default is to add a simple aggregated message without author
   // name and avatar
-  let append, quote;
+  let append, reply, quote;
 
   // If this sis a correction message, we kee the same style as the
   // discarded one
@@ -3646,11 +3648,13 @@ function xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, p
   }
 
   // check for reply
-  if(rpl_li)
+  if(rpl_li) {
+    reply = rpl_li.dataset.stnzid ? rpl_li.dataset.stnzid : rpl_li.dataset.origid;
     quote = rpl_li.querySelector("MESG-BODY").innerText;
+  }
 
   // Create message from template
-  return xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, quote);
+  return xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, reply, quote);
 }
 
 /**
