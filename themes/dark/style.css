@@ -2653,9 +2653,9 @@ li-mesg.REPLY {
 mesg-rply {
   display: flex;
   align-items: center;
-  font-size: 0.8em;
-  opacity: 0.6;
+  font-size: 0.85em;
   margin: 0 0 4px 0;
+  opacity: 0.7;
   /*cursor: pointer;*/
 }
 mesg-rply::before {
@@ -2671,7 +2671,7 @@ mesg-rply::before {
 }
 rply-avat {
   display: inline-block;
-  width: 20px; height: 20px;
+  width: 18px; height: 18px;
   background-size: cover;
   background-position: center;
   border-radius: 50%;
@@ -2680,6 +2680,7 @@ rply-avat {
 rply-from {
   display: inline;
   font-weight: bold;
+  color: var(--text-tone0);
   margin: 0 6px;
 }
 rply-body {
@@ -2693,7 +2694,7 @@ rply-body {
 }
 @media (max-width: 824px) {
   mesg-rply {
-    font-size: 0.7em;
+    font-size: 0.75em;
     margin: 0 0 1px 0;
   }
   mesg-rply::before {
