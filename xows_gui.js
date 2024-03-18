@@ -3643,7 +3643,7 @@ function xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, p
   } else if(pre_li) {
     // If previous message sender is different or if elapsed time is
     // greater than # minutes, we create a new full message block
-    if((message.time - pre_li.dataset.time) < XOWS_MESG_AGGR_THRESHOLD && pre_li.dataset.from === message.from)
+    if(!rpl_li && ((message.time - pre_li.dataset.time) < XOWS_MESG_AGGR_THRESHOLD) && (pre_li.dataset.from === message.from))
       append = true;
   }
 
@@ -4215,22 +4215,14 @@ function xows_gui_chat_inpt_enter(input)
 
     if(input.innerText.length) {
 
-      // Check for reply
-      let replyid, replyto;
-      if(xows_doc_cls_has("chat_panl", "REPLY")) {
-
-        // Get Reply data
-        const chat_rply = xows_doc("chat_rply");
-        replyid = chat_rply.dataset.id;
-        replyto = chat_rply.dataset.to;
-
-        // Reset Reply data
-        xows_gui_chat_rply_close();
-      }
+      const rply = xows_doc("chat_rply");
 
       // Send message
-      xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd(), null, replyid, replyto);
+      xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd(), null, rply.dataset.id, rply.dataset.to);
       input.innerText = ""; //< Empty any residual <br>
+
+      // Reset Reply data
+      xows_gui_chat_rply_close();
 
       // Add CSS class to show placeholder
       input.className = "PLACEHOLD";
@@ -4254,8 +4246,6 @@ let xows_gui_chat_inpt_rng = null;
  */
 function xows_gui_chat_inpt_oninput(event)
 {
-  console.log(event);
-
   xows_cli_activity_wakeup(); //< Wakeup presence
 
   // Set composing
@@ -4356,6 +4346,9 @@ function xows_gui_chat_inpt_insert(text, tagname)
  */
 function xows_gui_chat_rply_close()
 {
+  if(!xows_doc_cls_has("chat_panl","REPLY"))
+    return;
+
   // Remove REPLY class from Chat Pannel
   xows_doc("chat_panl").classList.remove("REPLY");
 
