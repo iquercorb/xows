@@ -1643,53 +1643,57 @@ let xows_cli_fw_onmessage = function() {};
 /**
  * Handles an incoming chat message with content
  *
- * @param   {object}      mesg      Message object
+ * @param   {object}      message    Message object
  */
-function xows_cli_xmp_onmessage(mesg)
+function xows_cli_xmp_onmessage(message)
 {
-  if(mesg.type !== "chat" && mesg.type !== "groupchat") {
-    xows_log(1,"cli_xmp_onmessage","invalid message type",mesg.type);
+  if(message.type !== "chat" && message.type !== "groupchat") {
+    xows_log(1,"cli_xmp_onmessage","invalid message type",message.type);
     return;
   }
 
   // If no time is specified set as current
-  if(!mesg.time)
-    mesg.time = new Date().getTime();
+  if(!message.time)
+    message.time = new Date().getTime();
 
-  let peer, sndr, muc;
+  let peer, sender, recipient, ismuc;
 
   // Retreive message peer and sender
-  if(mesg.type === "chat") {
+  if(message.type === "chat") {
 
-    if(xows_cli_isself(mesg.from)) {
-      peer = xows_cli_cont_get(mesg.to);
-      sndr = xows_cli_self;
+    if(xows_cli_isself(message.from)) {
+      peer = recipient = xows_cli_cont_get(message.to);
+      sender = xows_cli_self;
     } else {
-      sndr = peer = xows_cli_cont_get(mesg.from);
+      peer = sender = xows_cli_cont_get(message.from);
+      recipient = xows_cli_self;
       // Update "locked" ressourceas as recommended in XEP-0296
-      peer.lock = mesg.from;
+      peer.lock = message.from;
     }
 
   } else {
 
-    muc = true;
-    peer = xows_cli_room_get(mesg.from);
-    if(mesg.from === peer.join) {
-      sndr = xows_cli_self;
+    ismuc = true;
+    peer = xows_cli_room_get(message.from);
+    const occupant = xows_cli_occu_any(peer, message.from);
+    if(message.from === peer.join) {
+      sender = xows_cli_self;
+      recipient = occupant;
     } else {
-      sndr = xows_cli_occu_any(peer, mesg.from);
+      sender = occupant;
+      recipient = xows_cli_self;
     }
   }
 
   if(!peer) {
-    xows_log(1,"cli_xmp_onmessage","unknown/unsubscribed JID",mesg.from);
+    xows_log(1,"cli_xmp_onmessage","unknown/unsubscribed JID",message.from);
     return;
   }
 
-  xows_log(2,"cli_xmp_onmessage","chat message",mesg.from+" \""+mesg.body+"\"");
+  xows_log(2,"cli_xmp_onmessage","chat message",message.from+" \""+message.body+"\"");
 
   // Forward received message
-  xows_cli_fw_onmessage(peer, sndr, mesg, false, muc);
+  xows_cli_fw_onmessage(peer, sender, recipient, message, false, ismuc);
 }
 
 /**
@@ -1703,20 +1707,22 @@ function xows_cli_xmp_onmessage(mesg)
  */
 function xows_cli_send_message(peer, body, replace, replyid, replyto)
 {
-  let type, from, to = peer.lock, receipt, muc;
+  let type, from, to = peer.lock, recipient, receipt, ismuc;
 
   // Check whether peer is a MUC room or a subscribed Contact
   if(peer.type === XOWS_PEER_ROOM) {
 
-    muc = true;
+    ismuc = true;
     type = "groupchat";
     from = peer.join;
+    recipient = xows_cli_occu_any(peer, replyto);
     receipt = true;
 
   } else {
 
     type = "chat";
     from = xows_cli_self.bare;
+    recipient = peer;
 
     // If current peer client is online and support receipt, the
     // message should not be marked as "receip received"
@@ -1734,12 +1740,12 @@ function xows_cli_send_message(peer, body, replace, replyid, replyto)
   const id = xows_xmp_message_body_send(type, to, body, receipt, replace, replyid, replyto);
 
   // Create message object
-  const mesg = {"id":id,"from":from,"to":to,
-                "type":type,"body":body,"time":new Date().getTime(),
-                "uoid":id,"usid":null,"replace":replace};
+  const message = { "id":id,"from":from,"to":to,"type":type,"body":body,"time":new Date().getTime(),
+                    "replace":replace,"replyid":replyid,"replyto":replyto,
+                    "origid":id,"stnzid":null,"occuid":null};
 
   // Forward sent message
-  xows_cli_fw_onmessage(peer, xows_cli_self, mesg, receipt, muc);
+  xows_cli_fw_onmessage(peer, xows_cli_self, recipient, message, receipt, ismuc);
 }
 /* -------------------------------------------------------------------
  * Client API - Message semantis - Message Receipt
@@ -2641,6 +2647,8 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
   // next or previous archives.
   const result = [];
 
+  let sender, recipient;
+
   if(peer.type === XOWS_PEER_CONT) {
 
     for(i = 0; i < n; ++i) {
@@ -2649,11 +2657,17 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
       if(retrac.includes(mesg[i].origid))
         mesg[i].body = null; //< delete body to exclude it from final counting
 
-      // Find proper sender
-      const sndr = xows_cli_isself(mesg[i].from) ? xows_cli_self : peer;
+      // Find proper sender and recipient
+      if(xows_cli_isself(mesg[i].from)) {
+        sender = xows_cli_self;
+        recipient = peer;
+      } else {
+        sender = peer;
+        recipient = xows_cli_self;
+      }
 
       // Add result entry
-      result.push({"sndr":sndr, "mesg":mesg[i]});
+      result.push({"sender":sender,"recipient":recipient,"message":mesg[i]});
     }
 
   } else { //<  === XOWS_PEER_ROOM
@@ -2666,10 +2680,18 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
 
       // Find proper sender
       const from = mesg[i].from;
-      const sndr = (from === peer.join) ? xows_cli_self : xows_cli_occu_any(peer, from);
+      const occupant = xows_cli_occu_any(peer, from);
+      if((from === peer.join)) {
+        sender = xows_cli_self;
+        recipient = occupant;
+      } else {
+        sender = occupant;
+        recipient = xows_cli_self;
+      }
+      const sender = (from === peer.join) ? xows_cli_self : xows_cli_occu_any(peer, from);
 
       // Add result entry
-      result.push({"sndr":sndr, "mesg":mesg[i]});
+      result.push({"sender":sender,"recipient":recipient,"message":mesg[i]});
     }
   }
 
@@ -2689,7 +2711,7 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
   // Comput count of visible messages excluding replacements
   let bodies = 0;
   i = pool.length;
-  while(i--) if(pool[i].mesg.body && !pool[i].mesg.replace) bodies++;
+  while(i--) if(pool[i].message.body && !pool[i].message.replace) bodies++;
 
   if(!complete) {
 
@@ -2698,9 +2720,9 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
       // Shift time to get more message after/before the last/first
       // recevied with 25ms time shift to prevent doubling
       if(param.start) {
-        param.start = pool[pool.length-1].mesg.time + 1;
+        param.start = pool[pool.length-1].message.time + 1;
       } else {
-        param.end = pool[0].mesg.time - 1;
+        param.end = pool[0].message.time - 1;
       }
 
       // Change the 'max' value to avoid querying too much, but

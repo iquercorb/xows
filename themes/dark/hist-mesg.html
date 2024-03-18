@@ -1,21 +1,28 @@
 <li-mesg id="" data-time="" data-from="">
-  <mesg-head>
-    <mesg-avat data-jid="" class=""></mesg-avat>
-    <mesg-hour></mesg-hour>
-  </mesg-head>
-  <mesg-main>
-    <mesg-info>
-      <mesg-from data-jid=""></mesg-from>
-      <mesg-date></mesg-date>
-    </mesg-info>
-    <mesg-edit id="mesg-edit" XOWS_TPL_INSTANCED></mesg-edit>
-    <mesg-body data-after="(${'modified'})" data-raw=""></mesg-body>
-    <mesg-trsh id="mesg-trsh" XOWS_TPL_INSTANCED></mesg-trsh>
-    <mesg-embd hidden></mesg-embd>
-  </mesg-main>
-  <mesg-acts>
-    <button name="mesg_bt_rply" class="mesg-bt-rply" title="${'Reply'}"></button>
-    <button name="mesg_bt_edit" class="mesg-bt-edit" title="${'Edit message'}"></button>
-    <button name="mesg_bt_trsh" class="mesg-bt-trsh" title="${'Delete message'}"></button>
-  </mesg-acts>
+  <mesg-rply data-id="" hidden>
+    <rply-avat data-jid="" class=""></rply-avat>
+    <rply-from data-jid=""></rply-from>
+    <rply-body></rply-body>
+  </mesg-rply>
+  <mesg-wrap>
+    <mesg-head>
+      <mesg-avat data-jid="" class=""></mesg-avat>
+      <mesg-hour></mesg-hour>
+    </mesg-head>
+    <mesg-main>
+      <mesg-info>
+        <mesg-from data-jid=""></mesg-from>
+        <mesg-date></mesg-date>
+      </mesg-info>
+      <mesg-edit id="mesg-edit" XOWS_TPL_INSTANCED></mesg-edit>
+      <mesg-body data-after="(${'modified'})" data-raw=""></mesg-body>
+      <mesg-trsh id="mesg-trsh" XOWS_TPL_INSTANCED></mesg-trsh>
+      <mesg-embd hidden></mesg-embd>
+    </mesg-main>
+    <mesg-acts>
+      <button name="mesg_bt_rply" class="mesg-bt-rply" title="${'Reply'}"></button>
+      <button name="mesg_bt_edit" class="mesg-bt-edit" title="${'Edit message'}"></button>
+      <button name="mesg_bt_trsh" class="mesg-bt-trsh" title="${'Delete message'}"></button>
+    </mesg-acts>
+  </mesg-wrap>
 </li-mesg>

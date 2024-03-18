@@ -1233,59 +1233,73 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
  * Build and returns a new instance of history Message <hist-mesg>
  * object from template to be added in the chat history list <ul>
  *
- * @param   {object}    sndr      Sender Peer object
- * @param   {object}    mesg      Message object
- * @param   {boolean}   recp      Receipt required flag
- * @param   {boolean}   sent      Sent by client flag
- * @param   {boolean}   apnd      Append to group flag
+ * @param   {object}    sender    Sender Peer object
+ * @param   {object}    recipient Recipient Peer object
+ * @param   {object}    message   Message object
+ * @param   {boolean}   receipt   Receipt required flag
+ * @param   {boolean}   issent    Sent by client flag
+ * @param   {boolean}   append    Append to group flag
+ * @param   {string}   [quote]    Optionnal replied message text
  *
  * @return  {object}    History message <li> HTML Elements
  */
-function xows_tpl_mesg_spawn(sndr, mesg, recp, sent, apnd)
+function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, quote)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
 
-  inst.id = mesg.id;
-  inst.dataset.from = mesg.from;
-  inst.dataset.time = mesg.time;
-  if(mesg.origid) inst.dataset.origid = mesg.origid;
-  if(mesg.stnzid) inst.dataset.stnzid = mesg.stnzid;
-  if(mesg.occuid) inst.dataset.occuid = mesg.occuid;
+  inst.id = message.id;
+  inst.dataset.from = message.from;
+  inst.dataset.time = message.time;
+  if(message.origid) inst.dataset.origid = message.origid;
+  if(message.stnzid) inst.dataset.stnzid = message.stnzid;
+  if(message.occuid) inst.dataset.occuid = message.occuid;
+
+  // Set Reply data
+  if(quote) {
+    inst.querySelector("MESG-RPLY").hidden = false;
+    const rply_avat = inst.querySelector("RPLY-AVAT");
+    rply_avat.dataset.jid = recipient.bare;
+    rply_avat.className = xows_tpl_spawn_avat_cls(recipient.avat);
+    const rply_from = inst.querySelector("RPLY-FROM");
+    rply_from.dataset.jid = recipient.bare;
+    rply_from.innerText = recipient.name;
+    inst.querySelector("RPLY-BODY").innerHTML = quote;
+  }
 
   // Set proper value to message elements
-  if(sent) {
+  if(issent) {
     inst.classList.add("MESG-SENT");
     // If receipt not required, mark message as receipt received
-    if(!recp) inst.classList.add("MESG-RECP");
+    if(!receipt) inst.classList.add("MESG-RECP");
     // Add raw body for message edition
-    inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(mesg.body);
+    inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(message.body);
   }
 
   // Set message "Append" style
-  if(apnd) inst.classList.add("MESG-APPEND");
+  if(append) inst.classList.add("MESG-APPEND");
 
   // Set time stamp elements
-  inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(mesg.time);
-  inst.querySelector("MESG-DATE").innerText = xows_l10n_date(mesg.time);
+  inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(message.time);
+  inst.querySelector("MESG-DATE").innerText = xows_l10n_date(message.time);
 
   // Set author name with JID data
   const mesg_from = inst.querySelector("MESG-FROM");
-  mesg_from.dataset.jid = sndr.bare;
-  mesg_from.innerText = sndr.name;
+  mesg_from.dataset.jid = sender.bare;
+  mesg_from.innerText = sender.name;
   // Set avatar class with JID data
   const mesg_avat = inst.querySelector("MESG-AVAT");
-  mesg_avat.dataset.jid = sndr.bare;
-  mesg_avat.className = xows_tpl_spawn_avat_cls(sndr.avat);
+  mesg_avat.dataset.jid = sender.bare;
+  mesg_avat.className = xows_tpl_spawn_avat_cls(sender.avat);
 
   // If Replace id exists, set message as Modified
-  if(mesg.rpid) inst.classList.add("MESG-MODIFY");
+  if(message.rpid) inst.classList.add("MESG-MODIFY");
 
   const mesg_body = inst.querySelector("MESG-BODY");
   const mesg_embd = inst.querySelector("MESG-EMBD");
 
   // Parse body for styling
-  const styled = xows_tpl_parse_styling(mesg.body);
+  const styled = xows_tpl_parse_styling(message.body);
   mesg_body.innerHTML = styled;
 
   // Check whether we have URLs to embeds

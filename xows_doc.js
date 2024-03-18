@@ -416,10 +416,11 @@ function xows_doc_init(onready)
   observer.observe(xows_doc("chat_hist"));
   // Chat foot
   const chat_panl = xows_doc("chat_panl");
+  xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
   xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
   xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
-  xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_panl_oninput);
-  xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
+  xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_inpt_oninput);
+
   // Room Frame
   const room_head = xows_doc("room_head");
   xows_doc_listener_add(room_head,              "click",    xows_gui_room_head_onclick);

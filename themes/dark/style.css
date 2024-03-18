@@ -2431,8 +2431,7 @@ ring-acts btn-close {
 /* Chat history - History Messages - Commons */
 /* ------------------------------------------------------------------ */
 li-mesg {
-  display: flex;
-  flex-direction: row;
+  display: block;
   margin: 16px 0 1px 0;
   padding: 2px 16px;
   position: relative;
@@ -2445,9 +2444,10 @@ li-mesg:hover {
 li-mesg.SELECTED {
   background-color: var(--base-tone7);
 }
-li-mesg.REPLY {
-  border-left: 2px solid var(--rply-line);
-  background-color: var(--rply-base);
+mesg-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
 }
 mesg-head {
   flex: 0 0 60px;
@@ -2457,12 +2457,12 @@ mesg-main {
   flex: 1 0 auto;
   width: 0; /* DO NOT TOUCH THIS ! */
   padding: 0 32px 0 0;
-  /*! min-height: 24px; */
 }
 mesg-avat {
   display: block;
   width: 40px; height: 40px;
   background-size: cover;
+  background-position: center;
   border-radius: 50%;
   margin: 1px 0 0 0;
 }
@@ -2538,8 +2538,10 @@ mesg-acts button {
   border-radius: 4px;
   margin: 2px;
   padding: 0;
+  opacity: .8;
 }mesg-acts button:hover {
   background-color: rgb(220,220,255,0.1);
+  opacity: 1;
 }
 button.mesg-bt-rply {
   background-image: url("images/reply.svg");
@@ -2639,6 +2641,71 @@ li-mesg.MESG-SENT.MESG-RECP.MESG-TRASH mesg-body {
   mesg-acts button {
     width: 28px; height: 28px;
     background-size: 17px;
+  }
+}
+/* ------------------------------------------------------------------ */
+/* History Message - Replied message reference */
+/* ------------------------------------------------------------------ */
+li-mesg.REPLY {
+  border-left: 2px solid var(--rply-line);
+  background-color: var(--rply-base);
+}
+mesg-rply {
+  display: flex;
+  align-items: center;
+  font-size: 0.8em;
+  opacity: 0.6;
+  margin: 0 0 4px 0;
+  /*cursor: pointer;*/
+}
+mesg-rply::before {
+  display: inline-block;
+  content: "";
+  width: 35px; height: 20px;
+  background-size: 35px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("images/rply_ref.svg");
+  margin: 0 5px 0 20px;
+  opacity: 0.2;
+}
+rply-avat {
+  display: inline-block;
+  width: 20px; height: 20px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 50%;
+  margin: 0; 
+}
+rply-from {
+  display: inline;
+  font-weight: bold;
+  margin: 0 6px;
+}
+rply-body {
+  flex: auto;
+  width: 0; /* DO NOT TOUCH THIS */
+  display: inline;
+  color: var(--text-tone1);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+@media (max-width: 824px) {
+  mesg-rply {
+    font-size: 0.7em;
+    margin: 0 0 1px 0;
+  }
+  mesg-rply::before {
+    width: 24px; height: 16px;
+    background-size: 24px;
+    margin: 0 3px 0 16px;
+  }
+  rply-avat {
+    width: 16px; height: 16px;
+  }
+  rply-from {
+    margin: 0 4px;
   }
 }
 /* ------------------------------------------------------------------ */

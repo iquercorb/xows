@@ -250,15 +250,39 @@ function xows_gui_peer_occu_li(room, ojid)
  * Find history message <li> element corresponding to specified ID
  *
  * @param   {object}    peer      Peer object
- * @param   {string}    id        Message id
+ * @param   {string}    id        Message id or Unique and Stable Stanza ID
+ *
  */
 function xows_gui_peer_mesg_li(peer, id)
 {
+  /*
+  // Old implementation
   if(peer === xows_gui_peer) {
     return document.getElementById(id);
   } else {
     return xows_doc_frag_element_find(peer.bare,"chat_hist",id);
   }
+  */
+
+  // Get Peer's history <ul> element in fast way
+  const hist_ul = (peer === xows_gui_peer) ?
+    document.getElementById("hist_ul") :
+    xows_doc_frag_element_find(peer.bare,"chat_hist","hist_ul");
+
+  // First search by id attribute
+  let li_mesg = hist_ul.querySelector("[id='"+id+"']");
+
+  // If no id attribute matches, search for Unique and Stable
+  // Stanza IDs (XEP-0359) depending on Peer type.
+  if(!li_mesg) {
+    if(peer.type === XOWS_PEER_ROOM) {
+      li_mesg = hist_ul.querySelector("[data-stnzid='"+id+"']");
+    } else {
+      li_mesg = hist_ul.querySelector("[data-origid='"+id+"']");
+    }
+  }
+
+  return li_mesg;
 }
 
 /**
@@ -3559,38 +3583,74 @@ function xows_gui_hist_update(peer, bare, nick, avat)
   while(i--) if(cls != fig[i].className) fig[i].className = cls;
 }
 
+/**
+ * Find history message <li> element corresponding to specified ID
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Message id
+ */
+/*
+function xows_gui_hist_mesg_li(peer, id)
+{
+  // Get Peer's history <ul> element in fast way
+  const hist_ul = xows_doc_frag_element_find(peer.bare,"chat_hist","hist_ul");
+
+  let li_mesg = null;
+
+  // To follow the EXP-0359 (Unique and Stable Stanza IDs) rules we first try
+  // to match id with origin-id or stanza-id
+  if(peer.type === XOWS_PEER_ROOM) {
+    li_mesg = hist_ul.querySelector("[data-stnzid='"+id+"']");
+  } else {
+    li_mesg = hist_ul.querySelector("[data-origid='"+id+"']");
+  }
+
+  // Finaly search by id attribute
+  if(!li_mesg)
+    li_mesg = hist_ul.getElementById(id);
+
+  return li_mesg;
+}
+*/
+
 /* -------------------------------------------------------------------
  * Main Screen - History - Message edition
  * -------------------------------------------------------------------*/
 /**
  * Create new message DOM object to be inserted in history
  *
- * @param   {object}    sndr      Sender Peer object
- * @param   {string}    mesg      Message object
- * @param   {boolean}   recp      Receipt required flag
- * @param   {boolean}   sent      Sent by clent flag
+ * @param   {object}    sender    Sender Peer object
+ * @param   {object}    recipient Recipient Peer object
+ * @param   {object}    message   Message object
+ * @param   {boolean}   receipt   Receipt required flag
+ * @param   {boolean}   issent    Sent by clent flag
  * @param   {object}    pre_li    Previous message element from history
  * @param   {object}   [old_li]   Optionnal replaced message element from history
+ * @param   {object}   [rpl_li]   Optionnal replied message element from history
  */
-function xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, pre_li, old_li)
+function xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, pre_li, old_li, rpl_li)
 {
   // Default is to add a simple aggregated message without author
   // name and avatar
-  let apnd;
+  let append, quote;
 
   // If this sis a correction message, we kee the same style as the
   // discarded one
   if(old_li) {
-    apnd = old_li.classList.contains("MESG-APPEND");
+    append = old_li.classList.contains("MESG-APPEND");
   } else if(pre_li) {
     // If previous message sender is different or if elapsed time is
     // greater than # minutes, we create a new full message block
-    if((mesg.time - pre_li.dataset.time) < XOWS_MESG_AGGR_THRESHOLD && pre_li.dataset.from === mesg.from)
-      apnd = true;
+    if((message.time - pre_li.dataset.time) < XOWS_MESG_AGGR_THRESHOLD && pre_li.dataset.from === message.from)
+      append = true;
   }
 
+  // check for reply
+  if(rpl_li)
+    quote = rpl_li.querySelector("MESG-BODY").innerText;
+
   // Create message from template
-  return xows_tpl_mesg_spawn(sndr, mesg, recp, sent, apnd);
+  return xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, quote);
 }
 
 /**
@@ -3603,11 +3663,11 @@ function xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, pre_li, old_li)
  */
 function xows_gui_hist_mesg_discard(peer, id)
 {
-  const li = xows_gui_peer_mesg_li(peer, id);
-  if(li) {
-    li.hidden = true;
-    li.innerHTML = "";
-    return li;
+  const li_mesg = xows_gui_peer_mesg_li(peer, id);
+  if(li_mesg) {
+    li_mesg.hidden = true;
+    li_mesg.innerHTML = "";
+    return li_mesg;
   }
 
   return null;
@@ -3622,15 +3682,8 @@ function xows_gui_hist_mesg_discard(peer, id)
  */
 function xows_gui_hist_mesg_retract(peer, usid)
 {
-  const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
-
   // Depending situation we search for origin-id or stanza-id
-  let li_mesg, from;
-  if(peer.type === XOWS_PEER_CONT) {
-    li_mesg = hist_ul.querySelector("[data-origid='"+usid+"']");
-  } else {
-    li_mesg = hist_ul.querySelector("[data-stnzid='"+usid+"']");
-  }
+  const li_mesg = xows_gui_peer_mesg_li(peer, usid);
 
   if(!li_mesg)
     return;
@@ -3652,46 +3705,52 @@ function xows_gui_hist_mesg_retract(peer, usid)
  * window
  *
  * @param   {object}    peer      Related Peer object
- * @param   {object}    sndr      Sender Peer object
- * @param   {object}    mesg      Message object
- * @param   {boolean}   recp      Receipt required flag
- * @param   {boolean}   muc       Multi-User-Chat flag
+ * @param   {object}    sender    Sender Peer object
+ * @param   {object}    recipient Recipient Peer object
+ * @param   {object}    message   Message object
+ * @param   {boolean}   receipt   Receipt required flag
+ * @param   {boolean}   ismuc     Multi-User-Chat flag
  */
-function xows_gui_cli_onmessage(peer, sndr, mesg, recp, muc)
+function xows_gui_cli_onmessage(peer, sender, recipient, message, receipt, ismuc)
 {
   // Store whether message is sent by ourself
-  const sent = (sndr === xows_cli_self);
+  const issent = (sender === xows_cli_self);
 
   // Special case of MUC, we way receive message from ourself as
   // confirmation of reception with server additionnal data
-  if(sent && muc) {
+  if(issent && ismuc) {
     // Message to update
-    const upd_li = xows_gui_peer_mesg_li(peer, mesg.id);
+    const upd_li = xows_gui_peer_mesg_li(peer, message.id);
     if(upd_li) {
-      xows_tpl_mesg_update(upd_li, mesg, true);
+      xows_tpl_mesg_update(upd_li, message, true);
       return;
     }
   }
 
+  let old_li, rpl_li;
+
   // Search for corrected message to be discarded
-  let old_li = null;
-  if(mesg.replace) {
-    old_li = xows_gui_hist_mesg_discard(peer, mesg.replace);
+  if(message.replace) {
+    old_li = xows_gui_hist_mesg_discard(peer, message.replace);
     // We ignore correction which are not in visible history or if correction
     // message have no body, in this case this mean message deletion
     if(!old_li) return;
   }
 
+  // Search for replied message to be referenced
+  if(message.replyid)
+    rpl_li = xows_gui_peer_mesg_li(peer, message.replyid);
+
   // Avoid notifications for correction messages
-  if(!mesg.replace) {
+  if(!message.replace) {
 
     // If off screen, add unread message badge to the roster contact
     if(peer !== xows_gui_peer)
-      xows_gui_unread_add(peer, mesg.id);
+      xows_gui_unread_add(peer, message.id);
 
     // Send browser notification popup
-    if(!sent && !xows_gui_has_focus)
-      xows_gui_notify_push(peer, mesg.body);
+    if(!issent && !xows_gui_has_focus)
+      xows_gui_notify_push(peer, message.body);
   }
 
   // Check whether end of history is croped, in this case the new message
@@ -3708,7 +3767,7 @@ function xows_gui_cli_onmessage(peer, sndr, mesg, recp, muc)
     }
 
     // Create new message element
-    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, hist_ul.lastChild, old_li);
+    const msg_li = xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, hist_ul.lastChild, old_li, rpl_li);
 
     // Insert or append message, depending whether ref_li is null
     if(old_li) {
@@ -3718,7 +3777,7 @@ function xows_gui_cli_onmessage(peer, sndr, mesg, recp, muc)
     }
   }
 
-  if(!sent && xows_gui_peer_scroll_get(peer) >= 50) {
+  if(!issent && xows_gui_peer_scroll_get(peer) >= 50) {
     xows_gui_hist_nav_open(peer, true); //< Show the "new messages" alert
   } else {
     xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
@@ -3839,7 +3898,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   if(result.length && hist_ul.childNodes.length) {
     // We compare time (unix epoch) to ensure last archived message is
     // older (or equal) than the first history message.
-    if(hist_ul.firstChild.dataset.time >= result[result.length-1].mesg.time) {
+    if(hist_ul.firstChild.dataset.time >= result[result.length-1].message.time) {
       ref_li = hist_ul.firstChild; //< node to insert messages before
     } else {
       prepend = false;
@@ -3881,37 +3940,45 @@ function xows_gui_mam_parse(peer, result, count, complete)
     xows_gui_peer_scroll_adjust(peer);
   }
 
-  let old_li, pre_li, added = 0;
+  let old_li, rpl_li, pre_li, added = 0;
 
   const n = result.length;
   for(let i = 0; i < n; ++i) {
 
-    const sndr = result[i].sndr;
-    const mesg = result[i].mesg;
+    const sender = result[i].sender;
+    const recipient = result[i].recipient;
+    const message = result[i].message;
 
     // Search for message retraction
-    if(mesg.retract) {
-      xows_gui_hist_mesg_retract(peer, mesg.retract);
+    if(message.retract) {
+      xows_gui_hist_mesg_retract(peer, message.retract);
       continue;
     }
 
     // Check whether message has body (this may be reciept or chatstate)
-    if(!mesg.body) continue;
+    if(!message.body) continue;
 
     // If message with id alread exists, skip to prevent double
-    if(xows_gui_peer_mesg_li(peer, mesg.id))
+    if(xows_gui_peer_mesg_li(peer, message.id))
       continue;
 
     // Search for corrected message to be discarded
-    if(mesg.replace) {
-      old_li = xows_gui_hist_mesg_discard(peer, mesg.replace);
+    if(message.replace) {
+      old_li = xows_gui_hist_mesg_discard(peer, message.replace);
       if(!old_li) continue; //< ignore correction which are not in visible history
     } else {
       old_li = null;
     }
 
+    // Search for replied message to be referenced
+    if(message.replyid) {
+      rpl_li = xows_gui_peer_mesg_li(peer, message.replyid);
+    } else {
+      rpl_li = null;
+    }
+
     // Create new message element
-    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, false, (sndr === xows_cli_self), pre_li, old_li);
+    const msg_li = xows_gui_hist_mesg_spawn(sender, recipient, message, false, (sender === xows_cli_self), pre_li, old_li, rpl_li);
 
     if(old_li) {
       // Message correction is insert after the corrected message
@@ -3934,7 +4001,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     // was reached since "insert" will not necessarly be set
     if(count && !added) {
       // compare id of the last result with the last history message
-      if(result[0].mesg.id === hist_ul.firstChild.id)
+      if(result[0].message.id === hist_ul.firstChild.id)
         prepend = true; //< Set prepend to show history start
     }
     if(prepend) {
@@ -4072,6 +4139,62 @@ function xows_gui_chat_file_onchange(event)
  * Main screen - Chat Frame - Foot Panel
  *
  * -------------------------------------------------------------------*/
+/**
+ * Chat Panel on-click callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_chat_panl_onclick(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  switch(event.target.id)
+  {
+    case "rply_clos": {
+      xows_gui_chat_rply_close();
+      break;
+    }
+
+    case "chat_edit": {
+      // Set input focus to message edit area
+      xows_gui_chat_inpt_focus();
+      break;
+    }
+
+    case "chat_inpt": {
+      // Get selection range
+      const rng = xows_doc_sel_rng(0);
+      if(rng.collapsed) {
+        const txt = rng.endContainer;
+        // Checks whether current selection is within <emo-ji> node
+        if(txt.parentNode.tagName === "EMO-JI") {
+          // Move caret before or after the <emo-ji> node
+          xows_doc_caret_around(txt.parentNode, !rng.endOffset);
+          return; //< return now
+        }
+      }
+      // Store selection
+      xows_gui_chat_inpt_rng = rng;
+      break;
+    }
+
+    case "edit_bt_upld": {
+      const chat_file = xows_doc("chat_file");
+      // Reset file input
+      chat_file.value = "";
+      // Open the file selector (emulate click)
+      chat_file.click();
+      break;
+    }
+
+    case "edit_bt_emoj": {
+      // Toggle menu drop and focus button
+      xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
+      break;
+    }
+  }
+}
+
 /* -------------------------------------------------------------------
  * Main screen - Chat Frame - Foot Panel - Message edition
  * -------------------------------------------------------------------*/
@@ -4125,8 +4248,10 @@ let xows_gui_chat_inpt_rng = null;
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_chat_panl_oninput(event)
+function xows_gui_chat_inpt_oninput(event)
 {
+  console.log(event);
+
   xows_cli_activity_wakeup(); //< Wakeup presence
 
   // Set composing
@@ -4156,64 +4281,17 @@ function xows_gui_chat_panl_oninput(event)
 }
 
 /**
- * Chat Panel on-click callback function
- *
- * @param   {object}    event     Event object associated with trigger
+ * Set focus and edit caret to chat message input
  */
-function xows_gui_chat_panl_onclick(event)
+function xows_gui_chat_inpt_focus()
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
-
-  switch(event.target.id)
-  {
-    case "rply_clos": {
-      xows_gui_chat_rply_close();
-      break;
-    }
-
-    case "chat_edit": {
-      const chat_inpt = xows_doc("chat_inpt");
-      // Set input focus to message edit area
-      chat_inpt.focus();
-      // move edit caret to end of content
-      const rng = xows_doc_sel_rng(0);
-      if(rng.endContainer != chat_inpt)
-        xows_doc_caret_around(rng.endContainer);
-      break;
-    }
-
-    case "chat_inpt": {
-      // Get selection range
-      const rng = xows_doc_sel_rng(0);
-      if(rng.collapsed) {
-        const txt = rng.endContainer;
-        // Checks whether current selection is within <emo-ji> node
-        if(txt.parentNode.tagName === "EMO-JI") {
-          // Move caret before or after the <emo-ji> node
-          xows_doc_caret_around(txt.parentNode, !rng.endOffset);
-          return; //< return now
-        }
-      }
-      // Store selection
-      xows_gui_chat_inpt_rng = rng;
-      break;
-    }
-
-    case "edit_bt_upld": {
-      const chat_file = xows_doc("chat_file");
-      // Reset file input
-      chat_file.value = "";
-      // Open the file selector (emulate click)
-      chat_file.click();
-      break;
-    }
-
-    case "edit_bt_emoj": {
-      // Toggle menu drop and focus button
-      xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
-      break;
-    }
-  }
+  const chat_inpt = xows_doc("chat_inpt");
+  // Set input focus to message edit area
+  chat_inpt.focus();
+  // move edit caret to end of content
+  const rng = xows_doc_sel_rng(0);
+  if(rng.endContainer != chat_inpt)
+    xows_doc_caret_around(rng.endContainer);
 }
 
 /**
@@ -4265,6 +4343,7 @@ function xows_gui_chat_inpt_insert(text, tagname)
   // Store selection
   xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
 }
+
 /* -------------------------------------------------------------------
  * Main screen - Chat Frame - Foot Panel - Reply banner
  * -------------------------------------------------------------------*/
@@ -4320,6 +4399,9 @@ function xows_gui_chat_rply_set(mesg)
   // Set REPLY class to message and Chat Pannel
   mesg.classList.add("REPLY");
   xows_doc("chat_panl").classList.add("REPLY");
+
+  // Set input focus to message edit area
+  xows_gui_chat_inpt_focus();
 }
 
 /* -------------------------------------------------------------------
