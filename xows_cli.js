@@ -1697,11 +1697,13 @@ function xows_cli_xmp_onmessage(mesg)
  *
  * @param   {string}    peer      Recipient peer (Room or Contact)
  * @param   {string}    body      Message content
- * @param   {string}   [rpid]     Optionnal message ID this one replace
+ * @param   {string}   [replace]  Optionnal message ID this one replace
+ * @param   {string}   [replyid]  Optionnal replyed message ID
+ * @param   {string}   [replyto]  Optionnal replyed message author JID
  */
-function xows_cli_send_message(peer, body, rpid)
+function xows_cli_send_message(peer, body, replace, replyid, replyto)
 {
-  let type, from, to = peer.lock, recp, muc;
+  let type, from, to = peer.lock, receipt, muc;
 
   // Check whether peer is a MUC room or a subscribed Contact
   if(peer.type === XOWS_PEER_ROOM) {
@@ -1709,7 +1711,7 @@ function xows_cli_send_message(peer, body, rpid)
     muc = true;
     type = "groupchat";
     from = peer.join;
-    recp = true;
+    receipt = true;
 
   } else {
 
@@ -1722,22 +1724,22 @@ function xows_cli_send_message(peer, body, rpid)
       // Get resource object of current locked
       const res = peer.ress.get(xows_jid_resc(peer.lock));
       // Check for receipt support
-      if(res) recp = xows_cli_entity_caps_test(res.node,XOWS_NS_RECEIPTS);
+      if(res) receipt = xows_cli_entity_caps_test(res.node,XOWS_NS_RECEIPTS);
     }
   }
 
   xows_log(2,"cli_user_send_message","send "+type+" message",to+" \""+body+"\"");
 
   // Send message with body
-  const id = xows_xmp_message_body_send(type, to, body, recp, rpid);
+  const id = xows_xmp_message_body_send(type, to, body, receipt, replace, replyid, replyto);
 
   // Create message object
-  const mesg = {"id":id, "from":from, "to":to,
-                "type":type, "body":body, "time":new Date().getTime(),
-                "uoid":id, "usid":null, "rpid":rpid};
+  const mesg = {"id":id,"from":from,"to":to,
+                "type":type,"body":body,"time":new Date().getTime(),
+                "uoid":id,"usid":null,"replace":replace};
 
   // Forward sent message
-  xows_cli_fw_onmessage(peer, xows_cli_self, mesg, recp, muc);
+  xows_cli_fw_onmessage(peer, xows_cli_self, mesg, receipt, muc);
 }
 /* -------------------------------------------------------------------
  * Client API - Message semantis - Message Receipt
@@ -1893,7 +1895,7 @@ let xows_cli_fw_onretract = function() {};
  *
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
- * @param   {string}    rtid      Unique and Stable ID of message to retract
+ * @param   {string}    usid      Unique and Stable ID of message to retract
  */
 function xows_cli_xmp_onretract(id, from, type, usid)
 {
@@ -2629,7 +2631,7 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
   // Store list of retracted message USID
   const retrac = [];
   let i = n;
-  while(i--) if(mesg[i].rtid) retrac.push(mesg[i].rtid);
+  while(i--) if(mesg[i].retract) retrac.push(mesg[i].retract);
 
   // Notice for future implementation :
   //
@@ -2644,7 +2646,7 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
     for(i = 0; i < n; ++i) {
 
       // Check whether message is found retracted
-      if(retrac.includes(mesg[i].orid))
+      if(retrac.includes(mesg[i].origid))
         mesg[i].body = null; //< delete body to exclude it from final counting
 
       // Find proper sender
@@ -2659,7 +2661,7 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
     for(i = 0; i < n; ++i) {
 
       // Check whether message is found retracted
-      if(retrac.includes(mesg[i].szid))
+      if(retrac.includes(mesg[i].stnzid))
         mesg[i].body = null; //< delete body to exclude it from final counting
 
       // Find proper sender
@@ -2687,7 +2689,7 @@ function xows_cli_mam_collect(from, bare, mesg, count, complete)
   // Comput count of visible messages excluding replacements
   let bodies = 0;
   i = pool.length;
-  while(i--) if(pool[i].mesg.body && !pool[i].mesg.rpid) bodies++;
+  while(i--) if(pool[i].mesg.body && !pool[i].mesg.replace) bodies++;
 
   if(!complete) {
 

@@ -978,6 +978,15 @@ const XOWS_NS_DELAY = "urn:xmpp:delay";
  */
 const XOWS_NS_CORRECT = "urn:xmpp:message-correct:0";
 
+
+/* -------------------------------------------------------------------
+ * XMPP API - Message semantics - Last Message Correction (XEP-0308)
+ * -------------------------------------------------------------------*/
+/**
+ * Message Replies (XEP-0461) XMLNS constants
+ */
+const XOWS_NS_REPLY = "urn:xmpp:reply:0";
+
 /* -------------------------------------------------------------------
  * XMPP API - Message semantics - Last Message Correction (XEP-0308)
  * -------------------------------------------------------------------*/
@@ -1032,7 +1041,7 @@ function xows_xmp_message_recv(stanza)
     return true;
   }
 
-  let time, body, orid, szid, ocid, rpid;
+  let time, body, origid, stnzid, occuid, replace, replyid, replyto;
 
   let i = stanza.childNodes.length;
   while(i--) {
@@ -1090,20 +1099,28 @@ function xows_xmp_message_recv(stanza)
 
     // Check for Unique and Stable Stanza IDs (XEP-0359)
     if(xmlns === XOWS_NS_SID) {
-      if(tname === "origin-id") orid = node.getAttribute("id");
-      if(tname === "stanza-id") szid = node.getAttribute("id");
+      if(tname === "origin-id") origid = node.getAttribute("id");
+      if(tname === "stanza-id") stnzid = node.getAttribute("id");
+      continue;
+    }
+
+    // Check for Replies (XEP-0461)
+    if(xmlns === XOWS_NS_REPLY) {
+      replyid = node.getAttribute("id");
+      if(node.hasAttribute("to"))
+        replyto = node.getAttribute("to");
       continue;
     }
 
     // Check for Anonymous unique occupant identifiers for MUCs (XEP-0421)
     if(xmlns === XOWS_NS_OCCUID) {
-      ocid = node.getAttribute("id");
+      occuid = node.getAttribute("id");
       continue;
     }
 
     // Check for Last Message Correction (XEP-0308)
     if(xmlns === XOWS_NS_CORRECT) {
-      rpid = node.getAttribute("id");
+      replace = node.getAttribute("id");
       continue;
     }
 
@@ -1128,9 +1145,9 @@ function xows_xmp_message_recv(stanza)
   }
 
   if(body !== undefined) {
-    xows_xmp_fw_onmessage({ "id":id, "from":from, "to":to,
-                            "type":type, "body":body, "time":time, "rpid":rpid,
-                            "orid":orid, "szid":szid, "ocid":ocid});
+    xows_xmp_fw_onmessage({ "id":id,"from":from,"to":to,"type":type,"body":body,"time":time,
+                            "replace":replace,"replyid":replyid,"replyto":replyto,
+                            "origid":origid,"stnzid":stnzid,"occuid":occuid});
     return true;
   }
 
@@ -1146,12 +1163,14 @@ function xows_xmp_message_recv(stanza)
  * @param   {string}    type      Message type
  * @param   {string}    to        JID of the recipient
  * @param   {string}    body      Message content
- * @param   {boolean}   recp      Request message receipt
- * @param   {string}   [corr]     Optionnal message ID this one replace
+ * @param   {boolean}   receipt   Request message receipt
+ * @param   {string}   [replace]  Optionnal message ID this one Replace
+ * @param   {string}   [replyid]  Optionnal replyed message ID
+ * @param   {string}   [replyto]  Optionnal replyed message author JID
  *
  * @return  {string}    Sent message ID
  */
-function xows_xmp_message_body_send(type, to, body, recp, corr)
+function xows_xmp_message_body_send(type, to, body, receipt, replace, replyid, replyto)
 {
   // Generate 'custom' id to allow sender to track message
   const id = xows_gen_uuid();
@@ -1163,13 +1182,17 @@ function xows_xmp_message_body_send(type, to, body, recp, corr)
   // Add Origin ID (XEP-0359)
   xows_xml_parent(stanza, xows_xml_node("origin-id",{"id":id,"xmlns":XOWS_NS_SID}));
 
-  // Add receipt request (only if one-to-one chat)
-  if(type === "chat" && recp)
-    xows_xml_parent(stanza, xows_xml_node("request",{"xmlns":XOWS_NS_RECEIPTS}));
-
   // Add replace
-  if(corr)
-    xows_xml_parent(stanza, xows_xml_node("replace",{"id":corr,"xmlns":XOWS_NS_CORRECT}));
+  if(replace)
+    xows_xml_parent(stanza, xows_xml_node("replace",{"id":replace,"xmlns":XOWS_NS_CORRECT}));
+
+  // Add reply
+  if(replyid)
+    xows_xml_parent(stanza, xows_xml_node("reply",{"id":replyid,"to":replyto,"xmlns":XOWS_NS_REPLY}));
+
+  // Add receipt request (only if one-to-one chat)
+  if(receipt && type === "chat")
+    xows_xml_parent(stanza, xows_xml_node("request",{"xmlns":XOWS_NS_RECEIPTS}));
 
   xows_log(2,"xmp_message_body_send","send message","type "+type+" to "+to);
 
@@ -2725,7 +2748,7 @@ function xows_xmp_mam_result_recv(result)
   const from = message.getAttribute("from");
   const to = message.getAttribute("to");
 
-  let body, rpid, rtid, orid, szid, ocid, rcid;
+  let body, replace, retract, origid, stnzid, occuid, receipt, replyid, replyto;
 
   // Notice for future implementation :
   //
@@ -2754,30 +2777,38 @@ function xows_xmp_mam_result_recv(result)
 
     // Check for delivery receipt
     if(xmlns === XOWS_NS_RECEIPTS) {
-      rcid = node.getAttribute("id");
+      receipt = node.getAttribute("id");
       continue;
     }
 
     // Check for message retraction
     if(xmlns === XOWS_NS_RETRACT) {
-      rtid = node.getAttribute("id");
+      retract = node.getAttribute("id");
       continue; //< We do not need more data
     }
 
     // Check for correction
     if(xmlns === XOWS_NS_CORRECT) {
-      rpid = node.getAttribute("id");
+      replace = node.getAttribute("id");
+      continue;
+    }
+
+    // Check for Replies (XEP-0461)
+    if(xmlns === XOWS_NS_REPLY) {
+      replyid = node.getAttribute("id");
+      if(node.hasAttribute("to"))
+        replyto = node.getAttribute("to");
       continue;
     }
 
     if(xmlns === XOWS_NS_SID) {
-      if(tagnm === "origin-id") orid = node.getAttribute("id");
-      if(tagnm === "stanza-id") szid = node.getAttribute("id");
+      if(tagnm === "origin-id") origid = node.getAttribute("id");
+      if(tagnm === "stanza-id") stnzid = node.getAttribute("id");
       continue;
     }
 
     if(xmlns === XOWS_NS_OCCUID) {
-      ocid = node.getAttribute("id");
+      occuid = node.getAttribute("id");
       continue;
     }
 
@@ -2793,13 +2824,13 @@ function xows_xmp_mam_result_recv(result)
   if(delay) time = new Date(delay.getAttribute("stamp")).getTime();
 
   // If message is a retraction, delete the fallback body text
-  if(rtid) body = null;
+  if(retract) body = null;
 
   // Add archived message to stack
   xows_xmp_mam_stack.get(qid).push({"page":page,
-                                    "id":id,"from":from,"to":to,"time":time,
-                                    "body":body,"rpid":rpid,"rtid":rtid,"rcid":rcid,
-                                    "orid":orid,"szid":szid,"ocid":ocid});
+                                    "id":id,"from":from,"to":to,"time":time,"receipt":receipt,"body":body,
+                                    "replace":replace,"retract":retract,"replyid":replyid,"replyto":replyto,
+                                    "origid":origid,"stnzid":stnzid,"occuid":occuid});
 
   xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
 
@@ -3813,6 +3844,7 @@ function xows_xmp_caps_self_features()
     xows_xml_node("feature",{"var":XOWS_NS_STYLING}),
     xows_xml_node("feature",{"var":XOWS_NS_SID}),
     xows_xml_node("feature",{"var":XOWS_NS_RETRACT}),
+    xows_xml_node("feature",{"var":XOWS_NS_REPLY}),
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
     xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
     xows_xml_node("feature",{"var":vcard4}),

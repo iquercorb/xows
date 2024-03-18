@@ -491,6 +491,9 @@
   "Delete message ?":
   "Supprimer le message ?",
 
+  "Reply to":
+  "Répondre à",
+
   "Do you really want to disconnect current session ?":
   "Voulez-vous vraiment vous déconnecter de la session actuelle ?"
 }

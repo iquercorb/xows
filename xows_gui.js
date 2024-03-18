@@ -3323,6 +3323,7 @@ function xows_gui_chat_hist_onclick(event)
       case "edit_bt_valid":
         xows_gui_mesg_edit_valid(li_mesg.querySelector("MESG-INPT"));
         break;
+
       case "mesg_bt_trsh":
         xows_gui_mesg_trsh_open(li_mesg);
         break;
@@ -3331,6 +3332,10 @@ function xows_gui_chat_hist_onclick(event)
         break;
       case "trsh_bt_valid":
         xows_gui_mesg_trsh_valid(li_mesg);
+        break;
+
+      case "mesg_bt_rply":
+        xows_gui_chat_rply_set(li_mesg);
         break;
       }
 
@@ -3458,9 +3463,9 @@ function xows_gui_mesg_trsh_valid(mesg)
 
   // Get origin-id or stanza-id depending we are in MUC context
   if(xows_gui_peer.type === XOWS_PEER_ROOM) {
-    if(mesg.dataset.szid) usid = mesg.dataset.szid;
+    if(mesg.dataset.stnzid) usid = mesg.dataset.stnzid;
   } else {
-    if(mesg.dataset.orid) usid = mesg.dataset.orid;
+    if(mesg.dataset.origid) usid = mesg.dataset.origid;
   }
 
   // Send message retraction
@@ -3565,9 +3570,9 @@ function xows_gui_hist_update(peer, bare, nick, avat)
  * @param   {boolean}   recp      Receipt required flag
  * @param   {boolean}   sent      Sent by clent flag
  * @param   {object}    pre_li    Previous message element from history
- * @param   {object}   [rpl_li]   Optionnal replaced message element from history
+ * @param   {object}   [old_li]   Optionnal replaced message element from history
  */
-function xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, pre_li, rpl_li)
+function xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, pre_li, old_li)
 {
   // Default is to add a simple aggregated message without author
   // name and avatar
@@ -3575,8 +3580,8 @@ function xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, pre_li, rpl_li)
 
   // If this sis a correction message, we kee the same style as the
   // discarded one
-  if(rpl_li) {
-    apnd = rpl_li.classList.contains("MESG-APPEND");
+  if(old_li) {
+    apnd = old_li.classList.contains("MESG-APPEND");
   } else if(pre_li) {
     // If previous message sender is different or if elapsed time is
     // greater than # minutes, we create a new full message block
@@ -3613,18 +3618,18 @@ function xows_gui_hist_mesg_discard(peer, id)
  * element style
  *
  * @param   {object}    peer      Peer object
- * @param   {string}    sid       Retracted message SID (origin-id or stanza-id)
+ * @param   {string}    usid      Message Unique and Stable ID to retract
  */
-function xows_gui_hist_mesg_retract(peer, sid)
+function xows_gui_hist_mesg_retract(peer, usid)
 {
   const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
   // Depending situation we search for origin-id or stanza-id
   let li_mesg, from;
   if(peer.type === XOWS_PEER_CONT) {
-    li_mesg = hist_ul.querySelector("[data-orid='"+sid+"']");
+    li_mesg = hist_ul.querySelector("[data-origid='"+usid+"']");
   } else {
-    li_mesg = hist_ul.querySelector("[data-szid='"+sid+"']");
+    li_mesg = hist_ul.querySelector("[data-stnzid='"+usid+"']");
   }
 
   if(!li_mesg)
@@ -3669,16 +3674,16 @@ function xows_gui_cli_onmessage(peer, sndr, mesg, recp, muc)
   }
 
   // Search for corrected message to be discarded
-  let rpl_li = null;
-  if(mesg.rpid) {
-    rpl_li = xows_gui_hist_mesg_discard(peer, mesg.rpid);
+  let old_li = null;
+  if(mesg.replace) {
+    old_li = xows_gui_hist_mesg_discard(peer, mesg.replace);
     // We ignore correction which are not in visible history or if correction
     // message have no body, in this case this mean message deletion
-    if(!rpl_li) return;
+    if(!old_li) return;
   }
 
   // Avoid notifications for correction messages
-  if(!mesg.rpid) {
+  if(!mesg.replace) {
 
     // If off screen, add unread message badge to the roster contact
     if(peer !== xows_gui_peer)
@@ -3691,7 +3696,7 @@ function xows_gui_cli_onmessage(peer, sndr, mesg, recp, muc)
 
   // Check whether end of history is croped, in this case the new message
   //  must not be appended, we will show it by querying archives
-  if(xows_gui_peer_doc(peer,"hist_end").hidden || rpl_li) {
+  if(xows_gui_peer_doc(peer,"hist_end").hidden || old_li) {
 
     const hist_ul = xows_gui_peer_doc(peer,"hist_ul");
 
@@ -3703,11 +3708,11 @@ function xows_gui_cli_onmessage(peer, sndr, mesg, recp, muc)
     }
 
     // Create new message element
-    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, hist_ul.lastChild, rpl_li);
+    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, recp, sent, hist_ul.lastChild, old_li);
 
     // Insert or append message, depending whether ref_li is null
-    if(rpl_li) {
-      hist_ul.insertBefore(msg_li, rpl_li.nextSibling);
+    if(old_li) {
+      hist_ul.insertBefore(msg_li, old_li.nextSibling);
     } else {
       hist_ul.appendChild(msg_li);
     }
@@ -3834,7 +3839,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   if(result.length && hist_ul.childNodes.length) {
     // We compare time (unix epoch) to ensure last archived message is
     // older (or equal) than the first history message.
-    if(hist_ul.firstChild.dataset.time >= result[result.length-1].time) {
+    if(hist_ul.firstChild.dataset.time >= result[result.length-1].mesg.time) {
       ref_li = hist_ul.firstChild; //< node to insert messages before
     } else {
       prepend = false;
@@ -3876,8 +3881,8 @@ function xows_gui_mam_parse(peer, result, count, complete)
     xows_gui_peer_scroll_adjust(peer);
   }
 
-  let rpl_li, pre_li, added = 0;
-  
+  let old_li, pre_li, added = 0;
+
   const n = result.length;
   for(let i = 0; i < n; ++i) {
 
@@ -3885,8 +3890,8 @@ function xows_gui_mam_parse(peer, result, count, complete)
     const mesg = result[i].mesg;
 
     // Search for message retraction
-    if(mesg.rtid) {
-      xows_gui_hist_mesg_retract(peer, mesg.rtid);
+    if(mesg.retract) {
+      xows_gui_hist_mesg_retract(peer, mesg.retract);
       continue;
     }
 
@@ -3898,20 +3903,21 @@ function xows_gui_mam_parse(peer, result, count, complete)
       continue;
 
     // Search for corrected message to be discarded
-    if(mesg.rpid) {
-      rpl_li = xows_gui_hist_mesg_discard(peer, mesg.rpid);
-      if(!rpl_li) continue; //< ignore correction which are not in visible history
+    if(mesg.replace) {
+      old_li = xows_gui_hist_mesg_discard(peer, mesg.replace);
+      if(!old_li) continue; //< ignore correction which are not in visible history
     } else {
-      rpl_li = null;
+      old_li = null;
     }
 
     // Create new message element
-    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, false, (sndr === xows_cli_self), pre_li, rpl_li);
+    const msg_li = xows_gui_hist_mesg_spawn(sndr, mesg, false, (sndr === xows_cli_self), pre_li, old_li);
 
-    // Insert or append message, depending whether ref_li is null
-    if(rpl_li) {
-      hist_ul.insertBefore(msg_li, rpl_li.nextSibling);
+    if(old_li) {
+      // Message correction is insert after the corrected message
+      hist_ul.insertBefore(msg_li, old_li.nextSibling);
     } else {
+      // Insert or append message, depending whether ref_li is null
       pre_li = hist_ul.insertBefore(msg_li, ref_li);
     }
 
@@ -3948,7 +3954,6 @@ function xows_gui_mam_parse(peer, result, count, complete)
     // Save current offset from bottom to properly align it later
     xows_gui_peer_scroll_save(peer);
   }
-
 
   xows_gui_mam_query_to.delete(peer.bare); //< Allow a new archive query
 }
@@ -4070,7 +4075,6 @@ function xows_gui_chat_file_onchange(event)
 /* -------------------------------------------------------------------
  * Main screen - Chat Frame - Foot Panel - Message edition
  * -------------------------------------------------------------------*/
-
 /**
  * Chat Message Edition validation (enter) function, called when user
  * press the Enter key (see xows_gui_wnd_onkey() function).
@@ -4084,8 +4088,21 @@ function xows_gui_chat_inpt_enter(input)
 
     if(input.innerText.length) {
 
+      // Check for reply
+      let replyid, replyto;
+      if(xows_doc_cls_has("chat_panl", "REPLY")) {
+
+        // Get Reply data
+        const chat_rply = xows_doc("chat_rply");
+        replyid = chat_rply.dataset.id;
+        replyto = chat_rply.dataset.to;
+
+        // Reset Reply data
+        xows_gui_chat_rply_close();
+      }
+
       // Send message
-      xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd());
+      xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd(), null, replyid, replyto);
       input.innerText = ""; //< Empty any residual <br>
 
       // Add CSS class to show placeholder
@@ -4149,6 +4166,11 @@ function xows_gui_chat_panl_onclick(event)
 
   switch(event.target.id)
   {
+    case "rply_clos": {
+      xows_gui_chat_rply_close();
+      break;
+    }
+
     case "chat_edit": {
       const chat_inpt = xows_doc("chat_inpt");
       // Set input focus to message edit area
@@ -4242,6 +4264,62 @@ function xows_gui_chat_inpt_insert(text, tagname)
 
   // Store selection
   xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
+}
+/* -------------------------------------------------------------------
+ * Main screen - Chat Frame - Foot Panel - Reply banner
+ * -------------------------------------------------------------------*/
+/**
+ * Cancel or reset message reply
+ */
+function xows_gui_chat_rply_close()
+{
+  // Remove REPLY class from Chat Pannel
+  xows_doc("chat_panl").classList.remove("REPLY");
+
+  const chat_rply = xows_doc("chat_rply");
+  // Reset data and hide element
+  xows_doc("rply_name").innerText = "";
+  chat_rply.dataset.id = "";
+  chat_rply.dataset.to = "";
+
+  // Remove REPLY class from message is any
+  const hist_ul = xows_doc("hist_ul");
+  const li_mesg = hist_ul.querySelector("LI-MESG.REPLY");
+  if(li_mesg) li_mesg.classList.remove("REPLY");
+}
+
+/**
+ * Set message reply data and elements
+ *
+ * @param   {object}    mesg      Selected message to reply to
+ */
+function xows_gui_chat_rply_set(mesg)
+{
+  // Cancel any previous Reply
+  xows_gui_chat_rply_close();
+
+  const chat_rply = xows_doc("chat_rply");
+
+  let author, replyid, replyto;
+
+  if(xows_gui_peer === XOWS_PEER_ROOM) {
+    replyto = mesg.dataset.from;
+    replyid = mesg.dataset.origid ? mesg.dataset.origid : mesg.id;
+    author = xows_cli_occu_any(xows_gui_peer, replyto);
+  } else {
+    replyto = xows_jid_bare(mesg.dataset.from);
+    replyid = mesg.dataset.stnzid ? mesg.dataset.stnzid : mesg.id;
+    author = xows_gui_peer;
+  }
+
+  xows_doc("rply_name").innerText = author.name;
+  chat_rply.dataset.to = replyto;
+  chat_rply.dataset.id = replyid;
+  chat_rply.hidden = false;
+
+  // Set REPLY class to message and Chat Pannel
+  mesg.classList.add("REPLY");
+  xows_doc("chat_panl").classList.add("REPLY");
 }
 
 /* -------------------------------------------------------------------

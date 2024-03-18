@@ -101,6 +101,10 @@
   --show-away:        #E0AF46;  /* Away / AFK */
   --show-on:          #2BAC53;  /* Online */
   --show-chat:        #33A5D5;  /* Available for chat */
+  
+  /* Message reply highlight coloring */
+  --rply-line:        #FFB000;  /* Message Border line */
+  --rply-base:        #403D37;  /* Message background */
 }
 [hidden] {
   display: none !important;
@@ -1607,10 +1611,12 @@ li-peer {
   width: 100%; height: 40px;
   overflow: hidden;
   cursor: pointer !important;
-} li-peer:hover {
+} li-peer:hover,
+  li-peer.SELECTED {
   background-color: var(--base-tone4);
 }
-li-peer:hover badg-show {
+li-peer:hover badg-show,
+li-peer.SELECTED badg-show {
   border-color: var(--base-tone4);
 }
 li-peer::before {
@@ -2206,7 +2212,7 @@ call-geom button:hover {
 }
 #chat_hist ul {
   list-style: none;
-  margin: 0 0 15px 0;
+  margin: 0 0 29px 0;
   padding: 0;
 }
 hist-bound {
@@ -2431,6 +2437,7 @@ li-mesg {
   padding: 2px 16px;
   position: relative;
   cursor: default;
+  border-left: 2px solid transparent;
 }
 li-mesg:hover {
   background-color: var(--base-tone7);
@@ -2438,8 +2445,12 @@ li-mesg:hover {
 li-mesg.SELECTED {
   background-color: var(--base-tone7);
 }
+li-mesg.REPLY {
+  border-left: 2px solid var(--rply-line);
+  background-color: var(--rply-base);
+}
 mesg-head {
-  flex: 0 0 57px;
+  flex: 0 0 60px;
   padding: 0 0 0 0;
 }
 mesg-main {
@@ -2509,7 +2520,7 @@ mesg-acts {
   align-items: center;
   line-height: 5px;
   border-radius: 6px;
-  padding: 0 4px;
+  padding: 1px;
 }
 li-mesg:hover mesg-acts,
 li-mesg.SELECTED mesg-acts {
@@ -2519,17 +2530,20 @@ li-mesg.SELECTED mesg-acts {
   box-shadow: 0 0 2px var(--base-tone2);
 }
 mesg-acts button {
-  width: 32px; height: 32px;
+  width: 30px; height: 30px;
   background-size: 16px;
-  background-color: transparent;
+  background-color: rgb(220,220,255,0);
   background-repeat: no-repeat;
   background-position: center;
-  opacity: .8;
+  border-radius: 4px;
+  margin: 2px;
   padding: 0;
 }mesg-acts button:hover {
-  opacity: 1;
+  background-color: rgb(220,220,255,0.1);
 }
-
+button.mesg-bt-rply {
+  background-image: url("images/reply.svg");
+}
 button.mesg-bt-edit {
   display: none;
   background-image: url("images/edit.svg");
@@ -2565,6 +2579,9 @@ li-mesg.MESG-EDITOR mesg-acts {
 li-mesg.MESG-SENT .mesg-bt-edit,
 li-mesg.MESG-SENT .mesg-bt-trsh {
   display: block;
+}
+li-mesg.MESG-SENT .mesg-bt-rply {
+  display: none;
 }
 li-mesg.MESG-SENT mesg-body {
   color: var(--text-tone3);
@@ -2861,6 +2878,10 @@ button.trsh-bt-abort {
     padding: 0 8px;
   }
 }
+#chat_panl {
+  position: relative;
+  width: 100%; height: 0;
+}
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Chat Controls & Inputs */
 /* ------------------------------------------------------------------ */
@@ -2870,8 +2891,12 @@ button.trsh-bt-abort {
   padding: 10px;
   margin: 2px 16px 0 16px;
   border-radius: 5px;
+  
   background-color: var(--base-tone5);
   cursor: text;
+}
+#chat_panl.REPLY #chat_edit {
+  border-radius: 0 0 5px 5px;
 }
 #chat_edit button {
   flex: none;
@@ -2987,6 +3012,43 @@ chat-inpt {
     width: 32px; height: 32px;
     font-size: 1.5em;
   }
+}
+/* ------------------------------------------------------------------ */
+/* Main Page - Center Col - Foot Frame - Reply banner */
+/* ------------------------------------------------------------------ */
+#chat_panl.REPLY #chat_rply {
+  display: flex;
+}
+#chat_rply {
+  display: none;
+  align-items: center;
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 28px;
+  background: var(--base-tone3);
+  border-radius: 8px 8px 0 0;
+  font-size: 0.85em;
+  color: var(--text-tone2);
+  padding: 0 10px;
+  margin: 0 16px 0 16px;
+}
+#rply_name {
+  flex: 1;
+  margin: 0 0 0 5px;
+  color: var(--link-hover);
+  font-weight: bold;
+}
+#chat_rply button {
+  float: right;
+  width: 20px; height: 30px;
+  background-color: transparent;
+  background-size: 14px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url("images/cancel.svg");
+  opacity: 0.7;
+}#chat_rply button:hover {
+  opacity: 1;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Composing notifier */

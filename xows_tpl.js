@@ -1249,9 +1249,9 @@ function xows_tpl_mesg_spawn(sndr, mesg, recp, sent, apnd)
   inst.id = mesg.id;
   inst.dataset.from = mesg.from;
   inst.dataset.time = mesg.time;
-  if(mesg.orid) inst.dataset.orid = mesg.orid;
-  if(mesg.szid) inst.dataset.szid = mesg.szid;
-  if(mesg.ocid) inst.dataset.ocid = mesg.ocid;
+  if(mesg.origid) inst.dataset.origid = mesg.origid;
+  if(mesg.stnzid) inst.dataset.stnzid = mesg.stnzid;
+  if(mesg.occuid) inst.dataset.occuid = mesg.occuid;
 
   // Set proper value to message elements
   if(sent) {
@@ -1316,9 +1316,9 @@ function xows_tpl_mesg_spawn(sndr, mesg, recp, sent, apnd)
  */
 function xows_tpl_mesg_update(li, mesg, recp)
 {
-  if(mesg.orid) li.dataset.orid = mesg.orid;
-  if(mesg.szid) li.dataset.szid = mesg.szid;
-  if(mesg.ocid) li.dataset.ocid = mesg.ocid;
+  if(mesg.origid) li.dataset.origid = mesg.origid;
+  if(mesg.stnzid) li.dataset.stnzid = mesg.stnzid;
+  if(mesg.occuid) li.dataset.occuid = mesg.occuid;
 
   // Marks message à receipt received
   if(recp) li.classList.add("MESG-RECP");

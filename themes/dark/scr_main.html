@@ -182,10 +182,15 @@
       <!-- Foot Frame (Chat Input Panel) -->
       <row-foot id="chat_foot">
         <aside>
-          <div hidden id="drop_emoj" XOWS_TPL_IMPORT></div>
           <input id="chat_file" type="file"></input>
+          <div hidden id="drop_emoj" XOWS_TPL_IMPORT></div>
+
         </aside>
         <div id="chat_panl">
+          <div hidden id="chat_rply" data-id="" data-to="">
+            ${'Reply to'}<span id="rply_name"></span>
+            <button id="rply_clos" title="${'Cancel reply'}"></button>
+          </div>
           <div id="chat_edit" class="chat-edit">
             <button id="edit_bt_upld" title="${'Upload a file'}"></button>
             <chat-inpt id="chat_inpt" class="PLACEHOLD" placeholder="${'Send a message ...'}" contenteditable=true spellcheck=true></chat-inpt>
