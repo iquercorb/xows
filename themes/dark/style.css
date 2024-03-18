@@ -2239,6 +2239,9 @@ hist-bound {
   content: attr(data-text);
 }
 @media (max-width: 824px) {
+  #chat_hist ul {
+    margin: 0 0 27px 0;
+  }
   hist-bound {
     margin: auto 8px 0 8px;
   }
@@ -2605,7 +2608,7 @@ li-mesg.MESG-SENT.MESG-RECP.MESG-TRASH mesg-body {
 }
 @media (max-width: 824px) {
   li-mesg {
-    margin: 8px 0 1px 0;
+    margin: 12px 0 1px 0;
     padding: 2px 8px;
   }
   li-mesg.MESG-APPEND {
@@ -2639,8 +2642,9 @@ li-mesg.MESG-SENT.MESG-RECP.MESG-TRASH mesg-body {
     right: 8px;
   }
   mesg-acts button {
-    width: 28px; height: 28px;
-    background-size: 17px;
+    width: 26px; height: 26px;
+    margin: 1px;
+    background-size: 14px;
   }
 }
 /* ------------------------------------------------------------------ */
@@ -3097,7 +3101,7 @@ chat-inpt {
   border-radius: 8px 8px 0 0;
   font-size: 0.85em;
   color: var(--text-tone2);
-  padding: 0 10px;
+  padding: 0 3px 0 11px;
   margin: 0 16px 0 16px;
   cursor: default;
 }
@@ -3107,17 +3111,25 @@ chat-inpt {
   color: var(--link-hover);
   font-weight: bold;
 }
-#chat_rply button {
+#rply_clos {
   float: right;
-  width: 20px; height: 30px;
+  width: 35px; height: 30px;
   background-color: transparent;
   background-size: 14px;
   background-position: center;
   background-repeat: no-repeat;
   background-image: url("images/cancel.svg");
   opacity: 0.7;
-}#chat_rply button:hover {
+  padding: 0;
+} 
+#rply_clos:hover {
   opacity: 1;
+}
+@media (max-width: 824px) {
+  #chat_rply {
+    margin: 0 8px 0 8px;
+    font-size: 0.75em;
+  }
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Foot Frame - Composing notifier */
