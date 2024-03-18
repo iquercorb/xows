@@ -1754,11 +1754,6 @@ li-peer.PEER-ROOM peer-avat {
   color: var(--text-tone0);
   font-size: .95em;
 }
-#user_panl peer-acts {
-  visibility: visible;
-  margin: 0 0 0 2px;
-  width: 30px;
-}
 #user_panl badg-show {
   border-color: var(--base-tone2);
 }
@@ -1767,6 +1762,11 @@ li-peer.PEER-ROOM peer-avat {
   flex-direction: row;
   align-items: center;
   width: 100%;
+}
+#self_acts {
+  visibility: visible;
+  margin: 0;
+  width: 32px;
 }
 #self_acts button {
   display: block;
@@ -2435,7 +2435,7 @@ ring-acts btn-close {
 /* ------------------------------------------------------------------ */
 li-mesg {
   display: block;
-  margin: 24px 0 1px 0;
+  margin: 20px 0 1px 0;
   padding: 2px 16px;
   position: relative;
   cursor: default;
@@ -2484,9 +2484,8 @@ mesg-info {
 mesg-date {
   font-size: 0.7em;
   color: var(--text-tone3);
-  margin-left: 11px;
+  margin-left: 8px;
   vertical-align: middle;
-  
 }
 mesg-from {
   font-size: 0.95em;
@@ -2533,7 +2532,7 @@ li-mesg.SELECTED mesg-acts {
   box-shadow: 0 0 2px var(--base-tone2);
 }
 mesg-acts button {
-  width: 30px; height: 30px;
+  width: 28px; height: 28px;
   background-size: 16px;
   background-color: rgb(220,220,255,0);
   background-repeat: no-repeat;
