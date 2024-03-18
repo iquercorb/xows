@@ -2432,7 +2432,7 @@ ring-acts btn-close {
 /* ------------------------------------------------------------------ */
 li-mesg {
   display: block;
-  margin: 16px 0 1px 0;
+  margin: 24px 0 1px 0;
   padding: 2px 16px;
   position: relative;
   cursor: default;
@@ -3099,6 +3099,7 @@ chat-inpt {
   color: var(--text-tone2);
   padding: 0 10px;
   margin: 0 16px 0 16px;
+  cursor: default;
 }
 #rply_name {
   flex: 1;
