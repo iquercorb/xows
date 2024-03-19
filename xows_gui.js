@@ -255,22 +255,13 @@ function xows_gui_peer_occu_li(room, ojid)
  */
 function xows_gui_peer_mesg_li(peer, id)
 {
-  /*
-  // Old implementation
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id);
-  } else {
-    return xows_doc_frag_element_find(peer.bare,"chat_hist",id);
-  }
-  */
-
   // Get Peer's history <ul> element in fast way
   const hist_ul = (peer === xows_gui_peer) ?
     document.getElementById("hist_ul") :
     xows_doc_frag_element_find(peer.bare,"chat_hist","hist_ul");
 
   // First search by id attribute
-  let li_mesg = hist_ul.querySelector("[id='"+id+"']");
+  let li_mesg = hist_ul.querySelector("[data-id='"+id+"']");
 
   // If no id attribute matches, search for Unique and Stable
   // Stanza IDs (XEP-0359) depending on Peer type.
@@ -3314,7 +3305,15 @@ function xows_gui_chat_hist_onclick(event)
     return;
   }
 
-  // Check for closted <li-mesg> parent
+  // Check for closest <mesg-rply> parent
+  const mesg_rply = event.target.closest("MESG-RPLY");
+  if(mesg_rply) {
+    // Highlight replied message
+    xows_gui_hist_mesg_highl(xows_gui_peer, mesg_rply.dataset.id);
+    return;
+  }
+
+  // Check for closest <li-mesg> parent
   const li_mesg = event.target.closest("LI-MESG");
   if(!li_mesg)
     return;
@@ -3585,36 +3584,6 @@ function xows_gui_hist_update(peer, bare, nick, avat)
   while(i--) if(cls != fig[i].className) fig[i].className = cls;
 }
 
-/**
- * Find history message <li> element corresponding to specified ID
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Message id
- */
-/*
-function xows_gui_hist_mesg_li(peer, id)
-{
-  // Get Peer's history <ul> element in fast way
-  const hist_ul = xows_doc_frag_element_find(peer.bare,"chat_hist","hist_ul");
-
-  let li_mesg = null;
-
-  // To follow the EXP-0359 (Unique and Stable Stanza IDs) rules we first try
-  // to match id with origin-id or stanza-id
-  if(peer.type === XOWS_PEER_ROOM) {
-    li_mesg = hist_ul.querySelector("[data-stnzid='"+id+"']");
-  } else {
-    li_mesg = hist_ul.querySelector("[data-origid='"+id+"']");
-  }
-
-  // Finaly search by id attribute
-  if(!li_mesg)
-    li_mesg = hist_ul.getElementById(id);
-
-  return li_mesg;
-}
-*/
-
 /* -------------------------------------------------------------------
  * Main Screen - History - Message edition
  * -------------------------------------------------------------------*/
@@ -3686,7 +3655,7 @@ function xows_gui_hist_mesg_discard(peer, id)
  */
 function xows_gui_hist_mesg_retract(peer, usid)
 {
-  // Depending situation we search for origin-id or stanza-id
+  // Retreive message element
   const li_mesg = xows_gui_peer_mesg_li(peer, usid);
 
   if(!li_mesg)
@@ -3701,6 +3670,34 @@ function xows_gui_hist_mesg_retract(peer, usid)
   if(next_li) {
     if(next_li.dataset.from === li_mesg.dataset.from)
       next_li.classList.toggle("MESG-APPEND", li_mesg.classList.contains("MESG-APPEND"));
+  }
+}
+
+/**
+ * Move scroll to the specified element
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ * @param   {object}    id        Message ID or Unique and Stable ID
+ */
+function xows_gui_hist_mesg_highl(peer, id)
+{
+  // Search for already highlighted message
+  const hig_li = xows_gui_peer_doc(peer, "hist_ul").querySelector(".HIGHLIGHT");
+  if(hig_li) hig_li.classList.remove("HIGHLIGHT");
+
+  // Retreive message element
+  const li_mesg = xows_gui_peer_mesg_li(peer, id);
+
+  if(!li_mesg)
+    return;
+
+  // Add Highlight class
+  li_mesg.classList.add("HIGHLIGHT");
+
+  if(peer === xows_gui_peer) {
+    // Scroll to element if necessary
+    if((li_mesg.offsetTop - xows_doc("chat_main").scrollTop) < 0)
+      li_mesg.scrollIntoView({behavior:"smooth",block:"center"});
   }
 }
 
@@ -4380,11 +4377,11 @@ function xows_gui_chat_rply_set(mesg)
 
   if(xows_gui_peer === XOWS_PEER_ROOM) {
     replyto = mesg.dataset.from;
-    replyid = mesg.dataset.origid ? mesg.dataset.origid : mesg.id;
+    replyid = mesg.dataset.stnzid ? mesg.dataset.stnzid : mesg.id;
     author = xows_cli_occu_any(xows_gui_peer, replyto);
   } else {
     replyto = xows_jid_bare(mesg.dataset.from);
-    replyid = mesg.dataset.stnzid ? mesg.dataset.stnzid : mesg.id;
+    replyid = mesg.dataset.origid ? mesg.dataset.origid : mesg.id;
     author = xows_gui_peer;
   }
 

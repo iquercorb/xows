@@ -343,7 +343,6 @@ function xows_tpl_template_parse(html, path, isinst, isinst2)
       xows_tpl_model[name] = document.createDocumentFragment();
       xows_tpl_model[name].appendChild(template.firstChild);
     } else {
-      console.log(temp_plate.head.firstChild);
       document.head.appendChild(temp_plate.head.firstChild);
     }
   } else {
@@ -1249,7 +1248,7 @@ function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
 
-  inst.id = message.id;
+  inst.dataset.id = message.id;
   inst.dataset.from = message.from;
   inst.dataset.time = message.time;
   if(message.origid) inst.dataset.origid = message.origid;
