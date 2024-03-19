@@ -2832,7 +2832,7 @@ function xows_xmp_mam_result_recv(result)
                                     "replace":replace,"retract":retract,"replyid":replyid,"replyto":replyto,
                                     "origid":origid,"stnzid":stnzid,"occuid":occuid});
 
-  xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from+" to "+to);
+  xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from);
 
   return true; //< stanza processed
 }

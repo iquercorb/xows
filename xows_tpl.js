@@ -1233,17 +1233,17 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
  * object from template to be added in the chat history list <ul>
  *
  * @param   {object}    sender    Sender Peer object
- * @param   {object}    recipient Recipient Peer object
  * @param   {object}    message   Message object
  * @param   {boolean}   receipt   Receipt required flag
  * @param   {boolean}   issent    Sent by client flag
  * @param   {boolean}   append    Append to group flag
- * @param   {string}   [reply]    Optionnal replied message ID
- * @param   {string}   [quote]    Optionnal replied message text
+ * @param   {object}   [quoted]   Quoted (Reply) Peer object
+ * @param   {string}   [quoteid]  Optionnal replied message ID
+ * @param   {string}   [quotetxt] Optionnal replied message text
  *
  * @return  {object}    History message <li> HTML Elements
  */
-function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, reply, quote)
+function xows_tpl_mesg_spawn(sender, message, receipt, issent, append, quoted, quoteid, quotetxt)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
@@ -1256,18 +1256,24 @@ function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append
   if(message.occuid) inst.dataset.occuid = message.occuid;
 
   // Set Reply data
-  if(reply) {
-    const mesg_rply = inst.querySelector("MESG-RPLY");
-    mesg_rply.hidden = false;
-    mesg_rply.dataset.to = recipient.bare;
-    mesg_rply.dataset.id = reply;
+  if(quoteid) {
+    // Get proper JID depending context
+    const quoted_jid = (quoted.type === XOWS_PEER_OCCU) ? quoted.jid : quoted.bare;
+    // Set Quoted avatar
     const rply_avat = inst.querySelector("RPLY-AVAT");
-    rply_avat.dataset.jid = recipient.bare;
-    rply_avat.className = xows_tpl_spawn_avat_cls(recipient.avat);
+    rply_avat.dataset.jid = quoted_jid;
+    rply_avat.className = xows_tpl_spawn_avat_cls(quoted.avat);
+    // Set Quoted nickname
     const rply_from = inst.querySelector("RPLY-FROM");
-    rply_from.dataset.jid = recipient.bare;
-    rply_from.innerText = recipient.name;
-    inst.querySelector("RPLY-BODY").innerHTML = quote;
+    rply_from.dataset.jid = quoted_jid;
+    rply_from.innerText = quoted.name;
+    // Set Quoted text
+    inst.querySelector("RPLY-BODY").innerHTML = quotetxt;
+    // Add Reply data and show element
+    const mesg_rply = inst.querySelector("MESG-RPLY");
+    mesg_rply.dataset.to = quoted_jid;
+    mesg_rply.dataset.id = quoteid;
+    mesg_rply.hidden = false;
   }
 
   // Set proper value to message elements
@@ -1291,13 +1297,16 @@ function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append
   inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(message.time);
   inst.querySelector("MESG-DATE").innerText = xows_l10n_date(message.time);
 
+  // Get proper JID depending context
+  const sender_jid = (sender.type === XOWS_PEER_OCCU) ? sender.jid : sender.bare;
+
   // Set author name with JID data
   const mesg_from = inst.querySelector("MESG-FROM");
-  mesg_from.dataset.jid = sender.bare;
+  mesg_from.dataset.jid = sender_jid;
   mesg_from.innerText = sender.name;
   // Set avatar class with JID data
   const mesg_avat = inst.querySelector("MESG-AVAT");
-  mesg_avat.dataset.jid = sender.bare;
+  mesg_avat.dataset.jid = sender_jid;
   mesg_avat.className = xows_tpl_spawn_avat_cls(sender.avat);
 
   const mesg_body = inst.querySelector("MESG-BODY");

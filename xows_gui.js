@@ -261,15 +261,15 @@ function xows_gui_peer_mesg_li(peer, id)
     xows_doc_frag_element_find(peer.bare,"chat_hist","hist_ul");
 
   // First search by id attribute
-  let li_mesg = hist_ul.querySelector("[data-id='"+id+"']");
+  let li_mesg = hist_ul.querySelector("LI-MESG[data-id='"+id+"']");
 
   // If no id attribute matches, search for Unique and Stable
   // Stanza IDs (XEP-0359) depending on Peer type.
   if(!li_mesg) {
     if(peer.type === XOWS_PEER_ROOM) {
-      li_mesg = hist_ul.querySelector("[data-stnzid='"+id+"']");
+      li_mesg = hist_ul.querySelector("LI-MESG[data-stnzid='"+id+"']");
     } else {
-      li_mesg = hist_ul.querySelector("[data-origid='"+id+"']");
+      li_mesg = hist_ul.querySelector("LI-MESG[data-origid='"+id+"']");
     }
   }
 
@@ -3505,11 +3505,11 @@ function xows_gui_chat_main_onresize(entries, observer)
  * author.
  *
  * @param   {object}    peer      Chat history Peer, Room or Contact
- * @param   {string}    bare      Message author Bare JID to search
+ * @param   {string}    jid       Message author JID to search
  * @param   {string}    nick      Replacement nickname to set
  * @param   {string}    avat      Replacement avatar hash to set
  */
-function xows_gui_hist_update(peer, bare, nick, avat)
+function xows_gui_hist_update(peer, jid, nick, avat)
 {
   // If incoming message is off-screen we get history <div> and <ul> of
   // fragment history corresponding to contact
@@ -3521,7 +3521,7 @@ function xows_gui_hist_update(peer, bare, nick, avat)
   let i;
 
   // Set new content for all <mesg-from>
-  const spn = hist_ul.querySelectorAll("MESG-FROM[data-jid='"+bare+"']");
+  const spn = hist_ul.querySelectorAll("MESG-FROM[data-jid='"+jid+"'],RPLY-FROM[data-jid='"+jid+"']");
   i = spn.length;
   while(i--) if(nick != spn[i].innerText) spn[i].innerText = nick;
 
@@ -3531,7 +3531,7 @@ function xows_gui_hist_update(peer, bare, nick, avat)
   const cls = xows_tpl_spawn_avat_cls(avat);
 
   // Set new CSS class to all corresponding figures
-  const fig = hist_ul.querySelectorAll("MESG-AVAT[data-jid='"+bare+"']");
+  const fig = hist_ul.querySelectorAll("MESG-AVAT[data-jid='"+jid+"'],RPLY-AVAT[data-jid='"+jid+"']");
   i = fig.length;
   while(i--) if(cls != fig[i].className) fig[i].className = cls;
 }
@@ -3543,7 +3543,7 @@ function xows_gui_hist_update(peer, bare, nick, avat)
  * Create new message DOM object to be inserted in history
  *
  * @param   {object}    sender    Sender Peer object
- * @param   {object}    recipient Recipient Peer object
+ * @param   {object}    quoted    Quoted (Reply) Peer object
  * @param   {object}    message   Message object
  * @param   {boolean}   receipt   Receipt required flag
  * @param   {boolean}   issent    Sent by clent flag
@@ -3551,7 +3551,7 @@ function xows_gui_hist_update(peer, bare, nick, avat)
  * @param   {object}   [old_li]   Optionnal replaced message element from history
  * @param   {object}   [rpl_li]   Optionnal replied message element from history
  */
-function xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, pre_li, old_li, rpl_li)
+function xows_gui_hist_mesg_spawn(sender, quoted, message, receipt, issent, pre_li, old_li, rpl_li)
 {
   // Default is to add a simple aggregated message without author
   // name and avatar
@@ -3570,12 +3570,13 @@ function xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, p
 
   // check for reply
   if(rpl_li) {
+    console.log(rpl_li);
     reply = rpl_li.dataset.stnzid ? rpl_li.dataset.stnzid : rpl_li.dataset.origid;
     quote = rpl_li.querySelector("MESG-BODY").innerText;
   }
 
   // Create message from template
-  return xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append, reply, quote);
+  return xows_tpl_mesg_spawn(sender, message, receipt, issent, append, quoted, reply, quote);
 }
 
 /**
@@ -3659,12 +3660,12 @@ function xows_gui_hist_mesg_highl(peer, id)
  *
  * @param   {object}    peer      Related Peer object
  * @param   {object}    sender    Sender Peer object
- * @param   {object}    recipient Recipient Peer object
+ * @param   {object}    quoted    Quoted (Reply) Peer object
  * @param   {object}    message   Message object
  * @param   {boolean}   receipt   Receipt required flag
  * @param   {boolean}   ismuc     Multi-User-Chat flag
  */
-function xows_gui_cli_onmessage(peer, sender, recipient, message, receipt, ismuc)
+function xows_gui_cli_onmessage(peer, sender, quoted, message, receipt, ismuc)
 {
   // Store whether message is sent by ourself
   const issent = (sender === xows_cli_self);
@@ -3720,7 +3721,7 @@ function xows_gui_cli_onmessage(peer, sender, recipient, message, receipt, ismuc
     }
 
     // Create new message element
-    const msg_li = xows_gui_hist_mesg_spawn(sender, recipient, message, receipt, issent, hist_ul.lastChild, old_li, rpl_li);
+    const msg_li = xows_gui_hist_mesg_spawn(sender, quoted, message, receipt, issent, hist_ul.lastChild, old_li, rpl_li);
 
     // Insert or append message, depending whether ref_li is null
     if(old_li) {
@@ -3899,7 +3900,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   for(let i = 0; i < n; ++i) {
 
     const sender = result[i].sender;
-    const recipient = result[i].recipient;
+    const quoted = result[i].quoted;
     const message = result[i].message;
 
     // Search for message retraction
@@ -3931,7 +3932,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     }
 
     // Create new message element
-    const msg_li = xows_gui_hist_mesg_spawn(sender, recipient, message, false, (sender === xows_cli_self), pre_li, old_li, rpl_li);
+    const msg_li = xows_gui_hist_mesg_spawn(sender, quoted, message, false, (sender === xows_cli_self), pre_li, old_li, rpl_li);
 
     if(old_li) {
       // Message correction is insert after the corrected message
@@ -4111,20 +4112,20 @@ function xows_gui_chat_panl_onclick(event)
       xows_gui_peer_scroll_down(xows_gui_peer);
       return;
     }
-    
+
     // Message Reply Close button
     case "rply_clos": {
       xows_gui_chat_rply_close();
       break;
     }
-    
+
     // Message Edition frame
     case "chat_edit": {
       // Set input focus to message edit area
       xows_gui_chat_inpt_focus();
       break;
     }
-    
+
     // Message Edition Input
     case "chat_inpt": {
       // Get selection range
@@ -4142,7 +4143,7 @@ function xows_gui_chat_panl_onclick(event)
       xows_gui_chat_inpt_rng = rng;
       break;
     }
-    
+
     // Upload button
     case "edit_bt_upld": {
       const chat_file = xows_doc("chat_file");
@@ -4152,7 +4153,7 @@ function xows_gui_chat_panl_onclick(event)
       chat_file.click();
       break;
     }
-    
+
     // Emoji button
     case "edit_bt_emoj": {
       // Toggle menu drop and focus button
@@ -4238,7 +4239,7 @@ function xows_gui_chat_rply_set(mesg)
 
   let author, replyid, replyto;
 
-  if(xows_gui_peer === XOWS_PEER_ROOM) {
+  if(xows_gui_peer.type === XOWS_PEER_ROOM) {
     replyto = mesg.dataset.from;
     replyid = mesg.dataset.stnzid ? mesg.dataset.stnzid : mesg.id;
     author = xows_cli_occu_any(xows_gui_peer, replyto);

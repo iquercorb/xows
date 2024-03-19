@@ -2446,7 +2446,8 @@ mesg-info {
   min-width: 0;
 }
 mesg-date {
-  font-size: 0.7em;
+  display: inline-block;
+  font-size: 0.8em;
   color: var(--text-tone3);
   margin-left: 8px;
   vertical-align: middle;
