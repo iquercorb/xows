@@ -3250,7 +3250,7 @@ function xows_gui_chat_main_onscroll(event)
 
   // If scroll is enough far from bottom, show the "Back to recent" banner
   if(chat_main.scrollSaved > chat_main.clientHeight)
-    xows_gui_hist_nav_open(xows_gui_peer);
+    xows_gui_chat_nav_open(xows_gui_peer);
 
   const hist_end = xows_doc("hist_end");
 
@@ -3265,7 +3265,7 @@ function xows_gui_chat_main_onscroll(event)
     // Check whether the scroll is at bottom of frame
     if(chat_main.scrollSaved < 50) {
       // Hide the "Back to recent" banner/button
-      xows_gui_hist_nav_close(xows_gui_peer);
+      xows_gui_chat_nav_close(xows_gui_peer);
     }
   }
 }
@@ -3280,20 +3280,10 @@ function xows_gui_chat_hist_onclick(event)
   xows_cli_activity_wakeup(); //< Wakeup presence
 
   if(event.target.id) {
-
     // Check for history Ringing dialog
     if(event.target.id.startsWith("ring")) {
       // Forward to dedicated function
       xows_gui_hist_ring_onclick(event);
-      return;
-    }
-
-    // Check History Navigation banner
-    if(event.target.id === "hist_nav") {
-      // Close navigation banner
-      xows_gui_hist_nav_close(xows_gui_peer);
-      // Go to end of history (last messages)
-      xows_gui_peer_scroll_down(xows_gui_peer);
       return;
     }
   }
@@ -3507,42 +3497,6 @@ function xows_gui_chat_main_onresize(entries, observer)
 {
   if(xows_gui_peer)
     xows_gui_peer_scroll_adjust(xows_gui_peer);
-}
-
-/* -------------------------------------------------------------------
- * Main Screen - Chat Frame - History - Navigation
- * -------------------------------------------------------------------*/
-/**
- * Function to open chat history navigation banner, with or without
- * Unread message alert.
- *
- * @param   {object}    peer      Peer object
- * @param   {boolean}   alert     Enabled unread message alert
- */
-function xows_gui_hist_nav_open(peer, alert = false)
-{
-  // Get the peer history bottom banner
-  const hist_nav = xows_gui_peer_doc(peer,"hist_nav");
-
-  // Set text
-  hist_nav.innerText = alert ?  xows_l10n_get("New unread messages") :
-                                xows_l10n_get("Back to recent messages");
-
-  // Set Unread Alert class
-  hist_nav.classList.toggle("UNDREAD", alert);
-
-  // Show or hide element
-  hist_nav.hidden = false;
-}
-
-/**
- * Function to close chat history navigation banner
- *
- * @param   {object}    peer     Peer object
- */
-function xows_gui_hist_nav_close(peer)
-{
-  xows_gui_peer_doc(peer,"hist_nav").hidden = true;
 }
 
 /* -------------------------------------------------------------------
@@ -3779,7 +3733,7 @@ function xows_gui_cli_onmessage(peer, sender, recipient, message, receipt, ismuc
   }
 
   if(!issent && xows_gui_peer_scroll_get(peer) >= 50) {
-    xows_gui_hist_nav_open(peer, true); //< Show the "new messages" alert
+    xows_gui_chat_nav_open(peer, true); //< Show the "new messages" alert
   } else {
     xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
   }
@@ -4151,17 +4105,29 @@ function xows_gui_chat_panl_onclick(event)
 
   switch(event.target.id)
   {
+    // History Navigation banner
+    case "chat_nav": {
+      // Close navigation banner
+      xows_gui_chat_nav_close(xows_gui_peer);
+      // Go to end of history (last messages)
+      xows_gui_peer_scroll_down(xows_gui_peer);
+      return;
+    }
+    
+    // Message Reply Close button
     case "rply_clos": {
       xows_gui_chat_rply_close();
       break;
     }
-
+    
+    // Message Edition frame
     case "chat_edit": {
       // Set input focus to message edit area
       xows_gui_chat_inpt_focus();
       break;
     }
-
+    
+    // Message Edition Input
     case "chat_inpt": {
       // Get selection range
       const rng = xows_doc_sel_rng(0);
@@ -4178,7 +4144,8 @@ function xows_gui_chat_panl_onclick(event)
       xows_gui_chat_inpt_rng = rng;
       break;
     }
-
+    
+    // Upload button
     case "edit_bt_upld": {
       const chat_file = xows_doc("chat_file");
       // Reset file input
@@ -4187,13 +4154,113 @@ function xows_gui_chat_panl_onclick(event)
       chat_file.click();
       break;
     }
-
+    
+    // Emoji button
     case "edit_bt_emoj": {
       // Toggle menu drop and focus button
       xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
       break;
     }
   }
+}
+
+/* -------------------------------------------------------------------
+ * Main Screen - Chat Frame - Foot Panel - Navigation
+ * -------------------------------------------------------------------*/
+/**
+ * Function to open chat history navigation banner, with or without
+ * Unread message alert.
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {boolean}   alert     Enabled unread message alert
+ */
+function xows_gui_chat_nav_open(peer, alert = false)
+{
+  // Get the peer history bottom banner
+  const chat_nav = xows_gui_peer_doc(peer,"chat_nav");
+
+  // Set text
+  chat_nav.innerText = alert ?  xows_l10n_get("New unread messages") :
+                                xows_l10n_get("Back to recent messages");
+
+  // Set Unread Alert class
+  chat_nav.classList.toggle("UNDREAD", alert);
+
+  // Show or hide element
+  chat_nav.hidden = false;
+}
+
+/**
+ * Function to close chat history navigation banner
+ *
+ * @param   {object}    peer     Peer object
+ */
+function xows_gui_chat_nav_close(peer)
+{
+  xows_gui_peer_doc(peer,"chat_nav").hidden = true;
+}
+
+/* -------------------------------------------------------------------
+ * Main screen - Chat Frame - Foot Panel - Reply banner
+ * -------------------------------------------------------------------*/
+/**
+ * Cancel or reset message reply
+ */
+function xows_gui_chat_rply_close()
+{
+  if(!xows_doc_cls_has("chat_panl","REPLY"))
+    return;
+
+  // Remove REPLY class from Chat Pannel
+  xows_doc("chat_panl").classList.remove("REPLY");
+
+  const chat_rply = xows_doc("chat_rply");
+  // Reset data and hide element
+  xows_doc("rply_name").innerText = "";
+  chat_rply.dataset.id = "";
+  chat_rply.dataset.to = "";
+
+  // Remove REPLY class from message is any
+  const hist_ul = xows_doc("hist_ul");
+  const li_mesg = hist_ul.querySelector("LI-MESG.REPLY");
+  if(li_mesg) li_mesg.classList.remove("REPLY");
+}
+
+/**
+ * Set message reply data and elements
+ *
+ * @param   {object}    mesg      Selected message to reply to
+ */
+function xows_gui_chat_rply_set(mesg)
+{
+  // Cancel any previous Reply
+  xows_gui_chat_rply_close();
+
+  const chat_rply = xows_doc("chat_rply");
+
+  let author, replyid, replyto;
+
+  if(xows_gui_peer === XOWS_PEER_ROOM) {
+    replyto = mesg.dataset.from;
+    replyid = mesg.dataset.stnzid ? mesg.dataset.stnzid : mesg.id;
+    author = xows_cli_occu_any(xows_gui_peer, replyto);
+  } else {
+    replyto = xows_jid_bare(mesg.dataset.from);
+    replyid = mesg.dataset.origid ? mesg.dataset.origid : mesg.id;
+    author = xows_gui_peer;
+  }
+
+  xows_doc("rply_name").innerText = author.name;
+  chat_rply.dataset.to = replyto;
+  chat_rply.dataset.id = replyid;
+  chat_rply.hidden = false;
+
+  // Set REPLY class to message and Chat Pannel
+  mesg.classList.add("REPLY");
+  xows_doc("chat_panl").classList.add("REPLY");
+
+  // Set input focus to message edit area
+  xows_gui_chat_inpt_focus();
 }
 
 /* -------------------------------------------------------------------
@@ -4334,70 +4401,6 @@ function xows_gui_chat_inpt_insert(text, tagname)
   // Store selection
   xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
 }
-
-/* -------------------------------------------------------------------
- * Main screen - Chat Frame - Foot Panel - Reply banner
- * -------------------------------------------------------------------*/
-/**
- * Cancel or reset message reply
- */
-function xows_gui_chat_rply_close()
-{
-  if(!xows_doc_cls_has("chat_panl","REPLY"))
-    return;
-
-  // Remove REPLY class from Chat Pannel
-  xows_doc("chat_panl").classList.remove("REPLY");
-
-  const chat_rply = xows_doc("chat_rply");
-  // Reset data and hide element
-  xows_doc("rply_name").innerText = "";
-  chat_rply.dataset.id = "";
-  chat_rply.dataset.to = "";
-
-  // Remove REPLY class from message is any
-  const hist_ul = xows_doc("hist_ul");
-  const li_mesg = hist_ul.querySelector("LI-MESG.REPLY");
-  if(li_mesg) li_mesg.classList.remove("REPLY");
-}
-
-/**
- * Set message reply data and elements
- *
- * @param   {object}    mesg      Selected message to reply to
- */
-function xows_gui_chat_rply_set(mesg)
-{
-  // Cancel any previous Reply
-  xows_gui_chat_rply_close();
-
-  const chat_rply = xows_doc("chat_rply");
-
-  let author, replyid, replyto;
-
-  if(xows_gui_peer === XOWS_PEER_ROOM) {
-    replyto = mesg.dataset.from;
-    replyid = mesg.dataset.stnzid ? mesg.dataset.stnzid : mesg.id;
-    author = xows_cli_occu_any(xows_gui_peer, replyto);
-  } else {
-    replyto = xows_jid_bare(mesg.dataset.from);
-    replyid = mesg.dataset.origid ? mesg.dataset.origid : mesg.id;
-    author = xows_gui_peer;
-  }
-
-  xows_doc("rply_name").innerText = author.name;
-  chat_rply.dataset.to = replyto;
-  chat_rply.dataset.id = replyid;
-  chat_rply.hidden = false;
-
-  // Set REPLY class to message and Chat Pannel
-  mesg.classList.add("REPLY");
-  xows_doc("chat_panl").classList.add("REPLY");
-
-  // Set input focus to message edit area
-  xows_gui_chat_inpt_focus();
-}
-
 /* -------------------------------------------------------------------
  * Main screen - Chat Frame - Foot Panel - Emoji Menu Drop
  * -------------------------------------------------------------------*/

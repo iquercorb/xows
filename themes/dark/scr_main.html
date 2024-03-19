@@ -151,9 +151,6 @@
             <li-mesg id="hist-mesg" XOWS_TPL_INSTANCED></li-mesg>
           </ul>
           <hist-bound hidden id="hist_end"></hist-bound>
-          <div hidden id="hist_nav">
-            ${'Back to recent messages'}
-          </div>
           <!-- Chat History - Call Signaling Dialog -->
           <div hidden id="hist_ring" data-type="">
             <ring-icon class="CALL-RING"></ring-icon>
@@ -186,6 +183,9 @@
           <div hidden id="drop_emoj" XOWS_TPL_IMPORT></div>
         </aside>
         <div id="chat_panl">
+          <div hidden id="chat_nav">
+            ${'Back to recent messages'}
+          </div>
           <div hidden id="chat_rply" data-id="" data-to="">
             ${'Reply to'}<span id="rply_name"></span>
             <button id="rply_clos" title="${'Cancel reply'}"></button>
