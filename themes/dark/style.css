@@ -2471,9 +2471,9 @@ mesg-body {
 mesg-body::after {
   content: attr(data-after);
   display: none;
-  font-size: .7em;
+  font-size: .65em;
   color: var(--text-tone3);
-  margin-left: 1em;
+  margin-left: 0.5em;
   line-height: 12px;
 }
 mesg-acts {

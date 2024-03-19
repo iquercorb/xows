@@ -1280,7 +1280,12 @@ function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append
   }
 
   // Set message "Append" style
-  if(append) inst.classList.add("MESG-APPEND");
+  if(append)
+    inst.classList.add("MESG-APPEND");
+
+  // If Replace id exists, set message as Modified
+  if(message.replace)
+    inst.classList.add("MESG-MODIFY");
 
   // Set time stamp elements
   inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(message.time);
@@ -1294,9 +1299,6 @@ function xows_tpl_mesg_spawn(sender, recipient, message, receipt, issent, append
   const mesg_avat = inst.querySelector("MESG-AVAT");
   mesg_avat.dataset.jid = sender.bare;
   mesg_avat.className = xows_tpl_spawn_avat_cls(sender.avat);
-
-  // If Replace id exists, set message as Modified
-  if(message.rpid) inst.classList.add("MESG-MODIFY");
 
   const mesg_body = inst.querySelector("MESG-BODY");
   const mesg_embd = inst.querySelector("MESG-EMBD");

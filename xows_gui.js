@@ -3360,7 +3360,6 @@ function xows_gui_chat_hist_onclick(event)
 /* -------------------------------------------------------------------
  * Main Screen - Chat Frame - History - Messages
  * -------------------------------------------------------------------*/
-
 /**
  * History message correction Cancel function
  *
@@ -3421,13 +3420,12 @@ function xows_gui_mesg_edit_valid(inpt)
     // Get message reply
     const rply = li_mesg.querySelector("MESG-RPLY");
     // Send message correction
-    xows_cli_send_message(xows_gui_peer, inpt_text, li_mesg.id, rply.dataset.id, rply.dataset.to);
+    xows_cli_send_message(xows_gui_peer, inpt_text, li_mesg.dataset.id, rply.dataset.id, rply.dataset.to);
   }
 
   // Close editor
   xows_tpl_mesg_edit_remove(li_mesg);
 }
-
 
 /**
  * Cancel history message retraction (delete) (close dialog)
