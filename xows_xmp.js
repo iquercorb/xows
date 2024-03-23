@@ -1075,9 +1075,9 @@ function xows_xmp_message_recv(stanza)
       return message ? xows_xmp_message_recv(message) : false;
     }
 
-    // Check whether this is a delivery receipt request or receive
-    if(xmlns === XOWS_NS_RECEIPTS && type === "chat") {
-      if(tname === "request") {
+    // Check for Message Delivery Receipts (XEP-0184)
+    if(xmlns === XOWS_NS_RECEIPTS) {
+      if(tname === "request") { //< Can be <request> or <received>
         xows_xmp_message_receipt_send(from, id);
       } else { //< we assume this is a <received>
         xows_xmp_fw_onreceipt(id, from, to, node.getAttribute("id"));
