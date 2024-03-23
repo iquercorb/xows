@@ -24,11 +24,11 @@
     <p>${'A public Room can be found by any user through normal means such as searching and service discovery'}</p>
   </fieldset>
 <!--
-<fieldset>
-  <input id="room_priv" type="checkbox"/></input>
-  <label for="room_pass">${'Password:'}</label>
-  <input id="room_pass" placeholder="${'password'}" type="text" disabled></input>
-</fieldset>
+  <fieldset>
+    <input id="room_priv" type="checkbox"/></input>
+    <label for="room_pass">${'Password:'}</label>
+    <input id="room_pass" placeholder="${'password'}" type="text" disabled></input>
+  </fieldset>
 -->
   <fieldset>
     <label for="room_mbon">${'Allowed to members only'}</label>
@@ -41,13 +41,25 @@
     <p>${'In moderated Rooms occupants must be given permission to speak by a Room moderator'}</p>
   </fieldset>
   <fieldset>
-    <label>${'Occupants anonymity'}</label>
+    <label>${'Occupants anonymity'}</label> <!-- muc#roomconfig_whois -->
     <select id="room_anon">
       <option value="moderators">${'Semi-Anonymous'}</option>
       <option value="anyone">${'Non-Anonymous'}</option>
     </select>
     <p>${'In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address'}</p>
   </fieldset>
+<!-- Ignored option, we set "moderator" as default value
+  <fieldset>
+    <label>${'Occupants visibility'}</label>
+    <select id="room_ocls">
+      <option value="none">${'None'}</option>
+      <option value="visitor">${'Visitor'}</option>
+      <option value="participant">${'Participant'}</option>
+      <option value="moderator">${'Moderator'}</option>
+    </select>
+    <p>${''}</p>
+  </fieldset>
+-->
 </section>
 
 <section>

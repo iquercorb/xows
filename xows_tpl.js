@@ -1232,18 +1232,16 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
  * Build and returns a new instance of history Message <hist-mesg>
  * object from template to be added in the chat history list <ul>
  *
- * @param   {object}    sender    Sender Peer object
- * @param   {object}    message   Message object
- * @param   {boolean}   receipt   Receipt required flag
- * @param   {boolean}   issent    Sent by client flag
- * @param   {boolean}   append    Append to group flag
- * @param   {object}   [quoted]   Quoted (Reply) Peer object
- * @param   {string}   [quoteid]  Optionnal replied message ID
- * @param   {string}   [quotetxt] Optionnal replied message text
+ * @param   {object}    peer        Related chat Peer object (Contact or Room)
+ * @param   {object}    message     Message object
+ * @param   {boolean}   receipt     Receipt required flag
+ * @param   {object}   [previous]   Previous history message <li-mesg> element
+ * @param   {object}   [replaced]   Replaced history message <li-mesg> element
+ * @param   {object}   [replied]    Replied history message <li-mesg> element
  *
- * @return  {object}    History message <li> HTML Elements
+ * @return  {object}    History message <li-mesg> HTML Elements
  */
-function xows_tpl_mesg_spawn(sender, message, receipt, issent, append, quoted, quoteid, quotetxt)
+function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
@@ -1255,29 +1253,76 @@ function xows_tpl_mesg_spawn(sender, message, receipt, issent, append, quoted, q
   if(message.stnzid) inst.dataset.stnzid = message.stnzid;
   if(message.occuid) inst.dataset.occuid = message.occuid;
 
-  // Set Reply data
-  if(quoteid) {
-    // Get proper JID depending context
-    const quoted_jid = (quoted.type === XOWS_PEER_OCCU) ? quoted.jid : quoted.bare;
+  // Check for Reply/Quoted Message
+  if(replied) {
+
+    // Get author Peer of quoted message
+    const quoted = xows_cli_author_get(peer, replied.dataset.from, replied.dataset.occuid);
+
+    // Check whether message is referencing ourself
+    if(quoted === xows_cli_self) 
+      inst.classList.add("MENTION");
+
+    // Get proper Peer identifier
+    let peerid = xows_cli_peer_iden(quoted);
+
     // Set Quoted avatar
     const rply_avat = inst.querySelector("RPLY-AVAT");
-    rply_avat.dataset.jid = quoted_jid;
+    rply_avat.dataset.peer = peerid;
     rply_avat.className = xows_tpl_spawn_avat_cls(quoted.avat);
+
     // Set Quoted nickname
     const rply_from = inst.querySelector("RPLY-FROM");
-    rply_from.dataset.jid = quoted_jid;
+    rply_from.dataset.peer = peerid;
     rply_from.innerText = quoted.name;
+
     // Set Quoted text
-    inst.querySelector("RPLY-BODY").innerHTML = quotetxt;
+    inst.querySelector("RPLY-BODY").innerHTML = replied.querySelector("MESG-BODY").innerText;
+
     // Add Reply data and show element
     const mesg_rply = inst.querySelector("MESG-RPLY");
-    mesg_rply.dataset.to = quoted_jid;
-    mesg_rply.dataset.id = quoteid;
+    mesg_rply.dataset.ref = replied.dataset.stnzid ? replied.dataset.stnzid : ( replied.dataset.origid ? replied.dataset.origid : replied.dataset.id ) ;
     mesg_rply.hidden = false;
+
   }
 
+  // Set Grouped/Append message style
+  let append;
+
+
+  if(replaced) {
+    // If this sis a correction message, we kee the same style as the replaced
+    append = replaced.classList.contains("MESG-APPEND");
+    // Set message as Modified
+    inst.classList.add("MESG-MODIFY");
+  } else if(previous) {
+    // If previous message author is different or if elapsed time is
+    // greater than # minutes, we create a new full message block
+    if(!replied && ((message.time - previous.dataset.time) < XOWS_MESG_AGGR_THRESHOLD) && (previous.dataset.from === message.from))
+      append = true;
+  }
+
+  // Set message "Append" style
+  if(append)
+    inst.classList.add("MESG-APPEND");
+
+  // Get message author
+  const author = xows_cli_author_get(peer, message.from, message.occuid);
+
+  // Get proper Peer identifier
+  let peerid = xows_cli_peer_iden(author);
+
+  // Set author name with JID data
+  const mesg_from = inst.querySelector("MESG-FROM");
+  mesg_from.dataset.peer = peerid;
+  mesg_from.innerText = author.name;
+  // Set avatar class with JID data
+  const mesg_avat = inst.querySelector("MESG-AVAT");
+  mesg_avat.dataset.peer = peerid;
+  mesg_avat.className = xows_tpl_spawn_avat_cls(author.avat);
+
   // Set proper value to message elements
-  if(issent) {
+  if(author === xows_cli_self) {
     inst.classList.add("MESG-SENT");
     // If receipt not required, mark message as receipt received
     if(!receipt) inst.classList.add("MESG-RECP");
@@ -1285,29 +1330,9 @@ function xows_tpl_mesg_spawn(sender, message, receipt, issent, append, quoted, q
     inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(message.body);
   }
 
-  // Set message "Append" style
-  if(append)
-    inst.classList.add("MESG-APPEND");
-
-  // If Replace id exists, set message as Modified
-  if(message.replace)
-    inst.classList.add("MESG-MODIFY");
-
   // Set time stamp elements
   inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(message.time);
   inst.querySelector("MESG-DATE").innerText = xows_l10n_date(message.time);
-
-  // Get proper JID depending context
-  const sender_jid = (sender.type === XOWS_PEER_OCCU) ? sender.jid : sender.bare;
-
-  // Set author name with JID data
-  const mesg_from = inst.querySelector("MESG-FROM");
-  mesg_from.dataset.jid = sender_jid;
-  mesg_from.innerText = sender.name;
-  // Set avatar class with JID data
-  const mesg_avat = inst.querySelector("MESG-AVAT");
-  mesg_avat.dataset.jid = sender_jid;
-  mesg_avat.className = xows_tpl_spawn_avat_cls(sender.avat);
 
   const mesg_body = inst.querySelector("MESG-BODY");
   const mesg_embd = inst.querySelector("MESG-EMBD");
@@ -1337,19 +1362,19 @@ function xows_tpl_mesg_spawn(sender, message, receipt, issent, append, quoted, q
  * Update the specified instance of Message <li-mesg> object.
  *
  * @param   {object}    li        Message <li-mesg> element to update
- * @param   {object}    mesg      Message object
- * @param   {boolean}   recp      Marks message as receipt received
+ * @param   {object}    message   Message object
+ * @param   {boolean}   receipt   Marks message as receipt received
  *
  * @return  {object}    History message <li> HTML Elements
  */
-function xows_tpl_mesg_update(li, mesg, recp)
+function xows_tpl_mesg_update(li, message, receipt)
 {
-  if(mesg.origid) li.dataset.origid = mesg.origid;
-  if(mesg.stnzid) li.dataset.stnzid = mesg.stnzid;
-  if(mesg.occuid) li.dataset.occuid = mesg.occuid;
+  if(message.origid) li.dataset.origid = message.origid;
+  if(message.stnzid) li.dataset.stnzid = message.stnzid;
+  if(message.occuid) li.dataset.occuid = message.occuid;
 
   // Marks message à receipt received
-  if(recp) li.classList.add("MESG-RECP");
+  if(receipt) li.classList.add("MESG-RECP");
 }
 
 /**

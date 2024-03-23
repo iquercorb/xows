@@ -111,13 +111,13 @@ const xows_cach_peer_db = new Map();
 /**
  * Save User, Room or Occupant data to localStorage and live DB
  *
- * @param   {string}    from      User, Room or Occupant JID/Address
+ * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
  * @param   {string}    name      Nickname or displayed name
  * @param   {string}    avat      Associated avatar hash
  * @param   {string}    desc      Status or description
  * @param   {boolean}   noti      Enable push notification
  */
-function xows_cach_peer_save(from, name, avat, desc, noti)
+function xows_cach_peer_save(iden, name, avat, desc, noti)
 {
   let cach = null;
 
@@ -128,7 +128,7 @@ function xows_cach_peer_save(from, name, avat, desc, noti)
     // If partial data update, we first extract existing data
     // if any and update available data
     try {
-      cach = JSON.parse(localStorage.getItem(from));
+      cach = JSON.parse(localStorage.getItem(iden));
     } catch(e) {
       xows_log(1,"cli_cache_peer_add","JSON parse error",e);
     }
@@ -144,22 +144,22 @@ function xows_cach_peer_save(from, name, avat, desc, noti)
   }
 
   // Store in live DB and localStorage
-  xows_cach_peer_db.set(from, cach);
-  localStorage.setItem(from, JSON.stringify(cach));
+  xows_cach_peer_db.set(iden, cach);
+  localStorage.setItem(iden, JSON.stringify(cach));
 }
 
 /**
  * Check whether peer JID exists in localStorage or live DB
  *
- * @param   {string}    from      User, Room or Occupant JID/Address to search
+ * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
  *
  * @return  {string}    True if cached data exists, false otherwise
  */
-function xows_cach_peer_has(from)
+function xows_cach_peer_has(iden)
 {
-  if(xows_cach_peer_db.has(from)) {
+  if(xows_cach_peer_db.has(iden)) {
     return true;
-  } else if(localStorage.hasOwnProperty(from)) {
+  } else if(localStorage.hasOwnProperty(iden)) {
     return true;
   }
   return false;
@@ -169,27 +169,27 @@ function xows_cach_peer_has(from)
  * Retreive User, Room or Occupant data stored in localStorage
  * or live DB.
  *
- * @param   {string}    from      User, Room or Occupant JID/Address to search
+ * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
  *
  * @return  {object}    Peer data or null if not found
  */
-function xows_cach_peer_get(from)
+function xows_cach_peer_get(iden)
 {
   // Try in live DB
-  if(xows_cach_peer_db.has(from))
-    return xows_cach_peer_db.get(from);
+  if(xows_cach_peer_db.has(iden))
+    return xows_cach_peer_db.get(iden);
 
   // Try in localStorage (and load to live DB)
-  if(localStorage.hasOwnProperty(from)) {
+  if(localStorage.hasOwnProperty(iden)) {
     try {
-      xows_cach_peer_db.set(from,JSON.parse(localStorage.getItem(from)));
+      xows_cach_peer_db.set(iden,JSON.parse(localStorage.getItem(iden)));
     } catch(e) {
       // malformed data
       xows_log(1,"cli_cache_peer_get","JSON parse error",e);
-      localStorage.removeItem(from);
+      localStorage.removeItem(iden);
       return null;
     }
-    return xows_cach_peer_db.get(from);
+    return xows_cach_peer_db.get(iden);
   }
 
   return null;

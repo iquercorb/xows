@@ -1041,7 +1041,7 @@ function xows_xmp_message_recv(stanza)
     return true;
   }
 
-  let time, body, origid, stnzid, occuid, replace, replyid, replyto;
+  let time, body, chatstate, origid, stnzid, occuid, replace, replyid, replyto;
 
   let i = stanza.childNodes.length;
   while(i--) {
@@ -1076,7 +1076,7 @@ function xows_xmp_message_recv(stanza)
     }
 
     // Check whether this is a delivery receipt request or receive
-    if(xmlns === XOWS_NS_RECEIPTS) {
+    if(xmlns === XOWS_NS_RECEIPTS && type === "chat") {
       if(tname === "request") {
         xows_xmp_message_receipt_send(from, id);
       } else { //< we assume this is a <received>
@@ -1087,13 +1087,19 @@ function xows_xmp_message_recv(stanza)
 
     // Check for chat state notification
     if(xmlns === XOWS_NS_CHATSTATES) {
-      xows_xmp_fw_onchatstate(id, from, type, xows_xmp_chatstate_value[node.tagName]);
-      return true;
+      chatstate = xows_xmp_chatstate_value[tname];
+      continue;
     }
 
     // Check for <delay> node, meaning of offline storage delivery
     if(xmlns === XOWS_NS_DELAY) {
       time = new Date(node.getAttribute("stamp")).getTime();
+      continue;
+    }
+
+    // Check for Anonymous unique occupant identifiers for MUCs (XEP-0421)
+    if(xmlns === XOWS_NS_OCCUID) {
+      occuid = node.getAttribute("id");
       continue;
     }
 
@@ -1109,12 +1115,6 @@ function xows_xmp_message_recv(stanza)
       replyid = node.getAttribute("id");
       if(node.hasAttribute("to"))
         replyto = node.getAttribute("to");
-      continue;
-    }
-
-    // Check for Anonymous unique occupant identifiers for MUCs (XEP-0421)
-    if(xmlns === XOWS_NS_OCCUID) {
-      occuid = node.getAttribute("id");
       continue;
     }
 
@@ -1144,10 +1144,17 @@ function xows_xmp_message_recv(stanza)
     }
   }
 
+
   if(body !== undefined) {
     xows_xmp_fw_onmessage({ "id":id,"from":from,"to":to,"type":type,"body":body,"time":time,
                             "replace":replace,"replyid":replyid,"replyto":replyto,
                             "origid":origid,"stnzid":stnzid,"occuid":occuid});
+    return true;
+
+  } else if(chatstate !== undefined) {
+
+    xows_xmp_fw_onchatstate(id, from, type, chatstate, occuid);
+
     return true;
   }
 
@@ -1513,90 +1520,118 @@ function xows_xmp_presence_recv(stanza)
   const from = stanza.getAttribute("from"); //< Sender JID/Ress
 
   // Usual presence informations
-  let show, prio, stat;
+  let show;
 
+  // Check whether presence has "type" attribute
   if(stanza.hasAttribute("type")) {
-    const type = stanza.getAttribute("type"); //< Presence type
-    if(type === "unavailable") show = -1; // unavailabel <presence>
-    if(type.includes("subscrib")) { //< subscription <presence>
+
+    const type = stanza.getAttribute("type");
+
+    switch(type)
+    {
+    case "unavailable":
+      show = -1;
+      break;
+
+    case "subscribe":
+    case "unsubscribe":
+    case "subscribed":
+    case "unsubscribed": {
       xows_log(2,"xmp_presence_recv","received subscrib",from+" type:"+type);
+
       // Check for <nick> child
       const node = stanza.querySelector("nick");
       const nick = node ? xows_xml_innertext(node) : null;
+
       // Foward subscription
       xows_xmp_fw_onsubscrib(from, type, nick);
-      return true;
+      return true; }
+
+    case "error": {
+      const err = "("+from+") "+xows_xmp_iq_error_text(stanza);
+      xows_log(1,"xmp_presence_recv","error",from+" - "+err);
+
+      // Forward error
+      xows_xmp_fw_onerror(XOWS_SIG_ERR,err);
+      return true; }
     }
-    if(type === "error") { //<  an error occurred
-      const err_msg = "("+from+") "+xows_xmp_iq_error_text(stanza);
-      xows_log(1,"xmp_presence_recv","error",from+" - "+err_msg);
-      xows_xmp_fw_onerror(XOWS_SIG_ERR,err_msg);
-      return true;
-    }
+
   }
 
   // Additionnal <presence> informations or data
-  let node, muc, phot;
+  let priority, status, photo, caps, occuid, mucuser;
 
-  let child, i = stanza.childNodes.length;
+  let i = stanza.childNodes.length;
   while(i--) {
-    child = stanza.childNodes[i];
+    const node = stanza.childNodes[i];
 
-    if(child.nodeType !== 1)
+    if(node.nodeType !== 1)
       continue;
 
-    // Check for usual presence informations
-    if(child.tagName === "show") {
-      const text = xows_xml_innertext(child);
+    const tname = node.tagName;
+    const xmlns = node.getAttribute("xmlns");
+
+    // Check for common presence informations
+    switch(tname)
+    {
+    case "show": {
+      const text = xows_xml_innertext(node);
       show = text ? xows_xmp_show_level.get(text) : XOWS_SHOW_ON; //< No text mean simply "available"
+      continue; }
+
+    case "priority":
+      priority = xows_xml_innertext(node);
+      continue;
+
+    case "status":
+      status = xows_xml_innertext(node);
       continue;
     }
-    if(child.tagName === "priority") {
-      prio = xows_xml_innertext(child); continue;
-    }
-    if(child.tagName === "status") {
-      stat = xows_xml_innertext(child); continue;
-    }
-    // Check for entity capabilities (XEP-0115)
-    if(child.tagName === "c") {
-      if(child.getAttribute("xmlns") === XOWS_NS_CAPS) {
-        node = {"node":child.getAttribute("node"),
-                "ver" :child.getAttribute("ver")};
-      }
+
+    switch(xmlns)
+    {
+    case XOWS_NS_VCARDXUPDATE: //< vcard-temp for photo element (XEP-0054)
+      photo = xows_xml_innertext(node.firstChild); //< should be an <photo>
       continue;
-    }
-    // Check for <x> element
-    if(child.tagName === "x") {
-      const xmlns = child.getAttribute("xmlns");
-      // Check whether we received a MUC presence protocole
-      if(xmlns === XOWS_NS_MUCUSER) {
-        const item = child.querySelector("item"); //< should be an <item>
-        muc = { "affi" : xows_xmp_affi_level_map[item.getAttribute("affiliation")],
-                "role" : xows_xmp_role_level_map[item.getAttribute("role")],
-                "full" : item.getAttribute("jid"),
-                "nick" : item.getAttribute("nickname"),
-                "code" : []};
-        const status = child.querySelectorAll("status"); //< search for <status>
-        let j = status.length;
-        while(j--) muc.code.push(parseInt(status[j].getAttribute("code")));
-      }
-      // Check whether we have a vcard-temp element (avatar)
-      if(xmlns === XOWS_NS_VCARDXUPDATE) {
-        phot = xows_xml_innertext(child.firstChild); //< should be an <photo>
-      }
+
+    case XOWS_NS_CAPS: //< Entity capabilities (XEP-0115)
+      caps = {"node":node.getAttribute("node"),
+              "ver" :node.getAttribute("ver")};
+      continue;
+
+    case XOWS_NS_OCCUID: //< Anonymous unique occupant ID (XEP-0421)
+      occuid = node.getAttribute("id");
+      continue;
+
+    case XOWS_NS_MUCUSER: { //< Room occupant informations
+      const item = node.querySelector("item"); //< should be an <item>
+
+      mucuser = { "affiliation" : xows_xmp_affi_level_map[item.getAttribute("affiliation")],
+                  "role"        : xows_xmp_role_level_map[item.getAttribute("role")],
+                  "jid"         : item.getAttribute("jid"),
+                  "nickname"    : item.getAttribute("nickname"),
+                  "code"        : []};
+
+      const codes = node.querySelectorAll("status"); //< search for <status>
+      let j = codes.length;
+      while(j--) mucuser.code.push(parseInt(codes[j].getAttribute("code")));
+      continue; }
     }
   }
 
   // Check whether this a presence from MUC
-  if(muc !== undefined) {
+  if(mucuser !== undefined) {
+
     xows_log(2,"xmp_presence_recv","received MUC presence",from);
-    xows_xmp_fw_onoccupant(from, show, stat, muc, phot);
-    return true;
+    xows_xmp_fw_onoccupant(from, show, status, mucuser, occuid, photo);
+
+  } else {
+
+    // Default is usual contact presence
+    xows_log(2,"xmp_presence_recv","received presence",from+" show:"+show);
+    xows_xmp_fw_onpresence(from, show, priority, status, caps, photo);
   }
 
-  // Default is usual contact presence
-  xows_log(2,"xmp_presence_recv","received presence",from+" show:"+show);
-  xows_xmp_fw_onpresence(from, show, prio, stat, node, phot);
   return true;
 }
 
@@ -1980,13 +2015,30 @@ function xows_xmp_xdata_parse(x)
   const form = [];
   // Turn each <field> into object's array
   const nodes = x.getElementsByTagName("field");
-  for(let i = 0, n = nodes.length; i < n; ++i) {
-    form.push({
+  for(let i = 0; i < nodes.length; ++i) {
+    // Create base Field object
+    const field = {
       "required"  : (nodes[i].querySelector("required") !== null),
       "type"      : nodes[i].getAttribute("type"),
       "label"     : nodes[i].getAttribute("label"),
       "var"       : nodes[i].getAttribute("var"),
-      "value"     : xows_xml_innertext(nodes[i].querySelector("value"))});
+      "value"     : xows_xml_innertext(nodes[i].querySelector(":scope > value"))};
+
+    // Check for <desc> node
+    const desc = nodes[i].querySelector(":scope > desc");
+    if(desc) field.desc = xows_xml_innertext(desc);
+
+    // Fill option array if any
+    const option = nodes[i].querySelectorAll(":scope > option");
+    if(option.length) {
+      field.option = [];
+      for(let j = 0; j < option.length; ++j) {
+        field.option.push({
+          "label":option[j].getAttribute("label"),
+          "value":xows_xml_innertext(option[j].querySelector(":scope > value"))});
+      }
+    }
+    form.push(field);
   }
   return form;
 }
@@ -2769,7 +2821,7 @@ function xows_xmp_mam_result_recv(result)
 
     // Get XMLNS
     const xmlns = node.getAttribute("xmlns");
-    const tagnm = node.tagName;
+    const tname = node.tagName;
 
     // Check for chatstate
     if(xmlns === XOWS_NS_CHATSTATES)
@@ -2802,8 +2854,8 @@ function xows_xmp_mam_result_recv(result)
     }
 
     if(xmlns === XOWS_NS_SID) {
-      if(tagnm === "origin-id") origid = node.getAttribute("id");
-      if(tagnm === "stanza-id") stnzid = node.getAttribute("id");
+      if(tname === "origin-id") origid = node.getAttribute("id");
+      if(tname === "stanza-id") stnzid = node.getAttribute("id");
       continue;
     }
 
@@ -2813,7 +2865,7 @@ function xows_xmp_mam_result_recv(result)
     }
 
     // Check for <body> node
-    if(tagnm === "body") {
+    if(tname === "body") {
       body = node.hasChildNodes() ? xows_xml_innertext(node) : "";
     }
   }

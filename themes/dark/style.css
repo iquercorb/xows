@@ -102,9 +102,11 @@
   --show-on:          #2BAC53;  /* Online */
   --show-chat:        #33A5D5;  /* Available for chat */
   
-  /* Message reply highlight coloring */
-  --highl-bord:        #FFB000;  /* Highlight Border/Outline */
-  --highl-tone4:       #403D37;  /* Highlight background (match --base-tone4) */
+  /* Message coloring */
+  --focus-line:       #EDC42F;  /* Focused message border/outline */
+  --focus-base:       #42403B;  /* Focused message background */
+  --highl-line:       #A7A7BF;  /* Highlight/Mention message border/outline */
+  --highl-base:       #3E3E4F;  /* Highlight/Mention message background */
 }
 [hidden] {
   display: none !important;
@@ -2404,10 +2406,15 @@ li-mesg:hover {
 li-mesg.SELECTED {
   background-color: var(--base-tone7);
 }
-li-mesg.REPLY,
-li-mesg.HIGHLIGHT {
-  border-color: var(--highl-bord);
-  background-color: var(--highl-tone4);
+li-mesg.MENTION {
+  border-color: var(--highl-line);
+  background-color: var(--highl-base);
+  transition: background-color 200ms ease;
+  transition: border-color 200ms ease; 
+}
+li-mesg.FOCUS {
+  border-color: var(--focus-line);
+  background-color: var(--focus-base);
   transition: background-color 200ms ease;
   transition: border-color 200ms ease; 
 }

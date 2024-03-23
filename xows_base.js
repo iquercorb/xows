@@ -61,9 +61,9 @@ const XOWS_SIG_WRN =  0;
 const XOWS_SIG_OK  =  1;
 
 /**
- * Xows Logo SVG path
+ * Xows Logo SVG path (24 x 19.4 mm)
  */
-const XOWS_LOGO_SVG = new Path2D("M10.994 4.996c-.984.04-2.059.721-2.915 1.597l2.507 3.932c-2.324 1.46-3.423 3.52-4.123 5.77-2.321.222-.707-4.31-.866-5.36 0 0-3.727 5.906-1.61 7.566 1.515 1.188 4.08 1.648 4.08 1.648l-3.26 4.135c2.218.746 7.152.823 7.152.823l2.83-4.405h1.98l2.83 4.405s4.934-.077 7.152-.823l-3.26-4.135s2.565-.46 4.08-1.648c2.118-1.66-1.709-7.565-1.709-7.565-.158 1.049 1.554 5.58-.766 5.36-.7-2.251-1.8-4.311-4.124-5.771l2.508-3.932c-.857-.876-1.932-1.558-2.916-1.597-.14-.005-.28.002-.416.024L16.371 9.7h-1.184L11.41 5.02a2.083 2.083 0 0 0-.416-.024zm1.474 8.47c1.747 0 1.497 2.672 1.497 2.672s-1.003.028-1.945.028c-.942 0-1.594-.05-1.594-.752 0-.703.295-1.948 2.042-1.948zm6.622 0c1.747 0 2.043 1.245 2.043 1.948 0 .703-.653.752-1.595.752a80.32 80.32 0 0 1-1.945-.028s-.25-2.672 1.497-2.672z");
+const XOWS_LOGO_SVG = new Path2D("m7.39 0.00182c-0.949 0.0386-1.99 0.696-2.81 1.54l2.42 3.79c-2.24 1.41-3.3 3.4-3.98 5.57-2.24 0.214-0.682-4.16-0.836-5.17 0 0-3.6 5.7-1.55 7.3 1.46 1.15 3.94 1.59 3.94 1.59l-3.15 3.99c2.14 0.72 6.9 0.794 6.9 0.794l2.73-4.25h1.91l2.73 4.25s4.76-0.0743 6.9-0.794l-3.15-3.99s2.47-0.444 3.94-1.59c2.04-1.6-1.65-7.3-1.65-7.3-0.152 1.01 1.5 5.38-0.739 5.17-0.675-2.17-1.74-4.16-3.98-5.57l2.42-3.79c-0.827-0.845-1.86-1.5-2.81-1.54-0.135-0.00482-0.27 0.00193-0.401 0.0232l-3.64 4.52h-1.14l-3.64-4.52a2.01 2.01 0 0 0-0.401-0.0232zm1.42 8.17c1.69 0 1.44 2.58 1.44 2.58s-0.968 0.027-1.88 0.027-1.54-0.0482-1.54-0.726c0-0.678 0.285-1.88 1.97-1.88zm6.39 0c1.69 0 1.97 1.2 1.97 1.88 0 0.678-0.63 0.726-1.54 0.726a77.5 77.5 0 0 1-1.88-0.027s-0.241-2.58 1.44-2.58z");
 
 /**
  * Check whether the the given value matches the specified bitmask
@@ -1101,10 +1101,10 @@ function xows_gen_avatar(size, image, name, font)
       // Generate pseudo-random hue from name
       let s = 0, i = name.length;
       while(i--) s += name.charCodeAt(i);
-      const h = (xows_random(s)*2)*180;
+      const h = xows_random(s) * 360;
 
       // Fill background with color
-      ct.fillStyle = "hsl("+h+",85%,45%)";
+      ct.fillStyle = "hsl("+h+",100%,40%)";
       //ct.arc(half, half, half, 0, 2*Math.PI);
       ct.rect(0, 0, size, size);
       ct.fill();
@@ -1112,9 +1112,17 @@ function xows_gen_avatar(size, image, name, font)
       // Set foreground Color
       ct.fillStyle = "#FFF";
 
-      // Draw the logo from SVG path
-      const scale = size/32;
+      // Draw the logo from SVG path (24 x 19.4 unites)
+      const ratio = 0.7; // Primary Logo scale 
+      
+      // Set position to center logo
+      const half = (size * 0.5);
+      ct.translate(half - (24 * ratio), half - (21 * ratio));
+      
+      // Set path scale relative to bitmap size
+      const scale = (size / 24) * ratio;
       ct.scale(scale, scale);
+
       ct.fill(XOWS_LOGO_SVG);
     }
   }
