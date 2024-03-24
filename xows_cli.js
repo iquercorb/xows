@@ -44,7 +44,7 @@
 const xows_cli_feat_own = [];
 
 /**
- * List of available server feature
+ * List of discovered entities
  */
 const xows_cli_entities = new Map();
 
@@ -808,6 +808,42 @@ function xows_cli_connected()
 /* -------------------------------------------------------------------
  * Client API - Entities Discovery routines
  * -------------------------------------------------------------------*/
+/*
+function xows_cli_init_disco_start()
+{
+  // Send query
+  xows_xmp_disco_info_query(xows_cli_self.bare, null, xows_cli_init_discoinfo_self);
+}
+
+function xows_cli_init_discoinfo_self(from, iden, feat, form)
+{
+  // Add account features
+  xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
+  
+  // Send query for host disco info
+  xows_xmp_disco_info_query(xows_xmp_host, null, xows_cli_init_discoinfo_host);
+}
+
+function xows_cli_init_discoinfo_host(from, iden, feat, form)
+{
+  // Add host features
+  xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
+
+  // Search whether entity has http://jabber.org/protocol/disco#items
+  if(feat.includes(XOWS_NS_DISCOITEMS)) {
+
+    // Query for entity items
+    xows_xmp_disco_items_query(from, xows_cli_init_discoitems_host);
+  }
+}
+
+const xows_cli_init_discoitems_stk = [];
+
+function xows_cli_init_discoitems_host(from, item)
+{
+  
+}
+*/
 /**
  * Discovery session stack to track end fo discovery
  */
@@ -819,7 +855,7 @@ const xows_cli_disco_stk = [];
  * @param   {string}    to        Entity JID to query disco#info to
  * @param   {string}   [node]     Optionnal node to query to
  */
-function xows_cli_discoinfo_query(to, node = null)
+function xows_cli_discoinfo_query(to, node = null, onparse)
 {
   // Push entiy discovery
   xows_cli_disco_stk.push(to);
@@ -896,11 +932,14 @@ function xows_cli_discoitems_parse(from, item)
 
   for(let i = 0, n = item.length; i < n; ++i) {
 
+    xows_log(2,"cli_discoitems_parse","discovered item",item[i].jid);
+
     // Add items to entity
     entity.item.push(item[i].jid);
 
     // Query disco#info for this item
-    xows_cli_discoinfo_query(item[i].jid);
+    if(entity.feat.includes(XOWS_NS_DISCOINFO))
+      xows_cli_discoinfo_query(item[i].jid);
   }
 
   // Pop entiy discovery
