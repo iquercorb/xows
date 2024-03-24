@@ -773,20 +773,16 @@ function xows_cli_xmp_onsession(bind)
 
   if(xows_cli_connect_loss) {
 
+    // Query for MUC room list
+    xows_cli_muc_roomlist_query();
+
     // Recovery from connection loss, skip features & services discovery
     xows_xmp_rost_get_query(xows_cli_initialize);
 
   } else {
+
     // Start features & services discovery
-
-    // Add own JID for discovery to get available account features
-    xows_cli_disco_queue(xows_cli_self.bare);
-
-    // Add server for discovery to get available features and services
-    xows_cli_disco_queue(xows_xmp_host);
-
-    // Here we go...
-    xows_cli_disco_start(xows_cli_disco_finish, true);
+    xows_cli_init_disco_start();
   }
 }
 
@@ -808,151 +804,127 @@ function xows_cli_connected()
 /* -------------------------------------------------------------------
  * Client API - Entities Discovery routines
  * -------------------------------------------------------------------*/
-/*
+/**
+ * Initial discovery - start discovery
+ */
 function xows_cli_init_disco_start()
 {
-  // Send query
+  // Query for own account infos/features
   xows_xmp_disco_info_query(xows_cli_self.bare, null, xows_cli_init_discoinfo_self);
 }
 
-function xows_cli_init_discoinfo_self(from, iden, feat, form)
-{
-  // Add account features
-  xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
-  
-  // Send query for host disco info
-  xows_xmp_disco_info_query(xows_xmp_host, null, xows_cli_init_discoinfo_host);
-}
-
-function xows_cli_init_discoinfo_host(from, iden, feat, form)
-{
-  // Add host features
-  xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
-
-  // Search whether entity has http://jabber.org/protocol/disco#items
-  if(feat.includes(XOWS_NS_DISCOITEMS)) {
-
-    // Query for entity items
-    xows_xmp_disco_items_query(from, xows_cli_init_discoitems_host);
-  }
-}
-
-const xows_cli_init_discoitems_stk = [];
-
-function xows_cli_init_discoitems_host(from, item)
-{
-  
-}
-*/
 /**
- * Discovery session stack to track end fo discovery
- */
-const xows_cli_disco_stk = [];
-
-/**
- * Query disco#info for the specified entity
- *
- * @param   {string}    to        Entity JID to query disco#info to
- * @param   {string}   [node]     Optionnal node to query to
- */
-function xows_cli_discoinfo_query(to, node = null, onparse)
-{
-  // Push entiy discovery
-  xows_cli_disco_stk.push(to);
-
-  // Send query
-  xows_xmp_disco_info_query(to, node, xows_cli_discoinfo_parse);
-}
-
-/**
- * Handle disco#info query to entity
- *
- * Called once the query result is received, continue the discovery
- * process by sending a disco#items to server.
+ * Initial discovery - parse own account info
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  iden      Array of parsed <identity> objects
  * @param   {string[]}  feat      Array of parsed feature strings
  * @param   {object}   [form]     Optionnal x data form included in result
  */
-function xows_cli_discoinfo_parse(from, iden, feat, form)
+function xows_cli_init_discoinfo_self(from, iden, feat, form)
 {
-  xows_log(2,"cli_discoinfo_parse","discovered entiy",from);
-
+  // Add account features
   xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
 
-  if(iden.length) { //< let this check ! sever may respond without "<identity>"
-    // Check whether entity is a MUC Room
-    if(from.includes("@") && iden[0].category === "conference")
-      xows_cli_muc_discoinfo_parse(from, iden, feat, form); //< Parse MUC Room
-  }
-
-  // Search whether entity has http://jabber.org/protocol/disco#items
-  if(feat.includes(XOWS_NS_DISCOITEMS)) {
-
-    // Push entiy discovery
-    xows_cli_disco_stk.push(from);
-
-    // Query for entity items
-    xows_xmp_disco_items_query(from, xows_cli_discoitems_parse);
-  }
-
-  // Search whether entity has urn:xmpp:extdisco:2
-  if(feat.includes(XOWS_NS_EXTDISCO)) {
-
-    // Push entiy discovery
-    xows_cli_disco_stk.push(from);
-
-    // Query for external services (ftp, stun, etc.)
-    xows_xmp_extdisco_query(from, null, xows_cli_extdisco_parse);
-  }
-
-  // Pop entiy discovery
-  xows_cli_disco_ended(from);
+  // Query for host (server) infos/features
+  xows_xmp_disco_info_query(xows_xmp_host, null, xows_cli_init_discoinfo_host);
 }
 
 /**
- * Handle disco#items query to entity
+ * Initial discovery - parse host info
  *
- * Called once the query result is received. If items are received, the
- * discovery process continue by sending disco#info to each item,
- * otherwise the discovery is assumed completed and a query for roster
- * is sent.
+ * @param   {string}    from      Query result sender JID
+ * @param   {object[]}  iden      Array of parsed <identity> objects
+ * @param   {string[]}  feat      Array of parsed feature strings
+ * @param   {object}   [form]     Optionnal x data form included in result
+ */
+function xows_cli_init_discoinfo_host(from, iden, feat, form)
+{
+  // Add host features
+  xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
+
+  // Query for host (server) items/services
+  xows_xmp_disco_items_query(xows_xmp_host, xows_cli_init_discoitems_host);
+}
+
+/**
+ * Stack for host item discovery
+ */
+const xows_cli_init_discoitems_stk = [];
+
+/**
+ * Initial discovery - parse host item list.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  item      Array of parsed <item> objects
  */
-function xows_cli_discoitems_parse(from, item)
+function xows_cli_init_discoitems_host(from, item)
 {
-  const entity = xows_cli_entities.get(from);
+  if(item.length) {
 
-  // If this is MUC Service, Forward null to signal query response
-  if(entity.iden[0].category === "conference")
-    xows_cli_fw_onroompush(null);
+    const entity = xows_cli_entities.get(from);
 
-  for(let i = 0, n = item.length; i < n; ++i) {
+    for(let i = 0, n = item.length; i < n; ++i) {
 
-    xows_log(2,"cli_discoitems_parse","discovered item",item[i].jid);
+      const jid = item[i].jid;
 
-    // Add items to entity
-    entity.item.push(item[i].jid);
+      xows_log(2,"cli_init_discoitems_host","discovered item", jid);
 
-    // Query disco#info for this item
-    if(entity.feat.includes(XOWS_NS_DISCOINFO))
-      xows_cli_discoinfo_query(item[i].jid);
+      // Add item to host item list and stack for disco#info
+      entity.item.push(jid);
+      xows_cli_init_discoitems_stk.push(jid);
+    }
+
+    // Query infos for first item in stack
+    xows_xmp_disco_info_query(xows_cli_init_discoitems_stk.shift(), null, xows_cli_init_discoinfo_item);
+
+  } else {
+
+    // No item, query for external services or finish discovery
+    if(xows_cli_entity_has(xows_xmp_host, XOWS_NS_EXTDISCO)) {
+      xows_xmp_extdisco_query(xows_xmp_host, null, xows_cli_init_extdisco_host);
+    } else {
+      xows_cli_init_disco_finish();
+    }
   }
-
-  // Pop entiy discovery
-  xows_cli_disco_ended(from);
 }
 
 /**
- * Function to handle parsed result of external services query
+ * Initial discovery - parse host item (service) infos
+ *
+ * @param   {string}    from      Query result sender JID
+ * @param   {object[]}  iden      Array of parsed <identity> objects
+ * @param   {string[]}  feat      Array of parsed feature strings
+ * @param   {object}   [form]     Optionnal x data form included in result
+ */
+function xows_cli_init_discoinfo_item(from, iden, feat, form)
+{
+  // Add item features
+  xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
+
+  if(xows_cli_init_discoitems_stk.length) {
+
+    // Query infos for next item in stack
+    xows_xmp_disco_info_query(xows_cli_init_discoitems_stk.shift(), null, xows_cli_init_discoinfo_item);
+
+  } else {
+
+    // No more item in stack, query for external services or finish discovery
+    if(xows_cli_entity_has(xows_xmp_host, XOWS_NS_EXTDISCO)) {
+      xows_xmp_extdisco_query(xows_xmp_host, null, xows_cli_init_extdisco_host);
+    } else {
+      xows_cli_init_disco_finish();
+    }
+  }
+}
+
+/**
+ * Initial discovery - parse host external services
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  svcs      Array of parsed <service> objects
  */
-function xows_cli_extdisco_parse(from, svcs)
+function xows_cli_init_extdisco_host(from, svcs)
 {
   // Copy arrays
   for(let i = 0, n = svcs.length; i < n; ++i) {
@@ -966,85 +938,8 @@ function xows_cli_extdisco_parse(from, svcs)
     xows_cli_extservs.push(svcs[i]);
   }
 
-  // Pop entiy discovery
-  xows_cli_disco_ended(from);
-}
-
-/* -------------------------------------------------------------------
- * Client API - Initialization Dicovery Cycle routines
- * -------------------------------------------------------------------*/
-/**
- * Discovery session stack to track end fo discovery
- */
-const xows_cli_disco_qeu = [];
-
-
-/**
- * Stored callback function for discovery session
- */
-let xows_cli_disco_onend = null;
-
-/**
- * Add entity to discovery session queue
- *
- * @param   {string}    jid       Entity JID to discover infos
- */
-function xows_cli_disco_queue(jid)
-{
-  xows_cli_disco_qeu.push(jid);
-}
-
-/**
- * Setup a new discovery session with callback function to be called once
- * discovery ended.
- *
- * @param   {string}    onend     Callback function to be called once discovery ended
- * @param   {boolean}  [clear]    Optionnal boolean to force clear discovered entities
- */
-function xows_cli_disco_start(onend, clear = false)
-{
-  xows_log(2,"cli_discoinfo_start","start new discovery cycle");
-
-  // Ensure we start from empty stack
-  xows_cli_disco_stk.length;
-
-  // Clear discovered entities if required
-  if(clear) {
-    xows_cli_entities.clear();
-    xows_cli_services.clear();
-    xows_cli_extservs.length = 0;
-  }
-
-  // Store the onend callback
-  xows_cli_disco_onend = onend;
-
-  // Send discoinfo queries
-  for(let i = 0, n = xows_cli_disco_qeu.length; i < n; ++i)
-    xows_cli_discoinfo_query(xows_cli_disco_qeu[i]);
-
-  // empty queue
-  xows_cli_disco_qeu.length = 0;
-}
-
-/**
- * "Private" function to specify discovery of entity ended. This function is
- * not to be used on its own
- *
- * @param   {string}    jid       Entity JID to remove from stack
- */
-function xows_cli_disco_ended(jid)
-{
-  // Remove entity from discovery stack
-  xows_cli_disco_stk.splice(xows_cli_disco_stk.indexOf(jid), 1);
-
-  // Check for empty stack for callback
-  if(!xows_cli_disco_stk.length) {
-    if(xows_isfunc(xows_cli_disco_onend))
-      xows_cli_disco_onend();
-
-    // Reset callback
-    xows_cli_disco_onend = null;
-  }
+  // finish discovery
+  xows_cli_init_disco_finish();
 }
 
 /**
@@ -1056,7 +951,7 @@ function xows_cli_disco_ended(jid)
  * When setup job done, the function send a query to get roster to
  * continue the client initialization.
  */
-function xows_cli_disco_finish()
+function xows_cli_init_disco_finish()
 {
   // Check for main XMPP server features
   const serv_infos = xows_cli_entities.get(xows_xmp_host);
@@ -1091,7 +986,10 @@ function xows_cli_disco_finish()
     }
   }
 
-  // Server discovery finished, now query for roster
+  // Query for MUC room list
+  xows_cli_muc_roomlist_query();
+
+  // Query for roster and finish initialization
   xows_xmp_rost_get_query(xows_cli_initialize);
 }
 
@@ -2657,7 +2555,7 @@ function xows_cli_book_parse(from, item)
     if(auto) xows_cli_muc_join(room);
 
     // Query info for Room
-    xows_cli_discoinfo_query(room.bare);
+    xows_cli_muc_roominfo_query(room);
   }
 }
 
@@ -3067,15 +2965,29 @@ let xows_cli_fw_onoccurem = function() {};
 let xows_cli_fw_onsubject = function() {};
 
 /**
+ * Parse result (aka. Public Room list) of disco#items queries
+ * to MUC available services.
+ *
+ * @param   {string}    from      Query result sender JID
+ * @param   {object[]}  item      Array of parsed <item> objects
+ */
+function xows_cli_muc_roomlist_parse(from, item)
+{
+  // Forward null to signal query response
+  xows_cli_fw_onroompush(null);
+
+  for(let i = 0, n = item.length; i < n; ++i) {
+
+    // Send query disco#info for MUC room
+    xows_xmp_disco_info_query(item[i].jid, null, xows_cli_muc_roominfo_parse);
+  }
+}
+
+/**
  * Query disco#items to MUC available services (if any) to gather list
  * of public Room (MUC Service's Items).
- *
- * The result of this query will be parsed by the common discovery
- * routines that will then call the xows_cli_muc_discoinfo_parse as required.
- *
- * See also : xows_cli_muc_discoinfo_parse, xows_cli_discoinfo_parse
  */
-function xows_cli_muc_discoitems_query()
+function xows_cli_muc_roomlist_query()
 {
   // Verify the server provide MUC service
   if(!xows_cli_services.has(XOWS_NS_MUC)) {
@@ -3088,24 +3000,19 @@ function xows_cli_muc_discoitems_query()
 
   // Send Item discovery to all available MUC services
   for(let i = 0, n = muc.length; i < n; ++i)
-    xows_xmp_disco_items_query(muc[i], xows_cli_discoitems_parse);
+    xows_xmp_disco_items_query(muc[i], xows_cli_muc_roomlist_parse);
 }
 
 /**
  * Parse disco#info result as a MUC Room and store Peer
  * object in Room list.
  *
- * This function is called internally by the common discovery routines when
- * encountering MUC Service's Item (Room) to parse.
- *
- * See also : xows_cli_muc_discoitems_query, xows_cli_discoinfo_parse
- *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  iden      Array of parsed <identity> objects
  * @param   {string[]}  feat      Array of parsed feature strings
  * @param   {object[]}  form      Array of parsed X-Data fields
  */
-function xows_cli_muc_discoinfo_parse(from, iden, feat, form)
+function xows_cli_muc_roominfo_parse(from, iden, feat, form)
 {
   let i, n, name, subj = "", desc = "", prot = false, publ = false;
 
@@ -3146,6 +3053,17 @@ function xows_cli_muc_discoinfo_parse(from, iden, feat, form)
 
   // Forward added/updated Room
   xows_cli_fw_onroompush(room);
+}
+
+/**
+ * Query MUC Room infos
+ *
+ * @param   {object}    room      Room Peer object to query infos
+ */
+function xows_cli_muc_roominfo_query(room)
+{
+  // Send query
+  xows_xmp_disco_info_query(room.bare, null, xows_cli_muc_roominfo_parse);
 }
 
 /**
@@ -3214,7 +3132,7 @@ function xows_cli_muc_setcfg_result(from, type)
   }
 
   // Update Room infos
-  xows_cli_discoinfo_query(room.bare);
+  xows_cli_muc_roominfo_query(room);
 
   // Retreive onresult callback
   const onresult = xows_cli_muc_roomcfg_param.get(room);
@@ -3370,7 +3288,7 @@ function xows_cli_xmp_onoccupant(from, show, status, mucuser, occuid, photo)
     xows_cli_fw_onroompush(room);
 
     // Query info for the newly created room
-    xows_cli_discoinfo_query(room.bare);
+    xows_cli_muc_roominfo_query(room);
   }
 
   // Handle special case of room join and creation

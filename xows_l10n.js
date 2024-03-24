@@ -195,7 +195,7 @@ function xows_l10n_parseFunc(c, match)
  */
 function xows_l10n_parse(text)
 {
-  return text.replace(/\${['"](.*)['"]}/g, xows_l10n_parseFunc);
+  return text.replace(/\${['"](.*?)['"]}/g, xows_l10n_parseFunc);
 }
 
 /**

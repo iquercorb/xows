@@ -1875,7 +1875,7 @@ function xows_gui_room_list_reload()
   xows_doc_cls_add("room_list", "LOADING");
 
   // Query to get public room list with delay
-  setTimeout(xows_cli_muc_discoitems_query, 500);
+  setTimeout(xows_cli_muc_roomlist_query, 500);
 }
 
 /**

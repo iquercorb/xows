@@ -1827,8 +1827,14 @@ function xows_xmp_disco_info_reply(stanza)
  */
 function xows_xmp_disco_info_parse(stanza, onparse)
 {
+  const from = stanza.getAttribute("from");
+  const iden = [];
+  const feat = [];
+
   if(stanza.getAttribute("type") === "error") {
     xows_log(1,"xmp_disco_info_parse","parse Disco#info",xows_xmp_iq_error_text(stanza));
+    // Forward result to client
+    if(xows_isfunc(onparse)) onparse(from, iden, feat, null, null);
     return;
   }
 
@@ -1839,7 +1845,6 @@ function xows_xmp_disco_info_parse(stanza, onparse)
 
   // Turn each <identity> into object's array.
   nodes = query.getElementsByTagName("identity");
-  const iden = [];
   for(i = 0, n = nodes.length; i < n; ++i) {
     iden.push({ "category": nodes[i].getAttribute("category"),
                 "type"    : nodes[i].getAttribute("type"),
@@ -1848,7 +1853,6 @@ function xows_xmp_disco_info_parse(stanza, onparse)
 
   // Turn each <feature var=""> into string array.
   nodes = query.getElementsByTagName("feature");
-  const feat = [];
   for(i = 0, n = nodes.length; i < n; ++i) {
     if(nodes[i].hasAttribute("var"))
       feat.push(nodes[i].getAttribute("var"));
@@ -1860,7 +1864,7 @@ function xows_xmp_disco_info_parse(stanza, onparse)
 
   // Forward result to client
   if(xows_isfunc(onparse))
-    onparse( stanza.getAttribute("from"), iden, feat, form, query.getAttribute("node"));
+    onparse(from, iden, feat, form, query.getAttribute("node"));
 }
 
 /**
@@ -1888,22 +1892,26 @@ function xows_xmp_disco_info_query(to, node, onparse)
  */
 function xows_xmp_disco_items_parse(stanza, onparse)
 {
+  const from = stanza.getAttribute("from");
+  const item = [];
+
   if(stanza.getAttribute("type") === "error") {
     xows_log(1,"xmp_disco_items_parse","parse Disco#items",xows_xmp_iq_error_text(stanza));
+    // Forward result to client
+    if(xows_isfunc(onparse)) onparse(from, item);
     return;
   }
 
   // Turn <item> elements into object's array
   const nodes = stanza.getElementsByTagName("item");
-  const item = [];
+
   for(let i = 0, n = nodes.length; i < n; ++i) {
     item.push({ "jid"   : nodes[i].getAttribute("jid"),
                 "name"  : nodes[i].getAttribute("name")});
   }
 
   // Forward result to client
-  if(xows_isfunc(onparse))
-    onparse( stanza.getAttribute("from"), item);
+  if(xows_isfunc(onparse)) onparse(from, item);
 }
 
 /**
@@ -1940,11 +1948,13 @@ const XOWS_NS_EXTDISCO = "urn:xmpp:extdisco:2";
  */
 function xows_xmp_extdisco_parse(stanza, onparse)
 {
+  const from = stanza.getAttribute("from");
+  const svcs = [];
+
   if(stanza.getAttribute("type") === "error") {
     xows_log(1,"xmp_extdisco_parse","parse extdisco",xows_xmp_iq_error_text(stanza));
     // Forward result to client
-    if(xows_isfunc(onparse))
-      onparse(null);
+    if(xows_isfunc(onparse)) onparse(from, svcs);
     return;
   }
 
@@ -1955,7 +1965,6 @@ function xows_xmp_extdisco_parse(stanza, onparse)
 
   // Turn each <service> into object's array.
   nodes = query.getElementsByTagName("service");
-  const svcs = [];
   for(i = 0, n = nodes.length; i < n; ++i) {
     svcs.push({ "type"      : nodes[i].getAttribute("type"),
                 "host"      : nodes[i].getAttribute("host"),
@@ -1967,8 +1976,7 @@ function xows_xmp_extdisco_parse(stanza, onparse)
   }
 
   // Forward result to client
-  if(xows_isfunc(onparse))
-    onparse(stanza.getAttribute("from"), svcs);
+  if(xows_isfunc(onparse)) onparse(from, svcs);
 }
 
 /**

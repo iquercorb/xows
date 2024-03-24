@@ -1754,7 +1754,7 @@ li-peer.PEER-ROOM peer-avat {
 #self_name {
   font-weight: normal;
   color: var(--text-tone0);
-  font-size: .95em;
+  font-size: .85em;
 }
 #user_panl badg-show {
   border-color: var(--base-tone2);
