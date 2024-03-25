@@ -280,7 +280,7 @@ pre {
 /* Global WebKit scroll style to mimic Gecko
 /* ------------------------------------------------------------------ */
 * {
-  scrollbar-width: auto;
+  scrollbar-width: thin;
 }
 ::-webkit-scrollbar {
   width: 12px; height: 12px;
@@ -2939,17 +2939,18 @@ button.trsh-bt-abort {
   justify-content: space-between;
   height: 25px;
   border-radius: 6px 6px 0 0;
-  font-size: .85em;
+  font-family: Arial;
+  font-size: .75em;
+  font-weight: bold;
   color: var(--text-tone1);
   background-color: var(--back-base);
-  cursor:pointer;
-  transition: background-color 200ms ease;
+  cursor: pointer;
   margin: 0 16px -3px 16px;
-  padding: 0 16px 6px 16px;
+  padding: 0 16px 5px 16px;
 }
 #chat_nav::before,
 #chat_nav::after {
-  font-size: .85em;
+  font-size: .9em;
   content:"\25BE";
 }
 #chat_nav:hover {
@@ -2959,7 +2960,8 @@ button.trsh-bt-abort {
 #chat_nav.UNDREAD {
   background-color: var(--notif-base);
   cursor:pointer;
-  transition: background-color 200ms ease;
+  transition: color 100ms ease;
+  transition: background-color 100ms ease;
 }
 #chat_nav.UNDREAD:hover {
   background-color: var(--notif-hover);
@@ -3027,7 +3029,7 @@ button.trsh-bt-abort {
   border-radius: 6px;
   background-color: var(--base-tone5);
   cursor: text;
-  z-index: 4;
+  z-index: 2;
 }
 #chat_panl.REPLY #chat_edit {
   border-radius: 0 0 5px 5px;
