@@ -1229,6 +1229,19 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
 }
 
 /**
+ * Return most suitable message identifier between id attribute origin-id
+ * and stanza-id
+ *
+ * @param   {object}    li          Message <li-mesg> object to parse
+ *
+ * @return  {string}    Message identifier
+ */
+function xows_tpl_mesg_bestref(li)
+{
+  return li.dataset.stnzid ? li.dataset.stnzid : (li.dataset.origid ? li.dataset.origid : li.dataset.id);
+}
+
+/**
  * Build and returns a new instance of history Message <hist-mesg>
  * object from template to be added in the chat history list <ul>
  *
@@ -1260,7 +1273,7 @@ function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied
     const quoted = xows_cli_author_get(peer, replied.dataset.from, replied.dataset.occuid);
 
     // Check whether message is referencing ourself
-    if(quoted === xows_cli_self) 
+    if(quoted === xows_cli_self)
       inst.classList.add("MENTION");
 
     // Get proper Peer identifier
@@ -1276,19 +1289,19 @@ function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied
     rply_from.dataset.peer = peerid;
     rply_from.innerText = quoted.name;
 
+    // Correted message (discarded) doesn't have Body
+    const mesg_body = replied.querySelector("MESG-BODY");
     // Set Quoted text
-    inst.querySelector("RPLY-BODY").innerHTML = replied.querySelector("MESG-BODY").innerText;
+    inst.querySelector("RPLY-BODY").innerHTML = mesg_body ? mesg_body.innerText : "[...]";
 
     // Add Reply data and show element
     const mesg_rply = inst.querySelector("MESG-RPLY");
-    mesg_rply.dataset.ref = replied.dataset.stnzid ? replied.dataset.stnzid : ( replied.dataset.origid ? replied.dataset.origid : replied.dataset.id ) ;
+    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(replied);
     mesg_rply.hidden = false;
-
   }
 
   // Set Grouped/Append message style
   let append;
-
 
   if(replaced) {
     // If this sis a correction message, we kee the same style as the replaced
@@ -1364,17 +1377,31 @@ function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied
  * @param   {object}    li        Message <li-mesg> element to update
  * @param   {object}    message   Message object
  * @param   {boolean}   receipt   Marks message as receipt received
+ * @param   {object}   [replied]  Replied history message <li-mesg> element
  *
  * @return  {object}    History message <li> HTML Elements
  */
-function xows_tpl_mesg_update(li, message, receipt)
+function xows_tpl_mesg_update(li, message, receipt, replied)
 {
-  if(message.origid) li.dataset.origid = message.origid;
-  if(message.stnzid) li.dataset.stnzid = message.stnzid;
-  if(message.occuid) li.dataset.occuid = message.occuid;
+  if(message) {
+    li.dataset.origid = message.origid;
+    li.dataset.stnzid = message.stnzid;
+    li.dataset.occuid = message.occuid;
+  }
 
   // Marks message à receipt received
   if(receipt) li.classList.add("MESG-RECP");
+
+  if(replied) {
+    // Correted message (discarded) doesn't have Body
+    const mesg_body = replied.querySelector("MESG-BODY");
+    // Set Quoted text
+    li.querySelector("RPLY-BODY").innerHTML = mesg_body ? mesg_body.innerText : "[...]";
+
+    // Add Reply data and show element
+    const mesg_rply = li.querySelector("MESG-RPLY");
+    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(replied);
+  }
 }
 
 /**

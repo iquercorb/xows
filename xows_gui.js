@@ -3376,7 +3376,7 @@ function xows_gui_mesg_edit_valid(inpt)
     // Get message reply
     const rply = li_mesg.querySelector("MESG-RPLY");
     // Send message correction
-    xows_cli_send_message(xows_gui_peer, inpt_text, li_mesg.dataset.id, rply.dataset.id, rply.dataset.to);
+    xows_cli_send_message(xows_gui_peer, inpt_text, li_mesg.dataset.id, rply.dataset.ref, rply.dataset.to);
   }
 
   // Close editor
@@ -3531,23 +3531,36 @@ function xows_gui_hist_mesg_get(peer, id)
  * Main Screen - History - Message edition
  * -------------------------------------------------------------------*/
 /**
- * Discard history message with the specified ID
+ * Perform corrected message replacement with proper references update
  *
- * @param   {object}    peer      Chat history Peer, Room or Contact
- * @param   {string}    id        Message ID
+ * @param   {object}    peer        Peer object
+ * @param   {object}    li_old      Replaced message <li-mesg> element
+ * @param   {object}    li_new      New message <li-mesg> element
  *
- * @return  {object}    Discarded message element or null if not found
+ * @return  {object}    Inserted new message
  */
-function xows_gui_hist_mesg_discard(peer, id)
+function xows_gui_hist_mesg_replace(peer, li_old, li_new)
 {
-  const li_mesg = xows_gui_hist_mesg_get(peer, id);
-  if(li_mesg) {
-    li_mesg.hidden = true;
-    li_mesg.innerHTML = "";
-    return li_mesg;
-  }
+  // Discard old message
+  li_old.hidden = true;
+  li_old.innerHTML = "";
 
-  return null;
+  const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
+
+  const old_ref = xows_tpl_mesg_bestref(li_old);
+
+  // Search for references to old message to be updated
+  const li_refs = hist_ul.querySelectorAll("MESG-RPLY[data-ref='"+old_ref+"']");
+  for(let i = 0; i < li_refs.length; ++i)
+    xows_tpl_mesg_update(li_refs[i].closest("LI-MESG"), null, null, li_new);
+
+  // Also check chat input reply reference
+  const chat_rply = xows_gui_peer_doc(peer, "chat_rply");
+  if(chat_rply.dataset.id === old_ref)
+    chat_rply.dataset.id = xows_tpl_mesg_bestref(li_new);
+
+  // Insert replacement message to list
+  return hist_ul.insertBefore(li_new, li_old.nextSibling);
 }
 
 /**
@@ -3636,7 +3649,7 @@ function xows_gui_cli_onmessage(peer, message, receipt)
 
   // Search for corrected message to be discarded
   if(message.replace) {
-    old_li = xows_gui_hist_mesg_discard(peer, message.replace);
+    old_li = xows_gui_hist_mesg_get(peer, message.replace);
     // We ignore correction which are not in visible history or if correction
     // message have no body, in this case this mean message deletion
     if(!old_li) return;
@@ -3676,7 +3689,7 @@ function xows_gui_cli_onmessage(peer, message, receipt)
 
     // Insert or append message, depending whether ref_li is null
     if(old_li) {
-      hist_ul.insertBefore(msg_li, old_li.nextSibling);
+      xows_gui_hist_mesg_replace(peer, old_li, msg_li);
     } else {
       hist_ul.appendChild(msg_li);
     }
@@ -3869,7 +3882,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
 
     // Search for corrected message to be discarded
     if(message.replace) {
-      old_li = xows_gui_hist_mesg_discard(peer, message.replace);
+      old_li = xows_gui_hist_mesg_get(peer, message.replace);
       if(!old_li) continue; //< ignore correction which are not in visible history
     } else {
       old_li = null;
@@ -3887,7 +3900,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
 
     if(old_li) {
       // Message correction is insert after the corrected message
-      hist_ul.insertBefore(msg_li, old_li.nextSibling);
+      xows_gui_hist_mesg_replace(peer, old_li, msg_li);
     } else {
       // Insert or append message, depending whether ref_li is null
       pre_li = hist_ul.insertBefore(msg_li, ref_li);
@@ -4277,7 +4290,7 @@ function xows_gui_chat_inpt_onpaste(event)
 
   // Get clipboard raw text
   let text = event.clipboardData.getData("text");
-  if(!text.length) 
+  if(!text.length)
     return;
 
   // Prevent the default clipboard action
