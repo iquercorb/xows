@@ -420,6 +420,7 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
   xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
   xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_inpt_oninput);
+  xows_doc_listener_add(chat_panl,              "paste",    xows_gui_chat_inpt_onpaste, false); //< need preventDefault()
 
   // Room Frame
   const room_head = xows_doc("room_head");

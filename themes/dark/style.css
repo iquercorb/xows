@@ -90,8 +90,8 @@
   --notif-text:       #FFF;     /* Notification text */
 
   /* history back to recent ribbon */
-  --back-base:        #545461;  /* Normal Ribbon background */
-  --back-hover:       #606070;  /* Normal Ribbon background hover */
+  --back-base:        #5C5C73;  /* Normal Ribbon background */
+  --back-hover:       #6A6A85;  /* Normal Ribbon background hover */
   --back-text:        #FFF;     /* Ribbon text */
 
   /* Presence 'show level' colors */
@@ -2927,8 +2927,8 @@ button.trsh-bt-abort {
   }
 }
 #chat_panl {
-  position: relative;
-  width: 100%; height: 0;
+  position: absolute; bottom: 0px; 
+  width: 100%;
 }
 /* ------------------------------------------------------------------ */
 /* Chat Controls - Navigation banner  */
@@ -2936,24 +2936,21 @@ button.trsh-bt-abort {
 #chat_nav {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: absolute;
-  bottom: -3px; left: 0; right: 0;
+  justify-content: space-between;
   height: 25px;
   border-radius: 6px 6px 0 0;
-  font-size: .8em;
+  font-size: .85em;
   color: var(--text-tone1);
   background-color: var(--back-base);
   cursor:pointer;
   transition: background-color 200ms ease;
-  margin: 0 16px 0 16px;
-  padding-bottom: 5px;
+  margin: 0 16px -3px 16px;
+  padding: 0 16px 6px 16px;
 }
 #chat_nav::before,
 #chat_nav::after {
-  font-size: .7em;
+  font-size: .85em;
   content:"\25BE";
-  padding: 0 20px;
 }
 #chat_nav:hover {
   color: var(--text-tone0);
@@ -2967,14 +2964,10 @@ button.trsh-bt-abort {
 #chat_nav.UNDREAD:hover {
   background-color: var(--notif-hover);
 }
-#chat_panl.REPLY #chat_nav {
-  bottom: 22px; left: 0; right: 0;
-  padding-bottom: 6px;
-}
 @media (max-width: 824px) {
   #chat_nav {
     font-size: 0.8em;
-    margin: -26px 8px 0 8px;
+    margin: 0 8px -4px 8px;
   }
 }
 /* ------------------------------------------------------------------ */
@@ -2986,11 +2979,9 @@ button.trsh-bt-abort {
 #chat_rply {
   display: none;
   align-items: center;
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
   height: 28px;
   background: var(--base-tone3);
-  border-radius: 8px 8px 0 0;
+  border-radius: 6px 6px 0 0;
   font-size: 0.85em;
   color: var(--text-tone2);
   padding: 0 3px 0 11px;
@@ -3028,12 +3019,12 @@ button.trsh-bt-abort {
 /* Chat Controls - Message editor */
 /* ------------------------------------------------------------------ */
 #chat_edit {
-  position:relative;
+  position: relative;
   display: flex;
   min-width: 100px;
   padding: 10px;
-  margin: 2px 16px 0 16px;
-  border-radius: 5px;
+  margin: 0 16px 0 16px;
+  border-radius: 6px;
   background-color: var(--base-tone5);
   cursor: text;
   z-index: 4;

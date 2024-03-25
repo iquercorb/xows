@@ -4053,6 +4053,26 @@ function xows_gui_chat_panl_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
+  // Check whether click occure within input area
+  if(event.target.closest("CHAT-INPT")) {
+
+    // Get selection range
+    const rng = xows_doc_sel_rng(0);
+    if(rng.collapsed) {
+      const node = rng.endContainer;
+      // Checks whether current selection is within <emo-ji> node
+      if(node.parentNode.tagName === "EMO-JI") {
+        // Move caret before or after the <emo-ji> node
+        xows_doc_caret_around(node.parentNode, !rng.endOffset);
+      }
+    }
+
+    // Store selection
+    xows_gui_chat_inpt_rng = rng;
+
+    return;
+  }
+
   switch(event.target.id)
   {
     // History Navigation banner
@@ -4067,31 +4087,6 @@ function xows_gui_chat_panl_onclick(event)
     // Message Reply Close button
     case "rply_clos": {
       xows_gui_chat_rply_close();
-      break;
-    }
-
-    // Message Edition frame
-    case "chat_edit": {
-      // Set input focus to message edit area
-      xows_gui_chat_inpt_focus();
-      break;
-    }
-
-    // Message Edition Input
-    case "chat_inpt": {
-      // Get selection range
-      const rng = xows_doc_sel_rng(0);
-      if(rng.collapsed) {
-        const txt = rng.endContainer;
-        // Checks whether current selection is within <emo-ji> node
-        if(txt.parentNode.tagName === "EMO-JI") {
-          // Move caret before or after the <emo-ji> node
-          xows_doc_caret_around(txt.parentNode, !rng.endOffset);
-          return; //< return now
-        }
-      }
-      // Store selection
-      xows_gui_chat_inpt_rng = rng;
       break;
     }
 
@@ -4111,6 +4106,11 @@ function xows_gui_chat_panl_onclick(event)
       xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
       break;
     }
+
+    default:
+      // Set input focus to message edit area
+      xows_gui_chat_inpt_focus();
+      break;
   }
 }
 
@@ -4217,6 +4217,23 @@ function xows_gui_chat_rply_set(mesg)
  * Main screen - Chat Frame - Foot Panel - Message edition
  * -------------------------------------------------------------------*/
 /**
+ * Set focus and edit caret to chat message input
+ */
+function xows_gui_chat_inpt_focus()
+{
+  const chat_inpt = xows_doc("chat_inpt");
+
+  // Set input focus to message edit area
+  chat_inpt.focus();
+
+  // move edit caret to end of content
+  const rng = xows_doc_sel_rng(0);
+
+  if(rng.endContainer !== chat_inpt)
+    xows_doc_caret_around(rng.endContainer);
+}
+
+/**
  * Chat Message Edition validation (enter) function, called when user
  * press the Enter key (see xows_gui_wnd_onkey() function).
  *
@@ -4246,6 +4263,40 @@ function xows_gui_chat_inpt_enter(input)
     // Reset chatsate to active
     xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_ACTI);
   }
+}
+
+/**
+ * Chat message Edition Paste event handling, caled when user
+ * paste content from clipload into input area.
+ *
+ * @param   {object}    event     Clipboard event opbject
+ */
+function xows_gui_chat_inpt_onpaste(event)
+{
+  xows_cli_activity_wakeup(); //< Wakeup presence
+
+  // Get clipboard raw text
+  let text = event.clipboardData.getData("text");
+  if(!text.length) 
+    return;
+
+  // Prevent the default clipboard action
+  event.preventDefault();
+
+  // Set composing
+  if(xows_gui_peer)
+    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_COMP);
+
+  // Hide the placeholder text
+  xows_doc("chat_inpt").className = "";
+
+  // Replace selection by text
+  xows_doc_sel.deleteFromDocument();
+  xows_doc_sel.getRangeAt(0).insertNode(document.createTextNode(text));
+  xows_doc_sel.collapseToEnd();
+
+  // Store selection range
+  xows_gui_chat_inpt_rng = xows_doc_sel_rng(0);
 }
 
 /**
@@ -4289,20 +4340,6 @@ function xows_gui_chat_inpt_oninput(event)
 }
 
 /**
- * Set focus and edit caret to chat message input
- */
-function xows_gui_chat_inpt_focus()
-{
-  const chat_inpt = xows_doc("chat_inpt");
-  // Set input focus to message edit area
-  chat_inpt.focus();
-  // move edit caret to end of content
-  const rng = xows_doc_sel_rng(0);
-  if(rng.endContainer != chat_inpt)
-    xows_doc_caret_around(rng.endContainer);
-}
-
-/**
  * Chat Editor insert element at/within current/last selection
  *
  * @param   {string}    text      Text to insert
@@ -4338,9 +4375,8 @@ function xows_gui_chat_inpt_insert(text, tagname)
   // Insert node within selected range
   rng.insertNode(node);
 
-
   // Hide the placeholder text
-  chat_inpt.classList.remove("PLACEHOLD");
+  chat_inpt.className = "";
 
   // Focus on input
   chat_inpt.focus();
@@ -4368,6 +4404,9 @@ function xows_gui_drop_emoj_onclick(event)
 
   // Check whether we got click from drop or button
   if(li) xows_gui_chat_inpt_insert(li.childNodes[0].nodeValue, "EMO-JI"); //< Insert selected Emoji
+
+  // Toggle menu drop
+  xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
 }
 
 /* -------------------------------------------------------------------
