@@ -1740,8 +1740,10 @@ li-peer.PEER-ROOM peer-avat {
   background-color: transparent;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 22px;
+  background-size: 20px;
   background-image: url("images/sharp.svg");
+  background-color: var(--text-tone4);
+  opacity: .8;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control panel */
