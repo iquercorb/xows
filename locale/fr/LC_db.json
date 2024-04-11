@@ -227,6 +227,9 @@
   "Participants":
   "Participants",
 
+  "Visitors":
+  "Visiteurs",
+
   "Add this Contact":
   "Ajouter ce Contact",
 
@@ -376,6 +379,12 @@
 
   "Non-Anonymous":
   "Non-Anonyme",
+
+  "Occupants visibility":
+  "Visibilité des occupants",
+
+  "Set Room occupants visibility according their assigned Role":
+  "Définir la visibilité des occupants du Salon en fonction du rôle qui leur est attribué",
 
   "History max length":
   "Taille maximum de l'historique",

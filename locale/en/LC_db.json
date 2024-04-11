@@ -227,6 +227,9 @@
   "Participants":
   "",
 
+  "Visitors":
+  "",
+
   "Add this Contact":
   "",
 
@@ -378,6 +381,12 @@
   "",
 
   "Non-Anonymous":
+  "",
+
+  "Occupants visibility":
+  "",
+
+  "Set Room occupants visibility according their assigned Role":
   "",
 
   "History max length":

@@ -83,6 +83,7 @@
   --ctrl-thmb:        #CCC;     /* Input Control Thumb & Button */
   --ctrl-thmb-hover:  #FFF;     /* Input Control Thumb & Button hover */
   --ctrl-text:        #FFF;     /* Input Control Text */
+  --ctrl-box:         #4F505C;  /* Input Control Box */
 
   /* Unread notifications spot & banner */
   --notif-base:       #E64545;  /* Notification background */
@@ -432,6 +433,47 @@ btn-close:hover {
 .switch input:checked ~ span::before  {
   background-color: var(--ctrl-thmb-hover);
   margin-left: 21px;
+}
+/* ------------------------------------------------------------------ */
+/* Custom Checkbox List
+/* ------------------------------------------------------------------ */
+.checklist {
+  display: inline-block;
+  float: right;
+  padding: 6px 20px 6px 16px;
+  background-color: var(--ctrl-base);
+  border-style: solid;
+  border-color: var(--ctrl-base);
+  border-radius: 20px;
+}
+.checkbox {
+  display: block;
+}
+.checkbox input {
+  display: none;
+}
+.checkbox span {
+  display: block;
+  cursor: pointer;
+  margin: 2px 0;
+}
+.checkbox span::before {
+  display: inline-block;
+  content: "";
+  width: 20px; height: 20px;
+  margin-right: 8px;
+  background-color: var(--ctrl-box);
+  /*background-color: var(--ctrl-thmb);*/
+  border-radius: 5px;
+  vertical-align: top;
+  background-size: 12px;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+}
+.checkbox input:checked ~ span::before  {
+  background-image: url("images/valid.svg");
+  /*background-color: var(--link-base);*/
 }
 /* ------------------------------------------------------------------ */
 /* Custom Number Input

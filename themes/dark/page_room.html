@@ -48,18 +48,15 @@
     </select>
     <p>${'In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address'}</p>
   </fieldset>
-<!-- Ignored option, we set "moderator" as default value
   <fieldset>
     <label>${'Occupants visibility'}</label>
-    <select id="room_ocls">
-      <option value="none">${'None'}</option>
-      <option value="visitor">${'Visitor'}</option>
-      <option value="participant">${'Participant'}</option>
-      <option value="moderator">${'Moderator'}</option>
-    </select>
-    <p>${''}</p>
+    <div class="checklist">
+      <label class="checkbox"><input id="room_lsmo" type="checkbox" checked><span>${'Moderators'}</span></label>
+      <label class="checkbox"><input id="room_lspa" type="checkbox" checked><span>${'Participants'}</span></label>
+      <label class="checkbox"><input id="room_lsvi" type="checkbox" checked><span>${'Visitors'}</span></label>
+    </div>
+    <p>${'Set Room occupants visibility according their assigned Role'}</p>
   </fieldset>
--->
 </section>
 
 <section>

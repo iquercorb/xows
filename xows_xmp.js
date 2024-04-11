@@ -2021,6 +2021,7 @@ const XOWS_NS_XDATA        = "jabber:x:data";
 function xows_xmp_xdata_parse(x)
 {
   const form = [];
+
   // Turn each <field> into object's array
   const nodes = x.getElementsByTagName("field");
   for(let i = 0; i < nodes.length; ++i) {
@@ -2029,12 +2030,19 @@ function xows_xmp_xdata_parse(x)
       "required"  : (nodes[i].querySelector("required") !== null),
       "type"      : nodes[i].getAttribute("type"),
       "label"     : nodes[i].getAttribute("label"),
-      "var"       : nodes[i].getAttribute("var"),
-      "value"     : xows_xml_innertext(nodes[i].querySelector(":scope > value"))};
+      "var"       : nodes[i].getAttribute("var")};
 
     // Check for <desc> node
     const desc = nodes[i].querySelector(":scope > desc");
     if(desc) field.desc = xows_xml_innertext(desc);
+
+    // Fill value array if any
+    const value = nodes[i].querySelectorAll(":scope > value");
+    if(value.length) {
+      field.value = [];
+      for(let j = 0; j < value.length; ++j)
+        field.value.push(xows_xml_innertext(value[j]));
+    }
 
     // Fill option array if any
     const option = nodes[i].querySelectorAll(":scope > option");
@@ -2046,6 +2054,7 @@ function xows_xmp_xdata_parse(x)
           "value":xows_xml_innertext(option[j].querySelector(":scope > value"))});
       }
     }
+
     form.push(field);
   }
   return form;
@@ -2076,7 +2085,11 @@ function xows_xmp_xdata_make(field)
       // Add available informations to node
       if(field[i]["var"]) node.setAttribute("var", field[i]["var"]);
       if(field[i].type) node.setAttribute("type", field[i].type);
-      if(field[i].value) xows_xml_parent(node,xows_xml_node("value",null,field[i].value));
+      if(field[i].value) {
+        const value = field[i].value;
+        for(let j = 0; j < value.length; ++j)
+          xows_xml_parent(node,xows_xml_node("value",null,value[j]));
+      }
       // Add <field> to <x>
       xows_xml_parent(x, node);
     }
