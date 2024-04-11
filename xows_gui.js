@@ -3514,15 +3514,9 @@ function xows_gui_hist_mesg_get(peer, id)
   // First search by id attribute
   let li_mesg = hist_ul.querySelector("LI-MESG[data-id='"+id+"']");
 
-  // If no id attribute matches, search for Unique and Stable
-  // Stanza IDs (XEP-0359) depending on Peer type.
-  if(!li_mesg) {
-    if(peer.type === XOWS_PEER_ROOM) {
-      li_mesg = hist_ul.querySelector("LI-MESG[data-stnzid='"+id+"']");
-    } else {
-      li_mesg = hist_ul.querySelector("LI-MESG[data-origid='"+id+"']");
-    }
-  }
+  // If no id attribute matches, search for Unique and Stable Stanza IDs (XEP-0359)
+  if(!li_mesg) li_mesg = hist_ul.querySelector("LI-MESG[data-origid='"+id+"']");
+  if(!li_mesg) li_mesg = hist_ul.querySelector("LI-MESG[data-stnzid='"+id+"']");
 
   return li_mesg;
 }
@@ -3634,11 +3628,11 @@ function xows_gui_cli_onmessage(peer, message, receipt)
   // Store whether message is sent by ourself
   const issent = (peer === xows_cli_self);
 
-  // Special case of MUC, we way receive message from ourself as
+  // Special case of MUC, we may receive message from ourself as
   // confirmation of reception with server additionnal data
   if(peer.type === XOWS_PEER_ROOM) {
     // Message to update
-    const upd_li = xows_gui_hist_mesg_get(peer, message.stnzid ? message.stnzid : message.id);
+    const upd_li = xows_gui_hist_mesg_get(peer, (message.origid ? message.origid : message.id)); 
     if(upd_li) {
       xows_tpl_mesg_update(upd_li, message, true);
       return;
