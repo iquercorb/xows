@@ -2446,7 +2446,7 @@ function xows_xmp_pubsub_publish(node, publish, access, onparse)
                     xows_xmp_xdata_make([ {"var":"FORM_TYPE","type":"hidden",
                                             "value":XOWS_NS_PUBSUBOPTS},
                                           {"var":"pubsub#access_model",
-                                            "value":access}])));
+                                            "value":[access]}])));
   }
 
   // Create the query
@@ -3024,7 +3024,7 @@ function xows_xmp_mam_query(to, max, jid, start, end, before, onparse)
 {
   // Add the needed x:data filter field
   const field = [];
-  field.push({"var":"FORM_TYPE","type":"hidden","value":XOWS_NS_MAM});
+  field.push({"var":"FORM_TYPE","type":"hidden","value":[XOWS_NS_MAM]});
   if(  jid) field.push({"var":"with"  ,"value":jid});
   if(start) field.push({"var":"start" ,"value":new Date(start).toJSON()});
   if(  end) field.push({"var":"end"   ,"value":new Date(end).toJSON()});
