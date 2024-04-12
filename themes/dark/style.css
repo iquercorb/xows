@@ -437,43 +437,40 @@ btn-close:hover {
 /* ------------------------------------------------------------------ */
 /* Custom Checkbox List
 /* ------------------------------------------------------------------ */
-.checklist {
+.chklist {
   display: inline-block;
   float: right;
-  padding: 6px 20px 6px 16px;
+  padding: 2px 10px 2px 5px;
   background-color: var(--ctrl-base);
   border-style: solid;
   border-color: var(--ctrl-base);
-  border-radius: 20px;
+  border-radius: 6px;
 }
-.checkbox {
+.chkitem {
   display: block;
 }
-.checkbox input {
+.chkitem input {
   display: none;
 }
-.checkbox span {
+.chkitem span {
   display: block;
   cursor: pointer;
   margin: 2px 0;
 }
-.checkbox span::before {
+.chkitem span::before {
   display: inline-block;
   content: "";
-  width: 20px; height: 20px;
-  margin-right: 8px;
+  width: 19px; height: 19px;
+  margin-right: 10px;
   background-color: var(--ctrl-box);
-  /*background-color: var(--ctrl-thmb);*/
-  border-radius: 5px;
+  border-radius: 2px;
   vertical-align: top;
   background-size: 12px;
   background-repeat: no-repeat;
   background-position: center;
-  cursor: pointer;
 }
-.checkbox input:checked ~ span::before  {
+.chkitem input:checked ~ span::before  {
   background-image: url("images/valid.svg");
-  /*background-color: var(--link-base);*/
 }
 /* ------------------------------------------------------------------ */
 /* Custom Number Input
@@ -488,40 +485,28 @@ btn-close:hover {
 }
 .spinnb button {
   display: inline-block;
-  width: 30px; height: 100%;
+  width: 30px; height: 30px;
   float: none !important;
-  margin: 0 !important;
   border: 0;
-  line-height: 0;
-  font-size: 18px !important;
-  font-weight: bold;
-  font-family: monospace;
-  color: var(--ctrl-thmb);
   background-color: transparent;
-  transition: color 200ms ease-out;
+  background-size: 12px;
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: opacity 200ms ease-out;
+  opacity: .7;
   cursor: pointer;
 } .spinnb button:hover  {
-  color: var(--ctrl-thmb-hover);
+  opacity: 1;
 }
 .spinnb .spin-sub {
-  text-align: right;
-  padding: 0 6px 0 0;
-}
-.spinnb .spin-sub::before {
-  display: block;
-  content:"-";
+  background-image: url("images/minus.svg");
 }
 .spinnb .spin-add {
-  text-align: left;
-  padding: 0 0 0 9px;
-}
-.spinnb .spin-add::before {
-  display: block;
-  content:"+";
+  background-image: url("images/plus.svg");
 }
 .spinnb input[type="number"] {
   display: inline-block;
-  width: 40px;
+  width: 40px; height: 20px;
   text-align:center;
   padding: 0;
   border-radius: 0;
@@ -533,6 +518,7 @@ btn-close:hover {
   -webkit-appearance: textfield;
   -moz-appearance: textfield;
   appearance: textfield;
+  vertical-align: middle;
 }
 .spinnb input[type=number]::-webkit-inner-spin-button,
 .spinnb input[type=number]::-webkit-outer-spin-button {
