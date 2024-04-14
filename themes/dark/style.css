@@ -1688,19 +1688,15 @@ peer-info {
 }
 peer-acts {
   flex: none;
-  visibility: hidden;
   width: 16px;
   padding: 0;
   margin: 0 5px;
   text-align: center;
   cursor: default;
 }
-li-peer:hover peer-acts {
-  visibility:visible;
-}
 peer-acts button {
   display: block;
-  width: 20px; height: 20px;
+  width: 16px; height: 16px;
   padding: 0;
   margin: 2px 0;
   border: 0;
@@ -1709,13 +1705,13 @@ peer-acts button {
   background-position: center;
   background-repeat: no-repeat;
   cursor: pointer;
-  opacity: .5;
+  opacity: .6;
 }
 peer-acts button:hover {
   opacity: 1;
 }
 peer-acts button:disabled {
-  opacity: .2;
+  opacity: .3;
 }
 .cont-bt-rtry {
   background-image: url("images/refresh.svg");
@@ -3287,9 +3283,17 @@ chat-inpt {
 #room_rost {
   text-align: center;
 }
+li-peer.PEER-OCCU {
+  padding-left: 6px;
+}
+li-peer.PEER-OCCU::before {
+  display: none;
+}
 /* ------------------------------------------------------------------ */
 /* Occumants - Occupant common style */
 /* ------------------------------------------------------------------ */
-.occu-bt-subs {
-  background-image: url("images/contadd.svg");
+.occu-bt-menu {
+  background-image: url("images/menu_dots.svg");
+  background-size: 20px;
+  height: 20px;
 }

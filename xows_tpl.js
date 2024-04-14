@@ -1194,8 +1194,6 @@ function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
   inst.querySelector("PEER-NAME").innerText = nick;
   inst.querySelector("PEER-META").innerText = stat?stat:"";
   inst.querySelector("BADG-SHOW").dataset.show = show || 0;
-  // Occupant JID (lock) may be null, undefined or empty string
-  inst.querySelector("[name='occu_bt_subs']").disabled = !(full && full.length);
   // Set proper class for avatar
   const peer_avat = inst.querySelector("PEER-AVAT");
   peer_avat.dataset.jid = ojid;
@@ -1222,8 +1220,6 @@ function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
   li.querySelector("PEER-NAME").innerText = nick;
   li.querySelector("PEER-META").innerText = stat?stat:"";
   li.querySelector("BADG-SHOW").dataset.show = show || 0;
-  // Occupant JID (lock) may be null, undefined or empty string
-  li.querySelector("[name='occu_bt_subs']").disabled = !(full && full.length);
   // Set proper class for avatar
   li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(avat);
 }

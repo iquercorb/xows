@@ -4655,10 +4655,6 @@ function xows_gui_cli_onoccupush(room, occu, code)
     // Create and append new <li-peer> element from template
     li_peer = xows_tpl_spawn_room_occu(occu.jid, occu.name, occu.avat, occu.full, occu.show, occu.stat);
 
-    // Hide the "Add Contact" button depending context
-    const show_subs = (!occu.self && (occu.full && !xows_cli_cont_get(occu.full)));
-    li_peer.querySelector("[name='occu_bt_subs']").hidden = !show_subs;
-
     // Select the proper role <ul> to put the occupant in
     const dst_ul = xows_gui_peer_doc(room, (occu.role === XOWS_ROLE_MODO) ? "modo_ul" : "memb_ul");
 
@@ -4726,6 +4722,7 @@ function xows_gui_occu_list_onclick(event)
       // Select action
       switch(event.target.name)
       {
+        /*
         case "occu_bt_subs": { //< Add contact
           // Compose display name from JID
           const user = bare.split("@")[0];
@@ -4734,6 +4731,7 @@ function xows_gui_occu_list_onclick(event)
           xows_gui_mbox_subs_edit_open(xows_jid_bare(li.dataset.jid), name);
           return;
         }
+        */
 
         default:
           return;
