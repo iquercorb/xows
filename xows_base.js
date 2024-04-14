@@ -374,12 +374,16 @@ function xows_bytes_to_hex(uint8)
  */
 function xows_gen_uuid()
 {
-  /*
+  // Use browser generator if available
+  if(window.crypto.randomUUID)
+    return window.crypto.randomUUID();
+
+  // Custom fallback implementation
   const r = new Uint8Array(16);
   window.crypto.getRandomValues(r);
   // UUID : xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-  r[6] = r[6] & 0x0F | 0x40;
-  r[8] = r[8] & 0x3F | 0x80;
+  r[6] = (r[6] & 0x0F) | 0x40; // version 4 - 01 00 nn nn
+  r[8] = (r[8] & 0x3F) | 0x80; // variant 1 - 10 nn nn nn
   let uuid = "";
   for(let c = 0, b = 0; b < 16; ++b) {
     if(c === 8 || c === 13 || c === 18 || c === 23) {
@@ -389,8 +393,8 @@ function xows_gen_uuid()
             XOWS_CMAP_HEX.charAt((r[b])       & 0x0F);
     c += 2;
   }
-  */
-  return window.crypto.randomUUID();
+
+  return uuid;
 }
 
 /**
@@ -1113,12 +1117,12 @@ function xows_gen_avatar(size, image, name, font)
       ct.fillStyle = "#FFF";
 
       // Draw the logo from SVG path (24 x 19.4 unites)
-      const ratio = 0.7; // Primary Logo scale 
-      
+      const ratio = 0.7; // Primary Logo scale
+
       // Set position to center logo
       const half = (size * 0.5);
       ct.translate(half - (24 * ratio), half - (21 * ratio));
-      
+
       // Set path scale relative to bitmap size
       const scale = (size / 24) * ratio;
       ct.scale(scale, scale);
