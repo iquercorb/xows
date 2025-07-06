@@ -90,7 +90,7 @@ function xows_cli_external_has(type)
 {
   const types = Array.from(arguments);
 
-  let i, svcs;
+  let svcs;
 
   svcs = xows_options.extern_services;
   for(let i = 0; i < svcs.length; ++i) {
@@ -121,7 +121,7 @@ function xows_cli_external_get(type)
 {
   const types = Array.from(arguments);
 
-  let i, svcs;
+  let svcs;
 
   const result = [];
 
@@ -2874,6 +2874,10 @@ function xows_cli_mam_collect(from, bare, result, count, complete)
 
   // Get history pull params
   const param = xows_cli_mam_param.get(peer);
+  if(!param) {
+    xows_log(1,"cli_mam_collect","unexpected MAM result",from ? from : bare);
+    return;
+  }
 
   // Depending query  we add result at front or back to pool
   if(param.start) {
