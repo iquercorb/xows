@@ -101,9 +101,6 @@
   "Add a contact":
   "Ajouter un contact",
 
-  "Pending requests":
-  "Requêtes en attente",
-
   "Authorized":
   "Autorisés",
 
@@ -119,23 +116,29 @@
   "Authorization pending":
   "Autorisation en attente",
 
-  "Chatrooms":
+  "Channels":
   "Salons",
 
-  "Join a chatroom":
-  "Rejoindre un salon",
+  "Join or create a Channel":
+  "Rejoindre ou créer un Salon",
 
-  "Query public chatrooms list":
-  "Interroger la liste des salons publics",
+  "Query public Channels list":
+  "Interroger la liste des Salons publics",
 
   "Bookmarks":
   "Favoris",
 
-  "Public rooms":
+  "Public Channels":
   "Salons publics",
 
-  "Private rooms":
+  "Private Channels":
   "Salons privés",
+  
+  "Private messages":
+  "Messages privés",
+  
+  "Room occupant":
+  "Occupant de Salon",
 
   "Edit user profile":
   "Modifier le profil utilisateur",
@@ -188,10 +191,10 @@
   "Audio call":
   "Appel audio",
 
-  "Room configuration":
+  "Chatoom configuration":
   "Configuration du Salon",
 
-  "Add Room to Bookmarks":
+  "Add Channel to Bookmarks":
   "Ajouter le Salon aux Favoris",
 
   "Enable notifications":
@@ -200,7 +203,7 @@
   "Disable notifications":
   "Désactiver les notifications",
 
-  "Room occupants list":
+  "Chatoom occupants list":
   "Liste des occupants du Salon",
 
   "Back to recent messages":
@@ -217,42 +220,93 @@
 
   "Add an emoji":
   "Ajouter un emoji",
-
+  
+  "Profil":
+  "Profile",
+  
+  "Send a message":
+  "Envoyer un message",
+  
+  "Contact profile":
+  "Profile de contact",
+  
+  "Affiliation to current Chatoom":
+  "Affiliation au Salon actuel",
+  
+  "Role in current Chatoom":
+  "Rôle dans le Salon actuel",
+  
+  "Affiliation":
+  "Affiliation",
+  
+  "Owner":
+  "Propriétaire",
+  
+  "Administrator":
+  "Administrateur",
+  
+  "Member":
+  "Membre",
+  
+  "Unaffiliated":
+  "Aucune",
+  
+  "Role":
+  "Rôle",
+  
+  "Moderator":
+  "Modérateur",
+  
+  "Participant":
+  "Participant",
+  
+  "Visitor":
+  "Visiteur",
+  
+  "Kick":
+  "Expulser",
+  
+  "Ban":
+  "Bannir",
+  
   "Occupants":
   "Occupants",
 
-  "Moderators":
-  "Modérateurs",
+  "Change Role of ":
+  "Changer le Role de ",
+  
+  "Kick occupant ":
+  "Expulser l'occupant ",
+  
+  "Change Affiliation of ":
+  "Changer l'Affiliation de ",
 
-  "Participants":
-  "Participants",
+  "Ban occupant ":
+  "Bannir l'occupant ",
 
-  "Visitors":
-  "Visiteurs",
-
+  "to":
+  "à",
+  
   "Add this Contact":
   "Ajouter ce Contact",
 
-  "Room identifier":
-  "Identifiant du Salon",
-
-  "Identifier":
-  "Identifiant",
+  "Enter Channel name or address...":
+  "Entrez le nom ou l'addresse du Salon...",
 
   "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
   "Si le Salon spécifié n'existe pas et si le serveur ne limite pas la création des Salons, un nouveau Salon sera créé avec vous en tant que propriétaire.",
 
-  "Join Room (create it if does not exist)":
-  "Rejoindre le Salon (le créer si il n'existe pas)",
-
   "Join":
   "Rejoindre",
+  
+  "Channel initialization":
+  "Initialization du Salon",
 
-  "The Room will be created, do you want to configure it ?":
-  "Le Salon va être créé, voulez-vous le configurer ?",
+  "A new Channel was created and you are its owner, do you want to configure it right now ?":
+  "Un nouveau Salon a été créé et vous en êtes le propriétaire, souhaitez-vous le configurer dès maintenant ?",
 
-  "Join now":
-  "Rejoindre maintenant",
+  "Ignore":
+  "Ignorer",
 
   "Configure":
   "Configurer",
@@ -277,7 +331,22 @@
 
   "Remove contact and revoke authorization ?":
   "Supprimer le contact et révoquer l'autorisation ?",
-
+  
+  "Subscription with contact":
+  "Abonnement avec le contact",
+  
+  "Mutual":
+  "Mutuel",
+  
+  "Accorded":
+  "Accordé",
+  
+  "Pending":
+  "En attente",
+  
+  "None":
+  "Aucun",
+  
   "Send a message to":
   "Envoyer un message à",
 
@@ -302,31 +371,34 @@
   "Contact address (JID)":
   "Adresse (JID) du Contact",
 
-  "XMPP/Jabber address":
-  "Adresse XMPP/Jabber",
+  "Enter contact XMPP address...":
+  "Entrez l'adresse XMPP du contact...",
 
-  "The contact will be added but unavailable, a subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
-  "Le contact sera ajouté mais indisponible, une demande d'autorisation d'abonnement sera envoyée à l'adresse indiquée, vous devrez attendre que le contact autorise cette demande.",
-
-  "Add contact and request authorisation":
-  "Ajouter le contact et faire une demande d'autorisation",
+  "A subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
+  "Une demande d'autorisation d'abonnement sera envoyée à l'adresse indiquée, vous devrez attendre que le contact autorise cette demande.",
 
   "Submit":
   "Envoyer",
 
-  "Configure room...":
+  "Configure Channel...":
   "Configurer le salon...",
 
-  "Set room subject...":
+  "Set Channel subject...":
   "Définir le sujet du salon...",
-
-  "Chatoom configuration":
+  
+  "Add Channel to bookmarks ?":
+  "Ajouter le Salon aux favoris ?",
+  
+  "Add Bookmark":
+  "Ajouter aux favoris",
+  
+  "Channel configuration":
   "Configuration du salon",
 
-  "Room subject":
+  "Channel subject":
   "Sujet du Salon",
 
-  "Room informations":
+  "Channel informations":
   "Informations du Salon",
 
   "Access &amp; moderation":
@@ -335,43 +407,52 @@
   "Other options":
   "Autres options",
 
-  "Room title":
+  "Channel title":
   "Titre du Salon",
 
-  "Room description":
+  "Channel description":
   "Description du Salon",
 
-  "Persistent Room":
+  "Persistent Channel":
   "Salon persistant",
 
-  "Rooms are automatically deleted when they are empty, unless this option is enabled":
-  "Les Salons sont automatiquement supprimés lorsqu'ils sont vides, sauf si cette option est activée",
+  "Unless this option is enabled, Channel will be automatically deleted once all occupants have left it":
+  "Si cette option n'est pas activée, le Salon sera automatiquement supprimé une fois que tous les occupants l'auront quitté",
 
-  "Public Room":
+  "Public Channel":
   "Salon publique",
 
-  "A public Room can be found by any user through normal means such as searching and service discovery":
+  "A public Channel can be found by any user through normal means such as searching and service discovery":
   "Un Salon public peut être trouvé par n'importe quel utilisateur par des moyens normaux tels que la recherche et la découverte de services",
 
-  "Room password":
-  "Mot de passe de Salon",
+  "Protected by password":
+  "Protégé par mot de passe",
+
+  "Password":
+  "Mot de passe",
+  
+  "Enter a password...":
+  "Entrez un mot de passe",
+  
+  "A password-protected Channel requires to provide a password to join it":
+  "Un Salon protégé par mot de passe nécessite de fournir un mot de passe pour le rejoindre",
 
   "Allowed to members only":
   "Autorisé aux membres uniquement",
 
-  "Enable this to only allow access for Room owners, admins and members":
-  "Activez cette option pour n'autoriser l'accès qu'aux propriétaires, administrateurs et membres du Salon",
+  "Enable this to restrict Channel access and only allow those that have at least the Member affiliation":
+  "Activez cette option pour restreindre l'accès à la chaîne et autoriser uniquement ceux qui ont au moins l'affiliation Membre",
 
-  "Moderated Room":
+  "Moderated Channel":
   "Salon modéré",
 
-  "In moderated Rooms occupants must be given permission to speak by a Room moderator":
+  "In moderated Channels, occupants must be given permission to speak by a Channel moderator":
   "Dans les Salons modérés, les occupants doivent être autorisés à parler par un modérateur de Salon",
 
   "Occupants anonymity":
   "Anonymat des occupants",
 
-  "In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address":
+  "In a Non-Anonymous Channel, occupants address is exposed to others, otherwise only Moderators can view occupants address":
   "Dans un Salon non-anonyme, l'adresse des occupants est exposée aux autres, sinon seuls les modérateurs peuvent voir l'adresse des occupants",
 
   "Semi-Anonymous":
@@ -383,19 +464,19 @@
   "Occupants visibility":
   "Visibilité des occupants",
 
-  "Set Room occupants visibility according their assigned Role":
+  "Set Channel occupants visibility according their assigned Role":
   "Définir la visibilité des occupants du Salon en fonction du rôle qui leur est attribué",
 
   "History max length":
   "Taille maximum de l'historique",
 
-  "Specify the maximum number of previous messages that should be sent to users when they join the Room":
+  "Specify the maximum number of previous messages that should be sent to users when they join the Channel":
   "Spécifiez le nombre maximum de précédents messages qui doivent être envoyés aux utilisateurs lorsqu'ils rejoignent le Salon",
 
   "History default length":
   "Taille par default de l'historique",
 
-  "Specify the number of previous messages sent to new users when they join the Room":
+  "Specify the number of previous messages sent to new users when they join the Channel":
   "Spécifie le nombre de précédents messages envoyés aux nouveaux utilisateurs lorsqu'ils rejoignent le Salon",
 
   "Enable messages archiving":
@@ -403,7 +484,25 @@
 
   "Stores messages in persistent way using Message Archive Management":
   "Stocke les messages de manière persistante à l'aide de Message Archive Management",
+  
+  "Channel administration":
+  "Administration du Salon",
+  
+  "List is empty":
+  "La liste est vide",
+  
+  "Banned users":
+  "Utilisateurs bannis",
+  
+  "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
+  "Les utilisateurs bannis ne sont pas autorisés à rejoindre le Salon ni à s'y inscrire. Vous pouvez annuler le bannissement d'un utilisateur afin qu'il puisse à nouveau rejoindre le Salon et s'y inscrire si les règles du serveur le permettent.",
 
+  "Occupants affiliation":
+  "Affiliation des occupants",
+
+  "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
+  "L'affiliation permet de spécifier la liste des utilisateurs autorisés à accéder à un Salon réservé aux membres, à lui accorder le statut d'administrateur ou à en devenir propriétaire. Un utilisateur non-membre peut rejoindre le Salon tant qu'il n'est pas réservé aux membres.",
+  
   "User profile":
   "Profil d'utilisateur",
 
@@ -443,6 +542,9 @@
   "Retry":
   "Réessayer",
 
+  "Add":
+  "Ajouter",
+  
   "Enable or disable the camera":
   "Activer ou désactiver la caméra",
 
@@ -505,7 +607,22 @@
 
   "Reply to":
   "Répondre à",
-
+  
+  "The message is unreachable":
+  "Le message est inaccessible",
+  
+  "The message was deleted":
+  "Le message a été supprimé",
+  
+  "This user have no status message":
+  "Cet utilisateur n'a pas de message d'etat",
+  
   "Do you really want to disconnect current session ?":
-  "Voulez-vous vraiment vous déconnecter de la session actuelle ?"
+  "Voulez-vous vraiment vous déconnecter de la session actuelle ?",
+  
+  "has left the conversation":
+  "a quitté la conversation",
+  
+  "joined the conversation":
+  "a rejoint la conversation"
 }

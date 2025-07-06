@@ -39,7 +39,6 @@
  * ------------------------------------------------------------------ */
 
 //const XOWS_NS_MODERATE     = "urn:xmpp:message-moderate:0";
-//const XOWS_NS_SID          = "urn:xmpp:sid:0";                        //< XEP-0359
 //const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
 
 /* -------------------------------------------------------------------
@@ -103,12 +102,14 @@ function xows_xmp_set_callback(type, callback)
     case "presence":  xows_xmp_fw_onpresence = callback; break;
     case "subscrib":  xows_xmp_fw_onsubscrib = callback; break;
     case "occupant":  xows_xmp_fw_onoccupant = callback; break;
+    case "presfail":  xows_xmp_fw_onpreserr = callback; break;
     case "rostpush":  xows_xmp_fw_onrostpush = callback; break;
     case "message":   xows_xmp_fw_onmessage = callback; break;
     case "chatstate": xows_xmp_fw_onchatstate = callback; break;
     case "receipt":   xows_xmp_fw_onreceipt = callback; break;
     case "retract":   xows_xmp_fw_onretract = callback; break;
     case "subject":   xows_xmp_fw_onsubject = callback; break;
+    case "mucnoti":   xows_xmp_fw_onmucnoti = callback; break;
     case "pubsub":    xows_xmp_fw_onpubsub = callback; break;
     case "jingle":    xows_xmp_fw_onjingle = callback; break;
     case "error":     xows_xmp_fw_onerror = callback; break;
@@ -138,8 +139,8 @@ function xows_xmp_connect(url, jid, password, register)
   xows_xmp_addr = url;
 
   // Reset bind data from previous session
-  xows_xmp_bind.full = null;
   xows_xmp_bind.bare = null;
+  xows_xmp_bind.full = null;
   xows_xmp_bind.node = null;
   xows_xmp_bind.resc = null;
 
@@ -272,6 +273,35 @@ function xows_xmp_sck_onclose(code, mesg)
   if(xows_xmp_auth.user)
     // This may be a connection loss
     xows_xmp_connectloss(mesg);
+}
+/* -------------------------------------------------------------------
+ *
+ * XMPP API - Utilitaries functions
+ *
+ * -------------------------------------------------------------------*/
+function xows_xmp_message_forge(id, to, from, type, body, time, recp, retr, repl, rpid, rpto, orid, szid, ocid, page)
+{
+  // Set default time
+  if(!time) time = new Date().getTime();
+  
+  // Create message object
+  return {
+    "id":id,        //< Message ID
+    "to":to,        //< Message recipient
+    "from":from,    //< Message sender
+    "type":type,    //< Message type
+    "body":body,    //< Body content
+    "time":time,    //< Message time
+    "recp":recp,    //< Message Receipt
+    "retr":retr,    //< Retract message ID
+    "repl":repl,    //< Replace message ID
+    "rpid":rpid,    //< Reply message ID
+    "rpto":rpto,    //< Reply message Author Address
+    "orid":orid,    //< Embeded origin-id
+    "szid":szid,    //< Embeded stanza-id
+    "ocid":ocid,    //< Embeded occupant-id
+    "page":page     //< RMS page number
+  };
 }
 
 /* -------------------------------------------------------------------
@@ -536,7 +566,7 @@ function xows_xmp_stream_features_recv(stanza)
       const register = stanza.querySelector("register");
       if(register) {
         // Start registration process
-        xows_xmp_regi_get_query(null,xows_xmp_regi_server_get_parse);
+        xows_xmp_regi_get_query(null, xows_xmp_regi_server_get_parse);
       } else {
         let err_msg = "Account registration is not allowed by server";
         xows_log(0,"xmp_stream_features_recv",err_msg);
@@ -715,7 +745,7 @@ function xows_xmp_bind_parse(stanza)
 {
   if(stanza.getAttribute("type") === "error") {
     const err_msg = "bind resource error";
-    xows_log(0,"xmp_bind_parse",err_msg,xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,0,"xmp_bind_parse",err_msg);
     xows_xmp_fram_close_send(XOWS_SIG_ERR, err_msg); //< Close with error
     return;
   }
@@ -775,7 +805,7 @@ function xows_xmp_session_parse(stanza)
 {
   if(stanza.getAttribute("type") === "error") {
     const err_msg = "session establishment failure";
-    xows_log(0,"xmp_session_parse",err_msg,xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,0,"xmp_session_parse",err_msg);
     xows_xmp_fram_close_send(XOWS_SIG_ERR, err_msg); //< Close with error
     return;
   }
@@ -881,28 +911,18 @@ function xows_xmp_iq_recv(stanza)
  */
 function xows_xmp_iq_parse(stanza, onparse)
 {
-  let err_type, err_code, err_name, err_text;
-
-  const id = stanza.getAttribute("id");
   const type = stanza.getAttribute("type");
 
-  // Check for error
-  if(type === "error") {
-    // Get error details
-    const error = stanza.querySelector("error");
-    err_type = error.getAttribute("type");
-    err_code = error.getAttribute("code");
-    err_name = error.firstChild.tagName;
-    err_text = xows_xml_innertext(stanza.querySelector("text"));
-    const err_mesg = xows_xmp_iq_error_text(stanza);
-    xows_log(1,"xmp_iq_parse","query '"+id+"' error",err_mesg);
-    // Forward error message
-    xows_xmp_fw_onerror(XOWS_SIG_ERR,err_mesg);
+  if(xows_isfunc(onparse)) {
+    // Forward parse result
+    onparse(stanza.getAttribute("from"), type, xows_xmp_error_parse(stanza));
+  } else {
+    // Check for error
+    if(type === "error") {
+      // Forward error message
+      xows_xmp_fw_onerror(XOWS_SIG_ERR, xows_xmp_error_log(stanza,1,"xmp_iq_parse"));
+    }
   }
-
-  // Forward parse result
-  if(xows_isfunc(onparse))
-    onparse(stanza.getAttribute("from"), type, err_type, err_code, err_name, err_text);
 }
 
 /**
@@ -933,32 +953,70 @@ function xows_xmp_iq_result_send(id, to)
 }
 
 /**
+ * Parse the given error <iq> and generate generic log output
+ *
+ * @param   {object}    stanza    Received <iq> stanza
+ * @param   {string}    scope     Message origin, scope or context
+ * @param   {string}   [message]  Optionnal main content or title
+ * 
+ * @return  {string}    Generated error details text
+ */
+function xows_xmp_error_log(stanza, level, scope, message)
+{
+  let details;
+  
+  // Get inner <error> child and try to find <text>
+  const error = stanza.querySelector("error");
+  if(error) {
+    // get error tagname and beautify it
+    details = error.firstChild.tagName;
+    details = details.replace(/-/g, " ");
+    details = details[0].toUpperCase() + details.substring(1);
+    // if <text> is available, append it
+    const text = error.querySelector("text");
+    if(text) details += ": " + xows_xml_innertext(text);
+  }
+  
+  if(!message) 
+    message = "query error ("+stanza.getAttribute("id")+")";
+  
+  xows_log(level,scope,message,details);
+  
+  return details;
+}
+
+/**
  * Parse the given error <iq> and returns the parsed error type
  * and hint text
  *
  * @param   {object}    stanza    Received <iq> stanza
  *
- * @return  {string}    Parsed error type and text as combined string
+ * @return  {object}    Parsed error generic data
  */
-function xows_xmp_iq_error_text(stanza)
+function xows_xmp_error_parse(stanza)
 {
-  let str;
-
-  // Get inner <error> child and try to find <text>
+  let data = null;
+  
+  // Get inner <error> child
   const error = stanza.querySelector("error");
   if(error) {
-    // get error tagname and beautify it
-    str = error.firstChild.tagName;
-    str = str.replace(/-/g, " ");
-    str = str[0].toUpperCase() + str.substring(1);
-    // if <text> is available, append it
+    data = {};
+    // Check for "code" attribute
+    if(error.hasAttribute("code"))
+      data.code = error.getAttribute("code");
+    // Check for "type" attribute
+    if(error.hasAttribute("type"))
+      data.type = error.getAttribute("type");
+    // Check for nested child node (more specific error type)
+    if(error.firstChild) 
+      data.name = error.firstChild.tagName;
+    // Check for nested <text> node (error message)
     const text = error.querySelector("text");
-    if(text) str += ": " + xows_xml_innertext(text);
+    if(text) data.text = xows_xml_innertext(text);
   }
-
-  return str;
+  
+  return data;
 }
-
 
 /* -------------------------------------------------------------------
  *
@@ -1023,6 +1081,11 @@ let xows_xmp_fw_onmessage = function() {};
 let xows_xmp_fw_onsubject = function() {};
 
 /**
+ * Multi-User Chat (XEP-0045) received room notification event callback
+ */
+let xows_xmp_fw_onmucnoti = function() {};
+
+/**
  * Parse received <message> stanza
  *
  * @param   {object}    stanza    Received <message> stanza
@@ -1034,14 +1097,13 @@ function xows_xmp_message_recv(stanza)
   const from = stanza.getAttribute("from");
   const to = stanza.getAttribute("to");
   const type = stanza.getAttribute("type");
-
+  
   if(type === "error") {
-    const mesg = xows_xmp_iq_error_text(stanza);
-    xows_log(1,"xmp_message_recv","error message ("+from+")",xows_xmp_iq_error_text(stanza));
+    xows_xmp_fw_onmessage(xows_xmp_message_forge(id, to, from, type), xows_xmp_error_parse(stanza));
     return true;
   }
 
-  let time, body, chatstate, origid, stnzid, occuid, replace, replyid, replyto;
+  let time, body, cstt, repl, rpid, rpto, orid, szid, ocid;
 
   let i = stanza.childNodes.length;
   while(i--) {
@@ -1056,20 +1118,15 @@ function xows_xmp_message_recv(stanza)
     const xmlns = node.getAttribute("xmlns");
 
     // Check whether this is a MAM archive query result
-    if(xmlns === XOWS_NS_MAM) {
-      xows_log(2,"xmp_message_recv","received Archive result");
+    if(xmlns === XOWS_NS_MAM) 
       return xows_xmp_mam_result_recv(node);
-    }
 
     // Check whether this is a PubSub event
-    if(xmlns === XOWS_NS_PUBSUBEVENT) {
-      xows_log(2,"xmp_message_recv","received PubSub Event");
+    if(xmlns === XOWS_NS_PUBSUBEVENT) 
       return xows_xmp_pubsub_recv(from, node);
-    }
 
     // Check whether this is an encapsuled carbons copy
     if(xmlns === XOWS_NS_CARBONS) {
-      xows_log(2,"xmp_message_recv","received forwarded Carbons");
       // Take the inner <message> node and parse it
       const message = node.querySelector("message");
       return message ? xows_xmp_message_recv(message) : false;
@@ -1079,15 +1136,41 @@ function xows_xmp_message_recv(stanza)
     if(xmlns === XOWS_NS_RECEIPTS) {
       if(tname === "request") { //< Can be <request> or <received>
         xows_xmp_message_receipt_send(from, id);
+        continue;
       } else { //< we assume this is a <received>
         xows_xmp_fw_onreceipt(id, from, to, node.getAttribute("id"));
         return true;
       }
     }
 
+    // Check for Message Retraction (XEP-0424)
+    if(xmlns === XOWS_NS_RETRACT) {
+      xows_xmp_fw_onretract(id, from, type, node.getAttribute("id"));
+      return true;
+    }
+
+    // Check for <subject> node
+    if(tname === "subject") {
+      xows_xmp_fw_onsubject(id, from, xows_xml_innertext(node));
+      return true;
+    }
+    
+    // Check for room configuration notification
+    if(xmlns === XOWS_NS_MUCUSER) {
+      if(type === "groupchat") {
+        const mucstat = node.querySelectorAll("status"); //< search for <status>
+        const muccode = [];
+        for(let j = 0; j < mucstat.length; ++j) 
+          muccode.push(parseInt(mucstat[j].getAttribute("code")));
+        xows_xmp_fw_onmucnoti(id, from, muccode);
+        return true;
+      }
+      continue;
+    }
+    
     // Check for chat state notification
     if(xmlns === XOWS_NS_CHATSTATES) {
-      chatstate = xows_xmp_chatstate_value[tname];
+      cstt = xows_xmp_chatstate_value.get(tname);
       continue;
     }
 
@@ -1099,42 +1182,29 @@ function xows_xmp_message_recv(stanza)
 
     // Check for Anonymous unique occupant identifiers for MUCs (XEP-0421)
     if(xmlns === XOWS_NS_OCCUID) {
-      occuid = node.getAttribute("id");
+      ocid = node.getAttribute("id");
       continue;
     }
 
     // Check for Unique and Stable Stanza IDs (XEP-0359)
     if(xmlns === XOWS_NS_SID) {
-      if(tname === "origin-id") origid = node.getAttribute("id");
-      if(tname === "stanza-id") stnzid = node.getAttribute("id");
+      if(tname === "origin-id") orid = node.getAttribute("id");
+      if(tname === "stanza-id") szid = node.getAttribute("id");
       continue;
     }
 
     // Check for Replies (XEP-0461)
     if(xmlns === XOWS_NS_REPLY) {
-      replyid = node.getAttribute("id");
+      rpid = node.getAttribute("id");
       if(node.hasAttribute("to"))
-        replyto = node.getAttribute("to");
+        rpto = node.getAttribute("to");
       continue;
     }
 
     // Check for Last Message Correction (XEP-0308)
     if(xmlns === XOWS_NS_CORRECT) {
-      replace = node.getAttribute("id");
+      repl = node.getAttribute("id");
       continue;
-    }
-
-    // Check for Message Retraction (XEP-0424)
-    if(xmlns === XOWS_NS_RETRACT) {
-      xows_xmp_fw_onretract(id, from, type, node.getAttribute("id"));
-      continue;
-    }
-
-    // Check for <subject> node
-    if(tname === "subject") {
-      //subject = xows_xml_innertext(node);
-      xows_xmp_fw_onsubject(id, from, xows_xml_innertext(node));
-      return true;
     }
 
     // Check for <body> node
@@ -1145,16 +1215,13 @@ function xows_xmp_message_recv(stanza)
   }
 
 
-  if(body !== undefined) {
-    xows_xmp_fw_onmessage({ "id":id,"from":from,"to":to,"type":type,"body":body,"time":time,
-                            "replace":replace,"replyid":replyid,"replyto":replyto,
-                            "origid":origid,"stnzid":stnzid,"occuid":occuid});
+  if(body) {
+    xows_xmp_fw_onmessage(xows_xmp_message_forge(id, to, from, type, body, time, 
+                                                 null, null, repl, rpid, rpto, 
+                                                 orid, szid, ocid));
     return true;
-
-  } else if(chatstate !== undefined) {
-
-    xows_xmp_fw_onchatstate(id, from, type, chatstate, occuid);
-
+  } else if(cstt) {
+    xows_xmp_fw_onchatstate(id, from, type, cstt, ocid);
     return true;
   }
 
@@ -1170,14 +1237,14 @@ function xows_xmp_message_recv(stanza)
  * @param   {string}    type      Message type
  * @param   {string}    to        JID of the recipient
  * @param   {string}    body      Message content
- * @param   {boolean}   receipt   Request message receipt
- * @param   {string}   [replace]  Optionnal message ID this one Replace
- * @param   {string}   [replyid]  Optionnal replyed message ID
- * @param   {string}   [replyto]  Optionnal replyed message author JID
+ * @param   {boolean}   recp      Request message receipt
+ * @param   {string}   [old_id]   Optionnal message ID this one Replace
+ * @param   {string}   [quo_id]   Optionnal replyed message ID
+ * @param   {string}   [quo_to]   Optionnal replyed message author JID
  *
  * @return  {string}    Sent message ID
  */
-function xows_xmp_message_body_send(type, to, body, receipt, replace, replyid, replyto)
+function xows_xmp_message_body_send(type, to, body, recp, old_id, quo_id, quo_to)
 {
   // Generate 'custom' id to allow sender to track message
   const id = xows_gen_uuid();
@@ -1190,18 +1257,16 @@ function xows_xmp_message_body_send(type, to, body, receipt, replace, replyid, r
   xows_xml_parent(stanza, xows_xml_node("origin-id",{"id":id,"xmlns":XOWS_NS_SID}));
 
   // Add replace
-  if(replace)
-    xows_xml_parent(stanza, xows_xml_node("replace",{"id":replace,"xmlns":XOWS_NS_CORRECT}));
+  if(old_id)
+    xows_xml_parent(stanza, xows_xml_node("replace",{"id":old_id,"xmlns":XOWS_NS_CORRECT}));
 
   // Add reply
-  if(replyid)
-    xows_xml_parent(stanza, xows_xml_node("reply",{"id":replyid,"to":replyto,"xmlns":XOWS_NS_REPLY}));
+  if(quo_id && quo_to)
+    xows_xml_parent(stanza, xows_xml_node("reply",{"id":quo_id,"to":quo_to,"xmlns":XOWS_NS_REPLY}));
 
   // Add receipt request (only if one-to-one chat)
-  if(receipt && type === "chat")
+  if(recp && type === "chat")
     xows_xml_parent(stanza, xows_xml_node("request",{"xmlns":XOWS_NS_RECEIPTS}));
-
-  xows_log(2,"xmp_message_body_send","send message","type "+type+" to "+to);
 
   // Send final message
   xows_xmp_send(stanza);
@@ -1234,18 +1299,24 @@ const XOWS_CHAT_COMP    = 4;
 /**
  * Chat State Notifications (XEP-0085) string to value mapping
  */
-const xows_xmp_chatstate_value = {
-  "gone"      : 0,
-  "active"    : 1,
-  "inactive"  : 2,
-  "paused"    : 3,
-  "composing" : 4
-};
+const xows_xmp_chatstate_value = new Map([
+  ["gone"      , 0],
+  ["active"    , 1],
+  ["inactive"  , 2],
+  ["paused"    , 3],
+  ["composing" , 4]
+]);
 
 /**
  * Chat State Notifications (XEP-0085) value to string mapping
  */
-const xows_xmp_chatstate_string = ["gone","active","inactive","paused","composing"];
+const xows_xmp_chatstate_string = [
+  "gone",
+  "active",
+  "inactive",
+  "paused",
+  "composing"
+];
 
 /**
  * Send a message with chat state notification (XEP-0085)
@@ -1257,8 +1328,6 @@ const xows_xmp_chatstate_string = ["gone","active","inactive","paused","composin
 function xows_xmp_message_chatstate_send(to, type, chat)
 {
   const state = xows_xmp_chatstate_string[chat];
-
-  xows_log(2,"xmp_message_chatstate_send","send chat state",state+" to "+to);
 
   xows_xmp_send(xows_xml_node("message",{"to":to,"type":type},
                   xows_xml_node(state,{"xmlns":XOWS_NS_CHATSTATES})));
@@ -1286,8 +1355,6 @@ let xows_xmp_fw_onreceipt = function() {};
  */
 function xows_xmp_message_receipt_send(to, id)
 {
-  xows_log(2,"xmp_message_receipt_send","send message Receipt","received "+id+" to "+to);
-
   xows_xmp_send(xows_xml_node("message",{"to":to},
                   xows_xml_node("received",{"id":id,"xmlns":XOWS_NS_RECEIPTS})));
 }
@@ -1316,19 +1383,19 @@ let xows_xmp_fw_onretract = function() {};
  */
 function xows_xmp_message_retract_send(to, type, usid)
 {
-  xows_log(2,"xmp_message_retract_send","send message Retraction",usid+" to "+to);
-
   // Base stanza
   const message = xows_xml_node("message",{"to":to,"type":type},
                     xows_xml_node("retract",{"id":usid,"xmlns":XOWS_NS_RETRACT}));
-/*
-  // Adde <fallback> node
-  xows_xml_parent(message, xows_xml_node("fallback",{"xmlns":"urn:xmpp:fallback:0"}));
-  // Adde <body> node
-  xows_xml_parent(message, xows_xml_node("body",null,"[Unsupported message retraction]"));
-  // Adde <store> node
+                    
+  // Add <store> node to ensure message to be stored in MAM
   xows_xml_parent(message, xows_xml_node("store",{"xmlns":"urn:xmpp:hints"}));
-*/
+  /*
+  // Add <fallback> node
+  xows_xml_parent(message, xows_xml_node("fallback",{"xmlns":"urn:xmpp:fallback:0"}));
+  // Add <body> node
+  xows_xml_parent(message, xows_xml_node("body",null,"[Unsupported message retraction]"));
+  */
+
   // Send message
   xows_xmp_send(message);
 }
@@ -1365,16 +1432,14 @@ function xows_xmp_rost_push_recv(stanza)
   // Parse <item> child, it should be alone
   const item = stanza.querySelector("item");
 
-  const bare = item.getAttribute("jid");
+  const jid = item.getAttribute("jid");
   const name = item.getAttribute("name");
-  const subs = xows_xmp_subs_mask_map[item.getAttribute("subscription")];
+  const subs = xows_xmp_subs_val.get(item.getAttribute("subscription"));
   let group = item.querySelector("group");
   group = group ? xows_xml_innertext(group) : null;
 
-  xows_log(2,"xmp_rost_push_recv","received Roster Push");
-
   // Forward parse result
-  xows_xmp_fw_onrostpush(bare, name, subs, group);
+  xows_xmp_fw_onrostpush(jid, name, subs, group);
 }
 
 /**
@@ -1386,7 +1451,7 @@ function xows_xmp_rost_push_recv(stanza)
 function xows_xmp_rost_get_parse(stanza, onparse)
 {
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_rost_get_parse","parse get Roster",xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,1,"xmp_rost_get_parse","get roster");
     return;
   }
 
@@ -1394,9 +1459,9 @@ function xows_xmp_rost_get_parse(stanza, onparse)
   const nodes = stanza.getElementsByTagName("item");
   const item = [];
   for(let i = 0, n = nodes.length; i < n; ++i) {
-    item.push({ "bare"  : nodes[i].getAttribute("jid"),
+    item.push({ "jid"   : nodes[i].getAttribute("jid"),
                 "name"  : nodes[i].getAttribute("name"),
-                "subs"  : xows_xmp_subs_mask_map[nodes[i].getAttribute("subscription")],
+                "subs"  : xows_xmp_subs_val.get(nodes[i].getAttribute("subscription")),
                 "group" : xows_xml_innertext(nodes[i].querySelector("group"))});
   }
 
@@ -1424,13 +1489,11 @@ function xows_xmp_rost_get_query(onparse)
  *
  * @param   {string}    jid       Contact or Room JID to add
  * @param   {string}    name      Item Display name or null to remove item
- * @param   {string}    group     Group name where to add contact or null to ignore
- * @param   {function}  onparse   Callback to receive parse result
+ * @param   {string}   [group]    Optionnal group name where to add contact or null to ignore
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_rost_set_query(jid, name, group, onparse)
 {
-  xows_log(2,"xmp_rost_set_query","query set Roster",jid);
-
   // Create the item child
   const item = xows_xml_node("item",{"jid":jid});
 
@@ -1466,34 +1529,45 @@ const XOWS_SHOW_ON      = 4;
 const XOWS_SHOW_CHAT    = 5;
 
 /**
- * List of presence subscrition values/mask bits
- */
-const XOWS_SUBS_REM     = -1;
-const XOWS_SUBS_NONE    = 0;
-const XOWS_SUBS_FROM    = 1;
-const XOWS_SUBS_TO      = 2;
-const XOWS_SUBS_BOTH    = 3;
-
-/**
- * Correspondance map array for presence subscription string to value
- */
-const xows_xmp_subs_mask_map = {
-  "remove": -1,
-  "none"  : 0,
-  "from"  : 1,
-  "to"    : 2,
-  "both"  : 3
-};
-
-/**
  * Correspondance map array for presence show string to level
  */
-const xows_xmp_show_level = new Map([["dnd",1],["xa",2],["away",3],["chat",5]]);
+const xows_xmp_show_val = new Map([
+  ["dnd",   1],
+  ["xa",    2],
+  ["away",  3],
+  ["chat",  5]
+]);
 
 /**
  * Correspondance map array for presence show level to string
  */
-const xows_xmp_show_name = ["","dnd","xa","away","","chat"];
+const xows_xmp_show_str = new Map([
+  [1,  "dnd"],  
+  [2,   "xa"],
+  [3, "away"],
+  [4,   null],
+  [5, "chat"]
+]);
+
+/**
+ * List of presence subscription level
+ */
+const XOWS_SUBS_REM     = -1; //< remove subscription
+const XOWS_SUBS_NONE    = 0;  //< mutual non-subscription
+const XOWS_SUBS_FROM    = 1;  //< user authorized contact subscription
+const XOWS_SUBS_TO      = 2;  //< contact authorized our subscription
+const XOWS_SUBS_BOTH    = 3;  //< mutual subscription
+
+/**
+ * Correspondance map array for presence subscription string to value
+ */
+const xows_xmp_subs_val  = new Map([
+  ["remove" ,-1],
+  ["none"   , 0],
+  ["from"   , 1],
+  ["to"     , 2],
+  ["both"   , 3]
+]);
 
 /**
  * Reference to callback function for received presence
@@ -1509,6 +1583,11 @@ let xows_xmp_fw_onsubscrib = function() {};
  * Multi-User Chat (XEP-0045) received presence event callback
  */
 let xows_xmp_fw_onoccupant = function() {};
+
+/**
+ * Reference to callback function for received presence auth error
+ */
+let xows_xmp_fw_onpreserr = function() {};
 
 /**
  * Function to proceed an received <presence> stanza
@@ -1530,36 +1609,33 @@ function xows_xmp_presence_recv(stanza)
     switch(type)
     {
     case "unavailable":
-      show = -1;
+      show = XOWS_SHOW_OFF;
       break;
 
     case "subscribe":
     case "unsubscribe":
     case "subscribed":
     case "unsubscribed": {
-      xows_log(2,"xmp_presence_recv","received subscrib",from+" type:"+type);
-
       // Check for <nick> child
       const node = stanza.querySelector("nick");
       const nick = node ? xows_xml_innertext(node) : null;
 
       // Foward subscription
       xows_xmp_fw_onsubscrib(from, type, nick);
-      return true; }
-
+      } return true;
     case "error": {
-      const err = "("+from+") "+xows_xmp_iq_error_text(stanza);
-      xows_log(1,"xmp_presence_recv","error",from+" - "+err);
-
+      // get error data
+      const error = xows_xmp_error_parse(stanza);
+      xows_log(1,"xmp_presence_recv","error",from+" - "+error.type);
       // Forward error
-      xows_xmp_fw_onerror(XOWS_SIG_ERR,err);
-      return true; }
+      xows_xmp_fw_onpreserr(from, error);
+      } return true;
     }
 
   }
 
   // Additionnal <presence> informations or data
-  let priority, status, photo, caps, occuid, mucuser;
+  let priority, status, photo, caps, ocid, mucusr;
 
   let i = stanza.childNodes.length;
   while(i--) {
@@ -1576,7 +1652,7 @@ function xows_xmp_presence_recv(stanza)
     {
     case "show": {
       const text = xows_xml_innertext(node);
-      show = text ? xows_xmp_show_level.get(text) : XOWS_SHOW_ON; //< No text mean simply "available"
+      show = text ? xows_xmp_show_val.get(text) : XOWS_SHOW_ON; //< No text mean simply "available"
       continue; }
 
     case "priority":
@@ -1600,35 +1676,30 @@ function xows_xmp_presence_recv(stanza)
       continue;
 
     case XOWS_NS_OCCUID: //< Anonymous unique occupant ID (XEP-0421)
-      occuid = node.getAttribute("id");
+      ocid = node.getAttribute("id");
       continue;
 
     case XOWS_NS_MUCUSER: { //< Room occupant informations
       const item = node.querySelector("item"); //< should be an <item>
 
-      mucuser = { "affiliation" : xows_xmp_affi_level_map[item.getAttribute("affiliation")],
-                  "role"        : xows_xmp_role_level_map[item.getAttribute("role")],
+      mucusr = { "affiliation" : xows_xmp_affi_val.get(item.getAttribute("affiliation")),
+                  "role"        : xows_xmp_role_val.get(item.getAttribute("role")),
                   "jid"         : item.getAttribute("jid"),
                   "nickname"    : item.getAttribute("nickname"),
                   "code"        : []};
 
-      const codes = node.querySelectorAll("status"); //< search for <status>
-      let j = codes.length;
-      while(j--) mucuser.code.push(parseInt(codes[j].getAttribute("code")));
+      const mucstat = node.querySelectorAll("status"); //< search for <status>
+      for(let j = 0; j < mucstat.length; ++j) 
+        mucusr.code.push(parseInt(mucstat[j].getAttribute("code")));
       continue; }
     }
   }
 
   // Check whether this a presence from MUC
-  if(mucuser !== undefined) {
-
-    xows_log(2,"xmp_presence_recv","received MUC presence",from);
-    xows_xmp_fw_onoccupant(from, show, status, mucuser, occuid, photo);
-
+  if(mucusr !== undefined) {
+    xows_xmp_fw_onoccupant(from, show, status, mucusr, ocid, photo);
   } else {
-
     // Default is usual contact presence
-    xows_log(2,"xmp_presence_recv","received presence",from+" show:"+show);
     xows_xmp_fw_onpresence(from, show, priority, status, caps, photo);
   }
 
@@ -1645,9 +1716,10 @@ function xows_xmp_presence_recv(stanza)
  * @param   {string}    status    Status string tu set
  * @param   {string}    [photo]   Optionnal photo data hash to send
  * @param   {boolean}   [muc]     Append MUC xmlns child to stanza
- * @param   {string}    [nick]    Optional nickname for subscribe request
+ * @param   {string}    [nick]    Optional nickname
+ * @param   {string}    [pass]    Optional password
  */
-function xows_xmp_presence_send(to, type, level, status, photo, muc, nick)
+function xows_xmp_presence_send(to, type, level, status, photo, muc, nick, pass)
 {
   // Create the initial and default <presence> stanza
   const stanza = xows_xml_node("presence");
@@ -1661,7 +1733,7 @@ function xows_xmp_presence_send(to, type, level, status, photo, muc, nick)
   // Append the <show> and <priority> children
   if(level > XOWS_SHOW_OFF) {
     // Translate show level number to string
-    xows_xml_parent(stanza, xows_xml_node("show",null,xows_xmp_show_name[level]));
+    xows_xml_parent(stanza, xows_xml_node("show",null,xows_xmp_show_str.get(level)));
     // Set priority according show level
     xows_xml_parent(stanza, xows_xml_node("priority",null,(level * 20)));
     // Append <status> child
@@ -1681,12 +1753,15 @@ function xows_xmp_presence_send(to, type, level, status, photo, muc, nick)
   }
 
   // Append the proper <x> child for MUC protocole
-  if(muc) xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_MUC}));
+  if(muc) {
+    const x = xows_xml_node("x",{"xmlns":XOWS_NS_MUC});
+    // Append <password> child if supplied
+    if(pass) xows_xml_parent(x, xows_xml_node("password",null,pass));
+    xows_xml_parent(stanza, x);
+  }
 
-  // Append <nick> child if required
+  // Append <nick> child if supplied
   if(nick) xows_xml_parent(stanza, xows_xml_node("nick",{"xmlns":XOWS_NS_NICK},nick));
-
-  xows_log(2,"xmp_presence_send",type ? type : "show", to ? to : level);
 
   // Send the final <presence> stanza
   xows_xmp_send(stanza);
@@ -1712,7 +1787,6 @@ function xows_xmp_ping_reply(stanza)
   // Get iq sender and ID
   const from = stanza.getAttribute("from");
   const id = stanza.getAttribute("id");
-  xows_log(2,"xmp_ping_reply","responds to Ping",from);
   // Send pong
   xows_xmp_send(xows_xml_node("iq",{"id":id,"to":from,"type":"result"}));
 }
@@ -1746,8 +1820,6 @@ function xows_xmp_iq_time_reply(stanza)
   tzo += ((off > 9) ? off : "0"+off) + ":00";
   const utc = date.toJSON();
 
-  xows_log(2,"xmp_iq_time_reply","responds to Time",from);
-
   // Send time
   xows_xmp_send( xows_xml_node("iq",{"to":from,"id":id,"type":"result"},
                     xows_xml_node("time",{"xmlns":XOWS_NS_TIME},[
@@ -1776,8 +1848,6 @@ function xows_xmp_iq_version_reply(stanza)
   // Get iq sender and ID
   const from = stanza.getAttribute("from");
   const id = stanza.getAttribute("id");
-
-  xows_log(2,"xmp_iq_version_reply","responds to Version",from);
 
   // Send time
   xows_xmp_send( xows_xml_node("iq",{"to":from,"id":id,"type":"result"},
@@ -1811,8 +1881,6 @@ function xows_xmp_disco_info_reply(stanza)
   const query = stanza.querySelector("query");
   const node = query ? query.getAttribute("node") : null;
 
-  xows_log(2,"xmp_disco_info_reply","responds to disco#info",from);
-
   // Send response
   const caps = xows_xmp_caps_self_features();
   xows_xmp_send(  xows_xml_node("iq",{"to":from,"id":id,"type":"result"},
@@ -1832,7 +1900,7 @@ function xows_xmp_disco_info_parse(stanza, onparse)
   const feat = [];
 
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_disco_info_parse","parse Disco#info",xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,1,"xmp_disco_info_parse","get disco#info");
     // Forward result to client
     if(xows_isfunc(onparse)) onparse(from, iden, feat, null, null);
     return;
@@ -1876,8 +1944,6 @@ function xows_xmp_disco_info_parse(stanza, onparse)
  */
 function xows_xmp_disco_info_query(to, node, onparse)
 {
-  xows_log(2,"xmp_disco_info_query","query disco#info",to);
-
   const iq =  xows_xml_node("iq",{"type":"get","to":to},
                 xows_xml_node("query",{"xmlns":XOWS_NS_DISCOINFO,"node":node}));
 
@@ -1896,7 +1962,7 @@ function xows_xmp_disco_items_parse(stanza, onparse)
   const item = [];
 
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_disco_items_parse","parse Disco#items",xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,1,"xmp_disco_items_parse","get disco#items");
     // Forward result to client
     if(xows_isfunc(onparse)) onparse(from, item);
     return;
@@ -1922,8 +1988,6 @@ function xows_xmp_disco_items_parse(stanza, onparse)
  */
 function xows_xmp_disco_items_query(to, onparse)
 {
-  xows_log(2,"xmp_disco_items_query","query disco#items",to);
-
   const iq =  xows_xml_node("iq",{"type":"get","to":to},
                 xows_xml_node("query",{"xmlns":XOWS_NS_DISCOITEMS}));
 
@@ -1952,7 +2016,7 @@ function xows_xmp_extdisco_parse(stanza, onparse)
   const svcs = [];
 
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_extdisco_parse","parse extdisco",xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,1,"xmp_extdisco_parse","get extdisco");
     // Forward result to client
     if(xows_isfunc(onparse)) onparse(from, svcs);
     return;
@@ -1988,8 +2052,6 @@ function xows_xmp_extdisco_parse(stanza, onparse)
  */
 function xows_xmp_extdisco_query(to, type, onparse)
 {
-  xows_log(2,"xmp_extdisco_query","query extdisco");
-
   // Create the services child
   const services = xows_xml_node("services",{"xmlns":XOWS_NS_EXTDISCO});
 
@@ -2065,7 +2127,13 @@ function xows_xmp_xdata_parse(x)
  * the given array
  *
  * Given array must contain one or more objects with properly filled
- * "var" and "value" values.
+ * "var" and "value" properties. The "var" property must be of String() type
+ * and the "value" property must be null or an Array() type containing one or 
+ * more string-convertible value(s): 
+ *   
+ *   [{"var":"name1", "value":[<data>]},
+ *    {"var":"name2", "value":[<data>,<data,...]},
+ *    ... ]
  *
  * @param   {object[]}  field     Object's array to turn as <field> elements
  *
@@ -2125,27 +2193,36 @@ const XOWS_NS_REGISTER     = "jabber:iq:register";
  */
 function xows_xmp_regi_get_parse(stanza, onparse)
 {
+  const from = stanza.getAttribute("from");
+  
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_regi_get_parse","parse get Register",xows_xmp_iq_error_text(stanza));
+    
+    xows_xmp_error_log(stanza,1,"xmp_regi_get_parse","get "+XOWS_NS_REGISTER);
+    
+    // Forward parse result
+    if(xows_isfunc(onparse))
+      onparse(from, null, null, xows_xmp_error_parse(stanza));
+      
     return;
   }
 
-  // Get common registration elements
   const username = stanza.querySelector("username");
   const password = stanza.querySelector("password");
   const email = stanza.querySelector("email");
-  const x = stanza.querySelector("x");
 
-  // Check whether we have <registered> element, meaning already registered
-  const regd = stanza.querySelector("registered") ? true : false;
-  const user = username ? xows_xml_innertext(username) : null;
-  const pass = password ? xows_xml_innertext(password) : null;
-  const mail = email ? xows_xml_innertext(email) : null;
+  // Get common registration elements
+  const data = {"registered": stanza.querySelector("registered") ? true : false,
+                "username":   username ? xows_xml_innertext(username) : null,
+                "password":   password ? xows_xml_innertext(password) : null,
+                "email":      email ? xows_xml_innertext(email) : null};
+                
+  // Check whether we have <x> element
+  const x = stanza.querySelector("x");
   const form = x ? xows_xmp_xdata_parse(x) : null;
 
   // Forward parse result
   if(xows_isfunc(onparse))
-    onparse(stanza.getAttribute("from"), regd, user, pass, mail, form);
+    onparse(from, data, form);
 }
 
 /**
@@ -2156,8 +2233,6 @@ function xows_xmp_regi_get_parse(stanza, onparse)
  */
 function xows_xmp_regi_get_query(to, onparse)
 {
-  xows_log(2,"xmp_regi_get_query","query get Register");
-
   // Create and launch the query
   const iq = xows_xml_node("iq",{"type":"get"},
               xows_xml_node("query",{"xmlns":XOWS_NS_REGISTER}));
@@ -2172,25 +2247,25 @@ function xows_xmp_regi_get_query(to, onparse)
  * Send a register form query to the specified destination
  *
  * @param   {string}    to        Peer or service JID or null
- * @param   {string}    user      Content for <user> or null to ignore
- * @param   {string}    pass      Content for <pass> or null to ignore
- * @param   {string}    mail      Content for <mail> or null to ignore
+ * @param   {object}    data      Registration data to submit or null to ignore
  * @param   {object[]}  form      Fulfilled x-data form null to ignore
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_regi_set_query(to, user, pass, mail, form, onparse)
+function xows_xmp_regi_set_query(to, data, form, onparse)
 {
-  xows_log(2,"xmp_regi_submit","submit Register");
-
   // Create the base <query> node
   const query = xows_xml_node("query",{"xmlns":XOWS_NS_REGISTER});
 
   // Add child nodes as supplied
-  if(user !== null) xows_xml_parent(query, xows_xml_node("username",null,user));
-  if(pass !== null) xows_xml_parent(query, xows_xml_node("password",null,pass));
-  if(mail !== null) xows_xml_parent(query, xows_xml_node("email",null,mail));
-  if(form !== null) xows_xml_parent(query, xows_xmp_xdata_make(form));
-
+  if(data !== null) {
+    if(data.username !== null) xows_xml_parent(query, xows_xml_node("username",null,data.username));
+    if(data.password !== null) xows_xml_parent(query, xows_xml_node("password",null,data.password));
+    if(data.email !== null) xows_xml_parent(query, xows_xml_node("email",null,data.email));
+  }
+  
+  if(form !== null) 
+    xows_xml_parent(query, xows_xmp_xdata_make(form));
+  
   // Create and launch the query
   const iq =  xows_xml_node("iq",{"type":"set"},query);
 
@@ -2208,22 +2283,19 @@ function xows_xmp_regi_set_query(to, user, pass, mail, form, onparse)
  *
  * @param   {string}    from      Query Sender JID
  * @param   {string}    type      Query Response type
- * @param   {string}    er_type   Error type if available
- * @param   {string}    er_code   Error code if available
- * @param   {string}    er_name   Error code if available
- * @param   {string}    er_text   Error text if available
+ * @param   {object}    error     Error data if any
  */
-function xows_xmp_regi_server_set_parse(from, type, er_type, er_code, er_name, er_text)
+function xows_xmp_regi_server_set_parse(from, type, error)
 {
   let err_msg = null;
 
   // Check whether we got an error as submit response
   if(type === "error") {
     // Set error message string as possible
-    if(er_code === "409" || er_name === "conflict")
-      err_msg = er_text ? er_text : "Unsername already exists";
-    if(er_code === "406" || er_name === "not-acceptable")
-      err_msg = er_text ? er_text : "Username contains illegal characters";
+    if(error.code === "409" || error.name === "conflict")
+      err_msg = error.text ? error.text : "Unsername already exists";
+    if(error.code === "406" || error.name === "not-acceptable")
+      err_msg = error.text ? error.text : "Username contains illegal characters";
   } else {
     if(type === "result") {
       // Reset the client with congratulation message
@@ -2255,13 +2327,11 @@ function xows_xmp_regi_server_set_parse(from, type, er_type, er_code, er_name, e
  * once the server responded to registration form query.
  *
  * @param   {string}    from        Sender JID
- * @param   {boolean}   registered  Indicate <registered> child in response
- * @param   {string}    user        <user> child content or null if not present
- * @param   {string}    pass        <pass> child content or null if not present
- * @param   {string}    email       <email> child content or null if not present
+ * @param   {object}    data        Replied registration data
  * @param   {object[]}  form        Parsed x-data form to fulfill
+ * @param   {object}    error       Error data if any
  */
-function xows_xmp_regi_server_get_parse(from, registered, user, pass, email, form)
+function xows_xmp_regi_server_get_parse(from, data, form, error)
 {
   // The server may respond with a form or via old legacy way
   // we handle both cases.
@@ -2269,17 +2339,17 @@ function xows_xmp_regi_server_get_parse(from, registered, user, pass, email, for
     // For each fied of form, find know var name and fulfill
     let i = form.length;
     while(i--) {
-      if(form[i]["var"] === "username") form[i].value = xows_xmp_auth.user;
-      if(form[i]["var"] === "password") form[i].value = xows_xmp_auth.pass;
+      if(form[i]["var"] === "username") form[i].value = [xows_xmp_auth.user];
+      if(form[i]["var"] === "password") form[i].value = [xows_xmp_auth.pass];
     }
   } else {
     // Fulfill <username> and <password> element as required
-    if(user !== null) user = xows_xmp_auth.user;
-    if(pass !== null) pass = xows_xmp_auth.pass;
+    if(data.username !== null) data.username = xows_xmp_auth.user;
+    if(data.password !== null) data.password = xows_xmp_auth.pass;
   }
+  
   // Submit the register parmaters
-  xows_xmp_regi_set_query(null, user, pass, null, form,
-                           xows_xmp_regi_server_set_parse);
+  xows_xmp_regi_set_query(null, data, form, xows_xmp_regi_server_set_parse);
 }
 
 /* -------------------------------------------------------------------
@@ -2297,14 +2367,12 @@ const XOWS_NS_CARBONS      = "urn:xmpp:carbons:2";
  * Send query to enable or disable carbons (XEP-0280)
  *
  * @param   {boolean}   enable    Boolean to query enable or disable
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_carbons_query(enable, onparse)
 {
   // Create enable or disable node
   const tag = (enable) ? "enable" : "disable";
-
-  xows_log(2,"xmp_carbons_query","query Message Carbons",tag);
 
   // Send request to enable carbons
   const iq =  xows_xml_node("iq",{"type":"set"},
@@ -2329,7 +2397,7 @@ const XOWS_NS_VCARDXUPDATE = "vcard-temp:x:update";
  * Send query to publish vcard-temp
  *
  * @param   {object}    vcard     vCard data to set
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_vcardt_set_query(vcard, onparse)
 {
@@ -2349,13 +2417,18 @@ function xows_xmp_vcardt_set_query(vcard, onparse)
  */
 function xows_xmp_vcardt_get_parse(stanza, onparse)
 {
-  if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_vcardt_get_parse","parse get vcard-Temp",xows_xmp_iq_error_text(stanza));
+  if(!xows_isfunc(onparse))
     return;
+  
+  const from = stanza.getAttribute("from");
+  
+  if(stanza.getAttribute("type") === "error") {
+    // Forward error
+    onparse(from, null, xows_xmp_error_parse(stanza));
+  } else {
+    // Forward parse result
+    onparse(from, stanza.querySelector("vCard"));
   }
-  // Forward parse result
-  if(xows_isfunc(onparse))
-    onparse(stanza.getAttribute("from"), stanza.querySelector("vCard"));
 }
 
 /**
@@ -2366,8 +2439,6 @@ function xows_xmp_vcardt_get_parse(stanza, onparse)
  */
 function xows_xmp_vcardt_get_query(to, onparse)
 {
-  xows_log(2,"xmp_vcardt_get_query_","query get vcard-Temp",to);
-
   // Create and launch the query
   const iq = xows_xml_node("iq",{"type":"get"},
               xows_xml_node("vCard",{"xmlns":XOWS_NS_VCARD}));
@@ -2389,6 +2460,7 @@ function xows_xmp_vcardt_get_query(to, onparse)
  */
 const XOWS_NS_PUBSUB       = "http://jabber.org/protocol/pubsub";
 const XOWS_NS_PUBSUBEVENT  = "http://jabber.org/protocol/pubsub#event";
+const XOWS_NS_PUBSUBOWNER  = "http://jabber.org/protocol/pubsub#owner";
 const XOWS_NS_PUBSUBOPTS   = "http://jabber.org/protocol/pubsub#publish-options";
 
 /**
@@ -2432,19 +2504,17 @@ function xows_xmp_pubsub_recv(from, event)
  * @param   {string}    node      PEP node (xmlns)
  * @param   {object}    publish   <publish> child node to add
  * @param   {string}    access    Pubsub Access model to define
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_pubsub_publish(node, publish, access, onparse)
 {
-  xows_log(2,"xmp_pubsub_publish","publish PEP node",node);
-
   const children = [publish];
 
   // the <publish-options> child
   if(access) {
     children.push(xows_xml_node("publish-options",{"node":node},
                     xows_xmp_xdata_make([ {"var":"FORM_TYPE","type":"hidden",
-                                            "value":XOWS_NS_PUBSUBOPTS},
+                                            "value":[XOWS_NS_PUBSUBOPTS]},
                                           {"var":"pubsub#access_model",
                                             "value":[access]}])));
   }
@@ -2453,6 +2523,69 @@ function xows_xmp_pubsub_publish(node, publish, access, onparse)
   const iq =  xows_xml_node("iq",{"type":"set"},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},children));
 
+  // Send final message with generic parsing function
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
+ * Generic function to query PEP Node configure
+ *
+ * @param   {object}    stanza    Received query response stanza
+ * @param   {function}  onparse   Callback to forward parse result
+ */
+function xows_xmp_pubsub_conf_get_parse(stanza, onparse)
+{
+  const from = stanza.getAttribute("from");
+  
+  if(!xows_isfunc(onparse))
+    return;
+  
+  if(stanza.getAttribute("type") == "error") {
+    // Forward error
+    onparse(from, null, xows_xmp_error_parse(stanza));
+  } else {
+    // Get PubSub node
+    const node = stanza.querySelector("configure").getAttribute("node");
+    // Parse configuration Form DATA
+    const form = xows_xmp_xdata_parse(stanza.querySelector("x"));
+    // Forward error
+    onparse(from, node, form, null);
+  }
+}
+
+/**
+ * Generic function to query PEP Node configure
+ *
+ * @param   {string}    node      PEP node (xmlns)
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_pubsub_conf_get_query(node, onparse)
+{
+  // Create the query
+  const iq =  xows_xml_node("iq",{"type":"get"},
+                xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUBOWNER},
+                  xows_xml_node("configure",{"node":node})));
+                
+  // Send final message
+  xows_xmp_send(iq, xows_xmp_pubsub_conf_get_parse, onparse);
+}
+
+/**
+ * Generic function to submit PEP Node configuration
+ *
+ * @param   {string}    node      PEP node (xmlns)
+ * @param   {object}    from      PEP configuration Data Form to submit
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_pubsub_conf_set_query(node, form, onparse)
+{
+  const x = xows_xmp_xdata_make(form);
+  
+  // Create the query
+  const iq =  xows_xml_node("iq",{"type":"set"},
+                xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUBOWNER},
+                  xows_xml_node("configure",{"node":node},x)));
+                  
   // Send final message with generic parsing function
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
@@ -2472,7 +2605,7 @@ const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1";                  //< XEP-04
  * @param   {string}    name      Bookmark display name
  * @param   {boolean}   auto      Room autojoin flag
  * @param   {string}    nick      Room prefered nick
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_bookmark_publish(jid, name, auto, nick, onparse)
 {
@@ -2505,12 +2638,10 @@ const XOWS_NS_IETF_VCARD4  = "urn:ietf:params:xml:ns:vcard-4.0";
  *
  * @param   {object}    vcard     vCard4 data to set
  * @param   {string}    access    Pubsub Access model to define
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_vcard4_publish(vcard, access, onparse)
 {
-  xows_log(2,"xmp_vcard4_publish","publish vCard4",nick);
-
   // The <publish> child
   const publish = xows_xml_node("publish",{"node":XOWS_NS_VCARD4},
                     xows_xml_node("item",null,
@@ -2528,16 +2659,18 @@ function xows_xmp_vcard4_publish(vcard, access, onparse)
  */
 function xows_xmp_vcard4_get_parse(stanza, onparse)
 {
-  let vcard = null;
-  if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_vcard4_get_parse","parse get vCard-4",xows_xmp_iq_error_text(stanza));
-  } else {
-    vcard = stanza.querySelector("vcard");
-  }
+  if(!xows_isfunc(onparse))
+    return;
+  
+  const from = stanza.getAttribute("from");
 
-  // Forward parse result
-  if(xows_isfunc(onparse))
-    onparse( stanza.getAttribute("from"), vcard);
+  if(stanza.getAttribute("type") === "error") {
+    // Forward error
+    onparse(from, null, xows_xmp_error_parse(stanza));
+  } else {
+    // Forward parse result
+    onparse(from, stanza.querySelector("vcard"));
+  }
 }
 
 /**
@@ -2548,8 +2681,6 @@ function xows_xmp_vcard4_get_parse(stanza, onparse)
  */
 function xows_xmp_vcard4_get_query(to, onparse)
 {
-  xows_log(2,"xmp_vcard4_get_query","query get vCard-4",to);
-
   // Create and launch the query
   const iq = xows_xml_node("iq",{"type":"get","to":to},
               xows_xml_node("vcard",{"xmlns":XOWS_NS_IETF_VCARD4}));
@@ -2569,12 +2700,10 @@ const XOWS_NS_NICK         = "http://jabber.org/protocol/nick";
  * Publish XEP-0172 User Nickname
  *
  * @param   {string}    nick      Nickname to publish
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_nick_publish(nick, onparse)
 {
-  xows_log(2,"xmp_nick_publish","publish Nickname",nick);
-
   // The <publish> child
   const publish = xows_xml_node("publish",{"node":XOWS_NS_NICK},
                     xows_xml_node("item",null,
@@ -2592,16 +2721,18 @@ function xows_xmp_nick_publish(nick, onparse)
  */
 function xows_xmp_nick_get_parse(stanza, onparse)
 {
+  if(!xows_isfunc(onparse))
+    return;
+  
   const from = stanza.getAttribute("from");
 
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_nick_get_parse","parse get Nickname ("+from+")",xows_xmp_iq_error_text(stanza));
-    return;
-  }
-
-  // Forward parse result
-  if(xows_isfunc(onparse))
+    // Forward error
+    onparse(from, null, xows_xmp_error_parse(stanza));
+  } else {
+    // Forward parse result
     onparse(from, stanza.querySelector("nick"));
+  }
 }
 
 /**
@@ -2612,8 +2743,6 @@ function xows_xmp_nick_get_parse(stanza, onparse)
  */
 function xows_xmp_nick_get_query(to, onparse)
 {
-  xows_log(2,"xmp_nick_get_query","query get Nickname",to);
-
   // Create the query
   const iq =  xows_xml_node("iq",{"type":"get","to":to},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
@@ -2638,19 +2767,17 @@ const XOWS_NS_AVATAR_META  = "urn:xmpp:avatar:metadata";
  * @param   {string}    hash      Base-64 encoded SAH-1 hash of data
  * @param   {string}    data      Base-64 encoded Data to publish
  * @param   {string}    access    Pubsub Access model to define
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_avat_data_publish(hash, data, access, onparse)
 {
-  xows_log(2,"xmp_avat_data_publish","publish Avatar-Data",hash);
-
   // The <publish> child
   const publish = xows_xml_node("publish",{"node":XOWS_NS_AVATAR_DATA},
                     xows_xml_node("item",{"id":hash},
                       xows_xml_node("data",{"xmlns":XOWS_NS_AVATAR_DATA},data)));
 
   // Publish PEP node
-  xows_xmp_pubsub_publish(XOWS_NS_AVATAR_DATA, publish, null, onparse); //< access option generate precondition error
+  xows_xmp_pubsub_publish(XOWS_NS_AVATAR_DATA, publish, access, onparse); //< access option generate precondition error
 }
 
 /**
@@ -2662,12 +2789,10 @@ function xows_xmp_avat_data_publish(hash, data, access, onparse)
  * @param   {number}    width     Image width in pixel
  * @param   {number}    height    Image width in pixel
  * @param   {string}    access    Pubsub Access model to define
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, onparse)
 {
-  xows_log(2,"xmp_avat_meta_publish","publish Avatar-Metadata",hash);
-
   // Create the <info> node
   const info = xows_xml_node("info",{"id":hash,"type":type,"bytes":bytes,"width":width,"height":height});
 
@@ -2688,23 +2813,27 @@ function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, on
  */
 function xows_xmp_avat_data_get_parse(stanza, onparse)
 {
-  let id, data = null;
+  if(!xows_isfunc(onparse))
+    return;
+  
+  const from = stanza.getAttribute("from");
+  
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_avat_data_get_parse","parse get Avatar-Data",xows_xmp_iq_error_text(stanza));
-  }
-
-  // Retrieve the first <item> child
-  const item = stanza.querySelector("item");
-  if(item) {
-    // Get the data hash
-    id = item.getAttribute("id");
-    // Retrieve the <data> child
-    data = xows_xml_innertext(item.querySelector("data"));
-  }
-
-  // Forward parse result
-  if(xows_isfunc(onparse))
+    // Forward error
+    onparse(from, null, null, xows_xmp_error_parse(stanza));
+  } else {
+    let id = null, data = null;
+    // Retrieve the first <item> child
+    const item = stanza.querySelector("item");
+    if(item) {
+      // Get the data hash
+      id = item.getAttribute("id");
+      // Retrieve the <data> child
+      data = xows_xml_innertext(item.querySelector("data"));
+    }
+    // Forward parse result
     onparse(stanza.getAttribute("from"), id, data);
+  }
 }
 
 /**
@@ -2716,8 +2845,6 @@ function xows_xmp_avat_data_get_parse(stanza, onparse)
  */
 function xows_xmp_avat_data_get_query(to, hash, onparse)
 {
-  xows_log(2,"xmp_avat_data_get_query","query get Avatar-Data",to+" hash:"+hash);
-
   // Create the query
   const iq =  xows_xml_node("iq",{"type":"get","to":to},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
@@ -2735,16 +2862,18 @@ function xows_xmp_avat_data_get_query(to, hash, onparse)
  */
 function xows_xmp_avat_meta_get_parse(stanza, onparse)
 {
-  const from = stanza.getAttribute("from");
-
-  if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_avat_meta_get_parse","parse get Avatar-Metadata ("+from+")",xows_xmp_iq_error_text(stanza));
+  if(!xows_isfunc(onparse))
     return;
-  }
 
-  // Forward parse result
-  if(xows_isfunc(onparse))
+  const from = stanza.getAttribute("from");
+  
+  if(stanza.getAttribute("type") === "error") {
+    // Forward error
+    onparse(from, null, xows_xmp_error_parse(stanza));
+  } else {
+    // Forward parse result
     onparse(from, stanza.querySelector("metadata"));
+  }
 }
 
 /**
@@ -2755,8 +2884,6 @@ function xows_xmp_avat_meta_get_parse(stanza, onparse)
  */
 function xows_xmp_avat_meta_get_query(to, onparse)
 {
-  xows_log(2,"xmp_avat_meta_get_query","query get Avatar-Metadata",to);
-
   // Create the query
   const iq =  xows_xml_node("iq",{"type":"get","to":to},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
@@ -2818,10 +2945,11 @@ function xows_xmp_mam_result_recv(result)
 
   // Get message common data
   const id = message.getAttribute("id");
+  const type = message.getAttribute("type");
   const from = message.getAttribute("from");
   const to = message.getAttribute("to");
-
-  let body, replace, retract, origid, stnzid, occuid, receipt, replyid, replyto;
+  
+  let body, recp, repl, retr, rpid, rpto, orid, szid, ocid;
 
   // Notice for future implementation :
   //
@@ -2829,7 +2957,7 @@ function xows_xmp_mam_result_recv(result)
   // "invisibles" ones such as Chat States, Receipts and Retractions in order
   // to keep consistant sequence with precise timestamp to properly gather
   // next or previous archives.
-
+  
   // Loop over children
   const n = message.childNodes.length;
   for(let i = 0; i < n; ++i) {
@@ -2850,38 +2978,38 @@ function xows_xmp_mam_result_recv(result)
 
     // Check for delivery receipt
     if(xmlns === XOWS_NS_RECEIPTS) {
-      receipt = node.getAttribute("id");
+      recp = node.getAttribute("id");
       continue;
     }
 
     // Check for message retraction
     if(xmlns === XOWS_NS_RETRACT) {
-      retract = node.getAttribute("id");
+      retr = node.getAttribute("id");
       continue; //< We do not need more data
     }
 
     // Check for correction
     if(xmlns === XOWS_NS_CORRECT) {
-      replace = node.getAttribute("id");
+      repl = node.getAttribute("id");
       continue;
     }
 
     // Check for Replies (XEP-0461)
     if(xmlns === XOWS_NS_REPLY) {
-      replyid = node.getAttribute("id");
+      rpid = node.getAttribute("id");
       if(node.hasAttribute("to"))
-        replyto = node.getAttribute("to");
+        rpto = node.getAttribute("to");
       continue;
     }
 
     if(xmlns === XOWS_NS_SID) {
-      if(tname === "origin-id") origid = node.getAttribute("id");
-      if(tname === "stanza-id") stnzid = node.getAttribute("id");
+      if(tname === "origin-id") orid = node.getAttribute("id");
+      if(tname === "stanza-id") szid = node.getAttribute("id");
       continue;
     }
 
     if(xmlns === XOWS_NS_OCCUID) {
-      occuid = node.getAttribute("id");
+      ocid = node.getAttribute("id");
       continue;
     }
 
@@ -2897,14 +3025,16 @@ function xows_xmp_mam_result_recv(result)
   if(delay) time = new Date(delay.getAttribute("stamp")).getTime();
 
   // If message is a retraction, delete the fallback body text
-  if(retract) body = null;
+  if(retr) body = null;
+  
+  // If no stanza-id uses result page which is the Stable ID
+  if(!szid) szid = page;
 
   // Add archived message to stack
-  xows_xmp_mam_stack.get(qid).push({"page":page,
-                                    "id":id,"from":from,"to":to,"time":time,"receipt":receipt,"body":body,
-                                    "replace":replace,"retract":retract,"replyid":replyid,"replyto":replyto,
-                                    "origid":origid,"stnzid":stnzid,"occuid":occuid});
-
+  xows_xmp_mam_stack.get(qid).push(xows_xmp_message_forge(id, to, from, type, body, time, 
+                                                          recp, retr, repl, rpid, rpto, 
+                                                          orid, szid, ocid, page));
+  
   xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from);
 
   return true; //< stanza processed
@@ -2932,7 +3062,7 @@ function xows_xmp_mam_parse(stanza, onparse)
 
   // Check for query error
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_mam_parse","Archive query failure ("+param.to+")",xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,1,"xmp_mam_parse","get "+XOWS_NS_MAM);
     return;
   }
 
@@ -3025,9 +3155,9 @@ function xows_xmp_mam_query(to, max, jid, start, end, before, onparse)
   // Add the needed x:data filter field
   const field = [];
   field.push({"var":"FORM_TYPE","type":"hidden","value":[XOWS_NS_MAM]});
-  if(  jid) field.push({"var":"with"  ,"value":jid});
-  if(start) field.push({"var":"start" ,"value":new Date(start).toJSON()});
-  if(  end) field.push({"var":"end"   ,"value":new Date(end).toJSON()});
+  if(  jid) field.push({"var":"with"  ,"value":[jid]});
+  if(start) field.push({"var":"start" ,"value":[new Date(start).toJSON()]});
+  if(  end) field.push({"var":"end"   ,"value":[new Date(end).toJSON()]});
 
   // The rsm part
   const rsm = xows_xml_node("set",{"xmlns":XOWS_NS_RSM},
@@ -3054,8 +3184,7 @@ function xows_xmp_mam_query(to, max, jid, start, end, before, onparse)
   // Store query ID with the "with" parameter
   xows_xmp_mam_param.set(id,{"to":to,"jid":jid,"qid":qid});
 
-  xows_log(2,"xmp_mam_query","send Archive query",
-            "with "+jid+" start "+start+" end "+end);
+  xows_log(2,"xmp_mam_query","send Archive query","with "+jid+" start "+start+" end "+end);
 
   // Send the query
   xows_xmp_send(iq, xows_xmp_mam_parse, onparse);
@@ -3096,11 +3225,10 @@ function xows_xmp_upld_parse(stanza, onparse)
   xows_xmp_upld_param.delete(id);
 
   if(stanza.getAttribute("type") === "error") {
-    const err_msg = xows_xmp_iq_error_text(stanza);
-    xows_log(1,"xmp_upld_parse","HTTP-Upload query error",err_msg);
+    const details = xows_xmp_error_log(stanza,1,"xmp_upld_parse","get "+XOWS_NS_HTTPUPLOAD);
     // Forward parse result
     if(xows_isfunc(onparse))
-      onparse(param.name, null, null, null, err_msg);
+      onparse(param.name, null, null, null, details);
     return;
   }
 
@@ -3114,8 +3242,6 @@ function xows_xmp_upld_parse(stanza, onparse)
   const header = put.getElementsByTagName("header");
   // Get the URL for HTTP GET
   const geturl = slot.querySelector("get").getAttribute("url");
-
-  xows_log(2,"xmp_upld_parse","accepted HTTP-Upload slot",puturl);
 
   // Forward parse result
   if(xows_isfunc(onparse))
@@ -3134,8 +3260,6 @@ function xows_xmp_upld_parse(stanza, onparse)
  */
 function xows_xmp_upld_query(url, name, size, type, onparse)
 {
-  xows_log(2,"xmp_upld_query","send HTTP-Upload query",size+" bytes required");
-
   let attr = {"xmlns":XOWS_NS_HTTPUPLOAD,"filename":name,"size":size};
   if(type) attr.type = type;
 
@@ -3150,7 +3274,7 @@ function xows_xmp_upld_query(url, name, size, type, onparse)
 
 /* -------------------------------------------------------------------
  *
- * XMPP API - Multi-User Chat (XEP-0045) routines and interface
+ * XMPP API - Multi-User Chat (XEP-0045) routines and protocol
  *
  * -------------------------------------------------------------------*/
 /**
@@ -3159,7 +3283,33 @@ function xows_xmp_upld_query(url, name, size, type, onparse)
 const XOWS_NS_MUC          = "http://jabber.org/protocol/muc";
 const XOWS_NS_MUCUSER      = "http://jabber.org/protocol/muc#user";
 const XOWS_NS_MUCOWNER     = "http://jabber.org/protocol/muc#owner";
+const XOWS_NS_MUCADMIN     = "http://jabber.org/protocol/muc#admin";
 
+/*
+ * Privilege                  None      Visitor   Participant  Moderator
+ * ---------------------------------------------------------------------
+ * Present in Room                        x           x           x
+ * Change Nickname                        x           x           x
+ * Send Private Messages                  x           x           x
+ * Invite Other Users                     x           x           x
+ * Send Messages to All                   +           x           x
+ * Modify Subject                                     x           x
+ * Kick                                                           x
+ * Grant Voice                                                    x
+ * Revoke Voice                                                   x
+ *
+ *
+ * Privilege                Outcast   None    Member    Admin   Owner
+ * ---------------------------------------------------------------------
+ * Ban Members                                            x       x
+ * Edit Member List                                       x       x
+ * Assign / Remove Moderator Role                         !       !
+ * Edit Admin List                                                x
+ * Edit Owner List                                                x
+ * Change Room Configuration                                      x
+ * Destroy Room                                                   x
+ */
+   
 /**
  * Multi-User Chat (XEP-0045) Room role constants
  */
@@ -3171,12 +3321,22 @@ const XOWS_ROLE_MODO = 3;
 /**
  * Multi-User Chat (XEP-0045) Room role string to constant mapping
  */
-const xows_xmp_role_level_map = {
-  "none"          : 0,
-  "visitor"       : 1,
-  "participant"   : 2,
-  "moderator"     : 3
-};
+const xows_xmp_role_val = new Map([
+  ["none",        0],
+  ["visitor",     1],
+  ["participant", 2],
+  ["moderator",   3]
+]);
+
+/**
+ * Multi-User Chat (XEP-0045) Room role constant to string mapping
+ */
+const xows_xmp_role_str = new Map([
+  [0, "none"       ], 
+  [1, "visitor"    ],
+  [2, "participant"],
+  [3, "moderator"  ]
+]);
 
 /**
  * Multi-User Chat (XEP-0045) Room affiliation constants
@@ -3190,36 +3350,28 @@ const XOWS_AFFI_OWNR = 3;
 /**
  * Multi-User Chat (XEP-0045) Room affiliation string to constant mapping
  */
-const xows_xmp_affi_level_map = {
-  "outcast"       : -1,
-  "none"          : 0,
-  "member"        : 1,
-  "admin"         : 2,
-  "owner"         : 3
-};
+const xows_xmp_affi_val = new Map([
+  ["outcast", -1],
+  ["none",     0],
+  ["member",   1],
+  ["admin",    2],
+  ["owner",    3]
+]);
 
 /**
- * Send a subject to MUC room
- *
- * @param   {string}    id        Message ID or null for auto
- * @param   {string}    to        JID of the recipient
- * @param   {string}    subj      Subject content
- *
- * @return  {string}    Sent message ID
+ * Multi-User Chat (XEP-0045) Room affiliation constant to string mapping
  */
-function xows_xmp_muc_subject_send(to, subj)
-{
-  const id = xows_gen_uuid();
+const xows_xmp_affi_str = new Map([
+  [-1, "outcast"],
+  [ 0, "none"   ],
+  [ 1, "member" ],
+  [ 2, "admin"  ],
+  [ 3, "owner"  ]
+]);
 
-  xows_log(2,"xmp_muc_subject_send","send subject to",to);
-
-  // Send message
-  xows_xmp_send(xows_xml_node("message",{"id":id,"to":to,"type":"groupchat"},
-                  xows_xml_node("subject",null,xows_xml_escape(subj))));
-
-  return id;
-}
-
+/* -------------------------------------------------------------------
+ * XMPP API - Multi-User Chat - MUC Owner usage routines
+ * -------------------------------------------------------------------*/
 /**
  * Function to parse result of MUC room config form
  *
@@ -3229,7 +3381,7 @@ function xows_xmp_muc_subject_send(to, subj)
 function xows_xmp_muc_cfg_get_parse(stanza, onparse)
 {
   if(stanza.getAttribute("type") === "error") {
-    xows_log(1,"xmp_muc_cfg_get_parse","parse get MUC config",xows_xmp_iq_error_text(stanza));
+    xows_xmp_error_log(stanza,1,"xmp_muc_cfg_get_parse","get "+XOWS_NS_MUCOWNER);
     return;
   }
 
@@ -3247,8 +3399,6 @@ function xows_xmp_muc_cfg_get_parse(stanza, onparse)
  */
 function xows_xmp_muc_cfg_get_guery(to, onparse)
 {
-  xows_log(2,"xmp_muc_cfg_get_guery","query get MUC config",to);
-
   // Create and launch the query
   const iq = xows_xml_node("iq",{"to":to,"type":"get"},
               xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER}));
@@ -3260,12 +3410,10 @@ function xows_xmp_muc_cfg_get_guery(to, onparse)
  * Send query to cancel MUC form process
  *
  * @param   {string}    to        Room JID to get configuration from
- * @param   {function}  onparse   Callback to receive parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_muc_cfg_set_cancel(to, onparse)
 {
-  xows_log(2,"xmp_muc_cfg_set_cancel","cancel set MUC config",to);
-
   // Create the <x> form node
   const x = xows_xmp_xdata_cancel();
 
@@ -3282,12 +3430,10 @@ function xows_xmp_muc_cfg_set_cancel(to, onparse)
  *
  * @param   {string}    to        Room JID to get configuration from
  * @param   {object[]}  form      Filled form array to submit
- * @param   {function}  onparse   Callback to receive parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_muc_cfg_set_query(to, form, onparse)
 {
-  xows_log(2,"xmp_muc_cfg_set_query","query set MUC config",to);
-
   // Create the <x> form node
   const x = xows_xmp_xdata_make(form);
 
@@ -3300,66 +3446,16 @@ function xows_xmp_muc_cfg_set_query(to, form, onparse)
 }
 
 /**
- * Send query to set MUC occupant role
- *
- * @param   {string}    to        Room JID to assign Occupant role
- * @param   {string}    nick      Occupant nickname in Room
- * @param   {string}    role      Role to assign
- * @param   {string}   [reason]   Optional reason string
- * @param   {function}  onparse   Callback to receive parse result
- */
-function xows_xmp_muc_role_query(to, nick, role, reason, onparse)
-{
-  xows_log(2,"xmp_muc_role_set_query","query set MUC role",to);
-
-  const r = reason ? xows_xml_node("reason",null,reason) : null;
-
-  // Create and launch the query
-  const iq = xows_xml_node("iq",{"to":to,"type":"set"},
-              xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},
-                xows_xml_node("item",{"nick":nick,"role":role},r)));
-
-  // We use generical iq parse function to get potential error message
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
-}
-
-/**
- * Send query to set MUC occupant affiliation
- *
- * @param   {string}    to        Room JID to assign Occupant affilation
- * @param   {string}    jid       Occupant JID (the real one)
- * @param   {string}    affi      Affiliation to assign
- * @param   {string}   [reason]   Optional reason string
- * @param   {function}  onparse   Callback to receive parse result
- */
-function xows_xmp_muc_affi_query(to, jid, affi, reason, onparse)
-{
-  xows_log(2,"xmp_muc_role_set_query","query set MUC role",to);
-
-  const r = reason ? xows_xml_node("reason",null,reason) : null;
-
-  // Create and launch the query
-  const iq = xows_xml_node("iq",{"to":to,"type":"set"},
-              xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},
-                xows_xml_node("item",{"affiliation":affi,"jid":jid},r)));
-
-  // We use generical iq parse function to get potential error message
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
-}
-
-/**
  * Send query to to destroy MUC room
  *
  * @param   {string}    to        Room JID to be destroyed
  * @param   {string}   [alt]      Optional JID of alternate Room to join
  * @param   {string}   [passwd]   Optional password for alternate Room
  * @param   {string}   [reason]   Optional reason string
- * @param   {function}  onparse   Callback to receive parse result
+ * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_muc_destroy_query(to, alt, passwd, reason, onparse)
 {
-  xows_log(2,"xmp_muc_destroy_query","query destroy MUC room",to);
-
   // Base destroy node
   const destroy = xows_xml_node("destroy",null,null);
 
@@ -3374,6 +3470,226 @@ function xows_xmp_muc_destroy_query(to, alt, passwd, reason, onparse)
 
   // We use generical iq parse function to get potential error message
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/* -------------------------------------------------------------------
+ * XMPP API - Multi-User Chat - MUC Admin usage routines
+ * -------------------------------------------------------------------*/
+
+/**
+ * Send query to set MUC occupant affiliation
+ *
+ * items parameter must be an Array of dictionnary objects formated as follow:
+ *    {affiliation:<string>,jid:<string>}
+ * or
+ *    {affiliation:<string>,jid:<string>,reason:<string>}
+ * 
+ * @param   {string}    to        Room JID to assign Occupant affilation
+ * @param   {object[]}  item      Item to configure affiliation
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_muc_affi_set_query(to, item, onparse)
+{
+  // Create the query node
+  const query = xows_xml_node("query",{"xmlns":XOWS_NS_MUCADMIN});
+
+  // Create optional reason node
+  const reason = item.reason ? xows_xml_node("reason",null,item.reason) : null;
+  
+  // Create attributes list
+  const attribs = { "jid":item.jid,
+                    "affiliation":xows_xmp_affi_str.get(item.affi) };
+  
+  // Add item node
+  xows_xml_parent(query,xows_xml_node("item",attribs,reason));
+
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"set"},query);
+  
+  // We use generical iq parse function to get potential error message
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
+ * Function to parse result of MUC room config form
+ *
+ * @param   {string}    to        Room JID to get configuration from
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_muc_affi_get_parse(stanza, onparse)
+{
+  if(stanza.getAttribute("type") === "error") {
+    xows_xmp_error_log(stanza,1,"xmp_muc_affi_get_parse","get "+XOWS_NS_MUCADMIN);
+    return;
+  }
+
+  // Forward parse result
+  if(xows_isfunc(onparse)) {
+    
+    const nodes = stanza.querySelector("query").childNodes;
+    
+    const items = [];
+    for(let i = 0, n = nodes.length; i < n; ++i) {
+      items.push({"affi":xows_xmp_affi_val.get(nodes[i].getAttribute("affiliation")),
+                  "jid":nodes[i].getAttribute("jid"),
+                  "nick":nodes[i].getAttribute("nick")});
+    }
+    
+    onparse(stanza.getAttribute("from"), items);
+  }
+}
+
+/**
+ * Send query to get MUC occupant list by role
+ *
+ * @param   {string}    to        Room JID to assign Occupant role
+ * @param   {string}    affi      Affiliation to get occupant list
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_muc_affi_get_query(to, affi, onparse)
+{
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"get"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_MUCADMIN},
+                xows_xml_node("item",{"affiliation":affi})));
+
+  xows_xmp_send(iq, xows_xmp_muc_affi_get_parse, onparse);
+}
+
+/* -------------------------------------------------------------------
+ * XMPP API - Multi-User Chat - MUC Moderator usage routines
+ * -------------------------------------------------------------------*/
+/**
+ * Send a subject to MUC room
+ *
+ * @param   {string}    id        Message ID or null for auto
+ * @param   {string}    to        JID of the recipient
+ * @param   {string}    subj      Subject content
+ *
+ * @return  {string}    Sent message ID
+ */
+function xows_xmp_muc_subject_send(to, subj)
+{
+  const id = xows_gen_uuid();
+  // Send message
+  xows_xmp_send(xows_xml_node("message",{"id":id,"to":to,"type":"groupchat"},
+                  xows_xml_node("subject",null,xows_xml_escape(subj))));
+  return id;
+}
+
+/**
+ * Send query to set MUC occupant role
+ * 
+ * items parameter must be an Array of dictionnary objects formated as follow:
+ *    {nick:<string>,role:<string>}
+ * or
+ *    {nick:<string>,role:<string>,reason:<string>}
+ *
+ * @param   {string}    to        Room JID to assign Occupant role
+ * @param   {Object[]}  item      Item to configure role
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_muc_role_set_query(to, item, onparse)
+{
+  // Create the query node
+  const query = xows_xml_node("query",{"xmlns":XOWS_NS_MUCADMIN});
+
+  // Create optional reason node
+  const reason = item.reason ? xows_xml_node("reason",null,item.reason) : null;
+  
+  // Create attributes list
+  const attribs = { "nick":item.nick,
+                    "role":xows_xmp_role_str.get(item.role) };
+  
+  // Add item node
+  xows_xml_parent(query,xows_xml_node("item",attribs,reason));
+  
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"set"},query);
+  
+  // We use generical iq parse function to get potential error message
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
+ * Function to parse result of MUC room config form
+ *
+ * @param   {string}    to        Room JID to get configuration from
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_muc_role_get_parse(stanza, onparse)
+{
+  if(stanza.getAttribute("type") === "error") {
+    xows_xmp_error_log(stanza,1,"xmp_muc_role_get_parse","get "+XOWS_NS_MUCADMIN);
+    return;
+  }
+
+  // Forward parse result
+  if(xows_isfunc(onparse)) {
+    
+    const nodes = stanza.querySelector("query").childNodes;
+    
+    const items = [];
+    for(let i = 0, n = nodes.length; i < n; ++i) {
+      items.push({"role":xows_xmp_role_val.get(nodes[i].getAttribute("role")),
+                  "nick":nodes[i].getAttribute("nick")});
+    }
+    
+    onparse( stanza.getAttribute("from"), items);
+  }
+}
+
+/**
+ * Send query to get MUC occupant list by role
+ *
+ * @param   {string}    to        Room JID to assign Occupant role
+ * @param   {string}    role      Role to get occupant list
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_muc_role_get_query(to, role, onparse)
+{
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"get"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_MUCADMIN},
+                xows_xml_node("item",{"role":role})));
+
+  xows_xmp_send(iq, xows_xmp_muc_role_get_parse, onparse);
+}
+/* -------------------------------------------------------------------
+ * XMPP API - Multi-User Chat - MUC Occupant usage routines
+ * -------------------------------------------------------------------*/
+
+/**
+ * Send query to get MUC Room own reserved nickname
+ *
+ * @param   {string}    to        Room JID to assign Occupant role
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_muc_nick_parse(stanza, onparse)
+{
+  if(!xows_isfunc(onparse))
+    return;
+  
+  const iden = stanza.querySelector("identity");
+  const name = iden ? iden.getAttribute("name") : null;
+
+  // Forward parsed result
+  onparse(stanza.getAttribute("from"), name);
+}
+
+/**
+ * Send query to get MUC Room own reserved nickname
+ *
+ * @param   {string}    to        Room JID to assign Occupant role
+ * @param   {function}  onparse   Callback to receive parse result
+ */
+function xows_xmp_muc_nick_query(to, onparse)
+{
+  // Create and launch the query
+  const iq = xows_xml_node("iq",{"to":to,"type":"get"},
+              xows_xml_node("query",{"xmlns":XOWS_NS_DISCOINFO,"node":"x-roomuser-item"}));
+              
+  xows_xmp_send(iq, xows_xmp_muc_nick_parse, onparse);
 }
 
 /* -------------------------------------------------------------------
@@ -3779,8 +4095,6 @@ function xows_xmp_jing_recv(stanza)
 
   }
 
-  xows_log(2,"xmp_recv_jingle","received "+action,from);
-
   // Forward to client
   xows_xmp_fw_onjingle(from, stanza.getAttribute("id"), jingle.getAttribute("sid"), action, mesg);
 }
@@ -3796,12 +4110,11 @@ function xows_xmp_jing_result(stanza, onresult)
 {
   if(stanza.getAttribute("type") === "error") {
 
-    const err_msg = xows_xmp_iq_error_text(stanza);
-    xows_log(1,"xmp_jingle_parse","Jingle query error",err_msg);
+    const details = xows_xmp_error_log(stanza,1,"xmp_jingle_parse","Jingle query");
 
     // Forward parse result
     if(xows_isfunc(onresult))
-      onresult(XOWS_SIG_ERR, err_msg);
+      onresult(XOWS_SIG_ERR, details);
 
     return;
   }

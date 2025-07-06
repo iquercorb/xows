@@ -1,0 +1,32 @@
+<dbox-head>${'Contact profile'}</dbox-head>
+<btn-close id="prof_close"></btn-close>
+<div class="prof-head">
+  <peer-avat class="">
+    <badg-show data-show=0></badg-show>
+  </peer-avat>
+  <peer-info>
+    <peer-name></peer-name>
+    <peer-addr></peer-addr>
+  </peer-info>
+  <button id="prof_addc" class="btn-action" title="${'Add'}">${'Add'}</button>
+</div>
+<section>
+  <h4>${'Status message'}:</h4>
+  <peer-meta class="PLACEHOLD" placeholder="${'This user have no status message'}" title="${'Status message'}"></peer-meta>
+</section>
+<section hidden id="prof_cont">
+  <div>
+    <label>${'Subscription with contact'}:</label>
+    <peer-badg id="prof_subs" title="${'Subscription with contact'}" data-subs="0"></peer-badg>
+  </div>
+</section>
+<section hidden id="prof_occu">
+  <div>
+    <label>${'Affiliation to current Chatoom'}:</label>
+    <peer-badg id="prof_affi" title="${'Affiliation to current Chatoom'}" data-affi="0"></peer-badg>
+  </div>
+  <div>
+    <label>${'Role in current Chatoom'}:</label>
+    <peer-badg id="prof_role" title="${'Role in current Chatoom'}" data-role="0"></peer-badg>
+  </div>
+</section>

@@ -8,14 +8,18 @@
       </row-head>
       <!-- Main Frame (Roster Tabs selector) -->
       <row-main id="rost_tabs">
-        <rost-tab id="tab_cont" class="SELECTED" title="${'Contacts'}">
+        <rost-tab id="tab_cont" data-page="rost_cont" class="SELECTED" title="${'Contacts'}">
           <!-- <badg-noti hidden id="subs_noti"></badg-noti> -->
           <badg-noti id="cont_noti" data-ring=0 data-call=0 data-mesg=0 data-subs=0></badg-noti>
           <badg-call hidden id="cont_call"></badg-call>
         </rost-tab>
-        <rost-tab id="tab_room" title="${'Chatrooms'}">
+        <rost-tab id="tab_room" data-page="rost_room" title="${'Channels'}">
           <badg-noti id="room_noti" data-ring=0 data-call=0 data-mesg=0 data-subs=0></badg-noti>
           <badg-call hidden id="room_call"></badg-call>
+        </rost-tab>
+        <rost-tab hidden id="tab_priv" data-page="rost_priv" title="${'Private messages'}">
+          <badg-noti id="priv_noti" data-ring=0 data-call=0 data-mesg=0 data-subs=0></badg-noti>
+          <badg-call hidden id="priv_call"></badg-call>
         </rost-tab>
       </row-main>
       <!-- Froot Frame (App About button) -->
@@ -28,7 +32,7 @@
     <!-- Left Panel -->
     <col-frame id="rost_fram">
       <!-- Frame page (Head + Main) : Roster Contacts List -->
-      <row-page id="rost_cont">
+      <row-page id="rost_cont" data-tab="tab_cont">
         <!-- Head Frame (Roster Title bar) -->
         <row-head>
           <head-info>${'Contacts'}</head-info>
@@ -40,35 +44,52 @@
         <!-- Main Frame (Roster Lists) -->
         <row-main>
           <peer-list id="cont_list">
-            <ul hidden id="subs_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Pending requests'}">
+            <ul hidden id="cont_pend" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Pending'}">
               <li-peer id="peer-pend" XOWS_TPL_INSTANCED></li-peer>
             </ul>
-            <ul hidden id="cont_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Authorized'}">
+            <ul hidden id="cont_budy" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Authorized'}">
               <li-peer id="peer-cont" XOWS_TPL_INSTANCED></li-peer>
             </ul>
           </peer-list>
         </row-main>
       </row-page>
-      <!-- Frame page (Head + Main) : Roster Chatrooms List -->
-      <row-page hidden id="rost_room">
+      <!-- Frame page (Head + Main) : Roster Rooms List -->
+      <row-page hidden id="rost_room" data-tab="tab_room">
         <!-- Head Frame (Roster Title bar) -->
         <row-head>
-          <head-info>${'Chatrooms'}</head-info>
+          <head-info>${'Channels'}</head-info>
           <head-meta></head-meta>
           <head-acts id="room_acts">
-            <button id="room_bt_upd" title="${'Query public chatrooms list'}"></button>
-            <button id="room_bt_add" title="${'Join a chatroom'}"></button>
+            <button id="room_bt_upd" title="${'Query public Channels list'}"></button>
+            <button id="room_bt_add" title="${'Join or create a Channel'}"></button>
           </head-acts>
         </row-head>
         <!-- Main Frame (Roster Lists) -->
         <row-main>
           <peer-list id="room_list">
-            <ul hidden id="book_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Bookmarks'}">
+            <ul hidden id="room_book" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Bookmarks'}">
             </ul>
-            <ul hidden id="room_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Public rooms'}">
+            <ul hidden id="room_publ" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Public Channels'}">
               <li-peer id="peer-room" XOWS_TPL_INSTANCED></li-peer>
             </ul>
-            <ul hidden id="priv_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Private rooms'}">
+            <ul hidden id="room_priv" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Private Channels'}">
+            </ul>
+          </peer-list>
+        </row-main>
+      </row-page>
+      <!-- Frame page (Head + Main) : Roster Private Chat List -->
+      <row-page hidden id="rost_priv" data-tab="tab_priv">
+        <!-- Head Frame (Roster Title bar) -->
+        <row-head>   
+          <head-info>${'Private messages'}</head-info>
+          <head-meta></head-meta>
+          <head-acts id="priv_acts">
+          </head-acts>
+        </row-head>
+        <!-- Main Frame (Roster Lists) -->
+        <row-main>
+          <peer-list id="priv_list">
+            <ul id="priv_occu" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Room occupant'}">
             </ul>
           </peer-list>
         </row-main>
@@ -90,8 +111,7 @@
             <button disabled id="self_bt_conf" title="${'Edit configuration'}"></button>
           </peer-acts>
         </div>
-        <div id="app_about">
-        </div>
+        <div id="app_about"></div>
       </row-foot>
     </col-frame>
     <!-- Left Handle -->
@@ -112,10 +132,11 @@
           <button id="chat_bt_subj" title="${'Edit Room topic'}"></button>
           <button id="chat_bt_calv" title="${'Video call'}"></button>
           <button id="chat_bt_cala" title="${'Audio call'}"></button>
-          <button id="chat_bt_cnfg" title="${'Room configuration'}"></button>
-          <button id="chat_bt_bkmk" title="${'Add Room to Bookmarks'}"></button>
+          <button id="chat_bt_cnfg" title="${'Chatoom configuration'}"></button>
+          <button id="chat_bt_bkmk" title="${'Add Channel to Bookmarks'}"></button>
+          <button hidden id="chat_bt_addc" title="${'Add Contact'}"></button>
           <button id="chat_bt_noti" title="${'Disable notifications'}"></button>
-          <button id="chat_bt_occu" title="${'Room occupants list'}"></button>
+          <button id="chat_bt_occu" title="${'Chatoom occupants list'}"></button>
         </head-acts>
       </row-head>
       <!-- Half Frame (Chat Multimedia session) -->
@@ -147,6 +168,7 @@
           <hist-bound id="hist_beg" class="" data-text="${'Start of history'}"></hist-bound>
           <ul id="hist_ul">
             <li-mesg id="hist-mesg" XOWS_TPL_INSTANCED></li-mesg>
+            <li-mesg id="hist-null" XOWS_TPL_INSTANCED></li-mesg> <!-- Special Null dummy message -->
           </ul>
           <hist-bound hidden id="hist_end"></hist-bound>
           <!-- Chat History - Call Signaling Dialog -->
@@ -211,20 +233,27 @@
         <head-info>${'Occupants'}</head-info>
         <head-meta></head-meta>
         <head-acts>
-          <button hidden disabled id="occu_bt_cnfg" title="${'Manage occupant'}"></button>
-          <button hidden disabled id="occu_bt_kick" title="${'Kick occupant'}"></button>
+          <button hidden id="occu_bt_cnfg" title="${'Manage occupant'}"></button>
+          <!-- <button hidden disabled id="occu_bt_kick" title="${'Kick occupant'}"></button> -->
           <!-- <button hidden id="occu_kban" title="${'Ban occupant'}"></button> -->
         </head-acts>
       </row-head>
       <!-- Main Frame (Room Occupants List) -->
       <row-main id="room_rost">
         <peer-list id="occu_list"> 
-          <ul hidden id="modo_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Moderators'}">
+          <ul hidden id="ownr_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Owner'}">
           </ul>
-          <ul hidden id="memb_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Participants'}">
+          <ul hidden id="admn_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Administrator'}">
+          </ul>
+          <ul hidden id="modo_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Moderator'}">
+          </ul>
+          <ul hidden id="part_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Participant'}">
+          </ul>
+          <ul hidden id="vist_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Visitor'}">
             <li-peer id="peer-occu" XOWS_TPL_INSTANCED></li-peer>
           </ul>
         </peer-list>
+        <menu-drop hidden id="drop_occu" XOWS_TPL_IMPORT></menu-drop>
       </row-main>
     </col-frame>
   </col-side>

@@ -49,7 +49,7 @@
  * Global application (client) constants
  */
 const XOWS_APP_NAME = "Xows";
-const XOWS_APP_VERS = "0.9.2";
+const XOWS_APP_VERS = "0.9.8";
 const XOWS_APP_NODE = "https://github.com/sedenion/xows";
 
 /**
@@ -1014,18 +1014,23 @@ function xows_clean_dom(node)
 /* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
  *             graphics and picture manipulation functions
  * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
+ 
+/**
+ *  Static color pallet for Avatar generation
+ */
+const xows_avat_pallete = ["#FF5C25","#FFBF00","#9FCC14","#4ED921","#00CA33","#20D98C",
+                           "#21ABD9","#4171FF","#926EFF","#BA43E0","#DB42B4","#E63864"];
+                  
 /**
  *  Draw an icon with the specified paramers
  *
  * @param   {number}    size      Icon size in pixels
  * @param   {Image}     image     Optional background image
- * @param   {string}    name      Optional name to generate background and Letter
- * @param   {string}    font      Optional font for center letter
+ * @param   {string}    seed      Optional name to generate background and Letter
  *
  * @return  {string}    Resulting icon as Data-URL string
  */
-function xows_gen_avatar(size, image, name, font)
+function xows_gen_avatar(size, image, seed)
 {
   // Create offscreen canvas
   const cv = document.createElement("canvas");
@@ -1101,15 +1106,12 @@ function xows_gen_avatar(size, image, name, font)
     // Define final canvas size
     cv.width = cv.height = size;
 
-    if(name) {
-      // Generate pseudo-random hue from name
-      let s = 0, i = name.length;
-      while(i--) s += name.charCodeAt(i);
-      const h = xows_random(s) * 360;
-
-      // Fill background with color
-      ct.fillStyle = "hsl("+h+",100%,40%)";
-      //ct.arc(half, half, half, 0, 2*Math.PI);
+    if(seed) {
+      
+      // Get pseudo-random color from seed
+      let s = 0, i = seed.length;
+      while(i--) s += seed.charCodeAt(i) * 7;
+      ct.fillStyle = xows_avat_pallete[Math.floor(xows_random(s)*12)];
       ct.rect(0, 0, size, size);
       ct.fill();
 
@@ -1139,7 +1141,7 @@ function xows_gen_avatar(size, image, name, font)
  * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
 
 /**
- *  Parse raw SDP data into JSON descriptor
+ * Parse raw SDP data into JSON descriptor
  *
  * @param   {string}    raw       Raw SDP data to parse
  *
@@ -1294,7 +1296,7 @@ function xows_sdp_parse(raw)
 }
 
 /**
- *  Get medias type list from SDP string
+ * Get medias type list from SDP string
  *
  * @param   {string}    raw       Raw SDP data to parse
  *
@@ -1323,7 +1325,7 @@ function xows_sdp_get_medias(raw)
 }
 
 /**
- *  Get Session ID from SDP string
+ * Get Session ID from SDP string
  *
  * @param   {string}    raw       Raw SDP data to parse
  *

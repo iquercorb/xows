@@ -1026,120 +1026,105 @@ function xows_tpl_spawn_avat_cls(hash)
 }
 
 /**
- * Build and returns a new instance of roster Contact <li> object from
- * template to be added in the roster list <ul>
+ * Build and returns a new instance of roster Contact <li-peer> HTML Element 
+ * from existing template.
  *
- * @param   {string}    bare      Contact JID
- * @param   {string}    name      Contact display name
- * @param   {string}    avat      Contact avatar hash
- * @param   {number}    subs      Contact subscription
- * @param   {number}   [show]     Optional Contact Show level
- * @param   {string}   [stat]     Optional Contact Status
+ * @param   {object}    cont      Contact Object
  *
- * @return  {object}    Contact <li> HTML Elements
+ * @return  {element}   Contact <li-peer> Element
  */
-function xows_tpl_spawn_rost_cont(bare, name, avat, subs, show, stat)
+function xows_tpl_spawn_rost_cont(cont)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-cont"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.id = bare;
-  inst.title = name+" ("+bare+")";
-  inst.querySelector("PEER-NAME").innerText = name;
+  inst.id = cont.addr;
+  inst.title = cont.name+" ("+cont.addr+")";
+  inst.querySelector("PEER-NAME").innerText = cont.name;
   const badg_show = inst.querySelector("BADG-SHOW");
-  if(subs < XOWS_SUBS_TO) {
+  if(cont.subs < XOWS_SUBS_TO) {
     inst.classList.add("PEER-DENY");
     inst.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
     inst.querySelector("[name='cont_bt_rtry']").disabled = false;
   } else {
-    inst.querySelector("PEER-META").innerText = stat ? stat:"";
-    badg_show.dataset.show = show || 0;
+    inst.querySelector("PEER-META").innerText = cont.stat ? cont.stat:"";
+    badg_show.dataset.show = cont.show || 0;
     const peer_avat = inst.querySelector("PEER-AVAT");
-    peer_avat.dataset.jid = bare;
-    peer_avat.className = xows_tpl_spawn_avat_cls(avat);
+    peer_avat.className = xows_tpl_spawn_avat_cls(cont.avat);
   }
 
   return inst;
 }
 
 /**
- * Update the specified instance of roster Contact <li> object
+ * Update the specified instance of roster Contact <li-peer> Element.
  *
- * @param   {object}    li        Contact <li> element to update
- * @param   {string}    name      Contact display name
- * @param   {string}    avat      Contact avatar image URL
- * @param   {number}    subs      Contact subscription
- * @param   {number}   [show]     Optional Contact Show level
- * @param   {string}   [stat]     Optional Contact Status
+ * @param   {element}    li       Contact <li-peer> Element to update
+ * @param   {object}    cont      Contact Object
  */
-function xows_tpl_update_rost_cont(li, name, avat, subs, show, stat)
+function xows_tpl_update_rost_cont(li, cont)
 {
   // Update content
-  li.title = name+" ("+li.id+")";
-  li.querySelector("PEER-NAME").innerText = name;
+  li.title = cont.name+" ("+li.id+")";
+  li.querySelector("PEER-NAME").innerText = cont.name;
   const badg_show = li.querySelector("BADG-SHOW");
   const cont_bt_rtry = li.querySelector("[name='cont_bt_rtry']");
-  if(subs < XOWS_SUBS_TO) {
+  if(cont.subs < XOWS_SUBS_TO) {
     li.classList.add("PEER-DENY");
     li.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
     cont_bt_rtry.disabled = false;
   } else {
     li.classList.remove("PEER-DENY");
-    li.querySelector("PEER-META").innerText = stat ? stat : "";
+    li.querySelector("PEER-META").innerText = cont.stat ? cont.stat : "";
     badg_show.hidden = false;
-    badg_show.dataset.show = show || 0;
+    badg_show.dataset.show = cont.show || 0;
     cont_bt_rtry.disabled = true;
     // Set proper class for avatar
-    li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(avat);
+    li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont.avat);
   }
 }
 
 /**
- * Build and returns a new instance of roster Room <li> object from
- * template to be added in the roster list <ul>
+ * Build and returns a new instance of roster Room <li-peer> Element 
+ * from existing template.
  *
- * @param   {string}    bare      Charoom JID
- * @param   {string}    name      Charoom display name
- * @param   {string}    desc      Charoom description
- * @param   {string}    lock      Charoom is password protected
+ * @param   {object}    room      Room Object
  *
- * @return  {object}    Room <li> HTML Elements
+ * @return  {element}   Room <li-peer> Element
  */
-function xows_tpl_spawn_rost_room(bare, name, desc, lock)
+function xows_tpl_spawn_rost_room(room)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-room"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.id = bare;
-  inst.title = name+" ("+bare+")";
-  inst.querySelector("PEER-NAME").innerText = name;
-  inst.querySelector("PEER-META").innerText = desc;
+  inst.id = room.addr;
+  inst.title = room.name+" ("+room.addr+")";
+  inst.querySelector("PEER-NAME").innerText = room.name;
+  inst.querySelector("PEER-META").innerText = room.desc;
   //const peer_avat = inst.querySelector("PEER-AVAT");
-  //if(lock) peer_avat.classList.add("ROOM-LOCK");
+  //if(room.lock) peer_avat.classList.add("ROOM-LOCK");
 
   return inst;
 }
 
 /**
- * Update the specified instance of roster Room <li> object.
+ * Update the specified instance of roster Room <li-peer> Element.
  *
- * @param   {object}    li        Room <li> element to update
- * @param   {string}    name      Room display name
- * @param   {string}    desc      Room description
- * @param   {string}    lock      Room is password protected
+ * @param   {element}   li        Room <li-peer> Element to update
+ * @param   {object}    room      Room Object
  */
-function xows_tpl_update_rost_room(li, name, desc, lock)
+function xows_tpl_update_rost_room(li, room)
 {
   // Update content
-  li.title = name+" ("+li.id+")";
-  li.querySelector("PEER-NAME").innerText = name;
-  li.querySelector("PEER-META").innerText = desc;
+  li.title = room.name+" ("+li.id+")";
+  li.querySelector("PEER-NAME").innerText = room.name;
+  li.querySelector("PEER-META").innerText = room.desc;
   //const peer_avat = li.querySelector("PEER-AVAT");
-  //if(lock) {
+  //if(room.lock) {
   //  peer_avat.classList.add("ROOM-LOCK");
   //} else {
   //  peer_avat.classList.remove("ROOM-LOCK");
@@ -1147,13 +1132,13 @@ function xows_tpl_update_rost_room(li, name, desc, lock)
 }
 
 /**
- * Build and returns a new instance of Subscribe Request <li> object
- * from template to be added in roster list <ul>
+ * Build and returns a new instance of Subscribe Request <li-peer> Element
+ * from existing template.
  *
  * @param   {string}    bare      Subscribe sender JID bare
  * @param   {string}   [nick]     Subscribe sender preferend nick (if available)
  *
- * @return  {object}    Subscribe Request <li> HTML Elements
+ * @return  {element}   Subscribe Request <li-peer> Element
  */
 function xows_tpl_spawn_rost_subs(bare, nick)
 {
@@ -1170,145 +1155,203 @@ function xows_tpl_spawn_rost_subs(bare, nick)
 }
 
 /**
- * Build and returns a new instance of Room Occupant <li> object from
- * template to be added in the Room's Occupants <ul>
+ * Build and returns a new instance of Room Occupant <li-peer> Element 
+ * from existing template.
  *
- * @param   {string}    ojid      Occupant JID
- * @param   {string}    nick      Occupant Nickname
- * @param   {string}    avat      Occupant avatar image URL
- * @param   {string}   [full]     Occupant real full JID if available
- * @param   {number}   [show]     Optional Contact Show level
- * @param   {string}   [stat]     Optional Contact Status
+ * @param   {object}    occu      Occupant Object
+ * @param   {boolean}   priv      Indicate to create element for Private Messages
  *
- * @return  {object}    Occupant <li> HTML Elements
+ * @return  {element}   Occupant <li-peer> Element
  */
-function xows_tpl_spawn_room_occu(ojid, nick, avat, full, show, stat)
+function xows_tpl_spawn_room_occu(occu, priv = false)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-occu"].firstChild.cloneNode(true);
 
+  // Occupant <li-peer> may be also created for Private Message which
+  // may create two element with the same id. To prevent conflict, elements
+  // for Private Messages use dataset variable instead.
+  if(priv) {
+    inst.dataset.id = occu.addr;
+    // Hide menu button
+    inst.querySelector("PEER-ACTS").hidden = true;
+  } else {
+    inst.id = occu.addr;
+  }
+  
   // Set content to proper elements
-  inst.id = ojid;
-  inst.title = nick+" ("+ojid+")";
-  inst.dataset.jid = full || "";
-  inst.querySelector("PEER-NAME").innerText = nick;
-  inst.querySelector("PEER-META").innerText = stat?stat:"";
-  inst.querySelector("BADG-SHOW").dataset.show = show || 0;
+  inst.title = occu.name+" ("+occu.addr+")";
+  //inst.dataset.full = full || "";
+  inst.querySelector("PEER-NAME").innerText = occu.name;
+  inst.querySelector("PEER-META").innerText = occu.stat ? occu.stat : "";
+  inst.querySelector("BADG-SHOW").dataset.show = occu.show || 0;
   // Set proper class for avatar
   const peer_avat = inst.querySelector("PEER-AVAT");
-  peer_avat.dataset.jid = ojid;
-  peer_avat.className = xows_tpl_spawn_avat_cls(avat);
-
+  peer_avat.className = xows_tpl_spawn_avat_cls(occu.avat);
   return inst;
 }
 
 /**
- * Update the specified instance of Room Occupant <li> object.
+ * Update the specified instance of Room Occupant <li-peer> Element.
  *
- * @param   {string}    li        Occupant <li> element to update.
- * @param   {string}    nick      Occupant Nickname
- * @param   {string}    avat      Occupant avatar image URL
- * @param   {string}   [full]     Occupant real full JID if available
- * @param   {number}   [show]     Optional Contact Show level
- * @param   {string}   [stat]     Optional Contact Status
+ * @param   {element}   li        Occupant <li-peer> Element to update
+ * @param   {object}    occu      Occupant Object
  */
-function xows_tpl_update_room_occu(li, nick, avat, full, show, stat)
+function xows_tpl_update_room_occu(li, occu)
 {
   // Update content
-  li.title = nick+" ("+li.id+")";
-  li.dataset.jid = full || "";
-  li.querySelector("PEER-NAME").innerText = nick;
-  li.querySelector("PEER-META").innerText = stat?stat:"";
-  li.querySelector("BADG-SHOW").dataset.show = show || 0;
+  li.title = occu.name+" ("+li.id+")";
+  //li.dataset.full = full || "";
+  li.querySelector("PEER-NAME").innerText = occu.name;
+  li.querySelector("PEER-META").innerText = occu.stat ? occu.stat : "";
+  li.querySelector("BADG-SHOW").dataset.show = occu.show || 0;
   // Set proper class for avatar
-  li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(avat);
+  li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(occu.avat);
 }
 
 /**
  * Return most suitable message identifier between id attribute origin-id
- * and stanza-id
+ * and stanza-id.
  *
- * @param   {object}    li          Message <li-mesg> object to parse
+ * @param   {object}    peer     Related Peer object
+ * @param   {element}   li_mesg  Message <li-mesg> Element to parse
  *
  * @return  {string}    Message identifier
  */
-function xows_tpl_mesg_bestref(li)
+function xows_tpl_mesg_bestref(peer, li_mesg)
 {
-  return li.dataset.stnzid ? li.dataset.stnzid : (li.dataset.origid ? li.dataset.origid : li.dataset.id);
+  // XEP-0424 (Message Retraction)
+  //
+  // For messages of type 'groupchat', the ID assigned to the stanza by the 
+  // group chat itself must be used. This is discovered in a <stanza-id> 
+  // element with a 'by' attribute that matches the bare JID of the group 
+  // chat, as defined in Unique and Stable Stanza IDs (XEP-0359) 
+  
+  // XEP-0461 (Message Replies)
+  //
+  // For messages of type 'groupchat', the stanza's 'id' attribute MUST NOT be 
+  // used for replies. Instead, in group chat situations, the ID assigned to the 
+  // stanza by the group chat itself must be used. This is discovered in a 
+  // <stanza-id> element with a 'by' attribute that matches the bare JID of 
+  // the group chat, as defined in Unique and Stable Stanza IDs (XEP-0359)
+  
+  if(peer.type === XOWS_PEER_ROOM) {
+    return li_mesg.dataset.szid ? li_mesg.dataset.szid : li_mesg.dataset.id;
+  } else {
+    return li_mesg.dataset.orid ? li_mesg.dataset.orid : li_mesg.dataset.id;
+  }
 }
 
 /**
- * Build and returns a new instance of history Message <hist-mesg>
- * object from template to be added in the chat history list <ul>
+ * Build and returns a new instance of history Null-Message <li-mesg> Element
+ * from existing template.
  *
- * @param   {object}    peer        Related chat Peer object (Contact or Room)
- * @param   {object}    message     Message object
- * @param   {boolean}   receipt     Receipt required flag
- * @param   {object}   [previous]   Previous history message <li-mesg> element
- * @param   {object}   [replaced]   Replaced history message <li-mesg> element
- * @param   {object}   [replied]    Replied history message <li-mesg> element
+ * @param   {string}    id          Message reference ID
+ * @param   {string}    from        Message author JID
+ * @param   {string}    body        Message body
  *
- * @return  {object}    History message <li-mesg> HTML Elements
+ * @return  {element}   History message <li-mesg> Element
  */
-function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied)
+function xows_tpl_mesg_null_spawn(id, from, body) {
+  
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["hist-null"].firstChild.cloneNode(true);
+  
+  // Set message minimum data
+  inst.dataset.id = id;
+  inst.dataset.orid = id;
+  inst.dataset.szid = id;
+  inst.dataset.from = from;
+
+  // Add body (usually error/tombstone message)
+  inst.querySelector("MESG-BODY").innerHTML = body;
+  
+  // Return element
+  return inst;
+}
+
+/**
+ * Build and returns a new instance of history Message <li-mesg> Element
+ * from existing template.
+ *
+ * @param   {object}    peer        Related Peer object
+ * @param   {object}    mesg        Message object
+ * @param   {boolean}   wait        Message wait for Receipt
+ * @param   {element}  [pre_li]     Optional previous message <li-mesg> Element
+ * @param   {element}  [old_li]     Optional retracted message <li-mesg> Element
+ * @param   {element}  [quo_li]     Optional replied message <li-mesg> Element
+ *
+ * @return  {element}   History message <li-mesg> Element
+ */
+function xows_tpl_mesg_spawn(peer, mesg, wait, pre_li, old_li, quo_li)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
 
-  inst.dataset.id = message.id;
-  inst.dataset.from = message.from;
-  inst.dataset.time = message.time;
-  if(message.origid) inst.dataset.origid = message.origid;
-  if(message.stnzid) inst.dataset.stnzid = message.stnzid;
-  if(message.occuid) inst.dataset.occuid = message.occuid;
+  inst.dataset.id = mesg.id;
+  inst.dataset.from = mesg.from;
+  inst.dataset.time = mesg.time;
+  if(mesg.orid) inst.dataset.orid = mesg.orid;
+  if(mesg.szid) inst.dataset.szid = mesg.szid;
+  if(mesg.ocid) inst.dataset.ocid = mesg.ocid;
 
   // Check for Reply/Quoted Message
-  if(replied) {
+  if(quo_li) {
+    
+    const mesg_rply = inst.querySelector("MESG-RPLY");
+    
+    // Checks whether there is a reply but message cannot be found
+    if(quo_li.classList.contains("MESG-NULL")) {
 
-    // Get author Peer of quoted message
-    const quoted = xows_cli_author_get(peer, replied.dataset.from, replied.dataset.occuid);
+      // Set tombstone reply section
+      mesg_rply.classList.add("MESG-FAIL");
+      
+    } else {
+      
+      // Get author Peer of quoted message
+      const quoted = xows_cli_author_get(peer, quo_li.dataset.from, quo_li.dataset.ocid);
 
-    // Check whether message is referencing ourself
-    if(quoted === xows_cli_self)
-      inst.classList.add("MENTION");
+      // Check whether message is referencing ourself
+      if(quoted.self) 
+        inst.classList.add("MENTION");
 
-    // Get proper Peer identifier
-    let peerid = xows_cli_peer_iden(quoted);
+      // Get proper Peer identifier
+      let peerid = xows_cli_peer_iden(quoted);
 
-    // Set Quoted avatar
-    const rply_avat = inst.querySelector("RPLY-AVAT");
-    rply_avat.dataset.peer = peerid;
-    rply_avat.className = xows_tpl_spawn_avat_cls(quoted.avat);
+      // Set Quoted avatar
+      const rply_avat = inst.querySelector("RPLY-AVAT");
+      rply_avat.dataset.peer = peerid;
+      rply_avat.className = xows_tpl_spawn_avat_cls(quoted.avat);
 
-    // Set Quoted nickname
-    const rply_from = inst.querySelector("RPLY-FROM");
-    rply_from.dataset.peer = peerid;
-    rply_from.innerText = quoted.name;
+      // Set Quoted nickname
+      const rply_from = inst.querySelector("RPLY-FROM");
+      rply_from.dataset.peer = peerid;
+      rply_from.innerText = quoted.name;
+    }
 
-    // Correted message (discarded) doesn't have Body
-    const mesg_body = replied.querySelector("MESG-BODY");
+    // Correted (discarded) message doesn't have Body
+    const mesg_body = quo_li.querySelector("MESG-BODY");
     // Set Quoted text
     inst.querySelector("RPLY-BODY").innerHTML = mesg_body ? mesg_body.innerText : "[...]";
 
     // Add Reply data and show element
-    const mesg_rply = inst.querySelector("MESG-RPLY");
-    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(replied);
+    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(peer, quo_li);
     mesg_rply.hidden = false;
   }
 
   // Set Grouped/Append message style
   let append;
 
-  if(replaced) {
-    // If this sis a correction message, we kee the same style as the replaced
-    append = replaced.classList.contains("MESG-APPEND");
+  if(old_li) {
+    // If this is a Correction/Retraction message, we kee the same 
+    // style as the retracted one
+    append = old_li.classList.contains("MESG-APPEND");
     // Set message as Modified
     inst.classList.add("MESG-MODIFY");
-  } else if(previous) {
+  } else if(pre_li && !quo_li) {
     // If previous message author is different or if elapsed time is
     // greater than # minutes, we create a new full message block
-    if(!replied && ((message.time - previous.dataset.time) < XOWS_MESG_AGGR_THRESHOLD) && (previous.dataset.from === message.from))
-      append = true;
+    append = ((pre_li.dataset.from === mesg.from) && ((mesg.time - pre_li.dataset.time) < XOWS_MESG_AGGR_THRESHOLD));
   }
 
   // Set message "Append" style
@@ -1316,7 +1359,7 @@ function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied
     inst.classList.add("MESG-APPEND");
 
   // Get message author
-  const author = xows_cli_author_get(peer, message.from, message.occuid);
+  const author = xows_cli_author_get(peer, mesg.from, mesg.ocid);
 
   // Get proper Peer identifier
   let peerid = xows_cli_peer_iden(author);
@@ -1331,23 +1374,23 @@ function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied
   mesg_avat.className = xows_tpl_spawn_avat_cls(author.avat);
 
   // Set proper value to message elements
-  if(author === xows_cli_self) {
+  if(author.self) {
     inst.classList.add("MESG-SENT");
-    // If receipt not required, mark message as receipt received
-    if(!receipt) inst.classList.add("MESG-RECP");
+    // No wait for receipt, mark message as receipt received
+    if(!wait) inst.classList.add("MESG-RECP");
     // Add raw body for message edition
-    inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(message.body);
+    inst.querySelector("MESG-BODY").dataset.raw = xows_html_escape(mesg.body);
   }
 
   // Set time stamp elements
-  inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(message.time);
-  inst.querySelector("MESG-DATE").innerText = xows_l10n_date(message.time);
+  inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(mesg.time);
+  inst.querySelector("MESG-DATE").innerText = xows_l10n_date(mesg.time);
 
   const mesg_body = inst.querySelector("MESG-BODY");
   const mesg_embd = inst.querySelector("MESG-EMBD");
 
   // Parse body for styling
-  const styled = xows_tpl_parse_styling(message.body);
+  const styled = xows_tpl_parse_styling(mesg.body);
   mesg_body.innerHTML = styled;
 
   // Check whether we have URLs to embeds
@@ -1368,74 +1411,85 @@ function xows_tpl_mesg_spawn(peer, message, receipt, previous, replaced, replied
 }
 
 /**
- * Update the specified instance of Message <li-mesg> object.
+ * Update the specified instance of Message <li-mesg> Element.
  *
- * @param   {object}    li        Message <li-mesg> element to update
- * @param   {object}    message   Message object
- * @param   {boolean}   receipt   Marks message as receipt received
- * @param   {object}   [replied]  Replied history message <li-mesg> element
- *
- * @return  {object}    History message <li> HTML Elements
+ * @param   {element}   li_msg    Message <li-mesg> Element to update
+ * @param   {object}    peer      Related chat Peer object
+ * @param   {object}    mesg      Message Object
+ * @param   {boolean}   recp      Marks message as receipt received
+ * @param   {element}  [quo_li]   Optional replied message <li-mesg> Element
  */
-function xows_tpl_mesg_update(li, message, receipt, replied)
+function xows_tpl_mesg_update(li_msg, peer, mesg, recp, quo_li)
 {
-  if(message) {
-    li.dataset.origid = message.origid;
-    li.dataset.stnzid = message.stnzid;
-    li.dataset.occuid = message.occuid;
+  if(mesg) {
+    li_msg.dataset.orid = mesg.orid;
+    li_msg.dataset.szid = mesg.szid;
+    li_msg.dataset.ocid = mesg.ocid;
   }
 
   // Marks message à receipt received
-  if(receipt) li.classList.add("MESG-RECP");
+  if(recp) li_msg.classList.add("MESG-RECP");
 
-  if(replied) {
-    // Correted message (discarded) doesn't have Body
-    const mesg_body = replied.querySelector("MESG-BODY");
-    // Set Quoted text
-    li.querySelector("RPLY-BODY").innerHTML = mesg_body ? mesg_body.innerText : "[...]";
-
+  if(quo_li) {
+    
     // Add Reply data and show element
-    const mesg_rply = li.querySelector("MESG-RPLY");
-    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(replied);
+    const mesg_rply = li_msg.querySelector("MESG-RPLY");
+    
+    // Checks whether there is a reply but message cannot be found
+    if(quo_li.classList.contains("MESG-NULL")) {
+      
+      // Set reply as tombstone
+      mesg_rply.classList.add("MESG-FAIL");
+      
+      // Remove MENTION class if exists
+      li_msg.classList.remove("MENTION");
+    }
+    
+    // Update reference for corrected messages forwarding
+    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(peer, quo_li);
+    
+    // Correted message (discarded) doesn't have Body
+    const mesg_body = quo_li.querySelector("MESG-BODY");
+    // Set Quoted text
+    li_msg.querySelector("RPLY-BODY").innerHTML = mesg_body ? mesg_body.innerText : "[...]";
   }
 }
 
 /**
- * Build and insert new <mesg-edit> element instance into the given
- * <hist-mesg> element. The newly inserted element is returned.
+ * Build and insert new <mesg-edit> Element instance into the given
+ * <li-mesg> Element. The newly inserted Element is returned.
  *
- * @param   {object}    mesg      History message element <hist-mesg>
+ * @param   {element}   li_msg      History message <li-mesg> Element
  *
- * @return  {object}    Message editor <mesg-edit> HTML Elements
+ * @return  {element}   Message editor <mesg-edit> Elements
  */
-function xows_tpl_mesg_edit_insert(mesg)
+function xows_tpl_mesg_edit_insert(li_msg)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["mesg-edit"].firstChild.cloneNode(true);
 
-  inst.dataset.id = mesg.id;
+  inst.dataset.id = li_msg.id;
 
-  const mesg_body = mesg.querySelector("MESG-BODY");
+  const mesg_body = li_msg.querySelector("MESG-BODY");
 
   inst.querySelector("MESG-INPT").innerHTML = mesg_body.dataset.raw;
   mesg_body.parentNode.insertBefore(inst, mesg_body);
 
   // Add the EDIT class
-  mesg.classList.add("MESG-EDITOR");
+  li_msg.classList.add("MESG-EDITOR");
 
   return inst;
 }
 
 /**
- * Remove <mesg-edit> element instance from the given <hist-mesg>
- * element.
+ * Remove the <mesg-edit> Element from the specified <li-mesg> Element.
  *
- * @param   {object}    mesg      History message element <hist-mesg>
+ * @param   {element}   li_msg    History message <li-mesg> Element
  */
-function xows_tpl_mesg_edit_remove(mesg)
+function xows_tpl_mesg_edit_remove(li_msg)
 {
   // Remove the <mesg-edit> element
-  const mesg_main = mesg.querySelector("MESG-MAIN");
+  const mesg_main = li.querySelector("MESG-MAIN");
 
   // It may happen that message is already empty du to discard after
   // correction, so we prevent Uncaught Error...
@@ -1443,43 +1497,42 @@ function xows_tpl_mesg_edit_remove(mesg)
     mesg_main.removeChild(mesg_main.querySelector("MESG-EDIT"));
 
   // Remove the EDIT class
-  mesg.classList.remove("MESG-EDITOR");
+  li_msg.classList.remove("MESG-EDITOR");
 }
 
 /**
- * Build and insert new <mesg-trsh> element instance into the given
- * <hist-mesg> element. The newly inserted element is returned.
+ * Build and insert new <mesg-trsh> Element instance into the given
+ * <li-mesg> Element. The newly inserted Element is returned.
  *
- * @param   {object}    mesg      History message element <hist-mesg>
+ * @param   {element}   li_msg     History message <li-mesg> Element
  *
- * @return  {object}    Message delete <mesg-trsh> HTML Elements
+ * @return  {element}   Message delete <mesg-trsh> Element
  */
-function xows_tpl_mesg_trsh_insert(mesg)
+function xows_tpl_mesg_trsh_insert(li_msg)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["mesg-trsh"].firstChild.cloneNode(true);
 
-  inst.dataset.id = mesg.id;
+  inst.dataset.id = li_msg.id;
 
-  const mesg_embd = mesg.querySelector("MESG-EMBD");
+  const mesg_embd = li_msg.querySelector("MESG-EMBD");
   mesg_embd.parentNode.insertBefore(inst, mesg_embd);
 
   // Add the TRASH class
-  mesg.classList.add("MESG-TRASH");
+  li_msg.classList.add("MESG-TRASH");
 
   return inst;
 }
 
 /**
- * Remove <mesg-trsh> element instance from the given <hist-mesg>
- * element.
+ * Remove the <mesg-trsh> Element from the specified <li-mesg> Element.
  *
- * @param   {object}    mesg      History message element <hist-mesg>
+ * @param   {element}   li_msg     History message <li-mesg> Element
  */
-function xows_tpl_mesg_trsh_remove(mesg)
+function xows_tpl_mesg_trsh_remove(li_msg)
 {
   // Remove the <mesg-trsh> element
-  const mesg_main = mesg.querySelector("MESG-MAIN");
+  const mesg_main = li_msg.querySelector("MESG-MAIN");
 
   // It may happen that message is already empty du to discard after
   // retraction, so we prevent Uncaught Error...
@@ -1487,18 +1540,109 @@ function xows_tpl_mesg_trsh_remove(mesg)
     mesg_main.removeChild(mesg_main.querySelector("MESG-TRSH"));
 
   // Remove the TRASH class
-  mesg.classList.remove("MESG-TRASH");
+  li_msg.classList.remove("MESG-TRASH");
 }
 
 /**
- * Build and returns a new instance of Room Occupant <li> object from
- * template to be added in the Room's Occupants <ul>
+ * Build and returns a new instance of Room Administration <li-memb>
+ * Element from existing template.
+ *
+ * @param   {object}    item       Occupant affiliation/role data Object
+ * @param   {boolean}   affi       Admin user affiliation (Admin or Owner)
+ *
+ * @return  {element}   Room-Admin <li-memb> Elements
+ */
+function xows_tpl_admn_memb_spawn(item, affi)
+{
+  // Select proper template
+  let tmpl;
+  if(item.role) {
+    tmpl = "memb-role";
+  } else if(item.affi) {
+    tmpl = (item.affi == XOWS_AFFI_OUTC) ? "memb-outc" : "memb-affi";
+  }
+
+  // Clone DOM tree from template
+  const inst = xows_tpl_model[tmpl].firstChild.cloneNode(true);
+  
+  // Set common (if available) values
+  inst.dataset.bare = item.bare;
+  inst.dataset.nick = item.nick;
+
+  // Set content to proper elements
+  inst.querySelector("MEMB-ADDR").innerText = item.bare ? item.bare : "";
+  inst.querySelector("MEMB-NICK").innerText = item.nick ? item.nick : "";
+  
+  // Configure affiliation-specific stuff
+  if(item.affi) {
+    
+    if(item.affi > XOWS_AFFI_OUTC) {
+      
+      inst.dataset.affi = item.affi;
+      //inst.disabled = (item.affi >= affi);
+      if((affi < XOWS_AFFI_OWNR) && (item.affi >= affi))
+        inst.setAttribute("disabled","");
+      
+      const radios = inst.querySelectorAll("MEMB-RADIO");
+      
+      for(let i = 0; i < radios.length; ++i) {
+        radios[i].dataset.on = (radios[i].dataset.affi == item.affi);
+        // Admin doesn't have permission to revoke/grant admin or owner
+        if(affi < XOWS_AFFI_OWNR) 
+          radios[i].hidden = radios[i].dataset.affi > XOWS_AFFI_MEMB;
+      }
+    }
+  }
+  
+  return inst;
+}
+
+/**
+ * Update the specified instance of Room Administration <li-memb> Element.
+ *
+ * @param   {element}   li        <li-memb> Element to update
+ * @param   {number}    affi      Affiliation to set
+ * @param   {number}    aref      Affiliation reference to set/remove as Modified
+ */
+function xows_tpl_admn_memb_update(li, affi, aref)
+{
+  // Get list (or single) radio element(s)
+  const radio = li.querySelectorAll("MEMB-RADIO");
+  
+  if(radio.length > 1) {
+    // Set proper radio on, switch off others
+    for(let i = 0; i < radio.length; ++i) 
+      radio[i].dataset.on = (radio[i].dataset.affi == affi);
+  } else {
+    // Toggle single radio on/off
+    const turn_off = (radio[0].dataset.on == "true");
+    radio[0].dataset.on = turn_off ? "false" : "true";
+    // Change affiliation to set to reference value
+    if(turn_off) affi = aref;
+  }
+  
+  // Update <li-memb> affi value
+  li.dataset.affi = affi;
+
+  // Set or remove as modified depending reference
+  if(aref != null) {
+    if(affi != aref) {
+      li.classList.add("MODIFIED");
+    } else {
+      li.classList.remove("MODIFIED");
+    }
+  }
+}
+
+/**
+ * Build and returns a new instance of Jingle Audio Peer <strm-video> Element 
+ * from existing template.
  *
  * @param   {string}    jid       Call Peer full JID
  * @param   {string}    nick      Peer Nickname
  * @param   {string}    avat      Peer avatar image URL
  *
- * @return  {object}    Occupant <li> HTML Elements
+ * @return  {element}   Audio Peer <strm-audio> Element
  */
 function xows_tpl_spawn_stream_audio(jid, nick, avat)
 {
@@ -1509,21 +1653,21 @@ function xows_tpl_spawn_stream_audio(jid, nick, avat)
   inst.dataset.from = jid;
   inst.title = nick;
   const strm_avat = inst.querySelector("STRM-AVAT");
-  strm_avat.dataset.jid = jid;
+  //strm_avat.dataset.jid = jid;
   strm_avat.className = xows_tpl_spawn_avat_cls(avat);
 
   return inst;
 }
 
 /**
- * Build and returns a new instance of Room Occupant <li> object from
- * template to be added in the Room's Occupants <ul>
+ * Build and returns a new instance of Jingle Video Peer <strm-video> Element 
+ * from existing template.
  *
  * @param   {string}    jid       Call Peer full JID
  * @param   {string}    nick      Peer Nickname
  * @param   {string}    avat      Peer avatar image URL
  *
- * @return  {object}    Occupant <li> HTML Elements
+ * @return  {element}   Video Peer <strm-video> Element
  */
 function xows_tpl_spawn_stream_video(jid, nick, avat)
 {

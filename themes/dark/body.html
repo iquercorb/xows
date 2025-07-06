@@ -7,13 +7,12 @@
     <col-padd></col-padd>
     <!-- Middle Collumn -->
     <col-page>
-      <page-inner hidden id="page_cont" title="Add Contact" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_user" title="User Parameters" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_join" title="Join Chatroom" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_room" title="Chatroom Parameters" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_auth" title="Login" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_regi" title="Register" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_wait" title="Connecting" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_mucc" title="${'Channel Parameters'}" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_muca" title="${'Channel Administration'}" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_user" title="${'User Parameters'}" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_auth" title="${'Login'}" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_regi" title="${'Register'}" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_wait" title="${'Connecting'}" XOWS_TPL_IMPORT></page-inner>
     </col-page>
     <!-- Right Collumn -->
     <col-exit hidden id="colr_exit">
@@ -23,10 +22,10 @@
   </page-wrap>
 </div>
 
-<div hidden id="scr_void">
-  <!-- invisible frame to capture mouse click outside menus or dialogs -->
-</div>
+<!-- Frame to capture mouse click outside menus or dialogs -->
+<div hidden id="scr_void"></div>
 
+<!-- Image view frame -->
 <div hidden id="over_view">
   <div id="view_wrap">
     <button id="view_optab" title="${'Open in new tab'}"></button>
@@ -35,22 +34,43 @@
   </div>
 </div>
 
-<dialog hidden id="over_mbox">
-  <mbox-text id="mbox_text"></mbox-text>
-  <mbox-acts>
-    <button id="mbox_abort" class="btn-abort"></button>
-    <button id="mbox_valid" class="btn-valid"></button>
-    <btn-close id="mbox_close"></btn-close>
-  </mbox-acts>
+<!-- Generic Popup Dialog-Box -->
+<dialog hidden id="over_popu">
+  <popu-text id="popu_text"></popu-text>
+  <popu-acts>
+    <button id="popu_abort" class="btn-abort"></button>
+    <button id="popu_valid" class="btn-valid"></button>
+    <btn-close id="popu_close"></btn-close>
+  </popu-acts>
 </dialog>
 
-<dialog hidden id="over_ibox">
-  <h2 id="ibox_text"></h2>
-  <btn-close id="ibox_close"></btn-close>
-  <input id="ibox_inpt" type="text"></input>
+<!-- Generic Message Dialog-Box -->
+<dialog hidden class="over-dbox" id="over_mbox">
+  <dbox-head id="mbox_head"></dbox-head>
+  <btn-close class="dbox-close" id="mbox_close"></btn-close>
+  <dbox-body>
+    <dbox-icon id="mbox_icon"></dbox-icon>
+    <p id="mbox_text"></p>
+  </dbox-body>
+  <dbox-acts>
+    <button id="mbox_valid" class="btn-valid">${'OK'}</button>
+    <button hidden id="mbox_abort" class="btn-abort">${'Cancel'}</button>
+  </dbox-acts>
+</dialog>
+
+<!-- Generic Input Dialog-Box -->
+<dialog hidden class="over-dbox" id="over_ibox">
+  <dbox-head id="ibox_head"></dbox-head>
+  <btn-close class="dbox-close" id="ibox_close"></btn-close>
+  <input id="ibox_input" type="text"></input>
+  <span id="ibox_error"></span>
   <p id="ibox_hint"></p>
-  <ibox-acts>
+  <dbox-acts>
     <button id="ibox_valid" class="btn-valid">${'Apply'}</button>
     <button id="ibox_abort" class="btn-abort">${'Cancel'}</button>
-  </ibox-acts>
+  </dbox-acts>
+</dialog>
+
+<dialog hidden id="over_prof" XOWS_TPL_IMPORT>
+  <!-- Special Contact/Occupant Profile popup -->
 </dialog>

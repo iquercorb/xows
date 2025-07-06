@@ -71,10 +71,10 @@
   "I am not a robot":
   "",
 
-  "Login with an existing account":
-  "",
-
   "Register":
+  "",
+  
+  "Login with an existing account":
   "",
 
   "It remains unsaved changes":
@@ -101,9 +101,6 @@
   "Add a contact":
   "",
 
-  "Pending requests":
-  "",
-
   "Authorized":
   "",
 
@@ -119,24 +116,30 @@
   "Authorization pending":
   "",
 
-  "Chatrooms":
+  "Channels":
   "",
 
-  "Join a chatroom":
+  "Join or create a Channel":
   "",
 
-  "Query public chatrooms list":
+  "Query public Channels list":
   "",
 
   "Bookmarks":
   "",
 
-  "Public rooms":
+  "Public Channels":
   "",
 
-  "Private rooms":
+  "Private Channels":
   "",
-
+  
+  "Private messages":
+  "",
+  
+  "Room occupant":
+  "",
+  
   "Edit user profile":
   "",
 
@@ -188,10 +191,10 @@
   "Audio call":
   "",
 
-  "Room configuration":
+  "Chatoom configuration":
   "",
 
-  "Add Room to Bookmarks":
+  "Add Channel to Bookmarks":
   "",
 
   "Enable notifications":
@@ -200,7 +203,7 @@
   "Disable notifications":
   "",
 
-  "Room occupants list":
+  "Chatoom occupants list":
   "",
 
   "Back to recent messages":
@@ -217,41 +220,92 @@
 
   "Add an emoji":
   "",
-
+  
+  "Profil":
+  "",
+  
+  "Send a message":
+  "",
+  
+  "Contact profile":
+  "",
+  
+  "Affiliation to current Chatoom":
+  "",
+  
+  "Role in current Chatoom":
+  "",
+  
+  "Affiliation":
+  "",
+  
+  "Owner":
+  "",
+  
+  "Administrator":
+  "",
+  
+  "Member":
+  "",
+  
+  "Unaffiliated":
+  "None",
+  
+  "Role":
+  "",
+  
+  "Moderator":
+  "",
+  
+  "Participant":
+  "",
+  
+  "Visitor":
+  "",
+  
+  "Kick":
+  "",
+  
+  "Ban":
+  "",
+  
   "Occupants":
   "",
-
-  "Moderators":
+  
+  "Change Role of ":
+  "",
+  
+  "Kick occupant ":
+  "",
+  
+  "Change Affiliation of ":
   "",
 
-  "Participants":
+  "Ban occupant ":
   "",
 
-  "Visitors":
+  "to":
   "",
-
+  
   "Add this Contact":
   "",
 
-  "Room identifier":
-  "",
-
-  "Identifier":
+  "Enter Channel name or address...":
   "",
 
   "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
   "",
 
-  "Join Room (create it if does not exist)":
-  "",
-
   "Join":
   "",
-
-  "The Room will be created, do you want to configure it ?":
+  
+  "Channel initialization":
+  "",
+  
+  "A new Channel was created and you are its owner, do you want to configure it right now ?":
   "",
 
-  "Join now":
+  "Ignore":
   "",
 
   "Configure":
@@ -277,7 +331,22 @@
 
   "Remove contact and revoke authorization ?":
   "",
-
+  
+  "Subscription with contact":
+  "",
+  
+  "Mutual":
+  "",
+  
+  "Accorded":
+  "",
+  
+  "Pending":
+  "",
+  
+  "None":
+  "",
+  
   "Send a message to":
   "",
 
@@ -302,34 +371,34 @@
   "Contact address (JID)":
   "",
 
-  "XMPP/Jabber address":
-  "Adresse XMPP/Jabber",
-
-  "The contact will be added but unavailable, a subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
+  "Enter contact XMPP address...":
   "",
 
-  "Add contact and request authorisation":
+  "A subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
   "",
 
   "Submit":
   "",
 
-  "Join":
+  "Configure Channel...":
   "",
 
-  "Configure room...":
+  "Set Channel subject...":
+  "",
+  
+  "Add Channel to bookmarks ?":
+  "",
+  
+  "Add Bookmark":
   "",
 
-  "Set room subject...":
+  "Channel configuration":
   "",
 
-  "Chatoom configuration":
+  "Channel subject":
   "",
 
-  "Room subject":
-  "",
-
-  "Room informations":
+  "Channel informations":
   "",
 
   "Access &amp; moderation":
@@ -338,43 +407,52 @@
   "Other options":
   "",
 
-  "Room title":
+  "Channel title":
   "",
 
-  "Room description":
+  "Channel description":
   "",
 
-  "Persistent Room":
+  "Persistent Channel":
   "",
 
-  "Rooms are automatically deleted when they are empty, unless this option is enabled":
+  "Unless this option is enabled, Channel will be automatically deleted once all occupants have left it":
   "",
 
-  "Public Room":
+  "Public Channel":
   "",
 
-  "A public Room can be found by any user through normal means such as searching and service discovery":
+  "A public Channel can be found by any user through normal means such as searching and service discovery":
   "",
 
-  "Room password":
+  "Protected by password":
   "",
 
+  "Password":
+  "",
+  
+  "Enter a password...":
+  "",
+  
+  "A password-protected Channel requires to provide a password to join it":
+  "",
+  
   "Allowed to members only":
   "",
 
-  "Enable this to only allow access for Room owners, admins and members":
+  "Enable this to restrict Channel access and only allow those that have at least the Member affiliation":
   "",
 
-  "Moderated Room":
+  "Moderated Channel":
   "",
 
-  "In moderated Rooms occupants must be given permission to speak by a Room moderator":
+  "In moderated Channels, occupants must be given permission to speak by a Channel moderator":
   "",
 
   "Occupants anonymity":
   "",
 
-  "In a Non-Anonymous Room, occupants address is exposed to others, otherwise only Moderators can view occupants address":
+  "In a Non-Anonymous Channel, occupants address is exposed to others, otherwise only Moderators can view occupants address":
   "",
 
   "Semi-Anonymous":
@@ -386,19 +464,19 @@
   "Occupants visibility":
   "",
 
-  "Set Room occupants visibility according their assigned Role":
+  "Set Channel occupants visibility according their assigned Role":
   "",
 
   "History max length":
   "",
 
-  "Specify the maximum number of previous messages that should be sent to users when they join the Room":
+  "Specify the maximum number of previous messages that should be sent to users when they join the Channel":
   "",
 
   "History default length":
   "",
 
-  "Specify the number of previous messages sent to new users when they join the Room":
+  "Specify the number of previous messages sent to new users when they join the Channel":
   "",
 
   "Enable messages archiving":
@@ -406,7 +484,25 @@
 
   "Stores messages in persistent way using Message Archive Management":
   "",
+  
+  "Channel administration":
+  "",
+  
+  "List is empty":
+  "",
+  
+  "Banned users":
+  "",
+  
+  "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
+  "",
 
+  "Occupants affiliation":
+  "",
+
+  "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
+  "",
+  
   "User profile":
   "",
 
@@ -445,8 +541,11 @@
 
   "Retry":
   "",
-
-  "Enable or disable camera":
+  
+  "Add":
+  "",
+  
+  "Enable or disable the camera":
   "",
 
   "Mute or unmute the microphone":
@@ -482,9 +581,6 @@
   "The other person has hung up":
   "",
 
-  "Call terminated":
-  "",
-
   "Call in progress...":
   "",
 
@@ -511,7 +607,22 @@
 
   "Reply to":
   "",
-
+  
+  "The message is unreachable":
+  "",
+  
+  "The message was deleted":
+  "",
+  
+  "This user have no status message":
+  "",
+  
   "Do you really want to disconnect current session ?":
+  "",
+  
+  "has left the conversation":
+  "",
+  
+  "joined the conversation":
   ""
 }
