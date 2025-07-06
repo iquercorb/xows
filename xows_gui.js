@@ -1080,6 +1080,8 @@ function xows_gui_switch_peer(addr)
     // Remove "selected" class from <li> element
     if(next && (next.type === prev.type)) 
       xows_gui_rost_peer_select(prev, false);
+    // TODO: When switching to room with password or error, previous
+    // selected room still selected while GUI is empty.
   }
 
   const chat_fram = xows_doc("chat_fram");
@@ -2250,10 +2252,10 @@ function xows_gui_cli_oncontpush(cont)
 
   }
   
-  // Append new instance of contact <li_peer> from template to roster <ul>
+  // Parent to proper <ul>
   if(li_peer.parentNode != dst_ul)
     dst_ul.appendChild(li_peer);
-    
+  
   // Update Lists visibility
   xows_gui_cont_list_update();
 }
@@ -2277,10 +2279,10 @@ function xows_gui_cli_oncontrem(cont)
 
     // delete <li_peer> element
     cont_budy.removeChild(li_peer);
-    
-    // Hide Authorized Contacts <ul> if required
-    cont_budy.hidden = !cont_budy.childElementCount;
   }
+  
+  // Update Lists visibility
+  xows_gui_cont_list_update();
   
   // Remove Contact in client
   xows_cli_cont_rem(cont);
@@ -2425,7 +2427,8 @@ function xows_gui_cli_onroompush(room)
   }
   
   // Parent to proper <ul>
-  dst_ul.appendChild(li_peer);
+  if(li_peer.parentNode != dst_ul)
+    dst_ul.appendChild(li_peer);
 
   // Update room list <ul> visibility
   xows_gui_room_list_update();
@@ -2447,12 +2450,11 @@ function xows_gui_cli_onroomrem(room)
       xows_gui_switch_peer(null);
 
     // delete <li_peer> element
-    const src_ul = li_peer.parentNode;
-    src_ul.removeChild(li_peer);
-    
-    // Show or hide source <ul> depending content
-    src_ul.hidden = (src_ul.childNodes.length < 2);
+    li_peer.parentNode.removeChild(li_peer);
   }
+  
+  // Update room list <ul> visibility
+  xows_gui_room_list_update();
   
   // Remove Room in client side
   xows_cli_room_rem(room);
@@ -2520,7 +2522,8 @@ function xows_gui_cli_onprivpush(occu)
   }
   
   // Parent to proper <ul>
-  dst_ul.appendChild(li_peer);
+  if(li_peer.parentNode != dst_ul)
+    dst_ul.appendChild(li_peer);
     
   // Show the Private Message tab
   xows_doc_show("tab_priv");
