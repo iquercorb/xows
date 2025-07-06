@@ -500,7 +500,6 @@ function xows_tpl_parse_styling(raw)
     return "";
 
   let match;
-  let lead_sp, lead_lf = true;
   let span_i = 0;
   let span_b = 0;
   let span_u = false;
@@ -509,7 +508,7 @@ function xows_tpl_parse_styling(raw)
 
   let result = "";
 
-  let c, s, i = 0;
+  let c, i = 0;
 
   // Reset parsed URLs array
   xows_tpl_parsed_url.length = 0;
