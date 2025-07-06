@@ -691,12 +691,12 @@ function xows_gui_cli_ontimeout()
  * Handle client connexion closed
  *
  * @parma   {number}    code      Signal code for closing
- * @param   {string}   [mesg]     Optional information or error message
+ * @param   {string}   [text]     Optional information or error message
  */
-function xows_gui_cli_onclose(code, mesg)
+function xows_gui_cli_onclose(code, text)
 {
   // Output log
-  xows_log(2,"gui_cli_onclose","connexion cloded","("+code+") "+mesg);
+  xows_log(2,"gui_cli_onclose","connexion cloded","("+code+") "+text);
 
   // Check whether this is a connexion loss
   if(code == XOWS_SIG_HUP) {
@@ -724,19 +724,19 @@ function xows_gui_cli_onclose(code, mesg)
   }
 
   // Display popup message
-  if(mesg) xows_doc_popu_open(code, mesg);
+  if(text) xows_doc_popu_open(code, text);
 }
 
 /**
  * Handle client incomming error
  *
  * @parma   {number}    code      Signal code for message (error or warning)
- * @param   {string}    mesg      Warning or error message
+ * @param   {string}    text      Warning or error message
  */
-function xows_gui_cli_onerror(code, mesg)
+function xows_gui_cli_onerror(code, text)
 {
   // Display popup error message
-  xows_doc_popu_open(code, mesg);
+  xows_doc_popu_open(code, text);
 }
 
 /* -------------------------------------------------------------------
@@ -957,12 +957,6 @@ function xows_gui_wnd_onkey(event)
       {
       case "CHAT-INPT":
         xows_gui_chat_inpt_enter(event.target);
-        break;
-      case "STAT-INPT":
-        xows_gui_stat_inpt_enter(event.target);
-        break;
-      case "HEAD-META":
-        xows_gui_meta_inpt_enter(event.target);
         break;
       case "MESG-INPT":
         xows_gui_mesg_edit_valid(event.target);
@@ -1524,20 +1518,20 @@ function xows_gui_pupu_subs_edit_open(addr, name)
   // Store JID of contact to add or remove
   xows_gui_pupu_subs_edit.addr = addr;
 
-  let mesg, style;
+  let text, style;
 
   // If name is defined, this mean this is for Contact add
   if(name) {
     xows_gui_pupu_subs_edit.name = name;
     style = XOWS_STYL_ASK;
-    mesg = "Add contact and request authorisation ?";
+    text = "Add contact and request authorisation ?";
   } else {
     style = XOWS_STYL_WRN;
-    mesg = "Remove contact and revoke authorization ?";
+    text = "Remove contact and revoke authorization ?";
   }
 
   // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(style, mesg,
+  xows_doc_popu_open(style, text,
                      xows_gui_pupu_subs_edit_onvalid, "OK",
                      xows_gui_pupu_subs_edit_onabort, "Cancel",
                      true);
@@ -1719,7 +1713,7 @@ function xows_gui_cli_onroomjoin(room, code, error)
   
   // Code 201 mean initial room config
   if(code.includes(201)) 
-    xows_gui_pbox_conf_open(room);
+    xows_gui_mbox_conf_open(room);
 
   // Update privileges related GUI elements
   xows_gui_room_head_update(room);
@@ -1733,9 +1727,9 @@ function xows_gui_cli_onroomjoin(room, code, error)
  * Open an error message dialog-box for room join context
  *
  * @param   {string}    type      Error type
- * @param   {string}    mesg      Message to set
+ * @param   {string}    text      Message to set
  */
-function xows_gui_mbox_join_fail_open(type, mesg)
+function xows_gui_mbox_join_fail_open(type, text)
 {
   let head;
   
@@ -1747,7 +1741,7 @@ function xows_gui_mbox_join_fail_open(type, mesg)
   }
   
   // Open message dialog
-  xows_doc_mbox_open(XOWS_STYL_ERR, head, mesg, null, null, null, null, true);
+  xows_doc_mbox_open(XOWS_STYL_ERR, head, text, null, null, null, null, true);
 }
 
 /* -------------------------------------------------------------------
@@ -2946,9 +2940,10 @@ function xows_gui_call_menu_onclick(event)
   switch(event.target.id)
   {
     case "call_bt_spk": {
+      const call_in_vol = xows_doc("call_in_vol");
       mutted = event.target.classList.toggle("MUTTED");
       xows_gui_audio.vol.gain.value = mutted ? 0 : parseInt(call_in_vol.value) / 100;
-      xows_doc("call_in_vol").disabled = mutted;
+      call_in_vol.disabled = mutted;
       xows_gui_sound_play(mutted ? "mute" : "unmute"); //< Play sound
       break;
     }
@@ -3072,7 +3067,7 @@ function xows_gui_chat_call_open()
   if(use_video) {
     // Reset Camera button to intial state
     const call_bt_cam = xows_doc("call_bt_cam");
-    call_bt_mic.classList.remove("MUTTED");
+    call_bt_cam.classList.remove("MUTTED");
   }
 
   xows_doc("call_bt_cam").hidden = !use_video;
@@ -3466,10 +3461,8 @@ function xows_gui_call_input_enable(enable, type)
  */
 function xows_gui_call_input_error()
 {
-  const mesg = xows_l10n_get("Unable to get device stream for media call session");
-
   // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_WRN, mesg,
+  xows_doc_popu_open(XOWS_SIG_WRN, xows_l10n_get("Unable to get device stream for media call session"),
                      xows_gui_call_input_retry, "Retry",
                      xows_gui_chat_call_close, "Cancel");
 }
@@ -3548,12 +3541,12 @@ function xows_gui_call_input_retry()
 /**
  * Multimedia-Call WebRTC error callback
  *
- * @param   {string}      mesg    Error message
+ * @param   {string}      text    Error message
  */
-function xows_gui_wrtc_onerror(mesg)
+function xows_gui_wrtc_onerror(text)
 {
   // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_WRN,"Call session error: "+mesg);
+  xows_doc_popu_open(XOWS_SIG_WRN,"Call session error: "+text);
 
   // Close potentially opened dialog
   xows_gui_hist_ring_close();
@@ -3634,12 +3627,12 @@ function xows_gui_wrtc_onlinked()
  * Multimedia-Call XMPP/Jingle error callback
  *
  * @param   {number}     code     Error code
- * @param   {string}     mesg     Error message
+ * @param   {string}     text     Error message
  */
-function xows_gui_cli_oncallerror(code, mesg)
+function xows_gui_cli_oncallerror(code, text)
 {
   // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_WRN,"Call session error: "+mesg);
+  xows_doc_popu_open(XOWS_SIG_WRN,"Call session error: "+text);
 
   // Close potentially opened dialog
   xows_gui_hist_ring_close();
@@ -3834,7 +3827,7 @@ function xows_gui_chat_hist_onclick(event)
     if(li_selected) li_selected.classList.remove("SELECTED");
 
     // Select the 'touched' message
-    if(mesg) mesg.classList.add("SELECTED");
+    if(li_msg) li_msg.classList.add("SELECTED");
   }
 
   // Check for click on <button> element
@@ -3881,17 +3874,12 @@ function xows_gui_chat_hist_onclick(event)
 /**
  * History message correction Cancel function
  *
- * @param   {object}     [mesg]    Instance of <li-mesg> or null
+ * @param   {element}    [li_msg]   Instance of <li-mesg> or null
  */
-function xows_gui_mesg_edit_close(mesg)
+function xows_gui_mesg_edit_close(li_msg)
 {
-  let li_msg;
-
   // Check whether event directely reference object
-  if(mesg && mesg.tagName === "LI-MESG") {
-    // We got message directly
-    li_msg = mesg;
-  } else {
+  if(!li_msg || li_msg.tagName != "LI-MESG") {
     // We need to search any message in edit mode
     li_msg = xows_doc("chat_hist").querySelector(".MESG-EDITOR");
   }
@@ -3903,15 +3891,15 @@ function xows_gui_mesg_edit_close(mesg)
 /**
  * History message correction Enable function
  *
- * @param   {object}    mesg     Instance of <li-mesg> to open editor in
+ * @param   {element}   li_msg    Instance of <li-mesg> to open editor in
  */
-function xows_gui_mesg_edit_open(mesg)
+function xows_gui_mesg_edit_open(li_msg)
 {
   // Close any previousely opened editor
   xows_gui_mesg_edit_close();
 
   // Spawn <mesg-edit> instance next to <mesg-body>
-  const mesg_edit = xows_tpl_mesg_edit_insert(mesg);
+  const mesg_edit = xows_tpl_mesg_edit_insert(li_msg);
 
   // Set caret and focus
   const mesg_inpt = mesg_edit.querySelector("MESG-INPT");
@@ -3948,17 +3936,12 @@ function xows_gui_mesg_edit_valid(inpt)
 /**
  * Cancel history message retraction (delete) (close dialog)
  *
- * @param   {object}     [mesg]    Instance of <li-mesg> or null
+ * @param   {element}    [li_msg]   Instance of <li-mesg> or null
  */
-function xows_gui_mesg_trsh_abort(mesg)
+function xows_gui_mesg_trsh_abort(li_msg)
 {
-  let li_msg;
-
   // Check whether event directely reference object
-  if(mesg && mesg.tagName === "LI-MESG") {
-    // We got message directly
-    li_msg = mesg;
-  } else {
+  if(!li_msg || li_msg.tagName != "LI-MESG") {
     // We need to search any message in edit mode
     li_msg = xows_doc("chat_hist").querySelector(".MESG-TRASH");
   }
@@ -3970,15 +3953,15 @@ function xows_gui_mesg_trsh_abort(mesg)
 /**
  * Open history message retraction (delete) dialog
  *
- * @param   {object}    mesg     Instance of <li-mesg> to open editor in
+ * @param   {element}   li_msg    Instance of <li-mesg> to open editor in
  */
-function xows_gui_mesg_trsh_open(mesg)
+function xows_gui_mesg_trsh_open(li_msg)
 {
   // Close any previousely opened editor
   xows_gui_mesg_trsh_abort();
 
   // Spawn <mesg-trsh> instance next to <mesg-body>
-  xows_tpl_mesg_trsh_insert(mesg);
+  xows_tpl_mesg_trsh_insert(li_msg);
 }
 
 
@@ -3986,7 +3969,7 @@ function xows_gui_mesg_trsh_open(mesg)
  * History message correction validation (enter) function, called when
  * user press the Enter key (see xows_gui_wnd_onkey() function).
  *
- * @param   {object}    li_msg    Instance of <li-mesg> to retract
+ * @param   {element}   li_msg    Instance of <li-mesg> to retract
  */
 function xows_gui_mesg_trsh_valid(li_msg)
 {
@@ -4159,9 +4142,9 @@ function xows_gui_hist_mesg_retract(peer, usid)
   // Discard message
   li_msg.hidden = true;
   li_msg.innerHTML = "";
-  
+
   // Search for references to message to be updated
-  const li_refs = hist_ul.querySelectorAll("MESG-RPLY[data-ref='"+usid+"']");
+  const li_refs = xows_gui_peer_doc(peer,"hist_ul").querySelectorAll("MESG-RPLY[data-ref='"+usid+"']");
   
   if(li_refs.length) {
     // Create temporary Null dummy message
@@ -4188,7 +4171,7 @@ function xows_gui_hist_mesg_retract(peer, usid)
 function xows_gui_hist_mesg_focus(peer, id)
 {
   // Search for already highlighted message
-  const hig_li = xows_gui_peer_doc(peer, "hist_ul").querySelector(".FOCUS");
+  const hig_li = xows_gui_peer_doc(peer,"hist_ul").querySelector(".FOCUS");
   if(hig_li) hig_li.classList.remove("FOCUS");
 
   if(!id) return;
@@ -4561,13 +4544,13 @@ function xows_gui_upld_progress(name, percent)
  * File Upload on-error callback function
  *
  * @param   {string}    name      Uplodad file name
- * @param   {string}    mesg      Reported error message with code
+ * @param   {string}    text      Reported error message with code
  */
-function xows_gui_upld_error(name, mesg)
+function xows_gui_upld_error(name, text)
 {
   // Set the upload dialog message
   xows_doc_cls_add("upld_text","STYL-ERR");
-  xows_doc("upld_text").innerHTML = "<b>"+xows_l10n_get("Error")+"</b> : "+mesg;
+  xows_doc("upld_text").innerHTML = "<b>"+xows_l10n_get("Error")+"</b> : "+text;
 }
 
 /**
@@ -5540,28 +5523,28 @@ function xows_gui_mbox_affi_open(room, occu, affi)
   xows_gui_mbox_affi_data.occu = occu;
   xows_gui_mbox_affi_data.affi = affi;
 
-  let mesg;
+  let text;
 
   // Compose dialog message
   if(affi > XOWS_AFFI_OUTC) {
-    mesg = xows_l10n_get("Change Affiliation of ");
-    mesg += "<b>"+occu.name+"</b> ";
-    mesg += xows_l10n_get("to")+" <b>";
+    text = xows_l10n_get("Change Affiliation of ");
+    text += "<b>"+occu.name+"</b> ";
+    text += xows_l10n_get("to")+" <b>";
     switch(affi) 
     {
-    case XOWS_AFFI_OWNR : mesg += xows_l10n_get("Owner"); break;
-    case XOWS_AFFI_ADMN : mesg += xows_l10n_get("Administrator"); break;
-    case XOWS_AFFI_MEMB : mesg += xows_l10n_get("Member"); break;
-    case XOWS_AFFI_NONE : mesg += xows_l10n_get("None"); break;
+    case XOWS_AFFI_OWNR : text += xows_l10n_get("Owner"); break;
+    case XOWS_AFFI_ADMN : text += xows_l10n_get("Administrator"); break;
+    case XOWS_AFFI_MEMB : text += xows_l10n_get("Member"); break;
+    case XOWS_AFFI_NONE : text += xows_l10n_get("None"); break;
     }
-    mesg += "</b> ?";
+    text += "</b> ?";
   } else {
-    mesg = xows_l10n_get("Ban occupant ");
-    mesg += "<b>"+occu.name+"</b> ?";
+    text = xows_l10n_get("Ban occupant ");
+    text += "<b>"+occu.name+"</b> ?";
   }
   
   // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(XOWS_STYL_ASK, mesg,
+  xows_doc_popu_open(XOWS_STYL_ASK, text,
                      xows_gui_mbox_affi_onvalid, "OK",
                      xows_gui_mbox_affi_onabort, "Cancel",
                      true);
@@ -5614,27 +5597,27 @@ function xows_gui_mbox_role_open(room, occu, role)
   xows_gui_mbox_role_data.occu = occu;
   xows_gui_mbox_role_data.role = role;
 
-  let mesg;
+  let text;
 
   // Compose dialog message
   if(role > XOWS_ROLE_NONE) {
-    mesg = xows_l10n_get("Change Role of ");
-    mesg += "<b>"+occu.name+"</b> ";
-    mesg += xows_l10n_get("to")+" <b>";
+    text = xows_l10n_get("Change Role of ");
+    text += "<b>"+occu.name+"</b> ";
+    text += xows_l10n_get("to")+" <b>";
     switch(role) 
     {
-    case XOWS_ROLE_MODO : mesg += xows_l10n_get("Moderator"); break;
-    case XOWS_ROLE_PART : mesg += xows_l10n_get("Participant"); break;
-    case XOWS_ROLE_VIST : mesg += xows_l10n_get("Visitor"); break;
+    case XOWS_ROLE_MODO : text += xows_l10n_get("Moderator"); break;
+    case XOWS_ROLE_PART : text += xows_l10n_get("Participant"); break;
+    case XOWS_ROLE_VIST : text += xows_l10n_get("Visitor"); break;
     }
-    mesg += "</b> ?";
+    text += "</b> ?";
   } else {
-    mesg = xows_l10n_get("Kick occupant ");
-    mesg += "<b>"+occu.name+"</b> ?";
+    text = xows_l10n_get("Kick occupant ");
+    text += "<b>"+occu.name+"</b> ?";
   }
   
   // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(XOWS_STYL_ASK, mesg,
+  xows_doc_popu_open(XOWS_STYL_ASK, text,
                      xows_gui_mbox_role_onvalid, "OK",
                      xows_gui_mbox_role_onabort, "Cancel",
                      true);
@@ -6437,8 +6420,6 @@ function xows_gui_page_muca_onabort()
  */
 function xows_gui_page_muca_oninput(target)
 {
-  const param = xows_gui_page_muca;
-  
   // Update GUI elements
   if(target.tagName == "MEMB-RADIO") {
     
@@ -6495,39 +6476,29 @@ function xows_gui_page_muca_open(room)
 /**
  * Room Initialization Dialog-Box parameters
  */
-const xows_gui_pbox_conf = {room:null};
+const xows_gui_mbox_conf = {room:null};
 
 /**
  * Room Initialization Dialog-Box on-valid callback
  */
-function xows_gui_pbox_conf_onclick(target)
+function xows_gui_mbox_conf_onvalid()
 {
-  if(target.id == "conf_abort") 
-    xows_doc_pbox_close();
+  const room = xows_gui_mbox_conf.room;
   
-  if(target.id == "conf_valid") {
-    
-    const room = xows_gui_pbox_conf.room;
-    
-    xows_log(2,"gui_room_init_onvalid","request initial Room config",room.addr);
+  xows_log(2,"gui_room_init_onvalid","request initial Room config",room.addr);
 
-    // Send Room config form request, XMPP server will reply which
-    // will automatically opens the Room Configuration page.
-    xows_cli_muc_getcfg_query(room, xows_gui_page_mucc_open);
-  }
+  // Send Room config form request, XMPP server will reply which
+  // will automatically opens the Room Configuration page.
+  xows_cli_muc_getcfg_query(room, xows_gui_page_mucc_open);
 }
 
 /**
  * Room Initialization Dialog-Box on-abort callback
  */
-function xows_gui_pbox_conf_onclose()
+function xows_gui_mbox_conf_onabort()
 {
-  const room = xows_gui_pbox_conf.room;
-
   // If we are in Room creation process, we accept the default config
-  xows_cli_muc_setcfg_query(room, null);
-  
-  xows_gui_pbox_conf.room = null;
+  xows_cli_muc_setcfg_query(xows_gui_mbox_conf.room, null);
 }
 
 /**
@@ -6535,15 +6506,18 @@ function xows_gui_pbox_conf_onclose()
  *
  * @param   {object}    room      Joined Room object
  */
-function xows_gui_pbox_conf_open(room)
+function xows_gui_mbox_conf_open(room)
 {
   // This scenario occure after room creation confirmation, to ask
   // user for created Room initial configuration.
-  xows_gui_pbox_conf.room = room;
+  xows_gui_mbox_conf.room = room;
 
   // Open new Message Box to confirm Room initial config process
-  xows_doc_pbox_open("pbox_conf", xows_gui_pbox_conf_onclick, 
-                                  xows_gui_pbox_conf_onclose, true);
+  xows_doc_mbox_open(XOWS_STYL_ASK, "Channel initialization", 
+                                    "A new Channel was created and you are its owner, do you want to configure it right now ?", 
+                                    xows_gui_mbox_conf_onvalid, "Configure", 
+                                    xows_gui_mbox_conf_onabort, "Ignore", 
+                                    true);
 }
 
 /* -------------------------------------------------------------------
