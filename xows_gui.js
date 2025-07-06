@@ -181,7 +181,7 @@ function xows_gui_ondevicesinfos(devinfo)
 {
   // Update media infos list
   xows_gui_medias = devinfo;
-  
+
   xows_log(2,"gui_ondevicesinfos","received medias infos");
 
   // Update relevant GUI element

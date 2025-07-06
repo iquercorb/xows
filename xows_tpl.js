@@ -1489,7 +1489,7 @@ function xows_tpl_mesg_edit_insert(li_msg)
 function xows_tpl_mesg_edit_remove(li_msg)
 {
   // Remove the <mesg-edit> element
-  const mesg_main = li.querySelector("MESG-MAIN");
+  const mesg_main = li_msg.querySelector("MESG-MAIN");
 
   // It may happen that message is already empty du to discard after
   // correction, so we prevent Uncaught Error...
