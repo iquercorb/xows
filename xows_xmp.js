@@ -932,9 +932,9 @@ function xows_xmp_iq_parse(stanza, onparse)
  * @parma   {string}    to          Destination JID
  * @parma   {string}    type        Error type (type attribute of <error> node)
  * @param   {string}    reason      Error reason (<error> child node tagname)
- * @param   {string}   [message]    Optionnal message to include within reason
+ * @param   {string}   [content]    Optionnal message to include within reason
  */
-function xows_xmp_iq_error_send(id, to, type, reason, message)
+function xows_xmp_iq_error_send(id, to, type, reason, content)
 {
   xows_xmp_send(  xows_xml_node("iq",{"id":id,"type":"error","to":to},
                     xows_xml_node("error",{"type":type},
@@ -3068,7 +3068,7 @@ function xows_xmp_mam_parse(stanza, onparse)
 
   // Retrieve queryid to get proper result stack
   if(!xows_xmp_mam_stack.has(param.qid)) {
-    xows_log(1,"xmp_mam_parse","MAM result queryid not found",qid);
+    xows_log(1,"xmp_mam_parse","MAM result queryid not found",param.qid);
     return;
   }
   const stack = xows_xmp_mam_stack.get(param.qid);
