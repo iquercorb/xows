@@ -963,9 +963,7 @@ function xows_doc_mbox_onvalid()
   if(xows_doc_mbox_param.onvalid)
     xows_doc_mbox_param.onvalid();
   
-  // If no abort callback, close dialog
-  if(!xows_doc_mbox_param.onabort)
-    xows_doc_mbox_close();
+  xows_doc_mbox_close();
 }
 
 /**
@@ -975,6 +973,8 @@ function xows_doc_mbox_onabort()
 {
   if(xows_doc_mbox_param.onabort)
     xows_doc_mbox_param.onabort();
+    
+  xows_doc_mbox_close();
 }
 
 /**
@@ -994,10 +994,10 @@ function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, m
   xows_cli_activity_wakeup(); //< Wakeup presence
   
   // Checks for already opened Input Box
-  if(xows_doc_ibox_modal()) {
+  if(xows_doc_mbox_modal()) {
     return; //< do not close modal ones
   } else {
-    xows_doc_ibox_close();
+    xows_doc_mbox_close();
   }
   
   let cls;
@@ -1268,34 +1268,34 @@ function xows_doc_page_opened(page)
 /**
  * Currently opened menu elements
  */
-const xows_doc_menu_param = {bttn:null,drop:null};
+const xows_doc_menu_param = {button:null,drop:null,onclick:null};
 
 /**
  * Close current opened menu
  */
 function xows_doc_menu_close()
 {
-  const bttn = xows_doc_menu_param.bttn;
-  const drop = xows_doc_menu_param.drop;
+  const param = xows_doc_menu_param;
 
-  if(drop) {
+  if(param.drop) {
 
     // Hide drop element
-    drop.hidden = true;
+    param.drop.hidden = true;
 
     // Remove event listener from menu drop element
-    xows_doc_listener_rem(drop, "click", onclick);
+    xows_doc_listener_rem(param.drop, "click", param.onclick);
   }
 
   // Unfocus button element
-  if(bttn) bttn.blur();
+  if(param.button) param.button.blur();
 
   // hide the 'void' screen
   xows_doc_hide("scr_void");
 
   // Reset parameters
-  xows_doc_menu_param.bttn = null;
-  xows_doc_menu_param.drop = null;
+  param.button = null;
+  param.drop = null;
+  param.onclick = null;
 }
 
 /**
@@ -1311,8 +1311,10 @@ function xows_doc_menu_close()
  */
 function xows_doc_menu_toggle(button, dropid, onclick, onshow)
 {
+  const param = xows_doc_menu_param;
+  
   // Check whether menu is already open
-  if(xows_doc_menu_param.bttn) {
+  if(param.button) {
 
     // Close openned menu
     xows_doc_menu_close();
@@ -1324,15 +1326,17 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow)
 
     if(!button || !drop)
       return;
-
-    xows_doc_menu_param.bttn = button;
-    xows_doc_menu_param.drop = drop;
+    
+    // Set parameters
+    param.button = button;
+    param.drop = drop;
+    param.onclick = onclick;
     
     // show the 'void' screen to catch clicks outside menu
     xows_doc_show("scr_void");
 
     // Add event listener to menu drop element
-    xows_doc_listener_add(drop, "click", onclick);
+    xows_doc_listener_add(param.drop, "click", param.onclick);
 
     // Show menu drop element
     drop.hidden = false;
