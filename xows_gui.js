@@ -4798,28 +4798,28 @@ function xows_gui_chat_rply_set(li_msg)
   const chat_rply = xows_doc("chat_rply");
   
   // Get most suitable Stanza reference ID, either Origin-Id, Stanza-Id or Id
-  const replyid = xows_tpl_mesg_bestref(xows_gui_peer, li_msg);
+  const rpid = xows_tpl_mesg_bestref(xows_gui_peer, li_msg);
 
   // Get proper destination address
-  const replyto = (xows_gui_peer.type === XOWS_PEER_CONT) ? 
+  const rpto = (xows_gui_peer.type === XOWS_PEER_CONT) ? 
                       xows_jid_bare(li_msg.dataset.from) :
                       li_msg.dataset.from;
   
   // Retrieve message author
-  const author = (xows_gui_peer.type === XOWS_PEER_ROOM) ? 
-                    xows_cli_occu_get_or_new(xows_gui_peer, replyto, mesg.dataset.ocid) :
+  const peer = (xows_gui_peer.type === XOWS_PEER_ROOM) ? 
+                    xows_cli_occu_get_or_new(xows_gui_peer, rpto, li_msg.dataset.ocid) :
                     xows_gui_peer;
   
-  xows_doc("rply_name").innerText = author.name;
-  chat_rply.dataset.to = replyto;
-  chat_rply.dataset.id = replyid;
+  xows_doc("rply_name").innerText = peer.name;
+  chat_rply.dataset.to = rpto;
+  chat_rply.dataset.id = rpid;
   chat_rply.hidden = false;
 
   // Set REPLY class to Chat Pannel
   xows_doc("chat_panl").classList.add("REPLY");
 
   // set FOCUS to replied message
-  xows_gui_hist_mesg_focus(xows_gui_peer, replyid);
+  xows_gui_hist_mesg_focus(xows_gui_peer, rpid);
 
   // Set input focus to message edit area
   xows_gui_chat_inpt_focus();
