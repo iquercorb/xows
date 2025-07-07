@@ -530,7 +530,6 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("contpush", xows_gui_cli_oncontpush);
   xows_cli_set_callback("contrem", xows_gui_cli_oncontrem);
   xows_cli_set_callback("subspush", xows_gui_cli_onsubspush);
-  xows_cli_set_callback("subsrem", xows_gui_cli_onsubsrem);
   xows_cli_set_callback("roompush", xows_gui_cli_onroompush);
   xows_cli_set_callback("roomrem", xows_gui_cli_onroomrem);
   xows_cli_set_callback("roomjoin", xows_gui_cli_onroomjoin);
@@ -1393,26 +1392,28 @@ function xows_gui_rost_fram_onclick(event)
   const li_peer = event.target.closest("LI-PEER");
   if(!li_peer) return;
 
+  // Check for click on action Button
   if(event.target.tagName === "BUTTON") {
-
     switch(event.target.name)
     {
     case "cont_bt_rtry": //< Retry request subscribe permission
-      xows_cli_subscribe_request(li_peer.id);
+      xows_cli_subs_request(li_peer.id);
       xows_doc_popu_open(XOWS_STYL_SCS,"New authorization request was sent");
       return;
     case "cont_bt_unsb": //< Remove (Unsubscribe) contact
-      xows_gui_pupu_subs_edit_open(li_peer.id, null);
+      xows_gui_pupu_subs_edit_open(xows_cli_cont_get(li_peer.id), false);
       return;
     }
   }
-
+  
+  // This is a normal click on Peer in list
   switch(li_peer.className)
   {
-  case "PEER-PEND": 
+  case "PEER-PEND": {
+    // Get Peer object
     // Open Subscription Allow/Deny dialog
-    xows_gui_popu_subs_auth_open(li_peer.id, li_peer.name);
-    return;
+    xows_gui_popu_subs_auth_open(li_peer.id);
+    } return;
   case "PEER-ROOM": 
     // Special handling for Room join
     xows_gui_switch_room(li_peer.id);
@@ -1455,12 +1456,7 @@ function xows_gui_ibox_subs_oninput(value)
  */
 function xows_gui_ibox_subs_onvalid(value)
 {
-  // Compose display name from JID
-  const userid = value.split("@")[0];
-  const name = userid[0].toUpperCase() + userid.slice(1);
-
-  // Request for roster add contact
-  xows_cli_rost_edit(value, name);
+  xows_cli_subs_request(value);
 }
 
 /**
@@ -1484,15 +1480,14 @@ function xows_gui_ibox_subs_open()
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_gui_pupu_subs_edit = {addr:"",name:""};
+const xows_gui_pupu_subs_edit = {peer:null,subs:false};
 
 /**
  * Contact (subscription) Add/Remove message box on-abort callback function
  */
 function xows_gui_pupu_subs_edit_onabort()
 {
-  xows_gui_pupu_subs_edit.addr = null;
-  xows_gui_pupu_subs_edit.name = null;
+
 }
 
 /**
@@ -1503,33 +1498,39 @@ function xows_gui_pupu_subs_edit_onvalid()
   const param = xows_gui_pupu_subs_edit;
   
   // query contact add/remove
-  xows_cli_rost_edit(param.addr, param.name);
-
-  param.addr = null;
-  param.name = null;
+  if(param.subs) {
+    xows_cli_subs_request(param.peer.bare);
+  } else {
+    xows_cli_subs_revoke(param.peer);
+  }
 }
 
 /**
  * Contact (subscription) Add/Remove message box open
  *
- * @param   {string}    addr      Supplied JID address to add or remove
- * @param   {string}    name      Contact default name in case of contact add
+ * @param   {object}    peer      Peer object to subscribe to or remove
+ * @param   {boolean}   subs      Request (true) or Revoke (false) subscription
  */
-function xows_gui_pupu_subs_edit_open(addr, name)
+function xows_gui_pupu_subs_edit_open(peer, subs)
 {
+  const param = xows_gui_pupu_subs_edit;
+  
   // Store JID of contact to add or remove
-  xows_gui_pupu_subs_edit.addr = addr;
+  param.peer = peer;
+  param.subs = subs;
 
   let text, style;
 
-  // If name is defined, this mean this is for Contact add
-  if(name) {
-    xows_gui_pupu_subs_edit.name = name;
+  if(subs) {
     style = XOWS_STYL_ASK;
     text = "Add contact and request authorisation ?";
   } else {
     style = XOWS_STYL_WRN;
-    text = "Remove contact and revoke authorization ?";
+    if(peer.subs) {
+      text = "Remove contact and revoke authorization ?";
+    } else {
+      text = "Cancel authorization request ?";
+    }
   }
 
   // Open new MODAL Message Box with proper message
@@ -1545,17 +1546,18 @@ function xows_gui_pupu_subs_edit_open(addr, name)
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_gui_popu_subs_auth = {addr:"",name:""};
+const xows_gui_popu_subs_auth = {cont:null};
 
 /**
  * Contact Subscription Allow/Deny message box on-abort callback function
  */
 function xows_gui_popu_subs_auth_onabort()
 {
+  const param = xows_gui_popu_subs_auth;
+  
   // deny contact subscribe
-  xows_cli_subscribe_allow(xows_gui_popu_subs_auth.addr, false);
-  xows_gui_popu_subs_auth.addr = null;
-  xows_gui_popu_subs_auth.name = null;
+  xows_cli_subs_answer(param.cont, false);
+  param.cont = null;
 }
 
 /**
@@ -1563,23 +1565,22 @@ function xows_gui_popu_subs_auth_onabort()
  */
 function xows_gui_popu_subs_auth_onvalid()
 {
+  const param = xows_gui_popu_subs_auth;
+  
   // allow contact subscribe
-  xows_cli_subscribe_allow(xows_gui_popu_subs_auth.addr,true,xows_gui_popu_subs_auth.name);
-  xows_gui_popu_subs_auth.addr = null;
-  xows_gui_popu_subs_auth.name = null;
+  xows_cli_subs_answer(param.cont, true);
+  param.cont = null;
 }
 
 /**
  * Contact Subscription Allow/Deny message box open
  *
  * @param   {string}    addr      Supplied JID address to allow or deny
- * @param   {string}    name      Contact default name in case of contact allow
  */
-function xows_gui_popu_subs_auth_open(addr, name)
+function xows_gui_popu_subs_auth_open(addr)
 {
-  // Store JID and name of contact to allow/deny
-  xows_gui_popu_subs_auth.addr = addr;
-  xows_gui_popu_subs_auth.name = name;
+  // Store Contact object to allow/deny
+  xows_gui_popu_subs_auth.cont = xows_cli_cont_get(addr);
 
   // Open new MODAL Message Box with proper message
   xows_doc_popu_open(XOWS_STYL_ASK, "Allow contact subscription ?",
@@ -2181,8 +2182,10 @@ function xows_gui_cont_list_reload()
   xows_doc("cont_pend").innerText = "";
   xows_doc("cont_budy").hidden = true;
   xows_doc("cont_budy").innerText = "";
+  
   // Add loading spinner at top of list
   xows_doc_cls_add("cont_list","LOADING");
+  
   // Query for roster content
   xows_cli_rost_get_query();
 }
@@ -2192,46 +2195,59 @@ function xows_gui_cont_list_reload()
  */
 function xows_gui_cont_list_update()
 {
+  // Remove the potential loading spinner
+  xows_doc_cls_rem("cont_list","LOADING");
+  
   // show and hide proper <ul> as required
   const cont_pend = xows_doc("cont_pend");
-  cont_pend.hidden = (cont_pend.querySelector("LI-PEER") === null);
-    
+  
+  // We need the count of pending subscribe
+  const subs_list = cont_pend.querySelectorAll("LI-PEER");
+  cont_pend.hidden = (subs_list.length == 0);
+  
   // Update the notification badge
-  xows_doc("cont_noti").dataset.subs = cont_pend.childElementCount;
+  xows_doc("cont_noti").dataset.subs = subs_list.length;
   
   const cont_budy = xows_doc("cont_budy");
   cont_budy.hidden = (cont_budy.querySelector("LI-PEER") === null);
-
-  // Show Contact <ul> if required
-  cont_budy.classList.remove("LOADING"); //< Remove the potential loading spinner
 }
 
 /**
  * Function to add or update item of the roster contact list
  *
  * @param   {object}    cont      Contact object to add or update
+ * @param   {string}   [text]     Optional Error text
  */
-function xows_gui_cli_oncontpush(cont)
+function xows_gui_cli_oncontpush(cont, text)
 {
-  // Null contact mean empty contact list
-  if(cont === null) {
+  // Null Contact mean we properly received Roster Contacts list
+  // but it is empty (user doesn't have any Contact in roster). 
+  if(!cont) {
     // Remove the loadding spinner
-    xows_doc_cls_rem("cont_list", "LOADING");
+    xows_doc_cls_rem("cont_list","LOADING");
     return;
   }
 
+  xows_log(2,"gui_cli_oncontpush","Adding/Updating contact",cont.addr);
+
   // Search for existing contact <li-peer> element
-  let li_peer = document.getElementById(cont.addr);
+  let li_peer = xows_gui_rost_li_get(cont);
   if(li_peer) {
-    // Check whether this is a subscribing contact
-    if(li_peer.classList.contains("PEER-PEND")) {
-      // Remove the subscribe <li-peer> element
-      xows_doc("cont_pend").removeChild(li_peer);
-      // Force creation of a new <li-peer> element
-      li_peer = null;
+    
+    // Check whether this is a pending subscription request
+    if(li_peer.className == "PEER-PEND") {
+      
+      if(cont.subs != XOWS_SUBS_NONE) {
+        // We added contact to our contact list, we need to create
+        // a new <li-peer> and delete subscribe request
+        xows_doc("cont_pend").removeChild(li_peer);
+        li_peer = null; //< Force creation of a new <li-peer> element
+      }
+      
     } else {
+      
       // Update the existing contact <li-peer> element according template
-      xows_tpl_update_rost_cont(li_peer, cont);
+      xows_tpl_update_rost_cont(li_peer, cont, text);
       // Update chat title bar
       xows_gui_chat_head_update(cont);
       // Update message history
@@ -2241,15 +2257,15 @@ function xows_gui_cli_oncontpush(cont)
     }
   }
 
-  const dst_ul = (cont.subs < XOWS_SUBS_BOTH) ? xows_doc("cont_pend") : 
-                                                xows_doc("cont_budy");
-
+  // Select proper destination list to add Contact/Subscription request
+  const dst_ul = (cont.subs & XOWS_SUBS_TO) ? xows_doc("cont_budy") : 
+                                              xows_doc("cont_pend");
+                                                
   if(!li_peer) {
-    // Create new <li-peer> element from template
-    li_peer = xows_tpl_spawn_rost_cont(cont);
+    // This is a roster contact (with or without pending authorization)
+    li_peer = xows_tpl_spawn_rost_cont(cont, text);
     // Create new Peer offscreen elements with initial state
     xows_gui_peer_doc_init(cont);
-
   }
   
   // Parent to proper <ul>
@@ -2267,26 +2283,28 @@ function xows_gui_cli_oncontpush(cont)
  */
 function xows_gui_cli_oncontrem(cont)
 {
-  const cont_budy = xows_doc("cont_budy");
+  xows_log(2,"gui_cli_oncontrem","Removing contact",cont.addr);
+  
+  // Retreive <li_peer> element
+  const li_peer = xows_gui_rost_li_get(cont);
+  if(li_peer) {
 
-  // Remove <li_peer> element
-  const li_peer = document.getElementById(cont.addr);
-  if(li_peer && li_peer.parentNode === cont_budy) {
-
-    // switch peer if required
-    if(xows_gui_peer && xows_gui_peer === cont)
+    // If current selected Peer is this one, switch to null
+    if(xows_gui_peer === cont)
       xows_gui_switch_peer(null);
-
-    // delete <li_peer> element
-    cont_budy.removeChild(li_peer);
+    
+    // Remove <li_peer> element
+    const src_ul = li_peer.parentNode;
+    src_ul.removeChild(li_peer);
   }
   
   // Update Lists visibility
   xows_gui_cont_list_update();
   
-  // Remove Contact in client
+  // We can delete this Contact from
   xows_cli_cont_rem(cont);
 }
+
 /* -------------------------------------------------------------------
  * Main screen - Roster List - Contacts - Subscription List
  * -------------------------------------------------------------------*/
@@ -2296,58 +2314,28 @@ function xows_gui_cli_oncontrem(cont)
  * This function add a new Subscription request element in the
  * roster.
  *
- * @param   {string}    bare      Subscription request sender bare JID
- * @param   {string}   [nick]     Prefered nickname (if available)
+ * @param   {object}    cont      Contact Object
  */
-function xows_gui_cli_onsubspush(bare, nick)
+function xows_gui_cli_onsubspush(cont)
 {
-  // Ensure subscribe <li_peer> does not already exists
-  if(document.getElementById(bare))
-    return;
-
-  const cont_pend = xows_doc("cont_pend");
-
-  // Create a new subcription <li_peer> element from template
-  cont_pend.appendChild(xows_tpl_spawn_rost_subs(bare, nick));
-
-  // Get count of pending authorization (<ul> children minus title)
-  const pendning_count = cont_pend.childElementCount;
-
-  // Show the subscribes <ul>
-  cont_pend.hidden = !pendning_count;
-
-  // Update or disable the notification badge
-  xows_doc("cont_noti").dataset.subs = pendning_count;
-}
-
-/**
- * Cleanup subscription request from roster
- *
- * This function remove a Subscription request element from the
- * roster.
- *
- * @param   {string}    bare      Subscription request bare JID
- */
-function xows_gui_cli_onsubsrem(bare)
-{
-  const cont_pend = xows_doc("cont_pend");
-
-  // Search and remove <li_peer> element
-  const li_peer = document.getElementById(bare);
-  if(li_peer && li_peer.parentNode === cont_pend) {
-
-    // delete <li_peer> element
-    cont_pend.removeChild(li_peer);
-
-    // Get count of pending authorization (<ul> children minus title)
-    const pendning_count = cont_pend.childElementCount;
-
-    // Show or hide list depending content
-    cont_pend.hidden = !pendning_count;
-
-    // Update or disable the notification badge
-    xows_doc("cont_noti").dataset.subs = pendning_count;
+  const dst_ul = xows_doc("cont_pend");
+  
+  // Search for existing <li_peer> element
+  let li_peer = xows_gui_rost_li_get(cont);
+  if(li_peer) {
+    // Update existing element
+    xows_tpl_update_rost_subs(li_peer, cont);
+  } else {
+    // Create new <li-peer> element from template
+    li_peer = xows_tpl_spawn_rost_subs(cont);
   }
+
+  // Parent <li-peer> element to list
+  if(li_peer.parentNode != dst_ul)
+    dst_ul.appendChild(li_peer);
+  
+  // Update Lists visibility
+  xows_gui_cont_list_update();
 }
 
 /* -------------------------------------------------------------------
@@ -2540,15 +2528,17 @@ function xows_gui_cli_onprivrem(occu)
   
   let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+occu.addr+"']");
   if(li_peer) {
+    
     // Update occupant <li_peer> element according template
     xows_tpl_update_room_occu(li_peer, occu);
+    
     // Update chat title bar
     xows_gui_chat_head_update(occu);
+
+    // Add message to history
+    const hist_ul = xows_gui_peer_doc(occu, "hist_ul");
+    hist_ul.appendChild(xows_tpl_mesg_null_spawn(0,"internal",occu.name+" "+xows_l10n_get("has left the conversation")));
   }
-  
-  // Add message to history
-  const hist_ul = xows_gui_peer_doc(occu, "hist_ul");
-  hist_ul.appendChild(xows_tpl_mesg_null_spawn(0,"internal",occu.name+" "+xows_l10n_get("has left the conversation")));
 }
 
 /* -------------------------------------------------------------------
@@ -2818,7 +2808,7 @@ function xows_gui_chat_head_onclick(event)
     break;
   case "chat_bt_addc": 
     // Query contact add
-    xows_gui_pupu_subs_edit_open(xows_gui_peer.bare, xows_gui_peer.name);
+    xows_gui_pupu_subs_edit_open(xows_gui_peer, true);
     // Update chat header frame
     xows_gui_chat_head_update(xows_gui_peer);
     break;
@@ -6538,8 +6528,8 @@ function xows_gui_prof_onclick(peer, target)
   // Check for click on "Add Contact" button
   if(target && target.id == "prof_addc") {
 
-    // query contact add
-    xows_gui_pupu_subs_edit_open(peer.addr, peer.name);
+    // Query contact add
+    xows_gui_pupu_subs_edit_open(peer, true);
     
     // Hide button
     target.hidden = true;

@@ -1025,33 +1025,73 @@ function xows_tpl_spawn_avat_cls(hash)
 }
 
 /**
- * Build and returns a new instance of roster Contact <li-peer> HTML Element 
+ * Build and returns a new instance of Subscribe Request <li-peer> Element
  * from existing template.
  *
  * @param   {object}    cont      Contact Object
  *
+ * @return  {element}   Subscribe Request <li-peer> Element
+ */
+function xows_tpl_spawn_rost_subs(cont)
+{
+  // Clone DOM tree from template
+  const inst = xows_tpl_model["peer-pend"].firstChild.cloneNode(true);
+
+  // Set content to proper elements
+  inst.id = cont.addr;
+  inst.title = cont.addr;
+  inst.querySelector("PEER-NAME").innerText = cont.addr;
+
+  return inst;
+}
+
+/**
+ * Update the specified instance of roster Contact <li-peer> Element.
+ *
+ * @param   {element}   li_peer   Subscribe <li-peer> Element to update
+ * @param   {object}    cont      Contact Object
+ */
+function xows_tpl_update_rost_subs(li_peer, cont)
+{
+  // Update content
+  li_peer.title = cont.addr;
+  li_peer.querySelector("PEER-NAME").innerText = cont.addr;
+}
+
+/**
+ * Build and returns a new instance of roster Contact <li-peer> HTML Element 
+ * from existing template.
+ *
+ * @param   {object}    cont      Contact Object
+ * @param   {string}   [text]     Optional error text
+ *
  * @return  {element}   Contact <li-peer> Element
  */
-function xows_tpl_spawn_rost_cont(cont)
+function xows_tpl_spawn_rost_cont(cont, text)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-cont"].firstChild.cloneNode(true);
 
   // Set content to proper elements
   inst.id = cont.addr;
-  inst.title = cont.name+" ("+cont.addr+")";
-  inst.querySelector("PEER-NAME").innerText = cont.name;
   const badg_show = inst.querySelector("BADG-SHOW");
-  if(cont.subs < XOWS_SUBS_TO) {
-    inst.classList.add("PEER-DENY");
-    inst.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
-    badg_show.hidden = true;
-    inst.querySelector("[name='cont_bt_rtry']").disabled = false;
-  } else {
+  if(cont.subs & XOWS_SUBS_TO) {
+    inst.title = cont.name+" ("+cont.addr+")";
+    inst.querySelector("PEER-NAME").innerText = cont.name;
     inst.querySelector("PEER-META").innerText = cont.stat ? cont.stat:"";
     badg_show.dataset.show = cont.show || 0;
-    const peer_avat = inst.querySelector("PEER-AVAT");
-    peer_avat.className = xows_tpl_spawn_avat_cls(cont.avat);
+    // Set proper class for avatar
+    inst.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont.avat);
+  } else {
+    // We awaits for Contact subscription
+    inst.title = cont.addr;
+    inst.classList.add("PEER-DENY");
+    inst.querySelector("PEER-NAME").innerText = cont.addr;
+    //inst.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
+    inst.querySelector("PEER-META").innerText = text ? xows_l10n_get(text) 
+                                                     : xows_l10n_get("Authorization pending");
+    badg_show.hidden = true;
+    inst.querySelector("[name='cont_bt_rtry']").disabled = false;
   }
 
   return inst;
@@ -1062,27 +1102,34 @@ function xows_tpl_spawn_rost_cont(cont)
  *
  * @param   {element}    li       Contact <li-peer> Element to update
  * @param   {object}    cont      Contact Object
+ * @param   {string}   [text]     Optional error text
  */
-function xows_tpl_update_rost_cont(li, cont)
+function xows_tpl_update_rost_cont(li, cont, text)
 {
-  // Update content
-  li.title = cont.name+" ("+li.id+")";
-  li.querySelector("PEER-NAME").innerText = cont.name;
   const badg_show = li.querySelector("BADG-SHOW");
   const cont_bt_rtry = li.querySelector("[name='cont_bt_rtry']");
-  if(cont.subs < XOWS_SUBS_TO) {
-    li.classList.add("PEER-DENY");
-    li.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
-    badg_show.hidden = true;
-    cont_bt_rtry.disabled = false;
-  } else {
+  
+  // Update content
+  if(cont.subs & XOWS_SUBS_TO) {
+    li.title = cont.name+" ("+cont.addr+")";
     li.classList.remove("PEER-DENY");
+    li.querySelector("PEER-NAME").innerText = cont.name;
     li.querySelector("PEER-META").innerText = cont.stat ? cont.stat : "";
     badg_show.hidden = false;
     badg_show.dataset.show = cont.show || 0;
     cont_bt_rtry.disabled = true;
     // Set proper class for avatar
     li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont.avat);
+  } else {
+    // We awaits for Contact subscription
+    li.title = cont.addr;
+    li.classList.add("PEER-DENY");
+    li.querySelector("PEER-NAME").innerText = cont.addr;
+    //li.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
+    li.querySelector("PEER-META").innerText = text ? xows_l10n_get(text) 
+                                                   : xows_l10n_get("Authorization pending");
+    badg_show.hidden = true;
+    cont_bt_rtry.disabled = false;
   }
 }
 
@@ -1128,29 +1175,6 @@ function xows_tpl_update_rost_room(li, room)
   //} else {
   //  peer_avat.classList.remove("ROOM-LOCK");
   //}
-}
-
-/**
- * Build and returns a new instance of Subscribe Request <li-peer> Element
- * from existing template.
- *
- * @param   {string}    bare      Subscribe sender JID bare
- * @param   {string}   [nick]     Subscribe sender preferend nick (if available)
- *
- * @return  {element}   Subscribe Request <li-peer> Element
- */
-function xows_tpl_spawn_rost_subs(bare, nick)
-{
-  // Clone DOM tree from template
-  const inst = xows_tpl_model["peer-pend"].firstChild.cloneNode(true);
-
-  // Set content to proper elements
-  inst.id = bare;
-  inst.title = nick+" ("+bare+")";
-  if(nick) inst.setAttribute("name", nick);
-  inst.querySelector("PEER-NAME").innerText = nick ? nick : bare;
-
-  return inst;
 }
 
 /**

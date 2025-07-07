@@ -226,18 +226,18 @@ const xows_cli_cont = [];
 /**
  * Create a new Contact Peer object
  *
- * @param   {string}    bare      JID (user@service.domain)
+ * @param   {string}    addr      JID bare (user@service.domain)
  * @param   {string}    name      Displayed name
  * @param   {string}    subs      Current subscription
  * @param   {string}    avat      Avatar hash string
  *
  * @return  {object}  New Contact Peer object.
  */
-function xows_cli_cont_new(bare, name, subs, avat)
+function xows_cli_cont_new(addr, name, subs, avat)
 {
   const cont = {
-    "lock": bare,               //< Current locked (user@domain/ressource)
-    "name": name?name:bare,     //< Display name
+    "lock": addr,               //< Current locked (user@domain/ressource)
+    "name": name?name:addr,     //< Display name
     "subs": subs,               //< Subscription mask
     "avat": avat,               //< Avatar hash string.
     "show": 0,                  //< Displayed presence show level
@@ -249,8 +249,8 @@ function xows_cli_cont_new(bare, name, subs, avat)
 
   // set Constant properties
   xows_def_readonly(cont,"type",XOWS_PEER_CONT);  //< Peer type
-  xows_def_readonly(cont,"addr",bare);            //< bare JID (user@domain)
-  xows_def_readonly(cont,"bare",bare);            //< bare JID (user@domain)
+  xows_def_readonly(cont,"addr",addr);            //< bare JID (user@domain)
+  xows_def_readonly(cont,"bare",addr);            //< bare JID (user@domain)
   xows_def_readonly(cont,"ress",new Map());       //< Resource list
   xows_def_readonly(cont,"self",null);            //< Object cannot be current client
 
@@ -794,7 +794,6 @@ function xows_cli_set_callback(type, callback)
     case "contpush":    xows_cli_fw_oncontpush = callback; break;
     case "contrem":     xows_cli_fw_oncontrem = callback; break;
     case "subspush":    xows_cli_fw_onsubspush = callback; break;
-    case "subsrem":     xows_cli_fw_onsubsrem = callback; break;
     case "roompush":    xows_cli_fw_onroompush = callback; break;
     case "roomrem":     xows_cli_fw_onroomrem = callback; break;
     case "roomjoin":    xows_cli_fw_onroomjoin = callback; break;
@@ -1409,28 +1408,18 @@ let xows_cli_fw_oncontrem = function() {};
  */
 function xows_cli_xmp_onrostpush(addr, name, subs, group)
 {
+  xows_log(2,"cli_xmp_onrostpush","received roster item","subs="+subs+" addr="+addr);
+
   let cont = xows_cli_cont_get(addr);
-  
-  // Sepecial case if we receive a 'remove' subscription
-  if(cont && (subs < 0)) {
-    /*
-    // Remove contact from local list
-    let i = xows_cli_cont.length;
-    while(i--) {
-      if(xows_cli_cont[i].bare === addr) {
-        xows_log(2,"cli_rost_update","removing Contact",addr);
-        xows_cli_cont.splice(i,1);
-        xows_cli_fw_oncontrem(addr); //< Forward contact to remove
-        break;
-      }
-    }
-    */
-    xows_cli_fw_oncontrem(cont); //< Forward contact to remove
+    
+  if(subs === XOWS_SUBS_REM) {
+    // Sepecial case if we receive a 'remove' subscription
+    if(cont) xows_cli_fw_oncontrem(cont); //< Forward contact to remove
     return;
   }
-
-  if(cont) {
     
+  if(cont) {
+
     cont.name = name ? name : addr;
     cont.subs = subs;
 
@@ -1452,12 +1441,15 @@ function xows_cli_xmp_onrostpush(addr, name, subs, group)
     cont = xows_cli_cont_new(addr, name, subs, avat);
   }
 
-  // Query Avatar for the contact
-  if(!xows_options.avatar_notify) 
-    xows_cli_avat_meta_query(cont);
+  if(cont.subs & XOWS_SUBS_TO) {
 
-  // Query Contact Nickname
-  xows_cli_nick_query(cont);
+    // Query Avatar for the contact
+    if(!xows_options.avatar_notify) 
+      xows_cli_avat_meta_query(cont);
+
+    // Query Contact Nickname
+    xows_cli_nick_query(cont);
+  }
 
   // Forward added Contact
   xows_cli_fw_oncontpush(cont);
@@ -1524,11 +1516,6 @@ function xows_cli_rost_edit(addr, name)
 {
   // Send roster Add/Remove request
   xows_xmp_rost_set_query(addr, name, null, null);
-
-  if(name) {
-    // Send a subscription request to the contact
-    xows_xmp_presence_send(addr, "subscribe");
-  }
 }
 
 /* -------------------------------------------------------------------
@@ -1540,11 +1527,6 @@ function xows_cli_rost_edit(addr, name)
  * Callback function for Subscription added
  */
 let xows_cli_fw_onsubspush = function() {};
-
-/**
- * Callback function for Subscription removed
- */
-let xows_cli_fw_onsubsrem = function() {};
 
 /**
  * Handles received presence (<presence> stanza) status from
@@ -1564,7 +1546,6 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
   const cont = xows_cli_cont_get(from);
   if(!cont) {
     // prevent warning for own presence report
-    //if(xows_jid_bare(from) !== xows_xmp_bind.bare)
     if(!xows_cli_isself_addr(from))
       xows_log(1,"cli_xmp_onpresence","unknown/unsubscribed Contact",from);
     return;
@@ -1615,24 +1596,28 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
       cont.stat = res.stat;
     }
   }
+  
+  if(cont.show > XOWS_SHOW_OFF) {
+    
+    // Update avatar and query for vcard if required
+    if(photo && xows_options.legacy_vcard) { //< do we got photo hash ?
+      if(xows_cach_avat_has(photo)) {
+        cont.avat = photo;
+      } else {
+        xows_cli_vcard_query(cont);
+      }
 
-  // Update avatar and query for vcard if required
-  if(photo && xows_options.legacy_vcard) { //< do we got photo hash ?
-    if(xows_cach_avat_has(photo)) {
-      cont.avat = photo;
-    } else {
-      xows_cli_vcard_query(cont);
+      // Update nickname in case changed
+      xows_cli_nick_query(cont);
     }
+    
+    // Update avatar in case changed
+    xows_cli_avat_meta_query(cont);
 
-    // Update nickname in case changed
-    xows_cli_nick_query(cont);
+    // Save current peer status to local storage
+    xows_cach_peer_save(cont.addr, null, null, cont.stat, null);
+    
   }
-
-  // Update avatar in case changed
-  xows_cli_avat_meta_query(cont);
-
-  // Save current peer status to local storage
-  xows_cach_peer_save(cont.addr, null, null, cont.stat, null);
 
   // Forward updated Contact
   xows_cli_fw_oncontpush(cont);
@@ -1675,82 +1660,152 @@ function xows_cli_entity_caps_test(node, xmlns)
  * Handles received subscribe (<presence> stanza) request or result
  * from orher contacts
  *
- * This function is called by xows_xmp_presence_recv.
- *
  * @param   {string}    from      Sender JID
  * @param   {string}    type      Subscribe request/result type
  * @param   {string}   [nick]     Contact prefered nickname if available
  */
 function xows_cli_xmp_onsubscribe(from, type, nick)
 {
-  let log_str;
-
-  switch(type)
+  // Try to find the contact
+  let cont = xows_cli_cont_get(from);
+  
+  switch(type) 
   {
-  // The sender wishes to subscribe to us
-  case "subscribe": log_str = "request"; break;
-  // The sender deny our subscribe request
-  case "unsubscribed": log_str = "denied"; break;
-  // The sender has allowed us to subscribe
-  case "subscribed": log_str = "allowed"; break;
-  // The sender is unsubscribing us
-  case "unsubscribe": log_str = "removed"; break;
-  }
-
-  if(type === "subscribe") {
-    // Try to find the contact
-    const cont = xows_cli_cont_get(from);
-    if(cont) {
-      // If we already have contact in roster we accept and allow
-      xows_cli_subscribe_allow(cont.bare, true, nick);
-    } else { // This mean someone is adding us to its roster
-      // Forward add subscription request
-      xows_cli_fw_onsubspush(xows_jid_bare(from), nick);
-    }
+  case "subscribe": { // Somebody wishes to subscribe to us
+      if(cont) {
+        if(cont.subs & XOWS_SUBS_TO) {
+          // We assume user want mutual subscription so if contact
+          // already authorized our request, we automatically allow him.
+          //
+          // Some may say that this don't fully respects the subscription 
+          // process rules, but in the common USER's perspective, this is way 
+          // more logical than responding to an authorization request from a 
+          // contact which has ALREADY allowed us.
+          xows_cli_subs_answer(cont, true);
+        }
+      } else { 
+        // This mean someone is adding us to its roster and request subscribe
+        if(!nick) {
+          // Compose display name from JID
+          const user = from.split("@")[0];
+          const nick = user[0].toUpperCase()+user.slice(1);
+        }
+        // Create new contact
+        cont = xows_cli_cont_new(xows_jid_bare(from), nick, XOWS_SUBS_NONE, null);
+        // Forward add subscription request
+        xows_gui_cli_onsubspush(cont);
+      }
+    } break;
+  
+  case "unsubscribe": { //< Somebody revoked its subscription or has aborted its request
+      if(cont) {
+        // Update contact subscription
+        cont.subs &= ~XOWS_SUBS_FROM;
+        // Update Contact
+        xows_gui_cli_oncontpush(cont);
+      } else {
+        // This should not happen
+        xows_log(1,"cli_xmp_onsubscribe","subscribe revoked from unknow contact",from);
+      }
+    } break;
+  
+  case "subscribed": { //< Contact ALLOWED our subscription request
+      if(cont) {
+        // Update contact subscription
+        cont.subs |= XOWS_SUBS_FROM;
+        // Forward to update Contact
+        xows_gui_cli_oncontpush(cont);
+      } else {
+        // This should not happen
+        xows_log(1,"cli_xmp_onsubscribe","request allowed from unknow contact",from);
+      }
+    } break;
+    
+  default: //< Contact DENIED our subscription request
+    // We do nothing, we let user hoping and unknowing the abominable
+    // rejection from his fellow. He may lose hope and delete the pending
+    // Contact, or send another authorization request.
+    break;
   }
 }
 
 /**
  * Send presence subscribe request to contact
  *
- * @param   {object}    bare      Contact bare JID to send subsribe request
+ * @param   {string}    addr      Contact JID to send subsribe request
  */
-function xows_cli_subscribe_request(bare)
+function xows_cli_subs_request(addr)
 {
-  // Send or resent subscribe request to contact
-  xows_xmp_presence_send(bare, "subscribe");
+  // Search for existing contact
+  let cont = xows_cli_cont_get(addr);
+
+  // Check if we must add Contact to Roster
+  if(!cont) {
+      
+    // Compose display name from JID
+    const user = addr.split("@")[0];
+    const name = user[0].toUpperCase()+user.slice(1);
+    
+    // Create new Contact
+    cont = xows_cli_cont_new(addr, name, XOWS_SUBS_FROM, null);
+  }
+  
+  // Send or resend subscribe request to contact
+  xows_xmp_presence_send(addr, "subscribe");
 }
 
 /**
- * Send presence subscribtion allow or deny to contact
+ * Revoke Contact subscribtion and remove it from Roster
  *
- * @param   {string}    bare      Contact JID bare
- * @param   {boolean}   allow     True to allow, false to deny
- * @param   {string}   [nick]     Preferend nickname if available
+ * @param   {object}    cont      Contact Object
  */
-function xows_cli_subscribe_allow(bare, allow, nick)
+function xows_cli_subs_revoke(cont)
+{
+  /*
+  // Revoke subscription to Contact
+  if(cont.subs & XOWS_SUBS_FROM) {
+    xows_xmp_presence_send(cont.addr, "unsubscribed");
+  } else {
+    xows_xmp_presence_send(cont.addr, "unsubscribe");
+  }
+  */
+  // Remove item from roster
+  xows_xmp_rost_set_query(cont.addr, null, null, null);
+}
+
+/**
+ * Answer to Contact subscribtion request, either by allowing or denying.
+ *
+ * @param   {object}    cont      Contact Object
+ * @param   {boolean}   allow     True to allow, false to deny
+ */
+function xows_cli_subs_answer(cont, allow)
 {
   // Send an allow or deny subscription to contact
-  xows_xmp_presence_send(bare, allow?"subscribed":"unsubscribed");
+  xows_xmp_presence_send(cont.addr, allow ? "subscribed" : "unsubscribed");
   
   // If subscription is allowed, we add the contact
   if(allow) {
-    // Check whether we must add this contact
-    if(!xows_cli_cont_get(bare)) {
-      // Compose displayed name from JID
-      let name;
-      if(nick) {
-        name = nick;
-      } else {
-        const userid = bare.split("@")[0];
-        name = userid[0].toUpperCase() + userid.slice(1);
-      }
-      // We add the contact to roster (and send back subscription request)
-      xows_cli_rost_edit(bare, name);
-    }
+    
+    // Add subscribe FROM (us)
+    cont.subs |= XOWS_SUBS_FROM;
+
+    // We assume user want a mutual subscription since it authorized
+    // contact, so if user is not subscribed to contact we automatically 
+    // send a subscription request.
+    //
+    // Some may say that this don't fully respects the subscription 
+    // process rules, but in the common USER's perspective, this is way 
+    // more logical than allowing subscription to contact THEN asking for
+    // contact authorization.
+    if(cont.subs != XOWS_SUBS_BOTH) 
+      xows_cli_subs_request(cont.addr);
+
+  } else {
+    
+    // Subscribe denied, we remove Contact
+    xows_cli_fw_oncontrem(cont);
   }
-  // Forward subscription request to be removed
-  xows_cli_fw_onsubsrem(bare);
 }
 
 /* -------------------------------------------------------------------
@@ -3789,9 +3844,23 @@ function xows_cli_xmp_onpreserr(from, error)
   }
   
   // Check for Romm join error
-  if(peer.type === XOWS_PEER_ROOM) 
+  if(peer.type === XOWS_PEER_ROOM) {
     // Forward join error
     xows_cli_fw_onroomjoin(peer, null, error);
+  } else if(peer.type === XOWS_PEER_CONT) {
+    let text;
+    switch(error.name)
+    {
+    case "remote-server-not-found":
+      text = "Remote server not found";
+      break;
+    default:
+      text = "Server error";
+      break;
+    }
+    // Forward contact error
+    xows_cli_fw_oncontpush(peer, text);
+  }
 }
 
 /**

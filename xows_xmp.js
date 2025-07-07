@@ -1554,8 +1554,8 @@ const xows_xmp_show_str = new Map([
  */
 const XOWS_SUBS_REM     = -1; //< remove subscription
 const XOWS_SUBS_NONE    = 0;  //< mutual non-subscription
-const XOWS_SUBS_FROM    = 1;  //< user authorized contact subscription
-const XOWS_SUBS_TO      = 2;  //< contact authorized our subscription
+const XOWS_SUBS_FROM    = 1;  //< subscription allowed by user
+const XOWS_SUBS_TO      = 2;  //< subscription allowed by contact
 const XOWS_SUBS_BOTH    = 3;  //< mutual subscription
 
 /**
@@ -1617,11 +1617,11 @@ function xows_xmp_presence_recv(stanza)
     case "subscribed":
     case "unsubscribed": {
       // Check for <nick> child
-      const node = stanza.querySelector("nick");
-      const nick = node ? xows_xml_innertext(node) : null;
+      const nick = stanza.querySelector("nick");
+      const name = nick ? xows_xml_innertext(nick) : null;
 
       // Foward subscription
-      xows_xmp_fw_onsubscrib(from, type, nick);
+      xows_xmp_fw_onsubscrib(from, type, name);
       } return true;
     case "error": {
       // get error data
