@@ -1686,7 +1686,7 @@ function xows_cli_xmp_onsubscribe(from, type, nick)
         if(!nick) {
           // Compose display name from JID
           const user = from.split("@")[0];
-          const nick = user[0].toUpperCase()+user.slice(1);
+          nick = user[0].toUpperCase()+user.slice(1);
         }
         // Create new contact
         cont = xows_cli_cont_new(xows_jid_bare(from), nick, XOWS_SUBS_NONE, null);
