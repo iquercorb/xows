@@ -1595,7 +1595,7 @@ function xows_doc_prof_open(peer, onclick)
 function xows_doc_void_onclick(event)
 {
   // check whether a menu is opened, and close it
-  if(xows_doc_menu_param.bttn)
+  if(xows_doc_menu_param.button)
     xows_doc_menu_close();
 
   // Close potentially opened media viewer screen
