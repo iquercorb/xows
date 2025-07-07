@@ -5110,23 +5110,6 @@ function xows_gui_room_head_update(room, occu)
   occu_bt_cnfg.hidden = (room.affi < XOWS_AFFI_ADMN);
 }
 
-/**
- * Switch the current selected room occupant
- *
- * @param   {string}    ojid       Occupant JID to select
- */
-function xows_gui_occu_switch(ojid)
-{
-  const occu_list = xows_doc("occu_list");
-
-  // remeve selection from previous occupant <li-peer>>
-  const sel_li = occu_list.querySelector(".SELECTED");
-  if(sel_li) sel_li.classList.remove("SELECTED");
-
-  // add selection to next occupant <li-peer>>
-  if(ojid) document.getElementById(ojid).classList.add("SELECTED");
-}
-
 /* -------------------------------------------------------------------
  *
  * Main Screen - Room Occupants - Header
