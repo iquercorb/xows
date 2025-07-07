@@ -1076,11 +1076,13 @@ function xows_gui_switch_peer(addr)
   if(prev) {
     // export document elements to offscreen fragment
     xows_gui_peer_doc_export(prev);
-    // Remove "selected" class from <li> element
-    if(next && (next.type === prev.type)) 
-      xows_gui_rost_peer_select(prev, false);
-    // TODO: When switching to room with password or error, previous
-    // selected room still selected while GUI is empty.
+    // If we are not about to switch Roster Tab, we unselect 
+    // current <li-peer> to prevent irrelevant selection in case
+    // of failure, especially for Room join 
+    if(!next || (next.type === prev.type)) {
+      // Remove "selected" class from <li> element
+      xows_gui_rost_unselect();
+    }
   }
 
   const chat_fram = xows_doc("chat_fram");
@@ -1299,7 +1301,7 @@ function xows_gui_rost_tabs_onclick(event)
  *
  * @param   {string}    tab_id    Tab ID to select
  * 
- * @return  {element}   Selected Roster <rost-page> Element
+ * @return  {element}   Toggled Roster <rost-page> Element
  */
 function xows_gui_rost_tabs_toggle(tab_id)
 {
@@ -1981,6 +1983,25 @@ function xows_gui_rost_peer_select(peer, select, tab)
     xows_gui_rost_tabs_toggle(li_peer.closest("ROW-PAGE").dataset.tab);
 }
 
+/**
+ * Unselect any selected Roster's <li-peer> element of the currently
+ * displayed Roster page (does not change selection for others)
+ */
+function xows_gui_rost_unselect()
+{
+  // Get current visible Roster page
+  const rost_page = xows_doc("rost_fram").querySelectorAll("ROW-PAGE");
+  for(let i = 0; i < rost_page.length; ++i) {
+    if(!rost_page[i].hidden) {
+      // Search for selected <li-peer> if any
+      const li_peer = rost_page[i].querySelector(".SELECTED");
+      // Unselect <li-peer>
+      if(li_peer) li_peer.classList.remove("SELECTED");
+      break;
+    }
+  }
+}
+
 /* -------------------------------------------------------------------
  * Main screen - Roster List - Calling Notifications
  * -------------------------------------------------------------------*/
@@ -2228,8 +2249,6 @@ function xows_gui_cli_oncontpush(cont, text)
     return;
   }
 
-  xows_log(2,"gui_cli_oncontpush","Adding/Updating contact",cont.addr);
-
   // Search for existing contact <li-peer> element
   let li_peer = xows_gui_rost_li_get(cont);
   if(li_peer) {
@@ -2283,8 +2302,6 @@ function xows_gui_cli_oncontpush(cont, text)
  */
 function xows_gui_cli_oncontrem(cont)
 {
-  xows_log(2,"gui_cli_oncontrem","Removing contact",cont.addr);
-  
   // Retreive <li_peer> element
   const li_peer = xows_gui_rost_li_get(cont);
   if(li_peer) {
@@ -4194,8 +4211,6 @@ function xows_gui_hist_mesg_focus(peer, id)
  */
 function xows_gui_cli_onmessage(peer, mesg, wait, error)
 {
-  xows_log(2,"gui_cli_onmessage","received message",peer.addr);
-
   // Check for error message
   if(error) {
     // Find corresponding erroneous message according Id
