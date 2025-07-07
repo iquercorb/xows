@@ -1087,7 +1087,6 @@ function xows_tpl_spawn_rost_cont(cont, text)
     inst.title = cont.addr;
     inst.classList.add("PEER-DENY");
     inst.querySelector("PEER-NAME").innerText = cont.addr;
-    //inst.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
     inst.querySelector("PEER-META").innerText = text ? xows_l10n_get(text) 
                                                      : xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
@@ -1125,7 +1124,6 @@ function xows_tpl_update_rost_cont(li, cont, text)
     li.title = cont.addr;
     li.classList.add("PEER-DENY");
     li.querySelector("PEER-NAME").innerText = cont.addr;
-    //li.querySelector("PEER-META").innerText = xows_l10n_get("Authorization pending");
     li.querySelector("PEER-META").innerText = text ? xows_l10n_get(text) 
                                                    : xows_l10n_get("Authorization pending");
     badg_show.hidden = true;

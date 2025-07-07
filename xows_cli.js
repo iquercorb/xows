@@ -1408,8 +1408,6 @@ let xows_cli_fw_oncontrem = function() {};
  */
 function xows_cli_xmp_onrostpush(addr, name, subs, group)
 {
-  xows_log(2,"cli_xmp_onrostpush","received roster item","subs="+subs+" addr="+addr);
-
   let cont = xows_cli_cont_get(addr);
     
   if(subs === XOWS_SUBS_REM) {
