@@ -1677,7 +1677,7 @@ peer-name {
   max-height: 20px;
   font-weight: bold;
   font-size: 0.85em;
-  line-height: 20px;
+  line-height: 24px;
   overflow:hidden;
   white-space:nowrap;
   text-overflow: ellipsis;
