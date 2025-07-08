@@ -1220,7 +1220,7 @@ function xows_xmp_message_recv(stanza)
                                                  null, null, repl, rpid, rpto, 
                                                  orid, szid, ocid));
     return true;
-  } else if(cstt) {
+  } else if(cstt !== undefined) {
     xows_xmp_fw_onchatstate(id, from, type, cstt, ocid);
     return true;
   }
