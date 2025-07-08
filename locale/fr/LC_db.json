@@ -115,7 +115,13 @@
 
   "Authorization pending":
   "Autorisation en attente",
-
+  
+  "Remote server not found":
+  "Serveur distant introuvable",
+  
+  "Server error":
+  "Erreur serveur",
+  
   "Channels":
   "Salons",
 
