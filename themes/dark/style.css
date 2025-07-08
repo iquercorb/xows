@@ -638,7 +638,7 @@ menu-drop li {
 }menu-drop li:hover {
   background-color: var(--base-tone4);
 }
-menu-drop li[disabled] {
+menu-drop li.MENU-GRAYD {
   pointer-events: none;
   opacity: 0.5;
 }

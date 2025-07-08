@@ -5393,10 +5393,11 @@ function xows_gui_occu_drop_onshow(button, drop)
   
   // Get related Occupant
   const occu = xows_cli_occu_get(xows_gui_peer, button.closest("LI-PEER").id);
-
+  
+  const is_ownr = (xows_gui_peer.affi === XOWS_AFFI_OWNR);
   const is_admn = !occu.self && (xows_gui_peer.affi > XOWS_AFFI_MEMB);
   const is_modo = !occu.self && (is_admn || (xows_gui_peer.role > XOWS_ROLE_PART));
-  const is_plus = (occu.affi < XOWS_AFFI_ADMN) && (xows_gui_peer.affi >= occu.affi);
+  const is_plus = is_ownr || ((occu.affi < XOWS_AFFI_ADMN) && (xows_gui_peer.affi >= occu.affi));
 
   const item_priv = xows_doc("occu_mi_priv");
   const item_affi = xows_doc("occu_sm_affi");
@@ -5443,12 +5444,9 @@ function xows_gui_occu_drop_onshow(button, drop)
     item_memb.querySelector("MENU-RADIO").dataset.on = (occu.affi === XOWS_AFFI_MEMB);
     item_none.querySelector("MENU-RADIO").dataset.on = (occu.affi === XOWS_AFFI_NONE);
     
-    // Only owner can grant Owner and Admin status
-    const is_owner = (xows_gui_peer.affi == XOWS_AFFI_OWNR);
-    
     // Disable access to menu items according user permissions
-    item_ownr.disabled = !is_owner;
-    item_admn.disabled = !is_owner;
+    item_ownr.classList.toggle("MENU-GRAYD", !is_ownr);
+    item_admn.classList.toggle("MENU-GRAYD", !is_ownr);
   }
   
   if(is_modo) {
@@ -5466,9 +5464,9 @@ function xows_gui_occu_drop_onshow(button, drop)
     const can_revoke = (xows_gui_peer.role > occu.role) || (xows_gui_peer.affi > occu.affi);
     
     // Disable access to subitem according user permissions
-    item_modo.disabled = !is_admn; //< Only Admin can grant Moderator Role
-    item_part.disabled = !can_revoke;
-    item_vist.disabled = !can_revoke;
+    item_modo.classList.toggle("MENU-GRAYD", !is_admn); //< Only Admin can grant Moderator Role
+    item_part.classList.toggle("MENU-GRAYD", !can_revoke);
+    item_vist.classList.toggle("MENU-GRAYD", !can_revoke);
   }
 }
 
@@ -5514,7 +5512,7 @@ function xows_gui_occu_drop_onclick(event)
   // - - - Role sub-menu
   case "occu_mi_modo": role = XOWS_ROLE_MODO; break;
   case "occu_mi_part": role = XOWS_ROLE_PART; break;
-  case "occu_mi_visi": role = XOWS_ROLE_VIST; break;
+  case "occu_mi_vist": role = XOWS_ROLE_VIST; break;
   // - - -
   case "occu_mi_kick": role = XOWS_ROLE_NONE; break;
   case "occu_mi_outc": affi = XOWS_AFFI_OUTC; break;
