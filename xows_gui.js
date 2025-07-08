@@ -5393,11 +5393,11 @@ function xows_gui_occu_drop_onshow(button, drop)
   
   // Get related Occupant
   const occu = xows_cli_occu_get(xows_gui_peer, button.closest("LI-PEER").id);
-  
+
   const is_admn = !occu.self && (xows_gui_peer.affi > XOWS_AFFI_MEMB);
   const is_modo = !occu.self && (is_admn || (xows_gui_peer.role > XOWS_ROLE_PART));
-  const is_plus = xows_gui_peer.affi > occu.affi;
-  
+  const is_plus = (occu.affi < XOWS_AFFI_ADMN) && (xows_gui_peer.affi >= occu.affi);
+
   const item_priv = xows_doc("occu_mi_priv");
   const item_affi = xows_doc("occu_sm_affi");
   const item_role = xows_doc("occu_sm_role");
@@ -5530,8 +5530,8 @@ function xows_gui_occu_drop_onclick(event)
   }
 
   if(role != null && role != occu.role) {
-    // Asks for confirmation for Kick or granting Moderator. 
-    if(role == XOWS_ROLE_MODO || role == XOWS_ROLE_NONE) {
+    // Asks for confirmation for Kick
+    if(role == XOWS_ROLE_NONE) {
       xows_gui_mbox_role_open(xows_gui_peer, occu, role);
     } else {
       xows_cli_muc_set_role(xows_gui_peer, occu, role);
