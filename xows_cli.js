@@ -340,32 +340,35 @@ const xows_cli_room = [];
  *
  * @param   {string}    addr      Room JID (room@service.domain)
  * @param   {string}    name      Displayed name
- * @param   {string}    desc      Description string
- * @param   {boolean}   prot      Password protected
- * @param   {boolean}   publ      Room is public
- * @param   {boolean}   regi      Room is Members-Only (Registration required)
  *
  * @return  {object}    New Room Peer object
  */
-function xows_cli_room_new(addr, name, desc, prot, publ, regi)
+function xows_cli_room_new(addr, name)
 {
   const room = {
+    // Room basic informations
     "name": name,           //< Display name
-    "desc": desc,           //< Room description
+    "desc": "",             //< Room description
     "subj": "",             //< Room subject
-    "publ": publ,           //< Room is public
-    "prot": prot,           //< Room is protected by password
+    // Room features
+    "publ": false,          //< Room is public
+    "prot": false,          //< Room is protected by password
     "pass": null,           //< Romm saved password
-    "regi": regi,           //< Room is Members-Only (Registration required)
-    "join": null,           //< Room join JID (room@service.domain/nick)
+    "modr": false,          //< Room is moderated
+    "anon": true,           //< Room is Semi-Anonymous (true) Non-anonymous (false)
+    "open": true,           //< Room is Open vs Members-Only (Registration required)
+    // Room session data
+    "init": false,          //< Newly created Room, need configuration
+    "join": null,           //< Self join JID (room@service.domain/nick)
     "role": 0,              //< Self Room Role (Level)
     "affi": 0,              //< Self Room Affiliation (Level)
     "nick": "",             //< Self Nickname in Room
+    // Room Occupants list
     "occu": [],             //< Room occupant array
+    "writ": [],             //< Chatstate writting occupants list
+    // Misc options
     "noti": true,           //< Notification Enabled/Mute
-    "init": false,          //< Newly created Room, need configuration
-    "book": false,          //< Room is Bookmarked
-    "writ": []              //< Chatstate writting occupants list
+    "book": false           //< Room is Bookmarked
   };
 
   // set Constant properties
@@ -504,9 +507,9 @@ function xows_cli_occu_get_or_new(room, addr, ocid)
   }
 
   // Add Occupant in Room with available cached data
-  const ref = ocid ? ocid : addr;
-  const cach = xows_cach_peer_get(ref);
-  const avat = cach ? cach.avat : xows_cli_avat_temp(ref);
+  const key = ocid ? ocid : addr;
+  const cach = xows_cach_peer_get(key);
+  const avat = cach ? cach.avat : xows_cli_avat_temp(key);
 
   return xows_cli_occu_new(room, addr, ocid, null, avat);
 }
@@ -627,8 +630,7 @@ function xows_cli_peer_get(jid, type)
 function xows_cli_peer_update(peer, nick, avat, stat)
 {
   // Add peer data to cache
-  const cach_id = (peer.type === XOWS_PEER_OCCU) ? peer.ocid : peer.addr;
-  xows_cach_peer_save(cach_id, nick, avat, stat, null);
+  xows_cach_peer_save(xows_cli_peer_iden(peer), nick, avat, stat, null);
   
   // Update nickname and avatar
   if(nick) peer.name = nick;
@@ -671,11 +673,10 @@ function xows_cli_peer_update(peer, nick, avat, stat)
  */
 function xows_cli_peer_iden(peer)
 {
-  if(peer.type === XOWS_PEER_OCCU) {
-    return peer.ocid ? peer.ocid : peer.addr;
-  } else {
-    return peer.addr;
-  }
+  if(peer.type === XOWS_PEER_OCCU && peer.ocid)
+    return peer.ocid;
+  
+  return peer.addr;
 }
 
 /**
@@ -729,9 +730,19 @@ function xows_cli_author_get(peer, addr, ocid)
   switch(peer.type)
   {
   case XOWS_PEER_ROOM:
-    return (addr == peer.join) ? xows_cli_occu_self(peer) : xows_cli_occu_get_or_new(peer, addr, ocid);
+    if(addr === peer.join) {
+      return peer.occu.find(xows_cli_test_self);
+    } else {
+      return xows_cli_occu_get_or_new(peer, addr, ocid);
+    }
+    
   case XOWS_PEER_CONT:
-    return (addr.startsWith(xows_cli_self.bare)) ? xows_cli_self : xows_cli_cont_get(addr);
+    if(addr.startsWith(xows_cli_self.bare)) {
+      return xows_cli_self;
+    } else {
+      return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(addr));
+    }
+    
   default:
     return xows_cli_peer_get(addr, XOWS_PEER_ANY);
   }
@@ -770,9 +781,9 @@ let xows_cli_fw_onclose = function() {};
  *  - contpush  : Add or refresh Roster Contact
  *  - contrem   : Remove Contact from Roster
  *  - subspush  : Add or refresh Subscription Request
- *  - subsrem   : Remove Subscription Request
  *  - roompush  : Add or refresh Roster Room
  *  - roomrem   : Remove Room/Bookmark from Roster
+ *  - roomjoin  : Room Joined (initial Room's self presence)
  *  - occupush  : Add or refresh Room Occupant
  *  - occurem   : Remove Room Occupant
  *  - message   : Common chat messages
@@ -2789,28 +2800,17 @@ function xows_cli_avat_meta_publish(from, type, error)
  * Generate and/or retreive pseudo-random avatar data based on
  * current logged in username, assuming client is connected
  *
- * @param    {string}   from      Contact or Occupant JID to generate avatar data
+ * @param    {string}   seed      Seed to generate avatar data
  *
  * @return   {string}   Generated avatar data hash.
  */
-function xows_cli_avat_temp(from)
+function xows_cli_avat_temp(seed)
 {
-  let seed;
-
-  // checks whether address contain '/', meaning this is room Occupant
-  if(from.includes('/')) {
-    // we transform in lowercase in case nickname is simply the
-    // username with caps, this maximise random color consistency
-    seed = xows_jid_resc(from).toLowerCase();
-  } else {
-    seed = xows_jid_node(from);
-  }
-
   // we generate new avatar image
   const data = xows_gen_avatar(XOWS_AVAT_SIZE,null,seed);
 
   // save data in live DB but not in Local Storage
-  return xows_cach_avat_save(data, null, true);
+  return xows_cach_avat_save(data,null,true);
 }
 
 /* -------------------------------------------------------------------
@@ -2824,17 +2824,17 @@ function xows_cli_avat_temp(from)
  */
 function xows_cli_book_parse(from, item)
 {
-  let room, bare, name, auto, nick;
+  let room, addr, name, auto, nick;
 
   for(let i = 0, n = item.length; i < n; ++i) {
-    bare = item[i].id;
+    addr = item[i].id;
     name = item[i].data.getAttribute("name");
     auto = item[i].data.getAttribute("autojoin");
     const temp = item[i].data.querySelector("nick");
     if(temp) nick = xows_xml_innertext(temp);
 
     // Check whether Room already exists
-    room = xows_cli_room_get(bare);
+    room = xows_cli_room_get(addr);
     if(room) {
 
       // Checks whether this is a public room, in this case we ignore
@@ -2844,7 +2844,7 @@ function xows_cli_book_parse(from, item)
     } else {
 
       // Create new Room object to reflect Bookmark
-      room = xows_cli_room_new(bare, name, "", false, false);
+      room = xows_cli_room_new(addr, name);
     }
 
     // This room is bookmarked
@@ -3317,44 +3317,64 @@ function xows_cli_muc_roomlist_query()
  */
 function xows_cli_muc_roominfo_parse(from, iden, feat, form)
 {
-  let i, n, name, subj = "", desc = "", prot = false, publ = false, regi = false;
+  let name;
 
-  // Retrieve or extract the name for this room
-  if(iden.length > 0)
+  // Check for Room name supplied in identity
+  if(iden.length > 0) 
     name = iden[0].name;
   
-  if(!name)
-    name = from.split("@")[0];
-
-  // Check room features
-  for(i = 0, n = feat.length; i < n; ++i) {
-    if(feat[i] === "muc_passwordprotected") prot = true;
-    if(feat[i] === "muc_public") publ = true;
-    if(feat[i] === "muc_hidden") publ = false;
-    if(feat[i] === "muc_membersonly") regi = true;
-    /*
-    if(feat[i] === "muc_semianonymous");
-    if(feat[i] === "muc_unmoderated");
-    if(feat[i] === "muc_unsecured");
-    */
+  // If no name found, create it from identifier
+  if(!name) {
+    // Compose display name from JID
+    const roomid = from.split("@")[0];
+    name = roomid[0].toUpperCase()+roomid.slice(1);
   }
-  // Get available informations
-  if(form) {
-    for(i = 0, n = form.length; i < n; ++i) {
-      if(form[i]["var"] == "muc#roominfo_description")  desc = form[i].value;
-      if(form[i]["var"] == "muc#roominfo_subject") subj = form[i].value;
-    }
-  }
+    
   // Check whether this room already exists in local list
   let room = xows_cli_room_get(from);
-  // If romm already exists, we simply refresh infos, 
-  // otherwise we create and add a new room in list
   if(room) {
-    room.name = name; room.desc = desc;
-    room.prot = prot; room.publ = publ; room.regi = regi;
+    room.name = name; 
   } else {
     // Create new room in local list
-    room = xows_cli_room_new(from, name, desc, prot, publ, regi);
+    room = xows_cli_room_new(from, name);
+  }
+  
+  // Check room features
+  for(let i = 0; i < feat.length; ++i) {
+    // Password protection
+    if(feat[i] === "muc_passwordprotected") room.prot = true;
+    if(feat[i] === "muc_unsecured") room.prot = false;
+    // Public / Private
+    if(feat[i] === "muc_public") room.publ = true;
+    if(feat[i] === "muc_hidden") room.publ = false;
+    // Members-Only
+    if(feat[i] === "muc_membersonly") room.open = false;
+    if(feat[i] === "muc_open") room.open = true;
+    // Moderated
+    if(feat[i] === "muc_moderated") room.modr = true;
+    if(feat[i] === "muc_unmoderated") room.modr = false;
+    // Semi/Non-anonymous
+    if(feat[i] === "muc_semianonymous") room.anon = true;
+    if(feat[i] === "muc_nonanonymous") room.anon = false;
+  }
+  
+  // Get available informations
+  if(form) {
+    for(let i = 0; i < form.length; ++i) {
+      if(form[i]["var"] === "muc#roomconfig_roomname") 
+        if(form[i].value) room.name = form[i].value;
+
+      if(form[i]["var"] === "muc#roominfo_description") 
+        if(form[i].value) room.desc = form[i].value;
+
+      if(form[i]["var"] === "muc#roominfo_subject") 
+        if(form[i].value) room.subj = form[i].value;
+
+      //if(form[i]["var"] == "muc#roominfo_occupants")  = form[i].value; //< Number of occupants
+      //if(form[i]["var"] == "muc#roominfo_lang")  = form[i].value;
+      //if(form[i]["var"] == "muc#roomconfig_allowinvites")  = form[i].value;
+      //if(form[i]["var"] == "muc#roomconfig_changesubject")  = form[i].value;
+    }
   }
 
   // Forward added/updated Room
@@ -3437,9 +3457,6 @@ function xows_cli_muc_setcfg_result(from, type, error)
     xows_log(1,"cli_muc_cfg_set_parse","unknown/unsubscribed Room",from);
     return;
   }
-
-  // Update Room infos
-  xows_cli_muc_roominfo_query(room);
 
   // Retreive onresult callback
   const onresult = xows_cli_muc_roomcfg_param.get(room);
@@ -3659,7 +3676,7 @@ function xows_cli_muc_join_atempt(room, name, nick, pass)
       addr = name.toLowerCase()+"@"+xows_cli_services.get(XOWS_NS_MUC)[0];
     }
     // create new Room object
-    room = xows_cli_room_new(addr, name, "", false, false);
+    room = xows_cli_room_new(addr, name);
   }
   
   // Set nickname and password if supplied
@@ -3712,14 +3729,15 @@ function xows_cli_xmp_onoccupant(from, show, status, mucusr, ocid, photo)
           
           room.join = from;
           
-          // Send initial Room push to create GUI for this room
+          // Update infos for the newly joined room
+          xows_cli_muc_roominfo_query(room);
+          
+          // In case Room was joinedcreated on the fly (not selected 
+          // from roster) we forward Room creation to GUI
           xows_cli_fw_onroompush(room);
           
           // Forward Room join signal
           xows_cli_fw_onroomjoin(room, mucusr.code);
-          
-          // Query info for the newly joined room
-          xows_cli_muc_roominfo_query(room);
         }
         
       } else {

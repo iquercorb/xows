@@ -449,20 +449,12 @@ function xows_gui_peer_doc_export(peer)
   // Save chat history scroll parameters
   const chat_main = xows_doc("chat_main");
   
-  const scroll_db = xows_gui_peer_scroll_db.get(peer.addr);
-  
-  scroll_db.scrollTop = chat_main.scrollTop;
-  scroll_db.scrollHeight = chat_main.scrollHeight;
-  scroll_db.clientHeight = chat_main.clientHeight;
-  scroll_db.scrollSaved = chat_main.scrollSaved || 0;
-  
-  /*
-  xows_gui_peer_scroll_db.set(peer.addr,{ scrollTop     :chat_main.scrollTop,
-                                          scrollHeight  :chat_main.scrollHeight,
-                                          clientHeight  :chat_main.clientHeight,
-                                          scrollSaved   :chat_main.scrollSaved || 0});
-  */
-  
+  const param = xows_gui_peer_scroll_db.get(peer.addr);
+  param.scrollTop = chat_main.scrollTop;
+  param.scrollHeight = chat_main.scrollHeight;
+  param.clientHeight = chat_main.clientHeight;
+  param.scrollSaved = chat_main.scrollSaved || 0;
+
   // Export document elements to offscreen fragment
   xows_doc_frag_export(peer.addr,"chat_head");
   xows_doc_frag_export(peer.addr,"chat_hist");
@@ -2157,7 +2149,6 @@ function xows_gui_unread_add(peer, id)
 
   // Increase the current unread count
   badg_noti.dataset.mesg = parseInt(badg_noti.dataset.mesg) + 1;
-  //badg_noti.hidden = false; //< show
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, 1);
@@ -2182,7 +2173,6 @@ function xows_gui_unread_call(peer, ring)
   // Inside the <li-peer> search for the <badg-noti>
   const badg_noti = li_peer.querySelector("BADG-NOTI");
 
-  //const had_ring = badg_noti.classList.contains("RINGING");
   const had_ring = (parseInt(badg_noti.dataset.ring) > 0);
   badg_noti.dataset.ring = ring ? 1 : 0;
   badg_noti.dataset.call = ring ? 0 : 1;
@@ -2218,8 +2208,6 @@ function xows_gui_unread_reset(peer)
   badg_noti.dataset.mesg = 0;
   badg_noti.dataset.ring = 0;
   badg_noti.dataset.call = 0;
-
-  badg_noti.hidden = true; //< hide
 
   // Update tab button class and animation according new state
   xows_gui_unread_tab_update(peer, mesg, call, ring);

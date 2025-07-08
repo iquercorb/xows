@@ -293,7 +293,10 @@ function xows_doc_frag_clear()
  */
 function xows_doc_frag_element(slot, element)
 {
-  return xows_doc_frag_db.has(slot) ? xows_doc_frag_db.get(slot).get(element) : null;
+  if(xows_doc_frag_db.has(slot))
+    return xows_doc_frag_db.get(slot).get(element);
+  
+  return null;
 }
 
 /**
@@ -1531,7 +1534,8 @@ function xows_doc_prof_open(peer, onclick)
     prof_role.dataset.role = peer.role;
     
     // Check if we can get Contact object
-    cont = peer.bare ? xows_cli_cont_get(peer.bare) : null;
+    if(peer.bare) 
+      cont = xows_cli_cont_get(peer.bare);
 
   } else {
     

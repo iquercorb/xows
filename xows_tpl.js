@@ -1149,8 +1149,8 @@ function xows_tpl_spawn_rost_room(room)
   inst.title = room.name+" ("+room.addr+")";
   inst.querySelector("PEER-NAME").innerText = room.name;
   inst.querySelector("PEER-META").innerText = room.desc;
+  inst.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
   //const peer_avat = inst.querySelector("PEER-AVAT");
-  //if(room.lock) peer_avat.classList.add("ROOM-LOCK");
 
   return inst;
 }
@@ -1167,6 +1167,7 @@ function xows_tpl_update_rost_room(li, room)
   li.title = room.name+" ("+li.id+")";
   li.querySelector("PEER-NAME").innerText = room.name;
   li.querySelector("PEER-META").innerText = room.desc;
+  li.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
   //const peer_avat = li.querySelector("PEER-AVAT");
   //if(room.lock) {
   //  peer_avat.classList.add("ROOM-LOCK");
@@ -1598,11 +1599,11 @@ function xows_tpl_admn_memb_spawn(item, affi)
   const inst = xows_tpl_model[tmpl].firstChild.cloneNode(true);
   
   // Set common (if available) values
-  inst.dataset.bare = item.bare;
+  inst.dataset.bare = item.jid;
   inst.dataset.nick = item.nick;
 
   // Set content to proper elements
-  inst.querySelector("MEMB-ADDR").innerText = item.bare ? item.bare : "";
+  inst.querySelector("MEMB-ADDR").innerText = item.jid ? item.jid : "";
   inst.querySelector("MEMB-NICK").innerText = item.nick ? item.nick : "";
   
   // Configure affiliation-specific stuff
