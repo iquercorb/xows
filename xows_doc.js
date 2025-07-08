@@ -1542,7 +1542,7 @@ function xows_doc_prof_open(peer, onclick)
   }
   
   const prof_cont = xows_doc("prof_cont");
-  if(cont) {
+  if(cont && !cont.self) {
     
     prof_cont.hidden = false;
 
@@ -1565,7 +1565,7 @@ function xows_doc_prof_open(peer, onclick)
   }
   
   // Enable or disable contact subscription button
-  xows_doc_show("prof_addc", xows_cli_can_subscribe(cont));
+  xows_doc_show("prof_addc", xows_cli_can_subscribe(peer));
   
   // show the 'void' screen with dark filter
   const src_void = xows_doc("scr_void");
