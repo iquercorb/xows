@@ -2758,7 +2758,7 @@ function xows_gui_chat_noti_update(peer)
 
   // Set notification mute or enable
   chat_bt_noti.title = notify ? xows_l10n_get("Disable notifications") :
-                            xows_l10n_get("Enable notifications");
+                                xows_l10n_get("Enable notifications");
 
   // Toggle chat action button class
   chat_bt_noti.classList.toggle("DISABLED", !notify);
@@ -4236,6 +4236,38 @@ function xows_gui_hist_mesg_focus(peer, id)
 }
 
 /**
+ * Add unread message notification badge and/or send browser Push Notification 
+ * as required depending given peer and <li-mesg>
+ *
+ * @param   {object}    peer      Related Peer object
+ * @param   {object}    mesg      Message object
+ */
+function xows_gui_hist_incoming_notify(peer, mesg)
+{
+  // No notification for ourself
+  if(peer.self)
+    return;
+  
+  // For MUC we avoid notification unless explicit mention
+  if(peer.type === XOWS_PEER_ROOM) {
+    
+    if(!mesg.rpto) 
+      return;
+    
+    if(xows_cli_occu_self(peer).addr !== mesg.rpto)
+      return;
+  }
+  
+  // If offsecreen peer, add an Unread messag notification
+  if(peer !== xows_gui_peer)
+    xows_gui_unread_add(peer, mesg.id);
+  
+  // If GUI is not in focus, send browser Push Notification
+  if(!xows_gui_has_focus)
+    xows_gui_notify_push(peer, mesg.body);
+}
+
+/**
  * Callback function to add sent or received message to the history
  * window
  *
@@ -4285,20 +4317,8 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
   if(mesg.rpid)
     li_rpl = xows_gui_hist_rply_get(peer, mesg.rpid, mesg.rpto);
 
-  // Avoid notifications for correction messages
-  if(!mesg.repl) {
-
-    // If off screen, add unread message badge to the roster contact
-    if(peer !== xows_gui_peer)
-      xows_gui_unread_add(peer, mesg.id);
-
-    // Send browser notification popup
-    if(!is_sent && !xows_gui_has_focus)
-      xows_gui_notify_push(peer, mesg.body);
-  }
-
   // Check whether end of history is croped, in this case the new message
-  //  must not be appended, we will show it by querying archives
+  // must not be appended, we will show it by querying archives
   if(xows_gui_peer_doc(peer,"hist_end").hidden || li_rep) {
 
     const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
@@ -4324,6 +4344,10 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
       hist_ul.appendChild(li_msg);
     }
   }
+
+  // Avoid notifications for correction messages
+  if(!mesg.repl) 
+    xows_gui_hist_incoming_notify(peer, mesg);
 
   if(!is_sent && xows_gui_peer_scroll_get(peer) >= 50) {
     xows_gui_chat_nav_open(peer, true); //< Show the "new messages" alert
