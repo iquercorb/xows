@@ -4145,20 +4145,20 @@ function xows_gui_hist_mesg_replace(peer, li_old, li_new)
 {
   // Discard old message
   li_old.hidden = true;
-  //li_old.innerHTML = "";
+  li_old.innerHTML = "";
 
   const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
-  const old_ref = xows_tpl_mesg_bestref(peer, li_old);
+  const old_id = xows_tpl_mesg_bestref(peer, li_old);
 
   // Search for references to old message to be updated
-  const li_refs = hist_ul.querySelectorAll("MESG-RPLY[data-ref='"+old_ref+"']");
+  const li_refs = hist_ul.querySelectorAll("MESG-RPLY[data-id='"+old_id+"']");
   for(let i = 0; i < li_refs.length; ++i)
     xows_tpl_mesg_update(li_refs[i].closest("LI-MESG"), peer, null, null, li_new);
 
   // Also check chat input reply reference
   const chat_rply = xows_gui_peer_doc(peer,"chat_rply");
-  if(chat_rply.dataset.id === old_ref)
+  if(chat_rply.dataset.id === old_id)
     chat_rply.dataset.id = xows_tpl_mesg_bestref(peer, li_new);
 
   // Insert replacement message to list
@@ -4187,7 +4187,7 @@ function xows_gui_hist_mesg_retract(peer, usid)
   li_msg.innerHTML = "";
 
   // Search for references to message to be updated
-  const li_refs = xows_gui_peer_doc(peer,"hist_ul").querySelectorAll("MESG-RPLY[data-ref='"+usid+"']");
+  const li_refs = xows_gui_peer_doc(peer,"hist_ul").querySelectorAll("MESG-RPLY[data-id='"+usid+"']");
   
   if(li_refs.length) {
     // Create temporary Null dummy message
@@ -4308,8 +4308,12 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
       xows_gui_peer_doc(peer,"hist_beg").className = ""; //< Allow query history
     }
 
+    // Get last valid (non discarded) previous message
+    let li_prv = hist_ul.lastChild;
+    while(li_prv && li_prv.hidden) li_prv = li_prv.previousSibling;
+    
     // Create new message element
-    const li_msg = xows_tpl_mesg_spawn(peer, mesg, wait, hist_ul.lastChild, li_rep, li_rpl);
+    const li_msg = xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl);
 
     // Insert or append message, depending whether li_ref is null
     if(li_rep) {
@@ -4516,7 +4520,10 @@ function xows_gui_mam_parse(peer, result, count, complete)
     } else {
       li_rpl = null;
     }
-
+    
+    // Get last valid (non discarded) previous message
+    while(li_prv && li_prv.hidden) li_prv = li_prv.previousSibling;
+    
     // Create new message element
     const li_msg = xows_tpl_mesg_spawn(peer, mesg, false, li_prv, li_rep, li_rpl);
 
