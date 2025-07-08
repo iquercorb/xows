@@ -691,6 +691,9 @@ function xows_cli_peer_iden(peer)
  */
 function xows_cli_can_subscribe(peer)
 {
+  if(peer.self)
+    return false;
+  
   switch(peer.type)
   {
   case XOWS_PEER_CONT: 

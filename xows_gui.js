@@ -733,16 +733,18 @@ function xows_gui_cli_ontimeout()
 function xows_gui_cli_onclose(code, text)
 {
   // Output log
-  xows_log(2,"gui_cli_onclose","connexion cloded","("+code+") "+text);
+  xows_log(2,"gui_cli_onclose","connexion closed","("+code+") "+text);
 
   // Check whether this is a connexion loss
-  if(code == XOWS_SIG_HUP) {
+  if(code === XOWS_SIG_HUP) {
 
     // This is a connection loss
     xows_gui_connect_loss = true;
 
     // Close message box
     xows_doc_popu_close();
+    xows_doc_mbox_close();
+    xows_doc_ibox_close();
 
     // Display wait screen
     xows_gui_page_wait_open("Connecting...");

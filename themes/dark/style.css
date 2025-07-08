@@ -1237,18 +1237,16 @@ dbox-icon.STYL-ASK {
   width: 100%;
 }
 .prof-head peer-name {
-  max-height: 60px;
+  line-height: 26px;
+  max-height: 26px;
   font-size: 1.3em;
-  line-height: auto;
   font-weight: normal;
   color: var(--text-tone1);
 }
 .prof-head peer-addr {
-  max-height: 60px;
+  line-height: 20px;
   font-size: 1.0em;
-  line-height: auto;
   color: var(--text-tone3);
-  margin-top: 5px;
 }
 #over_prof section {
   padding: 0 10px;
@@ -1677,7 +1675,6 @@ peer-name {
   max-height: 20px;
   font-weight: bold;
   font-size: 0.85em;
-  line-height: 24px;
   overflow:hidden;
   white-space:nowrap;
   text-overflow: ellipsis;
