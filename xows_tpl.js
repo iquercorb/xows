@@ -1298,13 +1298,13 @@ function xows_tpl_mesg_null_spawn(id, from, body) {
  * @param   {object}    peer        Related Peer object
  * @param   {object}    mesg        Message object
  * @param   {boolean}   wait        Message wait for Receipt
- * @param   {element}  [pre_li]     Optional previous message <li-mesg> Element
- * @param   {element}  [old_li]     Optional retracted message <li-mesg> Element
- * @param   {element}  [quo_li]     Optional replied message <li-mesg> Element
+ * @param   {element}  [li_prv]     Optional previous message <li-mesg> Element
+ * @param   {element}  [li_rep]     Optional retracted message <li-mesg> Element
+ * @param   {element}  [li_rpl]     Optional replied message <li-mesg> Element
  *
  * @return  {element}   History message <li-mesg> Element
  */
-function xows_tpl_mesg_spawn(peer, mesg, wait, pre_li, old_li, quo_li)
+function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
@@ -1317,12 +1317,12 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, pre_li, old_li, quo_li)
   if(mesg.ocid) inst.dataset.ocid = mesg.ocid;
 
   // Check for Reply/Quoted Message
-  if(quo_li) {
+  if(li_rpl) {
     
     const mesg_rply = inst.querySelector("MESG-RPLY");
     
     // Checks whether there is a reply but message cannot be found
-    if(quo_li.classList.contains("MESG-NULL")) {
+    if(li_rpl.classList.contains("MESG-NULL")) {
 
       // Set tombstone reply section
       mesg_rply.classList.add("MESG-FAIL");
@@ -1330,49 +1330,52 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, pre_li, old_li, quo_li)
     } else {
       
       // Get author Peer of quoted message
-      const quoted = xows_cli_author_get(peer, quo_li.dataset.from, quo_li.dataset.ocid);
+      const peer_rply = xows_cli_author_get(peer, li_rpl.dataset.from, li_rpl.dataset.ocid);
 
       // Check whether message is referencing ourself
-      if(quoted.self) 
+      if(peer_rply.self) 
         inst.classList.add("MENTION");
 
       // Get proper Peer identifier
-      let peerid = xows_cli_peer_iden(quoted);
+      let peerid = xows_cli_peer_iden(peer_rply);
 
       // Set Quoted avatar
       const rply_avat = inst.querySelector("RPLY-AVAT");
       rply_avat.dataset.peer = peerid;
-      rply_avat.className = xows_tpl_spawn_avat_cls(quoted.avat);
+      rply_avat.className = xows_tpl_spawn_avat_cls(peer_rply.avat);
 
       // Set Quoted nickname
       const rply_from = inst.querySelector("RPLY-FROM");
       rply_from.dataset.peer = peerid;
-      rply_from.innerText = quoted.name;
+      rply_from.innerText = peer_rply.name;
+      
+      // Set reply author address
+      mesg_rply.dataset.to = peer_rply.addr;
     }
 
     // Correted (discarded) message doesn't have Body
-    const mesg_body = quo_li.querySelector("MESG-BODY");
+    const mesg_body = li_rpl.querySelector("MESG-BODY");
     // Set Quoted text
     inst.querySelector("RPLY-BODY").innerHTML = mesg_body ? mesg_body.innerText : "[...]";
 
     // Add Reply data and show element
-    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(peer, quo_li);
+    mesg_rply.dataset.id = xows_tpl_mesg_bestref(peer, li_rpl);
     mesg_rply.hidden = false;
   }
 
   // Set Grouped/Append message style
   let append;
 
-  if(old_li) {
+  if(li_rep) {
     // If this is a Correction/Retraction message, we kee the same 
     // style as the retracted one
-    append = old_li.classList.contains("MESG-APPEND");
+    append = li_rep.classList.contains("MESG-APPEND");
     // Set message as Modified
     inst.classList.add("MESG-MODIFY");
-  } else if(pre_li && !quo_li) {
+  } else if(li_prv && !li_rpl) {
     // If previous message author is different or if elapsed time is
     // greater than # minutes, we create a new full message block
-    append = ((pre_li.dataset.from === mesg.from) && ((mesg.time - pre_li.dataset.time) < XOWS_MESG_AGGR_THRESHOLD));
+    append = ((li_prv.dataset.from === mesg.from) && ((mesg.time - li_prv.dataset.time) < XOWS_MESG_AGGR_THRESHOLD));
   }
 
   // Set message "Append" style
@@ -1438,9 +1441,9 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, pre_li, old_li, quo_li)
  * @param   {object}    peer      Related chat Peer object
  * @param   {object}    mesg      Message Object
  * @param   {boolean}   recp      Marks message as receipt received
- * @param   {element}  [quo_li]   Optional replied message <li-mesg> Element
+ * @param   {element}  [li_rpl]   Optional replied message <li-mesg> Element
  */
-function xows_tpl_mesg_update(li_msg, peer, mesg, recp, quo_li)
+function xows_tpl_mesg_update(li_msg, peer, mesg, recp, li_rpl)
 {
   if(mesg) {
     li_msg.dataset.orid = mesg.orid;
@@ -1451,26 +1454,34 @@ function xows_tpl_mesg_update(li_msg, peer, mesg, recp, quo_li)
   // Marks message à receipt received
   if(recp) li_msg.classList.add("MESG-RECP");
 
-  if(quo_li) {
+  if(li_rpl) {
     
     // Add Reply data and show element
     const mesg_rply = li_msg.querySelector("MESG-RPLY");
     
     // Checks whether there is a reply but message cannot be found
-    if(quo_li.classList.contains("MESG-NULL")) {
+    if(li_rpl.classList.contains("MESG-NULL")) {
       
       // Set reply as tombstone
       mesg_rply.classList.add("MESG-FAIL");
       
       // Remove MENTION class if exists
       li_msg.classList.remove("MENTION");
+      
+    } else {
+      
+      // Get author Peer of quoted message
+      const peer_rply = xows_cli_author_get(peer, li_rpl.dataset.from, li_rpl.dataset.ocid);
+      
+      // Set reply author address
+      mesg_rply.dataset.to = peer_rply.addr;
     }
-    
+
     // Update reference for corrected messages forwarding
-    mesg_rply.dataset.ref = xows_tpl_mesg_bestref(peer, quo_li);
+    mesg_rply.dataset.id = xows_tpl_mesg_bestref(peer, li_rpl);
     
     // Correted message (discarded) doesn't have Body
-    const mesg_body = quo_li.querySelector("MESG-BODY");
+    const mesg_body = li_rpl.querySelector("MESG-BODY");
     // Set Quoted text
     li_msg.querySelector("RPLY-BODY").innerHTML = mesg_body ? mesg_body.innerText : "[...]";
   }

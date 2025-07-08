@@ -1238,13 +1238,13 @@ function xows_xmp_message_recv(stanza)
  * @param   {string}    to        JID of the recipient
  * @param   {string}    body      Message content
  * @param   {boolean}   recp      Request message receipt
- * @param   {string}   [old_id]   Optionnal message ID this one Replace
- * @param   {string}   [quo_id]   Optionnal replyed message ID
- * @param   {string}   [quo_to]   Optionnal replyed message author JID
+ * @param   {string}   [repl]     Optionnal message ID this one Replace
+ * @param   {string}   [rpid]     Optionnal replyed message ID
+ * @param   {string}   [rpto]     Optionnal replyed message author JID
  *
  * @return  {string}    Sent message ID
  */
-function xows_xmp_message_body_send(type, to, body, recp, old_id, quo_id, quo_to)
+function xows_xmp_message_body_send(type, to, body, recp, repl, rpid, rpto)
 {
   // Generate 'custom' id to allow sender to track message
   const id = xows_gen_uuid();
@@ -1257,12 +1257,12 @@ function xows_xmp_message_body_send(type, to, body, recp, old_id, quo_id, quo_to
   xows_xml_parent(stanza, xows_xml_node("origin-id",{"id":id,"xmlns":XOWS_NS_SID}));
 
   // Add replace
-  if(old_id)
-    xows_xml_parent(stanza, xows_xml_node("replace",{"id":old_id,"xmlns":XOWS_NS_CORRECT}));
+  if(repl)
+    xows_xml_parent(stanza, xows_xml_node("replace",{"id":repl,"xmlns":XOWS_NS_CORRECT}));
 
   // Add reply
-  if(quo_id && quo_to)
-    xows_xml_parent(stanza, xows_xml_node("reply",{"id":quo_id,"to":quo_to,"xmlns":XOWS_NS_REPLY}));
+  if(rpid)
+    xows_xml_parent(stanza, xows_xml_node("reply",{"id":rpid,"to":rpto,"xmlns":XOWS_NS_REPLY}));
 
   // Add receipt request (only if one-to-one chat)
   if(recp && type === "chat")

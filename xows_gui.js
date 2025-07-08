@@ -241,7 +241,7 @@ function xows_gui_peer_doc(peer, id)
   if(peer === xows_gui_peer) {
     return document.getElementById(id);
   } else {
-    return xows_doc_frag_find(peer.addr,id);
+    return xows_doc_frag_find(peer.addr, id);
   }
 }
 
@@ -252,69 +252,96 @@ function xows_gui_peer_doc(peer, id)
  */
 function xows_gui_peer_hist_reload(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.addr) :
-                                          xows_doc("chat_main");
+  let chat_main;
+  
+  // Get current DOM element or offscreen dummy object
+  if(peer === xows_gui_peer) {
+    chat_main = xows_doc("chat_main");
+  } else {
+    chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+  }
+
   // Reset scroll
-  obj.scrollTop = (obj.scrollHeight - obj.clientHeight);
-  obj.scrollSaved = 0;
+  chat_main.scrollTop = (chat_main.scrollHeight - chat_main.clientHeight);
+  chat_main.scrollSaved = 0; //< ad-hoc property we created
 
   // Reset the chat history to initial stat
-  xows_gui_peer_doc(peer, "hist_beg").className = "";
-  xows_gui_peer_doc(peer, "hist_ul").innerText = "";
-  xows_gui_peer_doc(peer, "hist_end").hidden = true;
+  xows_gui_peer_doc(peer,"hist_beg").className = "";
+  xows_gui_peer_doc(peer,"hist_ul").innerText = "";
+  xows_gui_peer_doc(peer,"hist_end").hidden = true;
 
   // Query for the last archives, with no delay
   xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
 }
 
 /**
- * Save the main chat scroll and client values for the specified peer
+ * Save the main chat scroll position for the specified peer in the
+ * ad-hoc 'scrollSaved' property.
+ * 
+ * If the specified Peer history is offscreen, the function operate on
+ * the offscreen dummy object.
  *
  * @param   {object}    peer      Peer object to save scroll value
  */
 function xows_gui_peer_scroll_save(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.addr) :
-                                          xows_doc("chat_main");
+  let chat_main;
+  
+  // Get current DOM element or offscreen dummy object
+  if(peer === xows_gui_peer) {
+    chat_main = xows_doc("chat_main");
+  } else {
+    chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+  }
 
-  // The usefull scroll parameter that doesn't exist as built-in...
-  obj.scrollSaved = obj.scrollHeight - (obj.scrollTop + obj.clientHeight);
+  // Save scroll parameter in an ad-hoc 'scrollSaved' property we create
+  chat_main.scrollSaved = chat_main.scrollHeight - (chat_main.scrollTop + chat_main.clientHeight);
 }
 
 /**
  * Get the main chat last saved scroll position (relative to bottom)
- * corresponding to the specified peer
+ * corresponding to the specified peer.
  *
- * If the specified Peer history is offscree, the function
- * return the last saved scroll values.
+ * If the specified Peer history is offscreen, it returns value from
+ * the offscreen dummy object.
  *
  * @param   {object}    peer      Peer object to get scroll value
  */
 function xows_gui_peer_scroll_get(peer)
 {
-  return (peer !== xows_gui_peer) ?
-          xows_gui_peer_scroll_db.get(peer.addr).scrollSaved :
-          xows_doc("chat_main").scrollSaved;
+  // Returns current DOM element or offscreen dummy object ad-hoc propery
+  if(peer === xows_gui_peer) {
+    return xows_doc("chat_main").scrollSaved;
+  } else {
+    return xows_gui_peer_scroll_db.get(peer.addr).scrollSaved;
+  }
 }
 
 /**
- * Move to bottom the main chat scroll corresponding to the
- * specified peer
- *
- * If the specified Peer history is offscree, the function
- * operate on the saved scroll parameters.
+ * Move to bottom the main chat scroll corresponding to the specified peer
+ * 
+ * If the specified Peer history is offscreen, the function operate on
+ * the offscreen dummy object.
  *
  * @param   {object}    peer      Peer object to get scroll value
  */
 function xows_gui_peer_scroll_down(peer)
 {
-  if(xows_gui_peer_doc(peer, "hist_end").hidden) {
+  if(xows_gui_peer_doc(peer,"hist_end").hidden) {
 
-    const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.addr) :
-                                            xows_doc("chat_main");
-
-    obj.scrollTop = (obj.scrollHeight - obj.clientHeight);
-    obj.scrollSaved = 0;
+    let chat_main;
+  
+    // Get current DOM element or offscreen dummy object
+    if(peer === xows_gui_peer) {
+      chat_main = xows_doc("chat_main");
+    } else {
+      chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+    }
+    
+    // Reset scroll
+    chat_main.scrollTop = (chat_main.scrollHeight - chat_main.clientHeight);
+    chat_main.scrollSaved = 0;
+    
   } else {
     // If the most recent message is beyond the current history "window"
     // we must reset history and query last archived messages
@@ -326,17 +353,23 @@ function xows_gui_peer_scroll_down(peer)
  * Compensate (to keept at position) the main chat scroll corresponding
  * to the specified peer.
  *
- * If the specified Peer history is offscree, the function
- * operate on the saved scroll parameters.
+ * If the specified Peer history is offscree, the function operate on
+ * the offscreen dummy object.
  *
  * @param   {object}    peer      Peer object to get scroll value
  */
 function xows_gui_peer_scroll_adjust(peer)
 {
-  const obj = (peer !== xows_gui_peer) ?  xows_gui_peer_scroll_db.get(peer.addr) :
-                                          xows_doc("chat_main");
+  let chat_main;
 
-  obj.scrollTop = obj.scrollHeight - (obj.clientHeight + (obj.scrollSaved || 0));
+  // Get current DOM element or offscreen dummy object
+  if(peer === xows_gui_peer) {
+    chat_main = xows_doc("chat_main");
+  } else {
+    chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+  }
+    
+  chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + (chat_main.scrollSaved || 0));
 }
 
 /**
@@ -390,24 +423,19 @@ function xows_gui_peer_doc_init(peer)
     meta_inpt.innerText = peer.stat ? peer.stat : "";
     xows_gui_peer_doc(peer, "chat_show").dataset.show = peer.show;
     xows_gui_peer_doc(peer, "chat_addr").innerText = "("+peer.addr+")";
-    if(peer.type === XOWS_PEER_OCCU) {
-      let can_subs;
-      if(peer.bare) {
-        const cont = xows_cli_cont_get(peer.bare);
-        can_subs = cont ? (cont.subs < XOWS_SUBS_TO) : true;
-      }
-      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = !can_subs;
-    }
+    if(peer.type === XOWS_PEER_OCCU)
+      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = !xows_cli_can_subscribe(peer);
   }
 
   // Set chat input placeholder
   const placeholder = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
   xows_gui_peer_doc(peer, "chat_inpt").setAttribute("placeholder",placeholder);
 
-  // Initialize scroll parameters
+  // Since DOM element's scroll parameters are not operables in offscreen, we
+  // create a dummy object to operate/save scroll in offscreen context
   xows_gui_peer_scroll_db.set(peer.addr,{scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0});
 
-  // set notification button
+  // Set notification button
   xows_gui_chat_noti_update(peer);
 }
 
@@ -420,18 +448,28 @@ function xows_gui_peer_doc_export(peer)
 {
   // Save chat history scroll parameters
   const chat_main = xows_doc("chat_main");
-  xows_gui_peer_scroll_db.set(peer.addr, {scrollTop:chat_main.scrollTop,
-                                          scrollHeight:chat_main.scrollHeight,
-                                          clientHeight:chat_main.clientHeight,
-                                          scrollSaved:chat_main.scrollSaved || 0});
-
-  // export document elements to offscreen fragment
-  xows_doc_frag_export(peer.addr, "chat_head");
-  xows_doc_frag_export(peer.addr, "chat_hist");
-  xows_doc_frag_export(peer.addr, "chat_panl");
+  
+  const scroll_db = xows_gui_peer_scroll_db.get(peer.addr);
+  
+  scroll_db.scrollTop = chat_main.scrollTop;
+  scroll_db.scrollHeight = chat_main.scrollHeight;
+  scroll_db.clientHeight = chat_main.clientHeight;
+  scroll_db.scrollSaved = chat_main.scrollSaved || 0;
+  
+  /*
+  xows_gui_peer_scroll_db.set(peer.addr,{ scrollTop     :chat_main.scrollTop,
+                                          scrollHeight  :chat_main.scrollHeight,
+                                          clientHeight  :chat_main.clientHeight,
+                                          scrollSaved   :chat_main.scrollSaved || 0});
+  */
+  
+  // Export document elements to offscreen fragment
+  xows_doc_frag_export(peer.addr,"chat_head");
+  xows_doc_frag_export(peer.addr,"chat_hist");
+  xows_doc_frag_export(peer.addr,"chat_panl");
   if(peer.type === XOWS_PEER_ROOM) {
-    xows_doc_frag_export(peer.addr, "room_head");
-    xows_doc_frag_export(peer.addr, "occu_list");
+    xows_doc_frag_export(peer.addr,"room_head");
+    xows_doc_frag_export(peer.addr,"occu_list");
   }
 }
 
@@ -2749,14 +2787,8 @@ function xows_gui_chat_head_update(peer)
     const has_ices = xows_cli_external_has("stun", "turn");
     xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
     xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
-    if(peer.type === XOWS_PEER_OCCU) {
-      let can_subs;
-      if(peer.bare) {
-        const cont = xows_cli_cont_get(peer.bare);
-        can_subs = cont ? (cont.subs < XOWS_SUBS_TO) : true;
-      }
-      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = !can_subs;
-    }
+    if(peer.type === XOWS_PEER_OCCU) 
+      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = !xows_cli_can_subscribe(peer);
   }
 }
 
@@ -3820,7 +3852,7 @@ function xows_gui_chat_hist_onclick(event)
   const mesg_rply = event.target.closest("MESG-RPLY");
   if(mesg_rply) {
     // Highlight replied message
-    xows_gui_hist_mesg_focus(xows_gui_peer, mesg_rply.dataset.ref);
+    xows_gui_hist_mesg_focus(xows_gui_peer, mesg_rply.dataset.id);
     return;
   }
 
@@ -3936,7 +3968,7 @@ function xows_gui_mesg_edit_valid(inpt)
     // Get message reply
     const rply = li_msg.querySelector("MESG-RPLY");
     // Send message correction
-    xows_cli_send_message(xows_gui_peer, inpt_text, li_msg.dataset.id, rply.dataset.ref, rply.dataset.to);
+    xows_cli_send_message(xows_gui_peer, inpt_text, li_msg.dataset.id, rply.dataset.id, rply.dataset.to);
   }
 
   // Close editor
@@ -4055,8 +4087,12 @@ function xows_gui_hist_update(peer, author)
 function xows_gui_hist_mesg_get(peer, id)
 {
   // Get Peer's history <ul> element in fast way
-  const hist_ul = (peer === xows_gui_peer) ? document.getElementById("hist_ul") :
-                                             xows_doc_frag_element_find(peer.addr,"chat_hist","hist_ul");
+  let hist_ul;
+  if(peer === xows_gui_peer) {
+    hist_ul = document.getElementById("hist_ul");
+  } else {
+    hist_ul = xows_doc_frag_element_find(peer.addr,"chat_hist","hist_ul");
+  }
 
   // First search by id attribute
   let li_msg = hist_ul.querySelector("LI-MESG[data-id='"+id+"']");
@@ -4069,10 +4105,7 @@ function xows_gui_hist_mesg_get(peer, id)
       li_msg = hist_ul.querySelector("LI-MESG[data-orid='"+id+"']");
     }
   }
-  /*
-  if(!li_msg) li_msg = hist_ul.querySelector("LI-MESG[data-orid='"+id+"']");
-  if(!li_msg) li_msg = hist_ul.querySelector("LI-MESG[data-szid='"+id+"']");
-  */
+
   return li_msg;
 }
 
@@ -4112,7 +4145,7 @@ function xows_gui_hist_mesg_replace(peer, li_old, li_new)
 {
   // Discard old message
   li_old.hidden = true;
-  li_old.innerHTML = "";
+  //li_old.innerHTML = "";
 
   const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
@@ -4124,7 +4157,7 @@ function xows_gui_hist_mesg_replace(peer, li_old, li_new)
     xows_tpl_mesg_update(li_refs[i].closest("LI-MESG"), peer, null, null, li_new);
 
   // Also check chat input reply reference
-  const chat_rply = xows_gui_peer_doc(peer, "chat_rply");
+  const chat_rply = xows_gui_peer_doc(peer,"chat_rply");
   if(chat_rply.dataset.id === old_ref)
     chat_rply.dataset.id = xows_tpl_mesg_bestref(peer, li_new);
 
@@ -4236,19 +4269,19 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
     }
   }
   
-  let old_li, quo_li;
+  let li_rep, li_rpl;
 
   // Search for corrected message to be discarded
   if(mesg.repl) {
-    old_li = xows_gui_hist_mesg_get(peer, mesg.repl);
+    li_rep = xows_gui_hist_mesg_get(peer, mesg.repl);
     // We ignore correction which are not in visible history or if correction
     // message have no body, in this case this mean message deletion
-    if(!old_li) return;
+    if(!li_rep) return;
   }
 
   // Search for replied message to be referenced
   if(mesg.rpid)
-    quo_li = xows_gui_hist_rply_get(peer, mesg.rpid, mesg.rpto);
+    li_rpl = xows_gui_hist_rply_get(peer, mesg.rpid, mesg.rpto);
 
   // Avoid notifications for correction messages
   if(!mesg.repl) {
@@ -4264,7 +4297,7 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
 
   // Check whether end of history is croped, in this case the new message
   //  must not be appended, we will show it by querying archives
-  if(xows_gui_peer_doc(peer,"hist_end").hidden || old_li) {
+  if(xows_gui_peer_doc(peer,"hist_end").hidden || li_rep) {
 
     const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
@@ -4276,13 +4309,13 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
     }
 
     // Create new message element
-    const msg_li = xows_tpl_mesg_spawn(peer, mesg, wait, hist_ul.lastChild, old_li, quo_li);
+    const li_msg = xows_tpl_mesg_spawn(peer, mesg, wait, hist_ul.lastChild, li_rep, li_rpl);
 
-    // Insert or append message, depending whether ref_li is null
-    if(old_li) {
-      xows_gui_hist_mesg_replace(peer, old_li, msg_li);
+    // Insert or append message, depending whether li_ref is null
+    if(li_rep) {
+      xows_gui_hist_mesg_replace(peer, li_rep, li_msg);
     } else {
-      hist_ul.appendChild(msg_li);
+      hist_ul.appendChild(li_msg);
     }
   }
 
@@ -4401,14 +4434,14 @@ function xows_gui_mam_parse(peer, result, count, complete)
 {
   const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
-  let ref_li = null, prepend = true;
+  let li_ref = null, prepend = true;
 
   // Check whether we must append or prepend received archived messages
   if(result.length && hist_ul.childNodes.length) {
     // We compare time (unix epoch) to ensure last archived message is
     // older (or equal) than the first history message.
     if(hist_ul.firstChild.dataset.time >= result[result.length-1].time) {
-      ref_li = hist_ul.firstChild; //< node to insert messages before
+      li_ref = hist_ul.firstChild; //< node to insert messages before
     } else {
       prepend = false;
     }
@@ -4449,7 +4482,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
     xows_gui_peer_scroll_adjust(peer);
   }
 
-  let old_li, quo_li, pre_li, added = 0;
+  let li_rep, li_rpl, li_prv, added = 0;
 
   const n = result.length;
   for(let i = 0; i < n; ++i) {
@@ -4471,28 +4504,28 @@ function xows_gui_mam_parse(peer, result, count, complete)
 
     // Search for corrected message to be discarded
     if(mesg.repl) {
-      old_li = xows_gui_hist_mesg_get(peer, mesg.repl);
-      if(!old_li) continue; //< ignore correction which are not in visible history
+      li_rep = xows_gui_hist_mesg_get(peer, mesg.repl);
+      if(!li_rep) continue; //< ignore correction which are not in visible history
     } else {
-      old_li = null;
+      li_rep = null;
     }
 
     // Search for reply/quoted message to be referenced
     if(mesg.rpid) {
-      quo_li = xows_gui_hist_rply_get(peer, mesg.rpid, mesg.rpto);
+      li_rpl = xows_gui_hist_rply_get(peer, mesg.rpid, mesg.rpto);
     } else {
-      quo_li = null;
+      li_rpl = null;
     }
 
     // Create new message element
-    const msg_li = xows_tpl_mesg_spawn(peer, mesg, false, pre_li, old_li, quo_li);
+    const li_msg = xows_tpl_mesg_spawn(peer, mesg, false, li_prv, li_rep, li_rpl);
 
-    if(old_li) {
+    if(li_rep) {
       // Message correction is insert after the corrected message
-      xows_gui_hist_mesg_replace(peer, old_li, msg_li);
+      xows_gui_hist_mesg_replace(peer, li_rep, li_msg);
     } else {
-      // Insert or append message, depending whether ref_li is null
-      pre_li = hist_ul.insertBefore(msg_li, ref_li);
+      // Insert or append message, depending whether li_ref is null
+      li_prv = hist_ul.insertBefore(li_msg, li_ref);
     }
 
     // Increase added message count
@@ -4792,15 +4825,21 @@ function xows_gui_chat_rply_set(li_msg)
   const rpid = xows_tpl_mesg_bestref(xows_gui_peer, li_msg);
 
   // Get proper destination address
-  const rpto = (xows_gui_peer.type === XOWS_PEER_CONT) ? 
-                      xows_jid_bare(li_msg.dataset.from) :
-                      li_msg.dataset.from;
+  let rpto;
+  if(xows_gui_peer.type === XOWS_PEER_CONT) {
+    rpto = xows_jid_bare(li_msg.dataset.from);
+  } else {
+    rpto = li_msg.dataset.from;
+  }
   
   // Retrieve message author
-  const peer = (xows_gui_peer.type === XOWS_PEER_ROOM) ? 
-                    xows_cli_occu_get_or_new(xows_gui_peer, rpto, li_msg.dataset.ocid) :
-                    xows_gui_peer;
-  
+  let peer;
+  if(xows_gui_peer.type === XOWS_PEER_ROOM) {
+    peer = xows_cli_occu_get_or_new(xows_gui_peer, rpto, li_msg.dataset.ocid);
+  } else {
+    peer = xows_gui_peer;
+  }
+
   xows_doc("rply_name").innerText = peer.name;
   chat_rply.dataset.to = rpto;
   chat_rply.dataset.id = rpid;

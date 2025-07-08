@@ -1565,7 +1565,7 @@ function xows_doc_prof_open(peer, onclick)
   }
   
   // Enable or disable contact subscription button
-  xows_doc_show("prof_addc", cont ? (cont.subs < XOWS_SUBS_TO) : false);
+  xows_doc_show("prof_addc", xows_cli_can_subscribe(cont));
   
   // show the 'void' screen with dark filter
   const src_void = xows_doc("scr_void");

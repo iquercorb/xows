@@ -274,13 +274,13 @@ function xows_cli_cont_rem(cont)
 /**
  * Returns Contact Peer object with the specified JID
  *
- * @param   {string}    jid       Contact JID to find
+ * @param   {string}    addr      Contact JID to find
  *
  * @return  {object}    Contact object or null if not found
  */
-function xows_cli_cont_get(jid)
+function xows_cli_cont_get(addr)
 {
-  return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(jid));
+  return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(addr));
 }
 
 /**
@@ -295,7 +295,7 @@ function xows_cli_cont_get(jid)
  *
  * @return  {string}    Contact best full JID or Bare JID if not found.
  */
-function xows_cli_cont_best_addr(peer)
+function xows_cli_best_resource(peer)
 {
   if(peer.type === XOWS_PEER_OCCU) 
     return peer.bare ? peer.bare : peer.addr;
@@ -395,13 +395,13 @@ function xows_cli_room_rem(room)
 /**
  * Returns the Room object with the specified JID
  *
- * @param   {string}    jid       Room JID to find
+ * @param   {string}    addr      Room JID to find
  *
  * @return  {object}    Room object or null if not found
  */
-function xows_cli_room_get(jid)
+function xows_cli_room_get(addr)
 {
-  return xows_cli_room.find(xows_cli_test_addr, xows_jid_bare(jid));
+  return xows_cli_room.find(xows_cli_test_addr, xows_jid_bare(addr));
 }
 /* -------------------------------------------------------------------
  * Client API - Internal data - Room occupant PEER Objects
@@ -679,29 +679,33 @@ function xows_cli_peer_iden(peer)
 }
 
 /**
- * Check whether user already subscribed the specified peer, which can be
- * either room, occupant or contact.
+ * Check whether user/client can subscribe or send sucribe request to the 
+ * specified peer.
+ * 
+ * This function returns true if client is not already subscribed and
+ * peer provide a valid contact JID.
  *
  * @param   {object}    peer      Peer object to check
  *
  * @return  {boolean}   True if user already subscribed to contact
  */
-function xows_cli_subscribed(peer)
+function xows_cli_can_subscribe(peer)
 {
-  if(peer.type === XOWS_PEER_ROOM) {
-    // TODO
-  } else {
+  switch(peer.type)
+  {
+  case XOWS_PEER_CONT: 
+    return !(peer.subs & XOWS_SUBS_TO);
     
-    let cont;
-    // Peer may be Contact or Occupant
-    if(peer.type === XOWS_PEER_OCCU) {
-      // If Occupant has "bare" defined, retrieve Contact
-      cont = peer.bare ? xows_cli_cont_get(peer.bare) : null;
-    } else {
-      cont = peer;
-    }
-
-    return cont && (cont.subs >= XOWS_SUBS_TO);
+  case XOWS_PEER_OCCU: {
+      if(peer.bare !== null) {
+        const cont = xows_cli_cont.find(xows_cli_test_addr, peer.bare);
+        if(cont) {
+          return !(cont.subs & XOWS_SUBS_TO);
+        } else {
+          return true;
+        }
+      }
+    } break;
   }
   
   return false;
@@ -4049,7 +4053,7 @@ function xows_cli_jing_initiate_sdp(peer, sdp)
     return;
 
   // Select most suitable full JID
-  peer.call = xows_cli_cont_best_addr(peer);
+  peer.call = xows_cli_best_resource(peer);
 
   // Send SDP offer via Jingle
   const sid = xows_xmp_jing_initiate_sdp(peer.call, sdp, xows_cli_jing_result);
