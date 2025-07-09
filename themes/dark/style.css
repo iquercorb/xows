@@ -103,7 +103,7 @@
   --show-away:        #E0AF46;  /* Away / AFK */
   --show-on:          #2BAC53;  /* Online */
   --show-chat:        #33A5D5;  /* Available for chat */
-  
+
   /* Message coloring */
   --focus-line:       #EDC42F;  /* Focused message border/outline */
   --focus-base:       #42403B;  /* Focused message background */
@@ -396,7 +396,6 @@ peer-list.LOADING ul {
   color: #CCC;
   background-color: var(--link-greyd);
 }
-
 .btn-abort {
   margin: 0 10px 10px 0;
   min-width: 120px; height: 32px;
@@ -421,6 +420,13 @@ peer-list.LOADING ul {
 }
 .btn-action:hover {
   background-color: var(--link-hover);
+}
+.btn-action[disabled],
+.btn-action[disabled]:hover
+{
+  color: var(--bttn-text);
+  background-color: var(--bttn-base);
+  opacity: .6;
 }
 /* ------------------------------------------------------------------ */
 /* Button - Action (Common) */
@@ -671,7 +677,7 @@ menu-radio {
   background-repeat: no-repeat;
   background-position: center;
 }
-menu-radio[data-on="true"]::before  { 
+menu-radio[data-on="true"]::before  {
   /*background-image: url("images/radio_on.svg");*/
   content:"";
   display: inline-block;
@@ -971,6 +977,7 @@ col-page {
   color: var(--text-tone1);
   background-color: var(--base-tone0);
   transition: bottom 300Ms cubic-bezier(.47,1.64,.41,.8);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
 }
 #over_popu[hidden] {
   display: table !important;
@@ -1106,6 +1113,7 @@ popu-acts {
   background-color: var(--base-tone4);
   box-shadow: 0 0 20px rgba(0,0,0,0.3);
   border: 1px solid var(--base-tone2);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
 }
 dbox-head {
   display: inline-block;
@@ -1194,8 +1202,8 @@ dbox-icon.STYL-ASK {
 /* ------------------------------------------------------------------ */
 /* Message Dialog-Box */
 /* ------------------------------------------------------------------ */
-#mbox_mesg {
-  font-size: 0.95em;
+#mbox_text {
+  font-size: 1.1em;
   color: var(--text-tone1);
 }
 
@@ -1285,46 +1293,36 @@ dbox-icon.STYL-ASK {
   font-weight: bold;
   font-size: 0.95em;
 }
-.prof-head .btn-action {
-  min-width: 80px;
+#over_prof .btn-action {
+  float: right;
+  height: 30px;
+  margin-top: 3px;
+  margin-right: 2px;
+  min-width: 135px;
 }
-peer-badg {
+prof-badg {
   display: inline-block;
   font-size: 0.85em;
-  margin-top: 8px;
+  margin-top: 4px;
   text-align: center;
-  padding: 2px;
+  padding: 5px;
   min-width: 140px;
   background-color: var(--base-tone5);
   border-radius: 10px;
   border: 1px solid var(--text-tone4);
   float: right;
 }
-peer-badg[data-subs="1"] { 
+prof-badg[data-subs="0"],
+prof-badg[data-subs="1"],
+prof-badg[data-subs="2"] {
   color: var(--text-tone0);
-  background-color: #FF9939; 
-  border: 1px solid #FFC690;
+  background-color: #E48B37;
+  border: 1px solid #FDB470;
 }
-peer-badg[data-subs="2"] { 
-  color: var(--text-tone0);
-  background-color: #FF9939; 
-  border: 1px solid #FFC690;
-}
-peer-badg[data-subs="3"] { 
+prof-badg[data-subs="3"] {
   color: var(--text-tone0);
   background-color: #56B763;
   border: 1px solid #91E59D;
-}
-/* ------------------------------------------------------------------ */
-/* Channel initialization Popup Dialog */
-/* ------------------------------------------------------------------ */
-#pbox_conf {
-
-}
-#pbox_conf p {
-  font-size: 1.0em;
-  margin: 10px 5px 30px 5px;
-  color: var(--text-tone1);
 }
 /* ------------------------------------------------------------------ */
 /* Dialog Page - columns layout */
@@ -1867,7 +1865,7 @@ li-peer.PEER-ROOM peer-avat {
 /* ------------------------------------------------------------------ */
 #user_panl {
   background-color: var(--base-tone2);
-  padding: 4px 4px 4px 2px;
+  padding: 4px;
   height: 78px;
 }
 #self_name {
@@ -2531,13 +2529,13 @@ li-mesg.MENTION {
   border-color: var(--highl-line);
   background-color: var(--highl-base);
   transition: background-color 200ms ease;
-  transition: border-color 200ms ease; 
+  transition: border-color 200ms ease;
 }
 li-mesg.FOCUS {
   border-color: var(--focus-line);
   background-color: var(--focus-base);
   transition: background-color 200ms ease;
-  transition: border-color 200ms ease; 
+  transition: border-color 200ms ease;
 }
 mesg-wrap {
   flex: 1;
@@ -2789,7 +2787,7 @@ rply-avat {
   background-size: cover;
   background-position: center;
   border-radius: 50%;
-  margin: 0; 
+  margin: 0;
   vertical-align: middle;
 }
 rply-from {
@@ -2810,7 +2808,7 @@ rply-body {
 mesg-rply.MESG-FAIL {
   pointer-events: none;
 }
-.MESG-FAIL rply-avat, 
+.MESG-FAIL rply-avat,
 .MESG-FAIL rply-from {
   display: none;
 }
@@ -3075,7 +3073,7 @@ button.trsh-bt-abort {
   }
 }
 #chat_panl {
-  position: absolute; bottom: 0px; 
+  position: absolute; bottom: 0px;
   width: 100%;
 }
 /* ------------------------------------------------------------------ */
@@ -3155,7 +3153,7 @@ button.trsh-bt-abort {
   background-image: url("images/cancel.svg");
   opacity: 0.7;
   padding: 0;
-} 
+}
 #rply_clos:hover {
   opacity: 1;
 }
@@ -3679,7 +3677,7 @@ chat-inpt {
   border: 5px solid var(--base-tone2);
   scrollbar-color: var(--base-tone0) transparent;
   scrollbar-width: initial;
-} 
+}
 #page_muca ul::-webkit-scrollbar-thumb {
   background-color: var(--base-tone0);
   border-color: var(--base-tone3);
@@ -3783,7 +3781,7 @@ memb-radio {
 memb-radio:hover {
   color: var(--text-tone0);
 }
-memb-radio[data-on="true"]::before  { 
+memb-radio[data-on="true"]::before  {
   content:"";
   position: absolute;
   top: 7px; left: 3px;

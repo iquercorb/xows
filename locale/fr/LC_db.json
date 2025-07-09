@@ -98,8 +98,8 @@
   "Contacts":
   "Contacts",
 
-  "Add a contact":
-  "Ajouter un contact",
+  "Subscribes to contact":
+  "S'abonner au contact",
 
   "Authorized":
   "Autorisés",
@@ -115,13 +115,13 @@
 
   "Authorization pending":
   "Autorisation en attente",
-  
+
   "Remote server not found":
   "Serveur distant introuvable",
-  
+
   "Server error":
   "Erreur serveur",
-  
+
   "Channels":
   "Salons",
 
@@ -139,10 +139,10 @@
 
   "Private Channels":
   "Salons privés",
-  
+
   "Private messages":
   "Messages privés",
-  
+
   "Room occupant":
   "Occupant de Salon",
 
@@ -226,73 +226,100 @@
 
   "Add an emoji":
   "Ajouter un emoji",
-  
+
   "Profil":
   "Profile",
-  
+
   "Send a message":
   "Envoyer un message",
-  
+
   "Contact profile":
   "Profile de contact",
   
-  "Affiliation to current Chatoom":
-  "Affiliation au Salon actuel",
+  "Subscribe":
+  "S'abonner",
   
-  "Role in current Chatoom":
-  "Rôle dans le Salon actuel",
+  "Pending...":
+  "En attente...",
+
+  "This user have no status message":
+  "Cet utilisateur n'a pas de message d'etat",
   
+  "Contact subscription":
+  "Abonnement au contact",
+
+  "Mutual":
+  "Mutuel",
+
+  "Pending":
+  "En attente",
+
+  "Unavailable":
+  "Indisponible",
+  
+  "Affiliation to Channel":
+  "Affiliation au Salon",
+
+  "Role in Channel":
+  "Rôle dans le Salon",
+
   "Affiliation":
   "Affiliation",
-  
+
   "Owner":
   "Propriétaire",
-  
+
   "Administrator":
   "Administrateur",
-  
+
   "Member":
   "Membre",
-  
+
   "Unaffiliated":
   "Aucune",
-  
+
   "Role":
   "Rôle",
-  
+
   "Moderator":
   "Modérateur",
-  
+
   "Participant":
   "Participant",
-  
+
   "Visitor":
   "Visiteur",
-  
+
   "Kick":
   "Expulser",
-  
+
   "Ban":
   "Bannir",
-  
+
   "Occupants":
   "Occupants",
-
-  "Change Role of ":
-  "Changer le Role de ",
   
-  "Kick occupant ":
-  "Expulser l'occupant ",
+  "Change occupant role":
+  "Changer le role de l'occupant",
   
-  "Change Affiliation of ":
-  "Changer l'Affiliation de ",
+  "Assign the Channel role":
+  "Assigner le rôle de Salon",
 
-  "Ban occupant ":
-  "Bannir l'occupant ",
-
-  "to":
-  "à",
+  "Kick occupant":
+  "Expulser l'occupant",
   
+  "Change occupant affiliation":
+  "Changer l'affiliation de l'occupant",
+  
+  "Grant Channel affiliation":
+  "Accorder l'affiliation de Salon",
+
+  "Ban occupant":
+  "Bannir l'occupant",
+
+  "to occupant":
+  "à l'occupant",
+
   "Add this Contact":
   "Ajouter ce Contact",
 
@@ -304,7 +331,7 @@
 
   "Join":
   "Rejoindre",
-  
+
   "Channel initialization":
   "Initialization du Salon",
 
@@ -316,43 +343,43 @@
 
   "Configure":
   "Configurer",
+  
+  "You were banned from the Channel":
+  "Vous avez été bannis du Salon",
+  
+  "You were kicked from the Channel":
+  "Vous avez été expulsé du Salon",
+  
+  "Rules changes caused you to leave the Channel":
+  "Un changement de règles vous a fait sortir du Salon",
+  
+  "Server error caused you to leave the Channel":
+  "Une erreur de server vous a fait sortir du Salon",
+  
+  "Revoke contact subscription":
+  "Révoquer l'abonnement au contact",
 
-  "Request subscription authorisation":
-  "Faire une demande d'autorisation d'abonnement",
-
-  "Allow contact subscription ?":
-  "Autoriser l'abonnement du contact ?",
-
+  "Do you really want to remove contact and revoke subscription authorization ?":
+  "Souhaitez-vous vraiment supprimer le contact et révoquer l'autorisation d'abonnement ?",
+  
+  "Do you really want to remove contact and abort subscription authorization request ?":
+  "Souhaitez-vous vraiment supprimer le contact et annuler la demande d'autorisation d'abonnement ?",
+  
+  "Contact subscription request":
+  "Demande d'abonnement d'un contact",
+  
+  "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
+  "Un nouveau contact demande une autorisation d'abonnement. Voulez-vous l'autoriser et ajouter ce contact ?",
+  
   "Allow":
   "Autoriser",
 
   "Deny":
   "Refuser",
 
-  "New authorization request was sent":
-  "Une nouvelle demande d'autorisation a été envoyée",
+  "New subscription authorization request was sent":
+  "Une nouvelle demande d'autorisation d'abonnement a été envoyée",
 
-  "Add contact and request authorisation ?":
-  "Ajouter le contact et faire une demande d'autorisation ?",
-
-  "Remove contact and revoke authorization ?":
-  "Supprimer le contact et révoquer l'autorisation ?",
-  
-  "Subscription with contact":
-  "Abonnement avec le contact",
-  
-  "Mutual":
-  "Mutuel",
-  
-  "Accorded":
-  "Accordé",
-  
-  "Pending":
-  "En attente",
-  
-  "None":
-  "Aucun",
-  
   "Send a message to":
   "Envoyer un message à",
 
@@ -391,13 +418,13 @@
 
   "Set Channel subject...":
   "Définir le sujet du salon...",
-  
+
   "Add Channel to bookmarks ?":
   "Ajouter le Salon aux favoris ?",
-  
+
   "Add Bookmark":
   "Ajouter aux favoris",
-  
+
   "Channel configuration":
   "Configuration du salon",
 
@@ -436,10 +463,10 @@
 
   "Password":
   "Mot de passe",
-  
+
   "Enter a password...":
   "Entrez un mot de passe",
-  
+
   "A password-protected Channel requires to provide a password to join it":
   "Un Salon protégé par mot de passe nécessite de fournir un mot de passe pour le rejoindre",
 
@@ -490,16 +517,16 @@
 
   "Stores messages in persistent way using Message Archive Management":
   "Stocke les messages de manière persistante à l'aide de Message Archive Management",
-  
+
   "Channel administration":
   "Administration du Salon",
-  
+
   "List is empty":
   "La liste est vide",
-  
+
   "Banned users":
   "Utilisateurs bannis",
-  
+
   "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
   "Les utilisateurs bannis ne sont pas autorisés à rejoindre le Salon ni à s'y inscrire. Vous pouvez annuler le bannissement d'un utilisateur afin qu'il puisse à nouveau rejoindre le Salon et s'y inscrire si les règles du serveur le permettent.",
 
@@ -508,7 +535,7 @@
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
   "L'affiliation permet de spécifier la liste des utilisateurs autorisés à accéder à un Salon réservé aux membres, à lui accorder le statut d'administrateur ou à en devenir propriétaire. Un utilisateur non-membre peut rejoindre le Salon tant qu'il n'est pas réservé aux membres.",
-  
+
   "User profile":
   "Profil d'utilisateur",
 
@@ -550,7 +577,7 @@
 
   "Add":
   "Ajouter",
-  
+
   "Enable or disable the camera":
   "Activer ou désactiver la caméra",
 
@@ -613,22 +640,19 @@
 
   "Reply to":
   "Répondre à",
-  
+
   "The message is unreachable":
   "Le message est inaccessible",
-  
+
   "The message was deleted":
   "Le message a été supprimé",
-  
-  "This user have no status message":
-  "Cet utilisateur n'a pas de message d'etat",
-  
+
   "Do you really want to disconnect current session ?":
   "Voulez-vous vraiment vous déconnecter de la session actuelle ?",
-  
+
   "has left the conversation":
   "a quitté la conversation",
-  
+
   "joined the conversation":
   "a rejoint la conversation"
 }

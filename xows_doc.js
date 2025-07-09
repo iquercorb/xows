@@ -295,7 +295,7 @@ function xows_doc_frag_element(slot, element)
 {
   if(xows_doc_frag_db.has(slot))
     return xows_doc_frag_db.get(slot).get(element);
-  
+
   return null;
 }
 
@@ -419,7 +419,7 @@ function xows_doc_init(onready)
   xows_doc_listener_add(chat_panl,              "paste",    xows_gui_chat_inpt_onpaste, false); //< need preventDefault()
   xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
   xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
-  
+
   // Room Frame
   xows_doc_listener_add(xows_doc("room_head"),  "click",    xows_gui_room_head_onclick);
   xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);
@@ -559,7 +559,7 @@ function xows_doc_popu_close()
   xows_doc_listener_rem(xows_doc("popu_close"), "click", xows_doc_popu_close);
   xows_doc_listener_rem(xows_doc("popu_abort"), "click", xows_doc_popu_onabort);
   xows_doc_listener_rem(xows_doc("popu_valid"), "click", xows_doc_popu_onvalid);
-  
+
   // reset references
   xows_doc_popu_param.onabort = null;
   xows_doc_popu_param.onvalid = null;
@@ -579,9 +579,9 @@ function xows_doc_popu_close()
  */
 function xows_doc_popu_onabort(event)
 {
-  if(xows_doc_popu_param.onabort) 
+  if(xows_doc_popu_param.onabort)
     xows_doc_popu_param.onabort();
-  
+
   xows_doc_popu_close(); //< Close message box dialog
 }
 
@@ -592,9 +592,9 @@ function xows_doc_popu_onabort(event)
  */
 function xows_doc_popu_onvalid(event)
 {
-  if(xows_doc_popu_param.onvalid) 
+  if(xows_doc_popu_param.onvalid)
     xows_doc_popu_param.onvalid();
-  
+
   xows_doc_popu_close(); //< Close message box dialog
 }
 
@@ -647,12 +647,12 @@ function xows_doc_popu_open(style, text, onvalid, valid, onabort, abort, modal)
     xows_doc_cls_add("scr_void", "VOID-DARK");
     xows_doc_show("scr_void");
   }
-  
+
   // Add event listeners
   xows_doc_listener_add(xows_doc("popu_close"), "click", xows_doc_popu_close);
   xows_doc_listener_add(xows_doc("popu_abort"), "click", xows_doc_popu_onabort);
   xows_doc_listener_add(xows_doc("popu_valid"), "click", xows_doc_popu_onvalid);
-  
+
   // Show popup dialog
   xows_doc_show("over_popu");
 }
@@ -730,7 +730,7 @@ function xows_doc_ibox_close()
 {
   if(xows_doc_hidden("over_ibox"))
     return;
-    
+
   // Remove event listeners
   xows_doc_listener_rem(xows_doc("ibox_close"), "click", xows_doc_ibox_close);
   xows_doc_listener_rem(xows_doc("ibox_abort"), "click", xows_doc_ibox_onabort);
@@ -746,14 +746,14 @@ function xows_doc_ibox_close()
     // Remove keyboard input event listener
     xows_doc_listener_rem(document, "keyup", xows_doc_ibox_onkey);
   }
-  
+
   // remove 'dark' filter and hide 'void' screen
   xows_doc_cls_rem("scr_void", "VOID-DARK");
   xows_doc_hide("scr_void");
 
   // hide message box stuff
   xows_doc_hide("over_ibox");
-  
+
   // Disable modal routine
   xows_doc_ibox_param.modal = false;
 }
@@ -766,7 +766,7 @@ function xows_doc_ibox_close()
 function xows_doc_ibox_oninput(event)
 {
   const value = xows_doc("ibox_input").value;
-  
+
   if(xows_doc_ibox_param.oninput) {
     xows_doc_ibox_param.oninput(value);
   } else {
@@ -782,7 +782,7 @@ function xows_doc_ibox_oninput(event)
  */
 function xows_doc_ibox_onabort(event)
 {
-  if(xows_doc_ibox_param.onabort) 
+  if(xows_doc_ibox_param.onabort)
     xows_doc_ibox_param.onabort();
 
   xows_doc_ibox_close();
@@ -795,7 +795,7 @@ function xows_doc_ibox_onabort(event)
  */
 function xows_doc_ibox_onvalid(event)
 {
-  if(xows_doc_ibox_param.onvalid) 
+  if(xows_doc_ibox_param.onvalid)
     xows_doc_ibox_param.onvalid(xows_doc("ibox_input").value);
 
   xows_doc_ibox_close();
@@ -834,7 +834,7 @@ function xows_doc_ibox_onkey(event)
 function xows_doc_ibox_open(head, hint, phold, value, onvalid, valid, onabort, abort, oninput, modal)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-  
+
   // Checks for already opened Input Box
   if(xows_doc_ibox_modal()) {
     return; //< do not close modal ones
@@ -853,19 +853,19 @@ function xows_doc_ibox_open(head, hint, phold, value, onvalid, valid, onabort, a
   xows_doc_ibox_param.onabort = onabort;
   xows_doc_ibox_param.onvalid = onvalid;
   xows_doc_ibox_param.oninput = oninput;
-  
+
   // Set valid and abort button text
   if(!valid) valid = "Apply";
   if(!abort) abort = "Cancel";
   xows_doc("ibox_valid").innerText = xows_l10n_get(valid);
   xows_doc("ibox_abort").innerText = xows_l10n_get(abort);
-  
+
   // Reset error text
   xows_doc("ibox_error").innerText = "";
-  
+
   // enable or disable modal mode
   xows_doc_ibox_param.modal = modal;
-  
+
   // if 'modal' show the 'void screen' to catch mouse clicks
   if(modal) {
     // Add event listener for keyboard input
@@ -879,15 +879,15 @@ function xows_doc_ibox_open(head, hint, phold, value, onvalid, valid, onabort, a
 
   // Call to oninput to initialize button status
   xows_doc_ibox_oninput();
-  
+
   // Add event listeners
   xows_doc_listener_add(xows_doc("ibox_close"), "click", xows_doc_ibox_onabort);
   xows_doc_listener_add(xows_doc("ibox_abort"), "click", xows_doc_ibox_onabort);
   xows_doc_listener_add(xows_doc("ibox_valid"), "click", xows_doc_ibox_onvalid);
   xows_doc_listener_add(xows_doc("ibox_input"), "input", xows_doc_ibox_oninput);
-  
+
   xows_doc_show("over_ibox");
-  
+
   // Set input focus
   ibox_input.focus();
 }
@@ -942,18 +942,18 @@ function xows_doc_mbox_close()
   xows_doc_listener_rem(xows_doc("mbox_close"), "click", xows_doc_mbox_onabort);
   xows_doc_listener_rem(xows_doc("mbox_abort"), "click", xows_doc_mbox_onabort);
   xows_doc_listener_rem(xows_doc("mbox_valid"), "click", xows_doc_mbox_onvalid);
-  
+
   // reset callback functions
   xows_doc_mbox_param.onvalid = null;
   xows_doc_mbox_param.onabort = null;
-  
+
   // Hide message box
   xows_doc_hide("over_mbox");
-  
+
   // Remove 'dark' filter and hide 'void' screen
   xows_doc_cls_rem("scr_void", "VOID-DARK");
   xows_doc_hide("scr_void");
-  
+
   // Disable modal routine
   xows_doc_mbox_param.modal = false;
 }
@@ -965,7 +965,7 @@ function xows_doc_mbox_onvalid()
 {
   if(xows_doc_mbox_param.onvalid)
     xows_doc_mbox_param.onvalid();
-  
+
   xows_doc_mbox_close();
 }
 
@@ -976,13 +976,13 @@ function xows_doc_mbox_onabort()
 {
   if(xows_doc_mbox_param.onabort)
     xows_doc_mbox_param.onabort();
-    
+
   xows_doc_mbox_close();
 }
 
 /**
  * Message Dialog-Box open
- * 
+ *
  * @param   {number}    style     Message box style or null for default
  * @param   {string}    head      Dialog head title
  * @param   {string}    mesg      Dialog message text
@@ -992,17 +992,17 @@ function xows_doc_mbox_onabort()
  * @param   {string}   [abort]    Optional abort button text or null to hide
  * @param   {boolean}  [modal]    Optional open in 'modal' dialog mode
  */
-function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, modal)
+function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, modal = true)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-  
+
   // Checks for already opened Input Box
   if(xows_doc_mbox_modal()) {
     return; //< do not close modal ones
   } else {
     xows_doc_mbox_close();
   }
-  
+
   let cls;
   switch(style)
   {
@@ -1012,14 +1012,14 @@ function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, m
   case XOWS_STYL_ASK: cls = "STYL-ASK"; break;
   }
   xows_doc("mbox_icon").classList = cls;
-  
+
   xows_doc("mbox_head").innerHTML = xows_l10n_get(head);
   xows_doc("mbox_text").innerHTML = xows_l10n_get(mesg);
-  
+
   // set callbacks
   xows_doc_mbox_param.onabort = onabort;
   xows_doc_mbox_param.onvalid = onvalid;
-  
+
   // Set valid and abort button text
   if(!valid) valid = "OK";
   xows_doc("mbox_valid").innerText = xows_l10n_get(valid);
@@ -1030,23 +1030,23 @@ function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, m
   } else {
     xows_doc_hide("mbox_abort");
   }
-  
+
   // enable or disable modal mode
   xows_doc_mbox_param.modal = modal;
-  
+
   if(modal) {
     // show the 'void' screen with dark filter
     xows_doc_cls_add("scr_void", "VOID-DARK");
     xows_doc_show("scr_void");
   }
-  
+
   //xows_doc_show("mbox_close", !modal);
-  
+
   // Add event listeners
   xows_doc_listener_add(xows_doc("mbox_close"), "click", xows_doc_mbox_close);
   xows_doc_listener_add(xows_doc("mbox_abort"), "click", xows_doc_mbox_onabort);
   xows_doc_listener_add(xows_doc("mbox_valid"), "click", xows_doc_mbox_onvalid);
-  
+
   // show the Popup Dialog main frame
   xows_doc_show("over_mbox");
 }
@@ -1066,7 +1066,7 @@ function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, m
  * @return {boolean}    True if dialog 'is' modal, false otherwise
  */
 function xows_doc_mbox_modal()
-{ 
+{
   if(!xows_doc_hidden("over_mbox")) {
     if(xows_doc_mbox_param.modal) {
       xows_doc_blink_bg("over_mbox", 600); //< blinking Message box
@@ -1315,7 +1315,7 @@ function xows_doc_menu_close()
 function xows_doc_menu_toggle(button, dropid, onclick, onshow)
 {
   const param = xows_doc_menu_param;
-  
+
   // Check whether menu is already open
   if(param.button) {
 
@@ -1329,12 +1329,12 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow)
 
     if(!button || !drop)
       return;
-    
+
     // Set parameters
     param.button = button;
     param.drop = drop;
     param.onclick = onclick;
-    
+
     // show the 'void' screen to catch clicks outside menu
     xows_doc_show("scr_void");
 
@@ -1343,11 +1343,11 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow)
 
     // Show menu drop element
     drop.hidden = false;
-    
+
     // Call optionnal onshow function
-    if(xows_isfunc(onshow)) 
+    if(xows_isfunc(onshow))
       onshow(button, drop);
-    
+
     // Focus on button element
     button.focus();
   }
@@ -1374,7 +1374,7 @@ function xows_doc_view_open(media)
 
     // show the media overlay element
     xows_doc_show("over_view");
-    
+
     // show the 'void' screen with dark filter
     xows_doc_cls_add("scr_void", "VOID-DARK");
     xows_doc_show("scr_void");
@@ -1443,7 +1443,7 @@ function xows_doc_prof_onclick(event)
     xows_doc_prof_close();
     return;
   }
-  
+
   if(xows_doc_prof_param.onclick)
     xows_doc_prof_param.onclick(xows_doc_prof_param.peer, event.target);
 }
@@ -1458,7 +1458,7 @@ function xows_doc_prof_close()
   // Prevent hidding void-sreen
   if(over_prof.hidden)
     return;
-    
+
   // Remove "click" event listener
   xows_doc_listener_rem(over_prof,"click",xows_doc_prof_onclick);
 
@@ -1469,9 +1469,119 @@ function xows_doc_prof_close()
   // remove 'dark' filter and hide 'void' screen
   xows_doc_cls_rem("scr_void", "VOID-DARK");
   xows_doc_hide("scr_void");
-  
+
   // hide popop
   over_prof.hidden = true;
+}
+
+/**
+ * Contact Profile Popup Update
+ */
+function xows_doc_prof_update()
+{
+  const peer = xows_doc_prof_param.peer;
+  
+  const over_prof = xows_doc("over_prof");
+  
+  // Fill common peer informations
+  over_prof.querySelector("PEER-NAME").innerText = peer.name;
+  over_prof.querySelector("PEER-ADDR").innerText = peer.bare ? peer.bare : "";
+  over_prof.querySelector("BADG-SHOW").dataset.show = peer.show || 0;
+  // Set proper class for avatar
+  over_prof.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(peer.avat);
+
+  // Set State message or keep placeholder
+  const peer_meta = over_prof.querySelector("PEER-META");
+  peer_meta.innerText = peer.stat ? peer.stat : "";
+  peer_meta.className = peer.stat ? "" : "PLACEHOLD";
+
+  let cont;
+  const prof_subs = xows_doc("prof_subs");
+  const prof_addc = xows_doc("prof_addc");
+
+  // Set Occupant informations
+  if(peer.type === XOWS_PEER_OCCU) {
+    
+    if(peer.bare) 
+      cont = xows_cli_cont_get(peer.bare);
+
+    let affi_txt;
+    switch(peer.affi)
+    {
+    case XOWS_AFFI_OWNR: affi_txt = "Owner"; break;
+    case XOWS_AFFI_ADMN: affi_txt = "Administrator"; break;
+    case XOWS_AFFI_MEMB: affi_txt = "Member"; break;
+    default: affi_txt = "Unaffiliated"; break;
+    }
+
+    const prof_affi = xows_doc("prof_affi");
+    prof_affi.innerText = xows_l10n_get(affi_txt);
+    prof_affi.dataset.affi = peer.affi;
+
+    let role_txt;
+    switch(peer.role)
+    {
+    case XOWS_ROLE_MODO: role_txt = "Moderator"; break;
+    case XOWS_ROLE_PART: role_txt = "Participant"; break;
+    default: role_txt = "Visitor"; break;
+    }
+
+    const prof_role = xows_doc("prof_role");
+    prof_role.innerText = xows_l10n_get(role_txt);
+    prof_role.dataset.role = peer.role;
+
+    // Check if we can get Contact object
+    if(peer.bare)
+      cont = xows_cli_cont_get(peer.bare);
+
+    xows_doc_show("prof_occu");
+  
+  } else {
+    
+    cont = peer;
+    xows_doc_hide("prof_occu");
+  }
+  
+  if(!peer.self) {
+    
+    let subs_txt;
+    let subs_lvl = 0;
+
+    if(cont) {
+      prof_subs.hidden = false; //< Show subscription level
+      prof_addc.hidden = true;  //< Hide subscribe button
+      switch(cont.subs)
+      {
+      case XOWS_SUBS_BOTH: subs_txt = "Mutual"; break;
+      default:             subs_txt = "Pending"; break;
+      }
+      subs_lvl = cont.subs;
+    } else {
+      const subs_stat = xows_gui_peer_subs_status(peer);
+      prof_subs.hidden = (subs_stat < 1); //< Show/hide subscription level
+      prof_addc.hidden = (subs_stat > 0); //< Show/hide subscribe button
+      switch(subs_stat)
+      {
+      case 1: 
+        subs_txt = "Pending"; 
+        subs_lvl = 1; 
+        break;
+      case 2: 
+        subs_txt = "Unavailable"; 
+        subs_lvl = -1; 
+        break;
+      }
+    }
+    
+    prof_subs.innerText = xows_l10n_get(subs_txt);
+    prof_subs.dataset.subs = subs_lvl;
+    
+    xows_doc_show("prof_cont");
+    
+  } else {
+    
+    xows_doc_hide("prof_cont");
+  }
 }
 
 /**
@@ -1486,99 +1596,17 @@ function xows_doc_prof_open(peer, onclick)
   xows_doc_prof_param.peer = peer;
   xows_doc_prof_param.onclick = onclick;
 
-  const over_prof = xows_doc("over_prof");
-  
-  // Fill common peer informations
-  over_prof.querySelector("PEER-NAME").innerText = peer.name;
-  over_prof.querySelector("PEER-ADDR").innerText = peer.bare ? peer.bare : "";
-  over_prof.querySelector("BADG-SHOW").dataset.show = peer.show || 0;
-  // Set proper class for avatar
-  over_prof.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(peer.avat);
-  
-  // Set State message or keep placeholder
-  const peer_meta = over_prof.querySelector("PEER-META");
-  peer_meta.innerText = peer.stat ? peer.stat : "";
-  peer_meta.className = peer.stat ? "" : "PLACEHOLD";
-  
-  let cont;
-  
-  // Set Occupant informations
-  const prof_occu = xows_doc("prof_occu");
-  if(peer.type === XOWS_PEER_OCCU) {
-    
-    prof_occu.hidden = false;
-    
-    let affi_txt; 
-    switch(peer.affi) 
-    {
-    case XOWS_AFFI_OWNR: affi_txt = "Owner"; break;
-    case XOWS_AFFI_ADMN: affi_txt = "Administrator"; break;
-    case XOWS_AFFI_MEMB: affi_txt = "Member"; break;
-    default: affi_txt = "Unaffiliated"; break;
-    }
-    
-    const prof_affi = xows_doc("prof_affi");
-    prof_affi.innerText = xows_l10n_get(affi_txt);
-    prof_affi.dataset.affi = peer.affi;
-    
-    let role_txt; 
-    switch(peer.role) 
-    {
-    case XOWS_ROLE_MODO: role_txt = "Moderator"; break;
-    case XOWS_ROLE_PART: role_txt = "Participant"; break;
-    default: role_txt = "Visitor"; break;
-    }
-    
-    const prof_role = xows_doc("prof_role");
-    prof_role.innerText = xows_l10n_get(role_txt);
-    prof_role.dataset.role = peer.role;
-    
-    // Check if we can get Contact object
-    if(peer.bare) 
-      cont = xows_cli_cont_get(peer.bare);
-
-  } else {
-    
-    prof_occu.hidden = true;
-    
-    // Peer is a Contact object
-    cont = peer;
-  }
-  
-  const prof_cont = xows_doc("prof_cont");
-  if(cont && !cont.self) {
-    
-    prof_cont.hidden = false;
-
-    let subs_txt;
-    switch(cont.subs) 
-    {
-    case XOWS_SUBS_BOTH: subs_txt = "Mutual"; break;
-    case XOWS_SUBS_FROM: subs_txt = "Accorded"; break;
-    case XOWS_SUBS_TO: subs_txt = "Pending"; break;
-    default: subs_txt = "None"; break;
-    }
-    
-    const prof_subs = xows_doc("prof_subs");
-    prof_subs.innerText = xows_l10n_get(subs_txt);
-    prof_subs.dataset.subs = cont.subs;
-    
-  } else {
-    
-    prof_cont.hidden = true;
-  }
-  
-  // Enable or disable contact subscription button
-  xows_doc_show("prof_addc", xows_cli_can_subscribe(peer));
-  
   // show the 'void' screen with dark filter
   const src_void = xows_doc("scr_void");
   src_void.className = "VOID-DARK";
   src_void.hidden = false;
-  
+
   // add "click" event listener
   xows_doc_listener_add(over_prof,"click",xows_doc_prof_onclick);
-  
+
+  // Update content according Peer state
+  xows_doc_prof_update();
+
   // Show popop
   over_prof.hidden = false;
 }
@@ -1604,10 +1632,10 @@ function xows_doc_void_onclick(event)
 
   // Close potentially opened media viewer screen
   xows_doc_view_close();
-  
+
   // Close potentially opened Contact profile popup
   xows_doc_prof_close();
-  
+
   // Make potentially opened modal Dialog-Box blinking
   xows_doc_popu_modal();
   xows_doc_ibox_modal();

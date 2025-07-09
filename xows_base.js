@@ -1014,13 +1014,13 @@ function xows_clean_dom(node)
 /* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
  *             graphics and picture manipulation functions
  * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
- 
+
 /**
  *  Static color pallet for Avatar generation
  */
 const xows_avat_pallete = ["#FF5C25","#FFBF00","#9FCC14","#4ED921","#00CA33","#20D98C",
                            "#21ABD9","#4171FF","#926EFF","#BA43E0","#DB42B4","#E63864"];
-                  
+
 /**
  *  Draw an icon with the specified paramers
  *
@@ -1107,7 +1107,7 @@ function xows_gen_avatar(size, image, seed)
     cv.width = cv.height = size;
 
     if(seed) {
-      
+
       // Get pseudo-random color from seed
       let s = 0, i = seed.length;
       while(i--) s += seed.charCodeAt(i) * 7;

@@ -253,7 +253,7 @@ function xows_gui_peer_doc(peer, id)
 function xows_gui_peer_hist_reload(peer)
 {
   let chat_main;
-  
+
   // Get current DOM element or offscreen dummy object
   if(peer === xows_gui_peer) {
     chat_main = xows_doc("chat_main");
@@ -277,7 +277,7 @@ function xows_gui_peer_hist_reload(peer)
 /**
  * Save the main chat scroll position for the specified peer in the
  * ad-hoc 'scrollSaved' property.
- * 
+ *
  * If the specified Peer history is offscreen, the function operate on
  * the offscreen dummy object.
  *
@@ -286,7 +286,7 @@ function xows_gui_peer_hist_reload(peer)
 function xows_gui_peer_scroll_save(peer)
 {
   let chat_main;
-  
+
   // Get current DOM element or offscreen dummy object
   if(peer === xows_gui_peer) {
     chat_main = xows_doc("chat_main");
@@ -319,7 +319,7 @@ function xows_gui_peer_scroll_get(peer)
 
 /**
  * Move to bottom the main chat scroll corresponding to the specified peer
- * 
+ *
  * If the specified Peer history is offscreen, the function operate on
  * the offscreen dummy object.
  *
@@ -330,18 +330,18 @@ function xows_gui_peer_scroll_down(peer)
   if(xows_gui_peer_doc(peer,"hist_end").hidden) {
 
     let chat_main;
-  
+
     // Get current DOM element or offscreen dummy object
     if(peer === xows_gui_peer) {
       chat_main = xows_doc("chat_main");
     } else {
       chat_main = xows_gui_peer_scroll_db.get(peer.addr);
     }
-    
+
     // Reset scroll
     chat_main.scrollTop = (chat_main.scrollHeight - chat_main.clientHeight);
     chat_main.scrollSaved = 0;
-    
+
   } else {
     // If the most recent message is beyond the current history "window"
     // we must reset history and query last archived messages
@@ -368,7 +368,7 @@ function xows_gui_peer_scroll_adjust(peer)
   } else {
     chat_main = xows_gui_peer_scroll_db.get(peer.addr);
   }
-    
+
   chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + (chat_main.scrollSaved || 0));
 }
 
@@ -376,7 +376,7 @@ function xows_gui_peer_scroll_adjust(peer)
  * Check whether Peer offscreen slot exists
  *
  * @param   {object}    peer      Peer object to check
- * 
+ *
  * @return  {boolean}   True if offscreen slot exists, false otherwise
  */
 function xows_gui_peer_doc_has(peer)
@@ -394,7 +394,7 @@ function xows_gui_peer_doc_init(peer)
   // Prevent recreate offscreen document
   if(xows_doc_frag_db.has(peer.addr))
     return;
-  
+
   // clone elements from initial offscreen slot
   xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "chat_head");
   xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "chat_hist");
@@ -419,12 +419,12 @@ function xows_gui_peer_doc_init(peer)
     xows_gui_peer_doc(peer, "chat_bt_bkmk").hidden = (peer.book || peer.publ);
     xows_gui_peer_doc(peer, "chat_bt_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
     xows_gui_peer_doc(peer, "chat_bt_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
-  } else {     
+  } else {
     meta_inpt.innerText = peer.stat ? peer.stat : "";
     xows_gui_peer_doc(peer, "chat_show").dataset.show = peer.show;
     xows_gui_peer_doc(peer, "chat_addr").innerText = "("+peer.addr+")";
     if(peer.type === XOWS_PEER_OCCU)
-      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = !xows_cli_can_subscribe(peer);
+      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
   }
 
   // Set chat input placeholder
@@ -440,6 +440,20 @@ function xows_gui_peer_doc_init(peer)
 }
 
 /**
+ * Reset Peer offscreen slot to initial state
+ *
+ * @param   {object}    peer      Peer object to reset offscreen for
+ */
+function xows_gui_peer_doc_reset(peer)
+{
+  // Prevent recreate offscreen document
+  if(xows_doc_frag_db.has(peer.addr))
+    xows_doc_frag_db.delete(peer.addr);
+  
+  xows_gui_peer_doc_init(peer);
+}
+
+/**
  * Move and store current document Peer elements to offscreen
  *
  * @param   {object}    peer      Peer object
@@ -448,7 +462,7 @@ function xows_gui_peer_doc_export(peer)
 {
   // Save chat history scroll parameters
   const chat_main = xows_doc("chat_main");
-  
+
   const param = xows_gui_peer_scroll_db.get(peer.addr);
   param.scrollTop = chat_main.scrollTop;
   param.scrollHeight = chat_main.scrollHeight;
@@ -563,6 +577,7 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("roompush", xows_gui_cli_onroompush);
   xows_cli_set_callback("roomrem", xows_gui_cli_onroomrem);
   xows_cli_set_callback("roomjoin", xows_gui_cli_onroomjoin);
+  xows_cli_set_callback("roomexit", xows_gui_cli_onroomexit);
   xows_cli_set_callback("occupush", xows_gui_cli_onoccupush);
   xows_cli_set_callback("occurem", xows_gui_cli_onoccurem);
   xows_cli_set_callback("privpush", xows_gui_cli_onprivpush);
@@ -733,10 +748,11 @@ function xows_gui_cli_onclose(code, text)
     // This is a connection loss
     xows_gui_connect_loss = true;
 
-    // Close message box
+    // Close any message, popup or dialog box
     xows_doc_popu_close();
     xows_doc_mbox_close();
     xows_doc_ibox_close();
+    xows_doc_prof_close();
 
     // Display wait screen
     xows_gui_page_wait_open("Connecting...");
@@ -1108,9 +1124,9 @@ function xows_gui_switch_peer(addr)
   if(prev) {
     // export document elements to offscreen fragment
     xows_gui_peer_doc_export(prev);
-    // If we are not about to switch Roster Tab, we unselect 
+    // If we are not about to switch Roster Tab, we unselect
     // current <li-peer> to prevent irrelevant selection in case
-    // of failure, especially for Room join 
+    // of failure, especially for Room join
     if(!next || (next.type === prev.type)) {
       // Remove "selected" class from <li> element
       xows_gui_rost_unselect();
@@ -1129,10 +1145,10 @@ function xows_gui_switch_peer(addr)
   if(prev) xows_gui_title_pop();
 
   if(next) {
-    
+
     // Poll for available devices for Multimedia features
     xows_gui_medias_poll();
-  
+
     // Set the current contact
     xows_gui_peer = next;
 
@@ -1166,7 +1182,7 @@ function xows_gui_switch_peer(addr)
 
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
-    
+
     // Set input focus to Chat Message Edition input
     xows_gui_chat_inpt_focus();
 
@@ -1212,10 +1228,10 @@ function xows_gui_switch_room(addr)
 
   // Close any opened chat window
   xows_gui_switch_peer(null);
-  
+
   // Close panel in case we are in narrow-screen with wide panel
   xows_gui_panel_close();
-  
+
   if(room) {
     // Simply join the room
     xows_cli_muc_join_atempt(room);
@@ -1332,30 +1348,30 @@ function xows_gui_rost_tabs_onclick(event)
  * Select to specified Application Tab
  *
  * @param   {string}    tab_id    Tab ID to select
- * 
+ *
  * @return  {element}   Toggled Roster <rost-page> Element
  */
 function xows_gui_rost_tabs_toggle(tab_id)
 {
   let rost_page;
-  
+
   // Select the proper tab button
   const tabs = xows_doc("rost_tabs").querySelectorAll("ROST-TAB");
   for(let i = 0; i < tabs.length; ++i) {
-    
+
     const select = (tabs[i].id == tab_id);
-    
+
     // Add or remove SELECTED class to tab
     xows_doc_cls_tog(tabs[i].id, "SELECTED", select);
-    
+
     // Hide or Show corresponding Roster page
     const page = xows_doc(tabs[i].dataset.page);
     page.hidden = !select;
-    
+
     // Keep selected page
     if(select) rost_page = page;
   }
-  
+
   return rost_page;
 }
 
@@ -1431,24 +1447,25 @@ function xows_gui_rost_fram_onclick(event)
     switch(event.target.name)
     {
     case "cont_bt_rtry": //< Retry request subscribe permission
-      xows_cli_subs_request(li_peer.id);
-      xows_doc_popu_open(XOWS_STYL_SCS,"New authorization request was sent");
+      // Send subscription request
+      xows_gui_popu_subs_rqst(li_peer.id);
       return;
     case "cont_bt_unsb": //< Remove (Unsubscribe) contact
-      xows_gui_pupu_subs_edit_open(xows_cli_cont_get(li_peer.id), false);
+      // Open revoke subscription dialog-box
+      xows_gui_mbox_subs_revk_open(xows_cli_cont_get(li_peer.id));
       return;
     }
   }
-  
+
   // This is a normal click on Peer in list
   switch(li_peer.className)
   {
   case "PEER-PEND": {
     // Get Peer object
     // Open Subscription Allow/Deny dialog
-    xows_gui_popu_subs_auth_open(li_peer.id);
+    xows_gui_mbox_subs_auth_open(li_peer.id);
     } return;
-  case "PEER-ROOM": 
+  case "PEER-ROOM":
     // Special handling for Room join
     xows_gui_switch_room(li_peer.id);
     return;
@@ -1471,6 +1488,55 @@ function xows_gui_rost_fram_onclick(event)
  *
  * -------------------------------------------------------------------*/
 /* -------------------------------------------------------------------
+ * Main screen - Roster Head - Contacts - Subscription Routines
+ * -------------------------------------------------------------------*/
+
+/**
+ * Check for Peer subscription status, either None (0), Pending (1)
+ * or Subscribed/Unavailable (2)
+ *
+ * @param   {string}     addr     Contact JID to subscribes
+ * 
+ * @return  {number}    Peer subscription status.
+ */
+function xows_gui_peer_subs_status(peer)
+{
+  // First check whether contact can be subscribed
+  if(xows_cli_can_subscribe(peer)) {
+    
+    // Check for <li-peer> with contact address 
+    const li_peer = xows_gui_rost_li_get(peer.bare);
+    
+    // This mean we are waiting for subscription authoriaztion
+    if(li_peer && li_peer.classList.contains("PEER-CONT"))
+      return 1;
+    
+    // Can subscribe and no pending
+    return 0;
+  }
+  
+  // Already subscribed or subscription unavailable
+  return 2;
+}
+
+/**
+ * Send new subscription authorization request and show popup
+ *
+ * @param   {string}     addr     Contact JID to subscribes
+ */
+function xows_gui_popu_subs_rqst(addr)
+{
+  // Send subscribe request
+  xows_cli_subs_request(addr);
+  
+  // Show message popup
+  xows_doc_popu_open(XOWS_STYL_SCS,"New subscription authorization request was sent");
+  
+  // Switch to Contacts tab (after little delay)
+  setTimeout(xows_gui_rost_switch, 200, "tab_cont");
+}
+
+/* -------------------------------------------------------------------
  * Main screen - Roster Head - Contacts - Add Subscribe Input Dialog-Box
  * -------------------------------------------------------------------*/
 /**
@@ -1490,7 +1556,8 @@ function xows_gui_ibox_subs_oninput(value)
  */
 function xows_gui_ibox_subs_onvalid(value)
 {
-  xows_cli_subs_request(value);
+  // Send a new subscription request
+  xows_gui_popu_subs_rqst(value);
 }
 
 /**
@@ -1499,12 +1566,12 @@ function xows_gui_ibox_subs_onvalid(value)
 function xows_gui_ibox_subs_open()
 {
   // Open the input box dialog
-  xows_doc_ibox_open("Add a contact",
+  xows_doc_ibox_open("Subscribes to contact",
     "A subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.",
-    "Enter contact XMPP address...", null, 
-    xows_gui_ibox_subs_onvalid, "Add", 
-    null, null, 
-    xows_gui_ibox_subs_oninput, 
+    "Enter contact XMPP address...", null,
+    xows_gui_ibox_subs_onvalid, "Add",
+    null, null,
+    xows_gui_ibox_subs_oninput,
     true);
 }
 
@@ -1514,64 +1581,46 @@ function xows_gui_ibox_subs_open()
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_gui_pupu_subs_edit = {peer:null,subs:false};
+const xows_gui_mbox_subs_revk = {peer:null};
 
 /**
  * Contact (subscription) Add/Remove message box on-abort callback function
  */
-function xows_gui_pupu_subs_edit_onabort()
+function xows_gui_mbox_subs_revk_onabort()
 {
-
 }
 
 /**
  * Contact (subscription) Add/Remove message box on-valid callback function
  */
-function xows_gui_pupu_subs_edit_onvalid()
+function xows_gui_mbox_subs_revk_onvalid()
 {
-  const param = xows_gui_pupu_subs_edit;
-  
-  // query contact add/remove
-  if(param.subs) {
-    xows_cli_subs_request(param.peer.bare);
-  } else {
-    xows_cli_subs_revoke(param.peer);
-  }
+  // Revoke contact subscription
+  xows_cli_subs_revoke(xows_gui_mbox_subs_revk.cont);
 }
 
 /**
- * Contact (subscription) Add/Remove message box open
+ * Revoking contact subscription Message-Box Dialog open
  *
- * @param   {object}    peer      Peer object to subscribe to or remove
- * @param   {boolean}   subs      Request (true) or Revoke (false) subscription
+ * @param   {object}    cont      Contact object to revoke
  */
-function xows_gui_pupu_subs_edit_open(peer, subs)
+function xows_gui_mbox_subs_revk_open(cont)
 {
-  const param = xows_gui_pupu_subs_edit;
-  
-  // Store JID of contact to add or remove
-  param.peer = peer;
-  param.subs = subs;
+  // Store Contact object
+  xows_gui_mbox_subs_revk.cont = cont;
 
-  let text, style;
-
-  if(subs) {
-    style = XOWS_STYL_ASK;
-    text = "Add contact and request authorisation ?";
+  // Select proper text depending current state
+  let text = "Do you really want to remove contact and ";
+  if(cont.subs) {
+    text += "revoke subscription authorization ?";
   } else {
-    style = XOWS_STYL_WRN;
-    if(peer.subs) {
-      text = "Remove contact and revoke authorization ?";
-    } else {
-      text = "Cancel authorization request ?";
-    }
+    text += "abort subscription authorization request ?";
   }
-
-  // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(style, text,
-                     xows_gui_pupu_subs_edit_onvalid, "OK",
-                     xows_gui_pupu_subs_edit_onabort, "Cancel",
-                     true);
+  
+  // Open message-box
+  xows_doc_mbox_open(XOWS_STYL_WRN, "Revoke contact subscription", text, 
+                     xows_gui_mbox_subs_revk_onvalid, "OK", 
+                     xows_gui_mbox_subs_revk_onabort, "Cancel");
 }
 
 /* -------------------------------------------------------------------
@@ -1580,30 +1629,24 @@ function xows_gui_pupu_subs_edit_open(peer, subs)
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_gui_popu_subs_auth = {cont:null};
+const xows_gui_mbox_subs_auth = {cont:null};
 
 /**
  * Contact Subscription Allow/Deny message box on-abort callback function
  */
-function xows_gui_popu_subs_auth_onabort()
+function xows_gui_mbox_subs_auth_onabort()
 {
-  const param = xows_gui_popu_subs_auth;
-  
   // deny contact subscribe
-  xows_cli_subs_answer(param.cont, false);
-  param.cont = null;
+  xows_cli_subs_answer(xows_gui_mbox_subs_auth.cont, false);
 }
 
 /**
  * Contact Subscription Allow/Deny message box on-valid callback function
  */
-function xows_gui_popu_subs_auth_onvalid()
+function xows_gui_mbox_subs_auth_onvalid()
 {
-  const param = xows_gui_popu_subs_auth;
-  
   // allow contact subscribe
-  xows_cli_subs_answer(param.cont, true);
-  param.cont = null;
+  xows_cli_subs_answer(xows_gui_mbox_subs_auth.cont, true);
 }
 
 /**
@@ -1611,22 +1654,22 @@ function xows_gui_popu_subs_auth_onvalid()
  *
  * @param   {string}    addr      Supplied JID address to allow or deny
  */
-function xows_gui_popu_subs_auth_open(addr)
+function xows_gui_mbox_subs_auth_open(addr)
 {
   // Store Contact object to allow/deny
-  xows_gui_popu_subs_auth.cont = xows_cli_cont_get(addr);
+  xows_gui_mbox_subs_auth.cont = xows_cli_cont_get(addr);
 
-  // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(XOWS_STYL_ASK, "Allow contact subscription ?",
-                     xows_gui_popu_subs_auth_onvalid, "Allow",
-                     xows_gui_popu_subs_auth_onabort, "Deny",
-                     true);
+  // Open message box
+  xows_doc_mbox_open(XOWS_STYL_ASK, "Contact subscription request", 
+                     "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?", 
+                     xows_gui_mbox_subs_auth_onvalid, "Allow", 
+                     xows_gui_mbox_subs_auth_onabort, "Deny");
 }
 
 /* -------------------------------------------------------------------
- * 
+ *
  * Main screen - Roster Head - Rooms
- * 
+ *
  * -------------------------------------------------------------------*/
 /* -------------------------------------------------------------------
  * Main screen - Roster Head - Rooms - Join Input Dialog-Box
@@ -1668,17 +1711,17 @@ function xows_gui_ibox_join_open()
   // Open the input box dialog
   xows_doc_ibox_open("Join or create a Channel",
     "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.",
-    "Enter Channel name or address...", null, 
-    xows_gui_ibox_join_onvalid, "Join", 
-    null, null, 
-    xows_gui_ibox_join_oninput, 
+    "Enter Channel name or address...", null,
+    xows_gui_ibox_join_onvalid, "Join",
+    null, null,
+    xows_gui_ibox_join_oninput,
     true);
 }
 
 /* -------------------------------------------------------------------
  * Main screen - Roster Head - Rooms - Room Join Handling
  * -------------------------------------------------------------------*/
- 
+
 /**
  * Handle the received MUC Room initial Own presence (Just Joinded Room)
  *
@@ -1690,9 +1733,9 @@ function xows_gui_cli_onroomjoin(room, code, error)
 {
   // Handle error if any
   if(error) {
-    
+
     if(error.type == "auth") {
-      // User is banned 
+      // User is banned
       if(error.name == "forbidden") { // banned user
         // Open error message dialog
         xows_gui_mbox_join_fail_open("auth","You cannot join this Channel because you are banned.");
@@ -1711,7 +1754,7 @@ function xows_gui_cli_onroomjoin(room, code, error)
         return;
       }
     }
-    
+
     if(error.type == "cancel") {
       // Room creation not allowed
       if(error.name == "not-allowed") {
@@ -1731,30 +1774,72 @@ function xows_gui_cli_onroomjoin(room, code, error)
     }
 
     if(error.type == "wait") {
-      // TODO: 
+      // TODO:
       if(error.name == "service-unavailable") {
       }
     }
-    
+
     // Open default error message dialog
     xows_gui_mbox_join_fail_open("","<"+error.name+"> "+error.text);
-    
+
     return;
-  } 
-  
+  }
+
   // Switch peer to newly joined room
   xows_gui_switch_peer(room.addr);
-  
+
   // Close panel in case we are in narrow-screen with wide panel
   xows_gui_panel_close();
-  
+
   // Code 201 mean initial room config
-  if(code.includes(201)) 
+  if(code.includes(201))
     xows_gui_mbox_conf_open(room);
 
   // Update privileges related GUI elements
   xows_gui_room_head_update(room);
   xows_gui_chat_head_update(room);
+}
+/**
+ * Handle the received MUC Room terminal Own presence (Room exit)
+ *
+ * @param   {object}    room      Room object
+ * @param   {object}   [code]     Optionnal list of status code
+ */
+function xows_gui_cli_onroomexit(room, code)
+{
+  // Close chat window if Room is current peer
+  if(room === xows_gui_peer)
+    xows_gui_switch_peer(null);
+  
+  // Reset offscreen element for this Room
+  xows_gui_peer_doc_reset(room);
+  
+  // Possible MUC Status codes
+  //
+  // 301: A user has been banned from the room
+  // 307: A user has been kicked from the room
+  // 321: A user is being removed from the room because of an affiliation change
+  // 322: A user is being removed from the room because the room has been changed to members-only
+  // 333: A user was removed because of an error reply (server error)
+  
+  let text = null;
+  
+  if(code.includes(301))
+    text = xows_l10n_get("You were banned from the Channel");
+  
+  if(code.includes(307))
+    text = xows_l10n_get("You were kicked from the Channel");
+    
+  if(code.includes(321))
+    text = xows_l10n_get("Rules changes caused you to leave the Channel");
+    
+  if(code.includes(321))
+    text = xows_l10n_get("Server error caused you to leave the Channel");
+  
+  if(text) {
+    text += " <b>"+room.name+"</b>";
+    xows_doc_popu_open(XOWS_SIG_WRN,text);
+  }
 }
 
 /* -------------------------------------------------------------------
@@ -1769,16 +1854,16 @@ function xows_gui_cli_onroomjoin(room, code, error)
 function xows_gui_mbox_join_fail_open(type, text)
 {
   let head;
-  
+
   switch(type)
   {
   case "auth": head = "Channel access";  break;
   case "create": head = "Channel creation"; break;
   default: head = "Channel join error";
   }
-  
+
   // Open message dialog
-  xows_doc_mbox_open(XOWS_STYL_ERR, head, text, null, null, null, null, true);
+  xows_doc_mbox_open(XOWS_STYL_ERR, head, text, null, null, null, null);
 }
 
 /* -------------------------------------------------------------------
@@ -1813,7 +1898,7 @@ function xows_gui_ibox_join_regi_onresult(room, type, error)
         // Open error message dialog
         xows_gui_mbox_join_fail_open("auth","You cannot join this Channel because its access is restricted to members only.");
         return;
-      // User is banned 
+      // User is banned
       case "forbidden": // banned user
         // Open error message dialog
         xows_gui_mbox_join_fail_open("auth","You cannot join this Channel because you are banned.");
@@ -1824,10 +1909,10 @@ function xows_gui_ibox_join_regi_onresult(room, type, error)
     xows_gui_mbox_join_fail_open("auth","Channel registration request failed.");
     return;
   }
-  
+
   // Close the dialog box
   xows_doc_ibox_close();
-  
+
   // Switch to joined room
   xows_gui_switch_room(room.addr);
 }
@@ -1840,17 +1925,17 @@ function xows_gui_ibox_join_regi_onresult(room, type, error)
 function xows_gui_ibox_join_regi_onvalid(value)
 {
   const room = xows_gui_ibox_join_regi.room;
-  
+
   // Update Room's self nickname
   room.nick = value;
-  
+
   // Try register again
   xows_cli_muc_regi_query(room, xows_gui_ibox_join_regi_onresult);
 }
 
 /**
  * Open Register Room Input Dialog-Box
- * 
+ *
  * @param   {object}    room      Room object
  */
 function xows_gui_ibox_join_regi_open(room)
@@ -1860,9 +1945,9 @@ function xows_gui_ibox_join_regi_open(room)
   // Open the input box dialog
   xows_doc_ibox_open(xows_l10n_get("Channel registration"),
     xows_l10n_get("The nickname will be associated with your XMPP address and being reserved for you in this Room."),
-    xows_l10n_get("Enter nickname to register..."), room.nick, 
-    xows_gui_ibox_join_regi_onvalid, "Register", 
-    null, null, 
+    xows_l10n_get("Enter nickname to register..."), room.nick,
+    xows_gui_ibox_join_regi_onvalid, "Register",
+    null, null,
     null, true);
 }
 
@@ -1890,7 +1975,7 @@ function xows_gui_ibox_join_pass_onvalid(value)
 
 /**
  * Open Room Password Input Dialog-Box
- * 
+ *
  * @param   {object}    room      Room object
  */
 function xows_gui_ibox_join_pass_open(room)
@@ -1900,11 +1985,11 @@ function xows_gui_ibox_join_pass_open(room)
   // Open the input box dialog
   xows_doc_ibox_open(xows_l10n_get("Channel password"),
     xows_l10n_get("This Channel is password-protected, you must provide password in order to join it."),
-    xows_l10n_get("Enter a password..."), room.pass, 
-    xows_gui_ibox_join_pass_onvalid, "Join", 
-    null, null, 
+    xows_l10n_get("Enter a password..."), room.pass,
+    xows_gui_ibox_join_pass_onvalid, "Join",
+    null, null,
     null, true);
-    
+
   // If room password is not empty, this mean previous try failed
   if(room.pass) xows_doc_ibox_error("The password you entered is incorrect");
 }
@@ -1933,7 +2018,7 @@ function xows_gui_ibox_join_cflt_onvalid(value)
 
 /**
  * Open Room Nickname Conflict Input Dialog-Box
- * 
+ *
  * @param   {object}    room      Room object
  */
 function xows_gui_ibox_join_cflt_open(room)
@@ -1943,23 +2028,23 @@ function xows_gui_ibox_join_cflt_open(room)
   // Open the input box dialog
   xows_doc_ibox_open(xows_l10n_get("Nickname conflict"),
     xows_l10n_get("Your nickname conflicts with another Channel's occupant, please choose another nickname."),
-    xows_l10n_get("Enter a nickname..."), room.nick, 
-    xows_gui_ibox_join_cflt_onvalid, "Join", 
-    null, null, 
+    xows_l10n_get("Enter a nickname..."), room.nick,
+    xows_gui_ibox_join_cflt_onvalid, "Join",
+    null, null,
     null, true);
 }
 
 /* -------------------------------------------------------------------
- * 
+ *
  * Main screen - Roster List
- * 
+ *
  * -------------------------------------------------------------------*/
 
 /**
  * Find Roster's <li-peer> element of specified Peer object
  *
  * @param   {object}    peer      Peer Object
- * 
+ *
  * @return  (element}   A <li-peer> element or null/undefined if not found
  */
 function xows_gui_rost_li_get(peer)
@@ -1980,7 +2065,7 @@ function xows_gui_rost_switch(tab_id)
 {
   // Select Roster tab and page
   const rost_page = xows_gui_rost_tabs_toggle(tab_id);
-  
+
   // Search any SELECTED peer in the list to switch to
   let li_peer;
   if(rost_page) li_peer = rost_page.querySelector(".SELECTED");
@@ -2009,9 +2094,9 @@ function xows_gui_rost_peer_select(peer, select, tab)
 
   // Add or remove SELECTED class
   li_peer.classList.toggle("SELECTED", select);
-  
+
   // Switch to corresponding tab
-  if(tab) 
+  if(tab)
     xows_gui_rost_tabs_toggle(li_peer.closest("ROW-PAGE").dataset.tab);
 }
 
@@ -2059,13 +2144,13 @@ function xows_gui_calling_set(peer, enable)
   // Enable Call badge depending peer type
   switch(peer.type)
   {
-  case XOWS_PEER_OCCU: 
-    xows_doc("priv_call").hidden = !enable; 
+  case XOWS_PEER_OCCU:
+    xows_doc("priv_call").hidden = !enable;
     break;
-  case XOWS_PEER_ROOM: 
-    xows_doc("room_call").hidden = !enable; 
+  case XOWS_PEER_ROOM:
+    xows_doc("room_call").hidden = !enable;
     break;
-  default: 
+  default:
     xows_doc("cont_call").hidden = !enable;
   }
 }
@@ -2086,7 +2171,7 @@ function xows_gui_unread_tab_update(peer, mesg, call, ring)
 {
   // Select proper tab elements depending peer type
   let tab_rost, badg_noti;
-  switch(peer.type) 
+  switch(peer.type)
   {
   case XOWS_PEER_ROOM:
     tab_rost = xows_doc("tab_room");
@@ -2213,9 +2298,9 @@ function xows_gui_unread_reset(peer)
   xows_gui_unread_tab_update(peer, mesg, call, ring);
 }
 /* -------------------------------------------------------------------
- * 
+ *
  * Main screen - Roster List - Contacts
- * 
+ *
  * -------------------------------------------------------------------*/
 /* -------------------------------------------------------------------
  * Main screen - Roster List - Contacts - Contacts List
@@ -2231,10 +2316,10 @@ function xows_gui_cont_list_reload()
   xows_doc("cont_pend").innerText = "";
   xows_doc("cont_budy").hidden = true;
   xows_doc("cont_budy").innerText = "";
-  
+
   // Add loading spinner at top of list
   xows_doc_cls_add("cont_list","LOADING");
-  
+
   // Query for roster content
   xows_cli_rost_get_query();
 }
@@ -2246,17 +2331,17 @@ function xows_gui_cont_list_update()
 {
   // Remove the potential loading spinner
   xows_doc_cls_rem("cont_list","LOADING");
-  
+
   // show and hide proper <ul> as required
   const cont_pend = xows_doc("cont_pend");
-  
+
   // We need the count of pending subscribe
   const subs_list = cont_pend.querySelectorAll("LI-PEER");
   cont_pend.hidden = (subs_list.length == 0);
-  
+
   // Update the notification badge
   xows_doc("cont_noti").dataset.subs = subs_list.length;
-  
+
   const cont_budy = xows_doc("cont_budy");
   cont_budy.hidden = (cont_budy.querySelector("LI-PEER") === null);
 }
@@ -2270,7 +2355,7 @@ function xows_gui_cont_list_update()
 function xows_gui_cli_oncontpush(cont, text)
 {
   // Null Contact mean we properly received Roster Contacts list
-  // but it is empty (user doesn't have any Contact in roster). 
+  // but it is empty (user doesn't have any Contact in roster).
   if(!cont) {
     // Remove the loadding spinner
     xows_doc_cls_rem("cont_list","LOADING");
@@ -2280,19 +2365,19 @@ function xows_gui_cli_oncontpush(cont, text)
   // Search for existing contact <li-peer> element
   let li_peer = xows_gui_rost_li_get(cont);
   if(li_peer) {
-    
+
     // Check whether this is a pending subscription request
     if(li_peer.className == "PEER-PEND") {
-      
+
       if(cont.subs != XOWS_SUBS_NONE) {
         // We added contact to our contact list, we need to create
         // a new <li-peer> and delete subscribe request
         xows_doc("cont_pend").removeChild(li_peer);
         li_peer = null; //< Force creation of a new <li-peer> element
       }
-      
+
     } else {
-      
+
       // Update the existing contact <li-peer> element according template
       xows_tpl_update_rost_cont(li_peer, cont, text);
       // Update chat title bar
@@ -2305,20 +2390,20 @@ function xows_gui_cli_oncontpush(cont, text)
   }
 
   // Select proper destination list to add Contact/Subscription request
-  const dst_ul = (cont.subs & XOWS_SUBS_TO) ? xows_doc("cont_budy") : 
+  const dst_ul = (cont.subs & XOWS_SUBS_TO) ? xows_doc("cont_budy") :
                                               xows_doc("cont_pend");
-                                                
+
   if(!li_peer) {
     // This is a roster contact (with or without pending authorization)
     li_peer = xows_tpl_spawn_rost_cont(cont, text);
     // Create new Peer offscreen elements with initial state
     xows_gui_peer_doc_init(cont);
   }
-  
+
   // Parent to proper <ul>
   if(li_peer.parentNode != dst_ul)
     dst_ul.appendChild(li_peer);
-  
+
   // Update Lists visibility
   xows_gui_cont_list_update();
 }
@@ -2337,15 +2422,15 @@ function xows_gui_cli_oncontrem(cont)
     // If current selected Peer is this one, switch to null
     if(xows_gui_peer === cont)
       xows_gui_switch_peer(null);
-    
+
     // Remove <li_peer> element
     const src_ul = li_peer.parentNode;
     src_ul.removeChild(li_peer);
   }
-  
+
   // Update Lists visibility
   xows_gui_cont_list_update();
-  
+
   // We can delete this Contact from
   xows_cli_cont_rem(cont);
 }
@@ -2364,7 +2449,7 @@ function xows_gui_cli_oncontrem(cont)
 function xows_gui_cli_onsubspush(cont)
 {
   const dst_ul = xows_doc("cont_pend");
-  
+
   // Search for existing <li_peer> element
   let li_peer = xows_gui_rost_li_get(cont);
   if(li_peer) {
@@ -2378,15 +2463,15 @@ function xows_gui_cli_onsubspush(cont)
   // Parent <li-peer> element to list
   if(li_peer.parentNode != dst_ul)
     dst_ul.appendChild(li_peer);
-  
+
   // Update Lists visibility
   xows_gui_cont_list_update();
 }
 
 /* -------------------------------------------------------------------
- * 
+ *
  * Main screen - Roster List - Rooms List
- * 
+ *
  * -------------------------------------------------------------------*/
 /**
  * Function to force query and refresh for Room list
@@ -2402,7 +2487,7 @@ function xows_gui_room_list_reload()
 
   // Empty the Public Room list
   xows_doc("room_publ").innerHTML = "";
-  
+
   // Query to get public room list with delay
   setTimeout(xows_cli_muc_roomlist_query, 500);
 }
@@ -2417,10 +2502,10 @@ function xows_gui_room_list_update()
   // show and hide proper <ul> as required
   const room_publ = xows_doc("room_publ");
   room_publ.hidden = (room_publ.querySelector("LI-PEER") === null);
-  
+
   const room_priv = xows_doc("room_priv");
   room_priv.hidden = (room_priv.querySelector("LI-PEER") === null);
-  
+
   const room_book = xows_doc("room_book");
   room_book.hidden = (room_book.querySelector("LI-PEER") === null);
 }
@@ -2442,10 +2527,10 @@ function xows_gui_cli_onroompush(room)
   }
 
   // Select destination <ul>
-  const dst_ul = (room.publ) ? xows_doc("room_publ") : 
-                              (room.book) ? xows_doc("room_book") : 
+  const dst_ul = (room.publ) ? xows_doc("room_publ") :
+                              (room.book) ? xows_doc("room_book") :
                                             xows_doc("room_priv");
-  
+
   let li_peer = document.getElementById(room.addr);
   if(li_peer) {
     // Update room <li_peer> element according template
@@ -2458,7 +2543,7 @@ function xows_gui_cli_onroompush(room)
     // Create new Peer offscreen elements with initial state
     xows_gui_peer_doc_init(room);
   }
-  
+
   // Parent to proper <ul>
   if(li_peer.parentNode != dst_ul)
     dst_ul.appendChild(li_peer);
@@ -2485,17 +2570,17 @@ function xows_gui_cli_onroomrem(room)
     // delete <li_peer> element
     li_peer.parentNode.removeChild(li_peer);
   }
-  
+
   // Update room list <ul> visibility
   xows_gui_room_list_update();
-  
+
   // Remove Room in client side
   xows_cli_room_rem(room);
 }
 /* -------------------------------------------------------------------
- * 
+ *
  * Main screen - Roster List - Private Chats List
- * 
+ *
  * -------------------------------------------------------------------*/
 /**
  * Initialize Private Conversation with Occupant
@@ -2514,13 +2599,13 @@ function xows_gui_priv_init(occu)
       return;
     }
   }
-  
+
   // Add Private Message session in client side
   xows_cli_priv_add(occu);
-  
+
   // Create Occupant Private Message offscreen structure
   xows_gui_cli_onprivpush(occu);
-  
+
   // Switch to Occupant
   xows_gui_switch_peer(occu.addr);
 }
@@ -2533,7 +2618,7 @@ function xows_gui_priv_init(occu)
 function xows_gui_cli_onprivpush(occu)
 {
   const dst_ul = xows_doc("priv_occu");
-  
+
   let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+occu.addr+"']");
   if(li_peer) {
     // Update occupant <li_peer> element according template
@@ -2553,11 +2638,11 @@ function xows_gui_cli_onprivpush(occu)
     // Create new Peer offscreen elements with initial state
     xows_gui_peer_doc_init(occu);
   }
-  
+
   // Parent to proper <ul>
   if(li_peer.parentNode != dst_ul)
     dst_ul.appendChild(li_peer);
-    
+
   // Show the Private Message tab
   xows_doc_show("tab_priv");
 }
@@ -2570,13 +2655,13 @@ function xows_gui_cli_onprivpush(occu)
 function xows_gui_cli_onprivrem(occu)
 {
   const dst_ul = xows_doc("priv_occu");
-  
+
   let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+occu.addr+"']");
   if(li_peer) {
-    
+
     // Update occupant <li_peer> element according template
     xows_tpl_update_room_occu(li_peer, occu);
-    
+
     // Update chat title bar
     xows_gui_chat_head_update(occu);
 
@@ -2777,8 +2862,8 @@ function xows_gui_chat_head_update(peer)
     const has_ices = xows_cli_external_has("stun", "turn");
     xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
     xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
-    if(peer.type === XOWS_PEER_OCCU) 
-      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = !xows_cli_can_subscribe(peer);
+    if(peer.type === XOWS_PEER_OCCU)
+      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
   }
 }
 
@@ -2796,9 +2881,9 @@ function xows_gui_cli_onsubject(peer, subj)
 }
 
 /* -------------------------------------------------------------------
- * 
+ *
  * Main Screen - Chat Frame - Header - Interactions
- * 
+ *
  * -------------------------------------------------------------------*/
 /**
  * Chat Header on-click callback function
@@ -2811,15 +2896,15 @@ function xows_gui_chat_head_onclick(event)
 
   switch(event.target.id)
   {
-  case "chat_bt_subj": 
+  case "chat_bt_subj":
     // Open Room topic input box
     xows_gui_ibox_room_subj_open(xows_gui_peer);
     break;
-  case "chat_bt_bkmk": 
+  case "chat_bt_bkmk":
     // Open confirmation dialog
     if(xows_gui_peer) xows_gui_popu_room_book_open(xows_gui_peer);
     break;
-  case "chat_bt_noti": 
+  case "chat_bt_noti":
     // Set notification for this Peer
     xows_gui_peer.noti = !event.target.classList.toggle("DISABLED");
     // Save parameter in localstorage
@@ -2831,11 +2916,11 @@ function xows_gui_chat_head_onclick(event)
       xows_gui_notify_query(); //< request permission
     }
     break;
-  case "chat_bt_cnfg": 
+  case "chat_bt_cnfg":
     // Query for Chatoom configuration, will open Room config page
     xows_cli_muc_getcfg_query(xows_gui_peer, xows_gui_page_mucc_open);
     break;
-  case "chat_bt_occu": 
+  case "chat_bt_occu":
     // Checks whether we are in narrow-screen mode
     if(window.matchMedia("(max-width: 799px)").matches) {
       // Widen right panel
@@ -2843,13 +2928,11 @@ function xows_gui_chat_head_onclick(event)
     } else {
       // Toggle hide right pannel
       xows_doc_cls_tog("main_colr", "COL-HIDE");
-    }  
+    }
     break;
-  case "chat_bt_addc": 
-    // Query contact add
-    xows_gui_pupu_subs_edit_open(xows_gui_peer, true);
-    // Update chat header frame
-    xows_gui_chat_head_update(xows_gui_peer);
+  case "chat_bt_addc":
+    // Send subscription request
+    xows_gui_popu_subs_rqst(xows_gui_peer.bare);
     break;
   case "chat_bt_calv":
   case "chat_bt_cala":
@@ -2963,7 +3046,7 @@ function xows_gui_popu_room_book_open(room)
 function xows_gui_call_menu_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-  
+
   if(event.target.tagName !== "BUTTON")
     return;
 
@@ -4007,7 +4090,7 @@ function xows_gui_mesg_trsh_valid(li_msg)
 {
   // Get most suitable Stanza reference ID, either Origin-Id, Stanza-Id or Id
   const usid = xows_tpl_mesg_bestref(xows_gui_peer, li_msg);
-  
+
   // Send message retraction
   if(usid) xows_cli_retract_send(xows_gui_peer, usid);
 }
@@ -4100,7 +4183,7 @@ function xows_gui_hist_mesg_get(peer, id)
 }
 
 /**
- * Find history message <li-mesg> element corresponding to message 
+ * Find history message <li-mesg> element corresponding to message
  * reply/quote parameters.
  *
  * @param   {object}    peer      Peer object
@@ -4111,9 +4194,9 @@ function xows_gui_hist_rply_get(peer, id, to)
 {
   // First search for existing message
   let li_msg = xows_gui_hist_mesg_get(peer, id);
-  
+
   // If no message was found, create temporary Null dummy message
-  if(!li_msg) 
+  if(!li_msg)
     li_msg = xows_tpl_mesg_null_spawn(id, to, xows_l10n_get("The message is unreachable"));
 
   return li_msg;
@@ -4178,12 +4261,12 @@ function xows_gui_hist_mesg_retract(peer, usid)
 
   // Search for references to message to be updated
   const li_refs = xows_gui_peer_doc(peer,"hist_ul").querySelectorAll("MESG-RPLY[data-id='"+usid+"']");
-  
+
   if(li_refs.length) {
     // Create temporary Null dummy message
     const li_tomb = xows_tpl_mesg_null_spawn(usid,"",xows_l10n_get("The message was deleted"));
     // Update messages with reply
-    for(let i = 0; i < li_refs.length; ++i) 
+    for(let i = 0; i < li_refs.length; ++i)
       xows_tpl_mesg_update(li_refs[i].closest("LI-MESG"), peer, null, null, li_tomb);
   }
 
@@ -4224,7 +4307,7 @@ function xows_gui_hist_mesg_focus(peer, id)
 }
 
 /**
- * Add unread message notification badge and/or send browser Push Notification 
+ * Add unread message notification badge and/or send browser Push Notification
  * as required depending given peer and <li-mesg>
  *
  * @param   {object}    peer      Related Peer object
@@ -4235,21 +4318,21 @@ function xows_gui_hist_incoming_notify(peer, mesg)
   // No notification for ourself
   if(peer.self)
     return;
-  
+
   // For MUC we avoid notification unless explicit mention
   if(peer.type === XOWS_PEER_ROOM) {
-    
-    if(!mesg.rpto) 
+
+    if(!mesg.rpto)
       return;
-    
+
     if(xows_cli_occu_self(peer).addr !== mesg.rpto)
       return;
   }
-  
+
   // If offsecreen peer, add an Unread messag notification
   if(peer !== xows_gui_peer)
     xows_gui_unread_add(peer, mesg.id);
-  
+
   // If GUI is not in focus, send browser Push Notification
   if(!xows_gui_has_focus)
     xows_gui_notify_push(peer, mesg.body);
@@ -4276,11 +4359,11 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
     xows_log(1,"gui_cli_onmessage","message error",error.name);
     return;
   }
-  
+
   // Store whether message is sent by ourself
   const is_sent = peer.self;
 
-  // MUC specific, we may receive message from ourself as confirmation 
+  // MUC specific, we may receive message from ourself as confirmation
   // of reception with server additionnal data
   if(peer.type === XOWS_PEER_ROOM) {
     // Message to update
@@ -4290,7 +4373,7 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
       return;
     }
   }
-  
+
   let li_rep, li_rpl;
 
   // Search for corrected message to be discarded
@@ -4321,7 +4404,7 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
     // Get last valid (non discarded) previous message
     let li_prv = hist_ul.lastChild;
     while(li_prv && li_prv.hidden) li_prv = li_prv.previousSibling;
-    
+
     // Create new message element
     const li_msg = xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl);
 
@@ -4334,10 +4417,10 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
   }
 
   // Avoid notifications for correction messages
-  if(!mesg.repl) 
+  if(!mesg.repl)
     xows_gui_hist_incoming_notify(peer, mesg);
 
-  if(!is_sent && xows_gui_peer_scroll_get(peer) >= 50) {
+  if(!is_sent && xows_gui_peer_scroll_get(peer) > 50) {
     xows_gui_chat_nav_open(peer, true); //< Show the "new messages" alert
   } else {
     xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
@@ -4434,7 +4517,7 @@ function xows_gui_mam_query(peer, after, count = 20, delay = 100, force = false)
 
     hist_beg.className = "LOADING";
   }
-  
+
   // To prevent flood and increase ergonomy the archive query is
   // temporised with a fake loading time.
   xows_gui_mam_query_to.set(peer, setTimeout(xows_cli_mam_fetch, delay, peer, count, start, end, xows_gui_mam_parse));
@@ -4534,10 +4617,10 @@ function xows_gui_mam_parse(peer, result, count, complete)
     } else {
       li_rpl = null;
     }
-    
+
     // Get last valid (non discarded) previous message
     while(li_prv && li_prv.hidden) li_prv = li_prv.previousSibling;
-    
+
     // Create new message element
     const li_msg = xows_tpl_mesg_spawn(peer, mesg, false, li_prv, li_rep, li_rpl);
 
@@ -4841,7 +4924,7 @@ function xows_gui_chat_rply_set(li_msg)
   xows_gui_chat_rply_close();
 
   const chat_rply = xows_doc("chat_rply");
-  
+
   // Get most suitable Stanza reference ID, either Origin-Id, Stanza-Id or Id
   const rpid = xows_tpl_mesg_bestref(xows_gui_peer, li_msg);
 
@@ -4852,7 +4935,7 @@ function xows_gui_chat_rply_set(li_msg)
   } else {
     rpto = li_msg.dataset.from;
   }
-  
+
   // Retrieve message author
   let peer;
   if(xows_gui_peer.type === XOWS_PEER_ROOM) {
@@ -5087,7 +5170,7 @@ function xows_gui_cli_onchatstate(peer, chat)
 {
   // get Peer chatstat object
   const chat_stat = xows_gui_peer_doc(peer, "chat_stat");
-  
+
   // In case of Private Messae (from Occupant) Chatstat may come before
   // first message, in this case offscreen document doesn't exists
   if(!chat_stat) return;
@@ -5134,9 +5217,9 @@ function xows_gui_cli_onchatstate(peer, chat)
     } else {
       chat_stat.innerHTML = "<b>"+peer.writ[0].name+"</b> "+xows_l10n_get("is currently writing");
     }
-    
+
   } else { // XOWS_PEER_CONT|XOWS_PEER_OCCU
-    
+
     // If Contact stopped writing, empty chatstate
     if(peer.chat < XOWS_CHAT_COMP) {
       chat_stat.innerText = "";
@@ -5147,7 +5230,7 @@ function xows_gui_cli_onchatstate(peer, chat)
     // Wet writing string
     chat_stat.innerHTML = "<b>"+peer.name+"</b> "+xows_l10n_get("is currently writing");
   }
-  
+
   // Show the writing mention
   chat_stat.hidden = false;
 }
@@ -5183,11 +5266,11 @@ function xows_gui_room_head_update(room, occu)
 function xows_gui_room_head_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-  
+
   if(xows_gui_peer.type != XOWS_PEER_ROOM)
     return;
 
-  if(event.target.id == "occu_bt_cnfg") 
+  if(event.target.id == "occu_bt_cnfg")
     xows_gui_page_muca_open(xows_gui_peer);
 }
 
@@ -5221,16 +5304,16 @@ function xows_gui_occu_list_update(room)
   // show and hide proper <ul> as required
   const ownr_ul = xows_gui_peer_doc(room, "ownr_ul");
   ownr_ul.hidden = (ownr_ul.querySelector("LI-PEER") === null);
-  
+
   const admn_ul = xows_gui_peer_doc(room, "admn_ul");
   admn_ul.hidden = (admn_ul.querySelector("LI-PEER") === null);
-  
+
   const modo_ul = xows_gui_peer_doc(room, "modo_ul");
   modo_ul.hidden = (modo_ul.querySelector("LI-PEER") === null);
-  
+
   const part_ul = xows_gui_peer_doc(room, "part_ul");
   part_ul.hidden = (part_ul.querySelector("LI-PEER") === null);
-  
+
   const vist_ul = xows_gui_peer_doc(room, "vist_ul");
   vist_ul.hidden = (vist_ul.querySelector("LI-PEER") === null);
 }
@@ -5245,10 +5328,10 @@ function xows_gui_cli_onoccupush(occu, code)
 {
   // Get Occupant's Room
   const room = occu.room;
-  
+
   // checks whether we have a special status code with this occupant
   if(code && code.includes(110)) { //< Self presence update
-    
+
     // Update privileges related GUI elements
     xows_gui_room_head_update(room);
     xows_gui_chat_head_update(room);
@@ -5264,7 +5347,7 @@ function xows_gui_cli_onoccupush(occu, code)
     case XOWS_ROLE_PART: dst_id = "part_ul"; break;
     }
   }
-  
+
   // Search for existing occupant <li-peer> element for this Room
   let li_peer = xows_gui_occu_li_get(occu);
   if(li_peer) {
@@ -5280,10 +5363,10 @@ function xows_gui_cli_onoccupush(occu, code)
 
   // Parent <li-peer> to proper destination <ul>
   xows_gui_peer_doc(room, dst_id).appendChild(li_peer);
-  
-  // Update occupant list 
+
+  // Update occupant list
   xows_gui_occu_list_update(room);
-  
+
   // Update message history avatars
   xows_gui_hist_update(room, occu);
 }
@@ -5297,9 +5380,9 @@ function xows_gui_cli_onoccurem(occu)
 {
   // If Occupant is ourself, this mean we leaved the Room
   if(occu.self) {
-    
+
     // Check whether current Peer is the Room we leaved
-    if(occu.room === xows_gui_peer) 
+    if(occu.room === xows_gui_peer)
       xows_gui_switch_peer(null); //< Unselect Peer
 
   } else {
@@ -5309,16 +5392,16 @@ function xows_gui_cli_onoccurem(occu)
     if(li_peer) {
 
       const src_ul = li_peer.parentNode;
-      src_ul.removeChild(li_peer); 
-      
+      src_ul.removeChild(li_peer);
+
       // Show or hide list depending content
       src_ul.hidden = !src_ul.childElementCount;
     }
   }
-  
+
   // If we are in Private Conversation with occupant we don't
-  // delete the Occupant Peer object since we need it to keep Chat 
-  // Frame "alive" and futhermore, the occupant may rejoin the 
+  // delete the Occupant Peer object since we need it to keep Chat
+  // Frame "alive" and futhermore, the occupant may rejoin the
   // Room, bringin back the possiblity to send PM
   if(!xows_cli_priv_has(occu))
     xows_cli_occu_rem(occu);
@@ -5343,11 +5426,11 @@ function xows_gui_occu_list_onclick(event)
 
   // Add selected to next occupant <li-peer>
   document.getElementById(li_peer.id).classList.add("SELECTED");
-  
+
   // Checks whether user clicked on menu button
   if(event.target.name === "occu_bt_menu") {
     // Open Occupant menu
-    xows_doc_menu_toggle(event.target, "drop_occu", xows_gui_occu_drop_onclick, 
+    xows_doc_menu_toggle(event.target, "drop_occu", xows_gui_occu_drop_onclick,
                                                     xows_gui_occu_drop_onshow);
   }
 }
@@ -5371,17 +5454,17 @@ function xows_gui_occu_drop_onshow(button, drop)
   // Calculate menu position next to button
   const rect = button.getBoundingClientRect();
   drop.style.left = (rect.left - (drop.offsetWidth)) + "px";
-  
+
   // Calculate overflow from screen height
   const offsetTop = rect.top + (rect.height * 0.5);
   let overflow = (offsetTop + drop.offsetHeight) - window.screen.height;
   if(overflow < 0) overflow = 0;
-  
+
   drop.style.top = (offsetTop - overflow) + "px";
-  
+
   // Get related Occupant
   const occu = xows_cli_occu_get(xows_gui_peer, button.closest("LI-PEER").id);
-  
+
   const is_ownr = (xows_gui_peer.affi === XOWS_AFFI_OWNR);
   const is_admn = !occu.self && (xows_gui_peer.affi > XOWS_AFFI_MEMB);
   const is_modo = !occu.self && (is_admn || (xows_gui_peer.role > XOWS_ROLE_PART));
@@ -5392,17 +5475,17 @@ function xows_gui_occu_drop_onshow(button, drop)
   const item_role = xows_doc("occu_sm_role");
   const item_kick = xows_doc("occu_mi_kick");
   const item_outc = xows_doc("occu_mi_outc");
-  
+
   // Remove separator of top menu item, proper separator
   // will be set according menu configuration
   xows_doc_cls_rem("occu_mi_info", "menu-separ");
   xows_doc_cls_rem("occu_mi_priv", "menu-separ");
-  
+
   // We cannot send Private Message to ourself
   item_priv.hidden = occu.self;
 
   if((!is_admn && !is_modo) || !is_plus) {
-    
+
     // Hide all Administration and Moderation menus
     item_affi.hidden = true;
     item_role.hidden = true;
@@ -5410,7 +5493,7 @@ function xows_gui_occu_drop_onshow(button, drop)
     item_outc.hidden = true;
     return;
   }
-  
+
   // Add separator of "Send a message" menu item
   xows_doc_cls_add(occu.self ? "occu_mi_info" : "occu_mi_priv", "menu-separ");
 
@@ -5418,39 +5501,39 @@ function xows_gui_occu_drop_onshow(button, drop)
   item_role.hidden = !is_modo;
   item_kick.hidden = !is_modo;
   item_outc.hidden = !is_admn;
-  
+
   if(is_admn) {
-    
+
     const item_ownr = xows_doc("occu_mi_ownr");
     const item_admn = xows_doc("occu_mi_admn");
     const item_memb = xows_doc("occu_mi_memb");
     const item_none = xows_doc("occu_mi_none");
-    
+
     // Enable and disable radio buttons according occupant Affiliation
     item_ownr.querySelector("MENU-RADIO").dataset.on = (occu.affi === XOWS_AFFI_OWNR);
     item_admn.querySelector("MENU-RADIO").dataset.on = (occu.affi === XOWS_AFFI_ADMN);
     item_memb.querySelector("MENU-RADIO").dataset.on = (occu.affi === XOWS_AFFI_MEMB);
     item_none.querySelector("MENU-RADIO").dataset.on = (occu.affi === XOWS_AFFI_NONE);
-    
+
     // Disable access to menu items according user permissions
     item_ownr.classList.toggle("MENU-GRAYD", !is_ownr);
     item_admn.classList.toggle("MENU-GRAYD", !is_ownr);
   }
-  
+
   if(is_modo) {
-    
+
     const item_modo = xows_doc("occu_mi_modo");
     const item_part = xows_doc("occu_mi_part");
     const item_vist = xows_doc("occu_mi_vist");
-  
+
     // Enable and disable radio buttons according occupant Role
     item_modo.querySelector("MENU-RADIO").dataset.on = (occu.role === XOWS_ROLE_MODO);
     item_part.querySelector("MENU-RADIO").dataset.on = (occu.role === XOWS_ROLE_PART);
     item_vist.querySelector("MENU-RADIO").dataset.on = (occu.role === XOWS_ROLE_VIST);
-    
+
     // Admin cannot revoke Moderator status of another admin and Modo cannot revoke another Modo
     const can_revoke = (xows_gui_peer.role > occu.role) || (xows_gui_peer.affi > occu.affi);
-    
+
     // Disable access to subitem according user permissions
     item_modo.classList.toggle("MENU-GRAYD", !is_admn); //< Only Admin can grant Moderator Role
     item_part.classList.toggle("MENU-GRAYD", !can_revoke);
@@ -5466,10 +5549,10 @@ function xows_gui_occu_drop_onshow(button, drop)
 function xows_gui_occu_drop_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-    
+
   // Get related room occupant <li-peer> element
   const li_peer = xows_doc("occu_list").querySelector(".SELECTED");
-  
+
   // Close menu and unfocus button
   xows_doc_menu_toggle(li_peer.querySelector("BUTTON"), "drop_occu");
 
@@ -5479,16 +5562,16 @@ function xows_gui_occu_drop_onclick(event)
 
   // Retreive room occupant object
   const occu = xows_cli_occu_get(xows_gui_peer, li_peer.id);
-  
+
   let affi = null;
   let role = null;
-  
+
   switch(li.id)
   {
-  case "occu_mi_info": 
-    xows_gui_prof_open(occu); 
+  case "occu_mi_info":
+    xows_gui_prof_open(occu);
     return;
-  case "occu_mi_priv": 
+  case "occu_mi_priv":
     // Initialize Private Conversation
     xows_gui_priv_init(occu);
     return;
@@ -5507,20 +5590,20 @@ function xows_gui_occu_drop_onclick(event)
   }
 
   if(affi != null && affi != occu.affi) {
-    // Asks for confirmation for Ban or granting Admin or Owner. 
-    if(affi > XOWS_AFFI_MEMB || affi == XOWS_AFFI_OUTC) {
-      xows_gui_mbox_affi_open(xows_gui_peer, occu, affi);
+    // Asks for confirmation for Ban or granting Admin or Owner.
+    if((affi > XOWS_AFFI_MEMB && affi > occu.affi)|| affi === XOWS_AFFI_OUTC) {
+      xows_gui_mbox_affi_open(occu, affi);
     } else {
-      xows_cli_muc_set_affi(xows_gui_peer, occu, affi);
+      xows_cli_muc_set_affi(occu, affi);
     }
   }
 
   if(role != null && role != occu.role) {
     // Asks for confirmation for Kick
-    if(role == XOWS_ROLE_NONE) {
-      xows_gui_mbox_role_open(xows_gui_peer, occu, role);
+    if(role === XOWS_ROLE_NONE) {
+      xows_gui_mbox_role_open(occu, role);
     } else {
-      xows_cli_muc_set_role(xows_gui_peer, occu, role);
+      xows_cli_muc_set_role(occu, role);
     }
   }
 }
@@ -5531,16 +5614,13 @@ function xows_gui_occu_drop_onclick(event)
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_gui_mbox_affi_data = {};
+const xows_gui_mbox_affi_param = {occu:null,affi:null};
 
 /**
  * Room Occupant Affiliation change message box on-abort callback function
  */
 function xows_gui_mbox_affi_onabort()
 {
-  xows_gui_mbox_affi_data.room = null;
-  xows_gui_mbox_affi_data.occu = null;
-  xows_gui_mbox_affi_data.affi = null;
 }
 
 /**
@@ -5548,55 +5628,50 @@ function xows_gui_mbox_affi_onabort()
  */
 function xows_gui_mbox_affi_onvalid()
 {
+  const param = xows_gui_mbox_affi_param;
+  
   // query change affiliation for occupant
-  xows_cli_muc_set_affi(xows_gui_mbox_affi_data.room,
-                        xows_gui_mbox_affi_data.occu,
-                        xows_gui_mbox_affi_data.affi);
-
-  xows_gui_mbox_affi_data.room = null;
-  xows_gui_mbox_affi_data.occu = null;
-  xows_gui_mbox_affi_data.affi = null;
+  xows_cli_muc_set_affi(param.occu, param.affi);
 }
 
 /**
  * Room Occupant Affiliation change message box open
  *
- * @param   {object}    room      Room object
  * @param   {object}    occu      Occupant object
  * @param   {number}    affi      Affiliation value to set
  */
-function xows_gui_mbox_affi_open(room, occu, affi)
+function xows_gui_mbox_affi_open(occu, affi)
 {
   // Store room, occupant and affiliation setup
-  xows_gui_mbox_affi_data.room = room;
-  xows_gui_mbox_affi_data.occu = occu;
-  xows_gui_mbox_affi_data.affi = affi;
-
-  let text;
+  const param = xows_gui_mbox_affi_param;
+  param.occu = occu;
+  param.affi = affi;
+  
+  let head, text;
 
   // Compose dialog message
   if(affi > XOWS_AFFI_OUTC) {
-    text = xows_l10n_get("Change Affiliation of ");
-    text += "<b>"+occu.name+"</b> ";
-    text += xows_l10n_get("to")+" <b>";
-    switch(affi) 
+    head = "Change occupant affiliation";
+    text = xows_l10n_get("Grant Channel affiliation")+" <b>";
+    switch(affi)
     {
     case XOWS_AFFI_OWNR : text += xows_l10n_get("Owner"); break;
     case XOWS_AFFI_ADMN : text += xows_l10n_get("Administrator"); break;
     case XOWS_AFFI_MEMB : text += xows_l10n_get("Member"); break;
     case XOWS_AFFI_NONE : text += xows_l10n_get("None"); break;
     }
-    text += "</b> ?";
+    text += "</b> "+xows_l10n_get("to occupant");
   } else {
-    text = xows_l10n_get("Ban occupant ");
-    text += "<b>"+occu.name+"</b> ?";
+    head = "Ban occupant";
+    text = xows_l10n_get(head);
   }
   
-  // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(XOWS_STYL_ASK, text,
+  text += " <b>"+occu.name+"</b> ?";
+  
+  // Open Message Dialog-Box
+  xows_doc_mbox_open(XOWS_STYL_ASK, head, text,
                      xows_gui_mbox_affi_onvalid, "OK",
-                     xows_gui_mbox_affi_onabort, "Cancel",
-                     true);
+                     xows_gui_mbox_affi_onabort, "Cancel");
 }
 
 /* -------------------------------------------------------------------
@@ -5605,16 +5680,13 @@ function xows_gui_mbox_affi_open(room, occu, affi)
 /**
  * Object to store Page/Dialog temporary data and parameters
  */
-const xows_gui_mbox_role_data = {};
+const xows_gui_mbox_role_param = {occu:null,role:null};
 
 /**
  * Room Occupant Role change message box on-abort callback function
  */
 function xows_gui_mbox_role_onabort()
 {
-  xows_gui_mbox_role_data.room = null;
-  xows_gui_mbox_role_data.occu = null;
-  xows_gui_mbox_role_data.role = null;
 }
 
 /**
@@ -5622,54 +5694,50 @@ function xows_gui_mbox_role_onabort()
  */
 function xows_gui_mbox_role_onvalid()
 {
+  const param = xows_gui_mbox_role_param;
+  
   // query change affiliation for occupant
-  xows_cli_muc_set_role(xows_gui_mbox_role_data.room,
-                        xows_gui_mbox_role_data.occu,
-                        xows_gui_mbox_role_data.role);
+  xows_cli_muc_set_role(param.occu, param.role);
 
-  xows_gui_mbox_role_data.room = null;
-  xows_gui_mbox_role_data.occu = null;
-  xows_gui_mbox_role_data.role = null;
 }
 
 /**
  * Room Occupant Role change message box open
  *
- * @param   {object}    room      Room object
  * @param   {object}    occu      Occupant object
  * @param   {number}    role      Role value to set
  */
-function xows_gui_mbox_role_open(room, occu, role)
+function xows_gui_mbox_role_open(occu, role)
 {
   // Store room, occupant and affiliation setup
-  xows_gui_mbox_role_data.room = room;
-  xows_gui_mbox_role_data.occu = occu;
-  xows_gui_mbox_role_data.role = role;
+  const param = xows_gui_mbox_role_param;
+  param.occu = occu;
+  param.role = role;
 
-  let text;
+  let head, text;
 
   // Compose dialog message
   if(role > XOWS_ROLE_NONE) {
-    text = xows_l10n_get("Change Role of ");
-    text += "<b>"+occu.name+"</b> ";
-    text += xows_l10n_get("to")+" <b>";
-    switch(role) 
+    head = "Change occupant role";
+    text = xows_l10n_get("Assign the Channel role")+" <b>";
+    switch(role)
     {
     case XOWS_ROLE_MODO : text += xows_l10n_get("Moderator"); break;
     case XOWS_ROLE_PART : text += xows_l10n_get("Participant"); break;
     case XOWS_ROLE_VIST : text += xows_l10n_get("Visitor"); break;
     }
-    text += "</b> ?";
+    text += "</b> "+xows_l10n_get("to occupant");
   } else {
-    text = xows_l10n_get("Kick occupant ");
-    text += "<b>"+occu.name+"</b> ?";
+    head = "Kick occupant";
+    text = xows_l10n_get(head);
   }
   
-  // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(XOWS_STYL_ASK, text,
+  text += " <b>"+occu.name+"</b> ?";
+
+  // Open Message Dialog-Box
+  xows_doc_mbox_open(XOWS_STYL_ASK, head, text,
                      xows_gui_mbox_role_onvalid, "OK",
-                     xows_gui_mbox_role_onabort, "Cancel",
-                     true);
+                     xows_gui_mbox_role_onabort, "Cancel");
 }
 
 /* -------------------------------------------------------------------
@@ -5895,7 +5963,7 @@ function xows_gui_page_user_onabort()
 function xows_gui_page_user_onvalid()
 {
   const access = xows_doc("card_open").checked ? "open" : "presence";
-  
+
   // Update user profile
   xows_cli_change_profile(xows_doc("card_name").value,
                           xows_doc("card_avat").data,
@@ -5979,7 +6047,7 @@ function xows_gui_page_user_ev_file(event)
         card_avat.data = url;
         card_avat.style.backgroundImage = "url(\""+url+"\")";
         // Open Message Box dialog
-        xows_doc_popu_open_for_save(xows_gui_page_user_onvalid, 
+        xows_doc_popu_open_for_save(xows_gui_page_user_onvalid,
                                     xows_gui_page_user_onabort);
       };
       // Start image loading (should be quick)
@@ -6108,7 +6176,7 @@ function xows_gui_page_mucc_onabort()
 
     // Reference to value array
     const value = form[i].value;
-    
+
     switch(form[i]["var"])
     {
     case "muc#roomconfig_roomname":
@@ -6161,12 +6229,12 @@ function xows_gui_page_mucc_oninput(target)
   let change = false;
 
   const form = xows_gui_page_mucc.form;
-  
+
   // Enable or disable Password input
   const prot = xows_doc("mucc_prot").checked;
   xows_doc("mucc_pass").disabled = !prot;
   if(!prot) xows_doc("mucc_pass").value = "";
-  
+
   // Compare page inputs and received form values
   for(let i = 0, n = form.length; i < n; ++i) {
 
@@ -6206,7 +6274,7 @@ function xows_gui_page_mucc_oninput(target)
 
     if(change) break;
   }
-      
+
   // Open Message Box for save changes
   if(change) xows_doc_popu_open_for_save(xows_gui_page_mucc_onvalid,
                                          xows_gui_page_mucc_onabort);
@@ -6256,13 +6324,13 @@ function xows_gui_page_mucc_open(room, form)
 
   // Set the Room ID in the page header frame
   xows_doc("mucc_room").innerText = room.name +" ("+room.addr+")";
-  
+
   // Initialize parameters
   const param = xows_gui_page_mucc;
   param.room = room;
   param.form = form;
   param.cancel = true;
-  
+
   // Initialize inputs
   xows_gui_page_mucc_onabort();
 
@@ -6288,18 +6356,18 @@ const xows_gui_page_muca_load = ["outcast","owner","admin","member"];
  * Room Administration page search reference item Object for <li-memb> Element
  *
  * @param   {element}   li        <li-memb> element to search reference for
- * 
+ *
  * #return  {object}    Reference item or null if not found
  */
 function xows_gui_page_muca_getitem(li)
 {
   const items = xows_gui_page_muca.items;
-  
+
   // Search for item in reference array
-  for(let i = 0; i < items.length; ++i) 
-    if(items[i].jid == li.dataset.bare) 
+  for(let i = 0; i < items.length; ++i)
+    if(items[i].jid == li.dataset.bare)
       return items[i];
-  
+
   return null;
 }
 
@@ -6316,12 +6384,12 @@ function xows_gui_page_muca_onload(from, items)
 
   const muca_outc = xows_doc("muca_outc");
   const muca_affi = xows_doc("muca_affi");
-  
+
   if(param.stage == 0) {
     // This is initial call, we reset all elements
     muca_outc.innerHTML = "";
     muca_affi.innerHTML = "";
-    
+
     muca_outc.classList.add("LOADING");
     muca_affi.classList.add("LOADING");
 
@@ -6330,20 +6398,20 @@ function xows_gui_page_muca_onload(from, items)
 
   // Fill the destination list
   if(items && items.length) {
-    
+
     // Concatenate reference array
     param.items = param.items.concat(items);
-    
+
     // Fill <ul> element with received items
     for(let i = 0; i < items.length; ++i) {
-      
+
       // We ignore "oufself"
       if(xows_cli_isself_addr(items[i].jid))
         continue;
-      
+
       // Spawn new <li-memb> Element
       const li_memb = xows_tpl_admn_memb_spawn(items[i], room.affi);
-      
+
       // Parent to proper <ul>
       if(items[i].affi == -1) {
         muca_outc.appendChild(li_memb);
@@ -6352,32 +6420,32 @@ function xows_gui_page_muca_onload(from, items)
       }
     }
   }
-  
+
   // Admin doesn't have permission to grant/revoke admin or owner
   if(param.stage == 1 && room.affi < XOWS_AFFI_OWNR)
     param.stage = 3;
-  
+
   // Successively load member per-affiliation lists until we get all.
   //
-  // (If you ask me, this part of the protocol is not the better conceived 
-  // one. Why can't we poll for multiple affiliations using an unique get query ? 
+  // (If you ask me, this part of the protocol is not the better conceived
+  // one. Why can't we poll for multiple affiliations using an unique get query ?
   //
-  // The Same remark apply equally for affiliation modifications, this 
+  // The Same remark apply equally for affiliation modifications, this
   // per-affiliation lists management is a mess...)
   //
   if(param.stage < 4) {
-    xows_xmp_muc_affi_get_query(room.addr, 
-                                xows_gui_page_muca_load[param.stage++], 
+    xows_xmp_muc_affi_get_query(room.addr,
+                                xows_gui_page_muca_load[param.stage++],
                                 xows_gui_page_muca_onload);
     return;
   }
-  
+
   // Loading finished, remove loading class
   muca_outc.classList.remove("LOADING");
   muca_affi.classList.remove("LOADING");
-  
+
   const phold = "<li>"+xows_l10n_get("List is empty")+"</li>";
-  
+
   // Set placeholder in case of empty list
   if(muca_outc.innerHTML == "") muca_outc.innerHTML = phold;
   if(muca_affi.innerHTML == "") muca_affi.innerHTML = phold;
@@ -6389,7 +6457,7 @@ function xows_gui_page_muca_onload(from, items)
 function xows_gui_page_muca_onclose()
 {
   const param = xows_gui_page_muca;
-  
+
   // unreference data
   param.room = null;
   param.stage = 0;
@@ -6404,37 +6472,37 @@ function xows_gui_page_muca_onvalid()
   // Set page in loading state
   xows_doc_cls_add("muca_outc", "LOADING");
   xows_doc_cls_add("muca_affi", "LOADING");
-  
+
   const param = xows_gui_page_muca;
-  
+
   // Modify item list according current state and start edit cycle
   let li_mods = xows_doc("page_muca").querySelectorAll(".MODIFIED");
-  
+
   for(let i = 0; i < li_mods.length; ++i) {
-    
+
     // Get reference item to be modified
     const item = xows_gui_page_muca_getitem(li_mods[i]);
-    
+
     // Change item Affiliation value
     item.affi = parseInt(li_mods[i].dataset.affi);
-    
+
     // We don't use the List-Modify mechanism as described in:
     //   https://xmpp.org/extensions/xep-0045.html#modifyowner
     //   https://xmpp.org/extensions/xep-0045.html#modifyadmin
     //   https://xmpp.org/extensions/xep-0045.html#modifymember
     // and
     //   https://xmpp.org/extensions/xep-0045.html#modifyban
-    // 
-    // First, because our current way to manage occupant affiliations (all at 
-    // once) make it horribly complex to implement (get-query, building delta 
-    // list, set-query, for each affiliation-list in sequential way), and 
-    // secondly, because we never had managed to get it work properly and 
+    //
+    // First, because our current way to manage occupant affiliations (all at
+    // once) make it horribly complex to implement (get-query, building delta
+    // list, set-query, for each affiliation-list in sequential way), and
+    // secondly, because we never had managed to get it work properly and
     // never figured out how exactly it is supposed to work.
-    // 
-    // Changing affiliation using one query per occupant proved to be robust 
+    //
+    // Changing affiliation using one query per occupant proved to be robust
     // and frugal enough, assuming administrator changes only few affiliations
     // at once.
-     
+
     // Change user affiliation
     xows_xmp_muc_affi_set_query(param.room.addr, item, null);
   }
@@ -6451,12 +6519,12 @@ function xows_gui_page_muca_onabort()
 {
   // Reset values
   let li_mods = xows_doc("page_muca").querySelectorAll(".MODIFIED");
-  
+
   for(let i = 0; i < li_mods.length; ++i) {
-    
+
     // Get reference item to compare and set as MODIFIED
     const item = xows_gui_page_muca_getitem(li_mods[i]);
-    
+
     // Update <li-memb> Element to reset to initial value
     xows_tpl_admn_memb_update(li_mods[i], item.affi, item.affi);
   }
@@ -6471,10 +6539,10 @@ function xows_gui_page_muca_oninput(target)
 {
   // Update GUI elements
   if(target.tagName == "MEMB-RADIO") {
-    
+
     // Get related <li-memb> element
     const li_memb = target.closest("LI-MEMB");
-    
+
     // Get reference item to compare and set as MODIFIED
     const item = xows_gui_page_muca_getitem(li_memb);
 
@@ -6500,7 +6568,7 @@ function xows_gui_page_muca_open(room)
 {
   // Set the Room ID in the page header frame
   xows_doc("muca_room").innerText = room.name +" ("+room.addr +")";
-  
+
   // Initialize parameters
   const param = xows_gui_page_muca;
   param.room = room;
@@ -6515,9 +6583,9 @@ function xows_gui_page_muca_open(room)
                                       xows_gui_page_muca_oninput);
 }
 /* -------------------------------------------------------------------
- * 
+ *
  * Popup Dialog-Box
- * 
+ *
  * -------------------------------------------------------------------*/
 /* -------------------------------------------------------------------
  * Popup Dialog-Box - Room initialization
@@ -6533,7 +6601,7 @@ const xows_gui_mbox_conf = {room:null};
 function xows_gui_mbox_conf_onvalid()
 {
   const room = xows_gui_mbox_conf.room;
-  
+
   xows_log(2,"gui_room_init_onvalid","request initial Room config",room.addr);
 
   // Send Room config form request, XMPP server will reply which
@@ -6562,11 +6630,10 @@ function xows_gui_mbox_conf_open(room)
   xows_gui_mbox_conf.room = room;
 
   // Open new Message Box to confirm Room initial config process
-  xows_doc_mbox_open(XOWS_STYL_ASK, "Channel initialization", 
-                                    "A new Channel was created and you are its owner, do you want to configure it right now ?", 
-                                    xows_gui_mbox_conf_onvalid, "Configure", 
-                                    xows_gui_mbox_conf_onabort, "Ignore", 
-                                    true);
+  xows_doc_mbox_open(XOWS_STYL_ASK, "Channel initialization",
+                                    "A new Channel was created and you are its owner, do you want to configure it right now ?",
+                                    xows_gui_mbox_conf_onvalid, "Configure",
+                                    xows_gui_mbox_conf_onabort, "Ignore");
 }
 
 /* -------------------------------------------------------------------
@@ -6575,7 +6642,7 @@ function xows_gui_mbox_conf_open(room)
 
 /**
  * Occupant Infos/Manage page on-input callback function
- * 
+ *
  * @param   {object}   peer    Occupant or Contact object to show/manage
  * @param   {object}   target  Target object of the triggered Event
  */
@@ -6583,14 +6650,12 @@ function xows_gui_prof_onclick(peer, target)
 {
   // Check for click on "Add Contact" button
   if(target && target.id == "prof_addc") {
-
-    // Query contact add
-    xows_gui_pupu_subs_edit_open(peer, true);
     
-    // Hide button
-    target.hidden = true;
+    // Send subscribe request
+    xows_cli_subs_request(peer.bare);
 
-    return;
+    // Update popup with new Peer parameters
+    xows_doc_prof_update();
   }
 }
 

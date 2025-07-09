@@ -73,7 +73,7 @@
 
   "Register":
   "",
-  
+
   "Login with an existing account":
   "",
 
@@ -98,7 +98,7 @@
   "Contacts":
   "",
 
-  "Add a contact":
+  "Subscribes to contact":
   "",
 
   "Authorized":
@@ -115,10 +115,10 @@
 
   "Authorization pending":
   "",
-  
+
   "Remote server not found":
   "",
-  
+
   "Server error":
   "",
 
@@ -139,13 +139,13 @@
 
   "Private Channels":
   "",
-  
+
   "Private messages":
   "",
-  
+
   "Room occupant":
   "",
-  
+
   "Edit user profile":
   "",
 
@@ -226,73 +226,100 @@
 
   "Add an emoji":
   "",
-  
+
   "Profil":
   "",
-  
+
   "Send a message":
   "",
-  
+
   "Contact profile":
   "",
   
-  "Affiliation to current Chatoom":
+  "Subscribe":
   "",
   
-  "Role in current Chatoom":
+  "Pending...":
   "",
   
+  "This user have no status message":
+  "",
+  
+  "Contact subscription":
+  "",
+
+  "Mutual":
+  "",
+
+  "Pending":
+  "",
+
+  "Unavailable":
+  "",
+  
+  "Affiliation to Channel":
+  "",
+
+  "Role in Channel":
+  "",
+
   "Affiliation":
   "",
-  
+
   "Owner":
   "",
-  
+
   "Administrator":
   "",
-  
+
   "Member":
   "",
-  
+
   "Unaffiliated":
   "None",
-  
+
   "Role":
   "",
-  
+
   "Moderator":
   "",
-  
+
   "Participant":
   "",
-  
+
   "Visitor":
   "",
-  
+
   "Kick":
   "",
-  
+
   "Ban":
   "",
-  
+
   "Occupants":
   "",
   
-  "Change Role of ":
-  "",
-  
-  "Kick occupant ":
-  "",
-  
-  "Change Affiliation of ":
+  "Change occupant role":
   "",
 
-  "Ban occupant ":
+  "Assign the Channel role":
   "",
 
-  "to":
+  "Kick occupant":
   "",
   
+  "Change occupant affiliation":
+  "",
+  
+  "Grant Channel affiliation":
+  "",
+
+  "Ban occupant":
+  "",
+
+  "to occupant":
+  "",
+
   "Add this Contact":
   "",
 
@@ -304,10 +331,10 @@
 
   "Join":
   "",
-  
+
   "Channel initialization":
   "",
-  
+
   "A new Channel was created and you are its owner, do you want to configure it right now ?":
   "",
 
@@ -316,11 +343,32 @@
 
   "Configure":
   "",
-
-  "Request subscription authorisation":
+  
+  "You were banned from the Channel":
+  "",
+  
+  "You were kicked from the Channel":
+  "",
+  
+  "Rules changes caused you to leave the Channel":
+  "",
+  
+  "Server error caused you to leave the Channel":
   "",
 
-  "Allow contact subscription ?":
+  "Revoke contact subscription":
+  "",
+
+  "Do you really want to remove contact and revoke subscription authorization ?":
+  "",
+  
+  "Do you really want to remove contact and abort subscription authorization request ?":
+  "",
+  
+  "Contact subscription request":
+  "",
+  
+  "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "",
 
   "Allow":
@@ -329,30 +377,9 @@
   "Deny":
   "",
 
-  "New authorization request was sent":
+  "New subscription authorization request was sent":
   "",
 
-  "Add contact and request authorisation ?":
-  "",
-
-  "Remove contact and revoke authorization ?":
-  "",
-  
-  "Subscription with contact":
-  "",
-  
-  "Mutual":
-  "",
-  
-  "Accorded":
-  "",
-  
-  "Pending":
-  "",
-  
-  "None":
-  "",
-  
   "Send a message to":
   "",
 
@@ -391,10 +418,10 @@
 
   "Set Channel subject...":
   "",
-  
+
   "Add Channel to bookmarks ?":
   "",
-  
+
   "Add Bookmark":
   "",
 
@@ -436,13 +463,13 @@
 
   "Password":
   "",
-  
+
   "Enter a password...":
   "",
-  
+
   "A password-protected Channel requires to provide a password to join it":
   "",
-  
+
   "Allowed to members only":
   "",
 
@@ -490,16 +517,16 @@
 
   "Stores messages in persistent way using Message Archive Management":
   "",
-  
+
   "Channel administration":
   "",
-  
+
   "List is empty":
   "",
-  
+
   "Banned users":
   "",
-  
+
   "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
   "",
 
@@ -508,7 +535,7 @@
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
   "",
-  
+
   "User profile":
   "",
 
@@ -547,10 +574,10 @@
 
   "Retry":
   "",
-  
+
   "Add":
   "",
-  
+
   "Enable or disable the camera":
   "",
 
@@ -613,22 +640,19 @@
 
   "Reply to":
   "",
-  
+
   "The message is unreachable":
   "",
-  
+
   "The message was deleted":
   "",
-  
-  "This user have no status message":
-  "",
-  
+
   "Do you really want to disconnect current session ?":
   "",
-  
+
   "has left the conversation":
   "",
-  
+
   "joined the conversation":
   ""
 }

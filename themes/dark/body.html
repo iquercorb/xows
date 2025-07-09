@@ -25,6 +25,10 @@
 <!-- Frame to capture mouse click outside menus or dialogs -->
 <div hidden id="scr_void"></div>
 
+<dialog hidden id="over_prof" XOWS_TPL_IMPORT>
+  <!-- Special Contact/Occupant Profile popup -->
+</dialog>
+
 <!-- Image view frame -->
 <div hidden id="over_view">
   <div id="view_wrap">
@@ -33,16 +37,6 @@
     <button id="view_close"></button>
   </div>
 </div>
-
-<!-- Generic Popup Dialog-Box -->
-<dialog hidden id="over_popu">
-  <popu-text id="popu_text"></popu-text>
-  <popu-acts>
-    <button id="popu_abort" class="btn-abort"></button>
-    <button id="popu_valid" class="btn-valid"></button>
-    <btn-close id="popu_close"></btn-close>
-  </popu-acts>
-</dialog>
 
 <!-- Generic Message Dialog-Box -->
 <dialog hidden class="over-dbox" id="over_mbox">
@@ -71,6 +65,12 @@
   </dbox-acts>
 </dialog>
 
-<dialog hidden id="over_prof" XOWS_TPL_IMPORT>
-  <!-- Special Contact/Occupant Profile popup -->
+<!-- Generic Popup Dialog-Box -->
+<dialog hidden id="over_popu">
+  <popu-text id="popu_text"></popu-text>
+  <popu-acts>
+    <button id="popu_abort" class="btn-abort"></button>
+    <button id="popu_valid" class="btn-valid"></button>
+    <btn-close id="popu_close"></btn-close>
+  </popu-acts>
 </dialog>

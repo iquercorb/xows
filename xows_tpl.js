@@ -1059,7 +1059,7 @@ function xows_tpl_update_rost_subs(li_peer, cont)
 }
 
 /**
- * Build and returns a new instance of roster Contact <li-peer> HTML Element 
+ * Build and returns a new instance of roster Contact <li-peer> HTML Element
  * from existing template.
  *
  * @param   {object}    cont      Contact Object
@@ -1083,11 +1083,11 @@ function xows_tpl_spawn_rost_cont(cont, text)
     // Set proper class for avatar
     inst.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont.avat);
   } else {
-    // We awaits for Contact subscription
+    // We awaits for contact subscription
     inst.title = cont.addr;
     inst.classList.add("PEER-DENY");
     inst.querySelector("PEER-NAME").innerText = cont.addr;
-    inst.querySelector("PEER-META").innerText = text ? xows_l10n_get(text) 
+    inst.querySelector("PEER-META").innerText = text ? xows_l10n_get(text)
                                                      : xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
     inst.querySelector("[name='cont_bt_rtry']").disabled = false;
@@ -1107,7 +1107,7 @@ function xows_tpl_update_rost_cont(li, cont, text)
 {
   const badg_show = li.querySelector("BADG-SHOW");
   const cont_bt_rtry = li.querySelector("[name='cont_bt_rtry']");
-  
+
   // Update content
   if(cont.subs & XOWS_SUBS_TO) {
     li.title = cont.name+" ("+cont.addr+")";
@@ -1120,11 +1120,11 @@ function xows_tpl_update_rost_cont(li, cont, text)
     // Set proper class for avatar
     li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont.avat);
   } else {
-    // We awaits for Contact subscription
+    // We awaits for contact subscription
     li.title = cont.addr;
     li.classList.add("PEER-DENY");
     li.querySelector("PEER-NAME").innerText = cont.addr;
-    li.querySelector("PEER-META").innerText = text ? xows_l10n_get(text) 
+    li.querySelector("PEER-META").innerText = text ? xows_l10n_get(text)
                                                    : xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
     cont_bt_rtry.disabled = false;
@@ -1132,7 +1132,7 @@ function xows_tpl_update_rost_cont(li, cont, text)
 }
 
 /**
- * Build and returns a new instance of roster Room <li-peer> Element 
+ * Build and returns a new instance of roster Room <li-peer> Element
  * from existing template.
  *
  * @param   {object}    room      Room Object
@@ -1169,15 +1169,10 @@ function xows_tpl_update_rost_room(li, room)
   li.querySelector("PEER-META").innerText = room.desc;
   li.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
   //const peer_avat = li.querySelector("PEER-AVAT");
-  //if(room.lock) {
-  //  peer_avat.classList.add("ROOM-LOCK");
-  //} else {
-  //  peer_avat.classList.remove("ROOM-LOCK");
-  //}
 }
 
 /**
- * Build and returns a new instance of Room Occupant <li-peer> Element 
+ * Build and returns a new instance of Room Occupant <li-peer> Element
  * from existing template.
  *
  * @param   {object}    occu      Occupant Object
@@ -1200,7 +1195,7 @@ function xows_tpl_spawn_room_occu(occu, priv = false)
   } else {
     inst.id = occu.addr;
   }
-  
+
   // Set content to proper elements
   inst.title = occu.name+" ("+occu.addr+")";
   //inst.dataset.full = full || "";
@@ -1244,19 +1239,19 @@ function xows_tpl_mesg_bestref(peer, li_mesg)
 {
   // XEP-0424 (Message Retraction)
   //
-  // For messages of type 'groupchat', the ID assigned to the stanza by the 
-  // group chat itself must be used. This is discovered in a <stanza-id> 
-  // element with a 'by' attribute that matches the bare JID of the group 
-  // chat, as defined in Unique and Stable Stanza IDs (XEP-0359) 
-  
+  // For messages of type 'groupchat', the ID assigned to the stanza by the
+  // group chat itself must be used. This is discovered in a <stanza-id>
+  // element with a 'by' attribute that matches the bare JID of the group
+  // chat, as defined in Unique and Stable Stanza IDs (XEP-0359)
+
   // XEP-0461 (Message Replies)
   //
-  // For messages of type 'groupchat', the stanza's 'id' attribute MUST NOT be 
-  // used for replies. Instead, in group chat situations, the ID assigned to the 
-  // stanza by the group chat itself must be used. This is discovered in a 
-  // <stanza-id> element with a 'by' attribute that matches the bare JID of 
+  // For messages of type 'groupchat', the stanza's 'id' attribute MUST NOT be
+  // used for replies. Instead, in group chat situations, the ID assigned to the
+  // stanza by the group chat itself must be used. This is discovered in a
+  // <stanza-id> element with a 'by' attribute that matches the bare JID of
   // the group chat, as defined in Unique and Stable Stanza IDs (XEP-0359)
-  
+
   if(peer.type === XOWS_PEER_ROOM) {
     return li_mesg.dataset.szid ? li_mesg.dataset.szid : li_mesg.dataset.id;
   } else {
@@ -1275,10 +1270,10 @@ function xows_tpl_mesg_bestref(peer, li_mesg)
  * @return  {element}   History message <li-mesg> Element
  */
 function xows_tpl_mesg_null_spawn(id, from, body) {
-  
+
   // Clone DOM tree from template
   const inst = xows_tpl_model["hist-null"].firstChild.cloneNode(true);
-  
+
   // Set message minimum data
   inst.dataset.id = id;
   inst.dataset.orid = id;
@@ -1287,7 +1282,7 @@ function xows_tpl_mesg_null_spawn(id, from, body) {
 
   // Add body (usually error/tombstone message)
   inst.querySelector("MESG-BODY").innerHTML = body;
-  
+
   // Return element
   return inst;
 }
@@ -1319,22 +1314,22 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
 
   // Check for Reply/Quoted Message
   if(li_rpl) {
-    
+
     const mesg_rply = inst.querySelector("MESG-RPLY");
-    
+
     // Checks whether there is a reply but message cannot be found
     if(li_rpl.classList.contains("MESG-NULL")) {
 
       // Set tombstone reply section
       mesg_rply.classList.add("MESG-FAIL");
-      
+
     } else {
-      
+
       // Get author Peer of quoted message
       const peer_rply = xows_cli_author_get(peer, li_rpl.dataset.from, li_rpl.dataset.ocid);
 
       // Check whether message is referencing ourself
-      if(peer_rply.self) 
+      if(peer_rply.self)
         inst.classList.add("MENTION");
 
       // Get proper Peer identifier
@@ -1349,7 +1344,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
       const rply_from = inst.querySelector("RPLY-FROM");
       rply_from.dataset.peer = peerid;
       rply_from.innerText = peer_rply.name;
-      
+
       // Set reply author address
       mesg_rply.dataset.to = peer_rply.addr;
     }
@@ -1368,7 +1363,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
   let append;
 
   if(li_rep) {
-    // If this is a Correction/Retraction message, we kee the same 
+    // If this is a Correction/Retraction message, we kee the same
     // style as the retracted one
     append = li_rep.classList.contains("MESG-APPEND");
     // Set message as Modified
@@ -1456,31 +1451,31 @@ function xows_tpl_mesg_update(li_msg, peer, mesg, recp, li_rpl)
   if(recp) li_msg.classList.add("MESG-RECP");
 
   if(li_rpl) {
-    
+
     // Add Reply data and show element
     const mesg_rply = li_msg.querySelector("MESG-RPLY");
-    
+
     // Checks whether there is a reply but message cannot be found
     if(li_rpl.classList.contains("MESG-NULL")) {
-      
+
       // Set reply as tombstone
       mesg_rply.classList.add("MESG-FAIL");
-      
+
       // Remove MENTION class if exists
       li_msg.classList.remove("MENTION");
-      
+
     } else {
-      
+
       // Get author Peer of quoted message
       const peer_rply = xows_cli_author_get(peer, li_rpl.dataset.from, li_rpl.dataset.ocid);
-      
+
       // Set reply author address
       mesg_rply.dataset.to = peer_rply.addr;
     }
 
     // Update reference for corrected messages forwarding
     mesg_rply.dataset.id = xows_tpl_mesg_bestref(peer, li_rpl);
-    
+
     // Correted message (discarded) doesn't have Body
     const mesg_body = li_rpl.querySelector("MESG-BODY");
     // Set Quoted text
@@ -1597,7 +1592,7 @@ function xows_tpl_admn_memb_spawn(item, affi)
 
   // Clone DOM tree from template
   const inst = xows_tpl_model[tmpl].firstChild.cloneNode(true);
-  
+
   // Set common (if available) values
   inst.dataset.bare = item.jid;
   inst.dataset.nick = item.nick;
@@ -1605,28 +1600,28 @@ function xows_tpl_admn_memb_spawn(item, affi)
   // Set content to proper elements
   inst.querySelector("MEMB-ADDR").innerText = item.jid ? item.jid : "";
   inst.querySelector("MEMB-NICK").innerText = item.nick ? item.nick : "";
-  
+
   // Configure affiliation-specific stuff
   if(item.affi) {
-    
+
     if(item.affi > XOWS_AFFI_OUTC) {
-      
+
       inst.dataset.affi = item.affi;
       //inst.disabled = (item.affi >= affi);
       if((affi < XOWS_AFFI_OWNR) && (item.affi >= affi))
         inst.setAttribute("disabled","");
-      
+
       const radios = inst.querySelectorAll("MEMB-RADIO");
-      
+
       for(let i = 0; i < radios.length; ++i) {
         radios[i].dataset.on = (radios[i].dataset.affi == item.affi);
         // Admin doesn't have permission to revoke/grant admin or owner
-        if(affi < XOWS_AFFI_OWNR) 
+        if(affi < XOWS_AFFI_OWNR)
           radios[i].hidden = radios[i].dataset.affi > XOWS_AFFI_MEMB;
       }
     }
   }
-  
+
   return inst;
 }
 
@@ -1641,10 +1636,10 @@ function xows_tpl_admn_memb_update(li, affi, aref)
 {
   // Get list (or single) radio element(s)
   const radio = li.querySelectorAll("MEMB-RADIO");
-  
+
   if(radio.length > 1) {
     // Set proper radio on, switch off others
-    for(let i = 0; i < radio.length; ++i) 
+    for(let i = 0; i < radio.length; ++i)
       radio[i].dataset.on = (radio[i].dataset.affi == affi);
   } else {
     // Toggle single radio on/off
@@ -1653,7 +1648,7 @@ function xows_tpl_admn_memb_update(li, affi, aref)
     // Change affiliation to set to reference value
     if(turn_off) affi = aref;
   }
-  
+
   // Update <li-memb> affi value
   li.dataset.affi = affi;
 
@@ -1668,7 +1663,7 @@ function xows_tpl_admn_memb_update(li, affi, aref)
 }
 
 /**
- * Build and returns a new instance of Jingle Audio Peer <strm-video> Element 
+ * Build and returns a new instance of Jingle Audio Peer <strm-video> Element
  * from existing template.
  *
  * @param   {string}    jid       Call Peer full JID
@@ -1693,7 +1688,7 @@ function xows_tpl_spawn_stream_audio(jid, nick, avat)
 }
 
 /**
- * Build and returns a new instance of Jingle Video Peer <strm-video> Element 
+ * Build and returns a new instance of Jingle Video Peer <strm-video> Element
  * from existing template.
  *
  * @param   {string}    jid       Call Peer full JID
