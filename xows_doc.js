@@ -402,7 +402,7 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("rost_fram"),  "click",    xows_gui_rost_fram_onclick);
   // User panel
   xows_doc_listener_add(xows_doc("user_panl"),  "click",    xows_gui_user_panl_onclick);
-  
+
   // Chat header
   xows_doc_listener_add(xows_doc("chat_head"),  "click",    xows_gui_chat_head_onclick);
   // Chat main
@@ -1480,9 +1480,9 @@ function xows_doc_prof_close()
 function xows_doc_prof_update()
 {
   const peer = xows_doc_prof_param.peer;
-  
+
   const over_prof = xows_doc("over_prof");
-  
+
   // Fill common peer informations
   over_prof.querySelector("PEER-NAME").innerText = peer.name;
   over_prof.querySelector("PEER-ADDR").innerText = peer.bare ? peer.bare : "";
@@ -1501,8 +1501,8 @@ function xows_doc_prof_update()
 
   // Set Occupant informations
   if(peer.type === XOWS_PEER_OCCU) {
-    
-    if(peer.bare) 
+
+    if(peer.bare)
       cont = xows_cli_cont_get(peer.bare);
 
     let affi_txt;
@@ -1535,15 +1535,15 @@ function xows_doc_prof_update()
       cont = xows_cli_cont_get(peer.bare);
 
     xows_doc_show("prof_occu");
-  
+
   } else {
-    
+
     cont = peer;
     xows_doc_hide("prof_occu");
   }
-  
+
   if(!peer.self) {
-    
+
     let subs_txt;
     let subs_lvl = 0;
 
@@ -1562,24 +1562,24 @@ function xows_doc_prof_update()
       prof_addc.hidden = (subs_stat > 0); //< Show/hide subscribe button
       switch(subs_stat)
       {
-      case 1: 
-        subs_txt = "Pending"; 
-        subs_lvl = 1; 
+      case 1:
+        subs_txt = "Pending";
+        subs_lvl = 1;
         break;
-      case 2: 
-        subs_txt = "Unavailable"; 
-        subs_lvl = -1; 
+      case 2:
+        subs_txt = "Unavailable";
+        subs_lvl = -1;
         break;
       }
     }
-    
+
     prof_subs.innerText = xows_l10n_get(subs_txt);
     prof_subs.dataset.subs = subs_lvl;
-    
+
     xows_doc_show("prof_cont");
-    
+
   } else {
-    
+
     xows_doc_hide("prof_cont");
   }
 }

@@ -50,8 +50,9 @@ let xows_options = {
   verbose         : 1,          //< Verbosity level
   uncache         : false,      //< Force uncache of loaded styles and templates
   allow_register  : false,      //< Allow user to access to account register dialog
-  legacy_vcard    : false,      //< Force usage of legacy XEP-0054 vcard-temp instead of XEP-0292 vCard4 Over XMPP
-  vcard4_notify   : true,       //< Request for Vcard4 PubSub notifications
+  //legacy_vcard    : false,      //< Force usage of legacy XEP-0054 vcard-temp instead of XEP-0292 vCard4 Over XMPP
+  //vcard4_notify   : true,       //< Request for Vcard4 PubSub notifications
+  avatar_autopub  : true,       //< Auto-publish the default Avatar if none exists for user
   avatar_notify   : true,       //< Request for User Avatar PubSub notifications
   login_delay     : 2000,       //< Delay (in milliseconds) between registration and failed attempts
   history_size    : 256,        //< Size of message history "window" (history pull will gather half this value)
@@ -171,8 +172,9 @@ function xows_init(options)
     if(options.hasOwnProperty("verbose"))          xows_options.verbose = options.verbose;
     if(options.hasOwnProperty("uncache"))          xows_options.uncache = options.uncache;
     if(options.hasOwnProperty("allow_register"))   xows_options.allow_register = options.allow_register;
-    if(options.hasOwnProperty("legacy_vcard"))     xows_options.legacy_vcard = options.legacy_vcard;
-    if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
+    //if(options.hasOwnProperty("legacy_vcard"))     xows_options.legacy_vcard = options.legacy_vcard;
+    //if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
+    if(options.hasOwnProperty("avatar_autopub"))   xows_options.avatar_autopub = options.avatar_autopub;
     if(options.hasOwnProperty("avatar_notify"))    xows_options.avatar_notify = options.avatar_notify;
     if(options.hasOwnProperty("fail_delay"))       xows_options.fail_delay = options.fail_delay;
     if(options.hasOwnProperty("history_size"))     xows_options.history_size = options.history_size;

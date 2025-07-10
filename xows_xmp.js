@@ -139,8 +139,8 @@ function xows_xmp_connect(url, jid, password, register)
   xows_xmp_addr = url;
 
   // Reset bind data from previous session
-  xows_xmp_bind.bare = null;
-  xows_xmp_bind.full = null;
+  xows_xmp_bind.jbar = null;
+  xows_xmp_bind.jful = null;
   xows_xmp_bind.node = null;
   xows_xmp_bind.resc = null;
 
@@ -161,7 +161,7 @@ function xows_xmp_connect(url, jid, password, register)
   }
 
   // store authentication data
-  xows_xmp_auth.bare = jid;
+  xows_xmp_auth.jbar = jid;
   xows_xmp_auth.user = jid_split[0];
   xows_xmp_auth.pass = password;
 
@@ -213,7 +213,7 @@ function xows_xmp_reconnect()
   xows_log(2,"xmp_reconnect","try reconnect",xows_xmp_addr);
 
   // Verify we have connexion parameters
-  if(!xows_xmp_addr || !xows_xmp_auth.bare || !xows_xmp_auth.user || !xows_xmp_auth.pass)
+  if(!xows_xmp_addr || !xows_xmp_auth.jbar || !xows_xmp_auth.user || !xows_xmp_auth.pass)
     return;
 
   // If socket already openned, close it
@@ -481,7 +481,7 @@ function xows_xmp_fram_close_send(code, mesg)
   } else {
 
     // Reset auth data only if close is initiated by user
-    xows_xmp_auth.bare = null;
+    xows_xmp_auth.jbar = null;
     xows_xmp_auth.user = null;
     xows_xmp_auth.pass = null;
   }
@@ -611,7 +611,7 @@ const xows_xmp_sasl_mechanisms = [];
 function xows_xmp_sasl_auth_send()
 {
   // Try to initialize SASL
-  if(!xows_sasl_init(xows_xmp_sasl_mechanisms, xows_xmp_auth.bare, xows_xmp_auth.user, xows_xmp_auth.pass)) {
+  if(!xows_sasl_init(xows_xmp_sasl_mechanisms, xows_xmp_auth.jbar, xows_xmp_auth.user, xows_xmp_auth.pass)) {
     let err_msg = "Unable to find a suitable authentication mechanism";
     xows_log(0,"xmp_sasl_auth_send",err_msg);
     xows_xmp_fram_close_send(XOWS_SIG_ERR, err_msg);
@@ -752,12 +752,12 @@ function xows_xmp_bind_parse(stanza)
 
   // Get the full JID and parse the received resource
   const full_jid = xows_xml_innertext(stanza.querySelector("jid"));
-  xows_xmp_bind.full = full_jid;
-  xows_xmp_bind.bare = xows_jid_bare(full_jid);
+  xows_xmp_bind.jful = full_jid;
+  xows_xmp_bind.jbar = xows_jid_bare(full_jid);
   xows_xmp_bind.node = xows_jid_node(full_jid);
   xows_xmp_bind.resc = xows_jid_resc(full_jid);
 
-  xows_log(2,"xmp_bind_parse","binded resource",xows_xmp_bind.full);
+  xows_log(2,"xmp_bind_parse","binded resource",xows_xmp_bind.jful);
 
   // Session ready, forward to client
   xows_xmp_fw_onsession(xows_xmp_bind);
@@ -1635,7 +1635,7 @@ function xows_xmp_presence_recv(stanza)
   }
 
   // Additionnal <presence> informations or data
-  let priority, status, photo, caps, ocid, mucusr;
+  let prio, stat, caps, ocid, mucx, phot = null;
 
   let i = stanza.childNodes.length;
   while(i--) {
@@ -1656,19 +1656,20 @@ function xows_xmp_presence_recv(stanza)
       continue; }
 
     case "priority":
-      priority = xows_xml_innertext(node);
+      prio = xows_xml_innertext(node);
       continue;
 
     case "status":
-      status = xows_xml_innertext(node);
+      stat = xows_xml_innertext(node);
       continue;
     }
 
     switch(xmlns)
     {
-    case XOWS_NS_VCARDXUPDATE: //< vcard-temp for photo element (XEP-0054)
-      photo = xows_xml_innertext(node.firstChild); //< should be an <photo>
-      continue;
+    case XOWS_NS_VCARDXUPDATE: { // Support for XEP-0153 vCard-Based Avatars
+        const photo = node.querySelector("photo");
+        if(photo) phot = xows_xml_innertext(photo);
+      } continue;
 
     case XOWS_NS_CAPS: //< Entity capabilities (XEP-0115)
       caps = {"node":node.getAttribute("node"),
@@ -1680,27 +1681,27 @@ function xows_xmp_presence_recv(stanza)
       continue;
 
     case XOWS_NS_MUCUSER: { //< Room occupant informations
-      const item = node.querySelector("item"); //< should be an <item>
+        const item = node.querySelector("item"); //< should be an <item>
 
-      mucusr = { "affiliation" : xows_xmp_affi_val.get(item.getAttribute("affiliation")),
-                  "role"        : xows_xmp_role_val.get(item.getAttribute("role")),
-                  "jid"         : item.getAttribute("jid"),
-                  "nickname"    : item.getAttribute("nickname"),
-                  "code"        : []};
+        mucx = {"affi" : xows_xmp_affi_val.get(item.getAttribute("affiliation")),
+                "role" : xows_xmp_role_val.get(item.getAttribute("role")),
+                "jful"  : item.getAttribute("jid"),
+                "nick" : item.getAttribute("nickname"),
+                "code" : []};
 
-      const mucstat = node.querySelectorAll("status"); //< search for <status>
-      for(let j = 0; j < mucstat.length; ++j)
-        mucusr.code.push(parseInt(mucstat[j].getAttribute("code")));
-      continue; }
+        const mucs = node.querySelectorAll("status"); //< search for <status>
+        for(let j = 0; j < mucs.length; ++j)
+          mucx.code.push(parseInt(mucs[j].getAttribute("code")));
+      } continue;
     }
   }
 
   // Check whether this a presence from MUC
-  if(mucusr !== undefined) {
-    xows_xmp_fw_onoccupant(from, show, status, mucusr, ocid, photo);
+  if(mucx !== undefined) {
+    xows_xmp_fw_onoccupant(from, show, stat, mucx, ocid, phot);
   } else {
     // Default is usual contact presence
-    xows_xmp_fw_onpresence(from, show, priority, status, caps, photo);
+    xows_xmp_fw_onpresence(from, show, prio, stat, caps, phot);
   }
 
   return true;
@@ -1712,14 +1713,12 @@ function xows_xmp_presence_recv(stanza)
  *
  * @param   {string}    to        Destination JID (can be null)
  * @param   {string}    type      Presence type attribute (can be null)
- * @param   {number}    level     Availability level 0 to 4 (can be null)
- * @param   {string}    status    Status string tu set
- * @param   {string}    [photo]   Optionnal photo data hash to send
- * @param   {boolean}   [muc]     Append MUC xmlns child to stanza
- * @param   {string}    [nick]    Optional nickname
- * @param   {string}    [pass]    Optional password
+ * @param   {number}    show      Availability level 0 to 4 (can be null)
+ * @param   {string}    stat      Status string to set
+ * @param   {string}   [nick]     Optional nickname
+ * @param   {boolean}  [mucx]     Optional MUC data
  */
-function xows_xmp_presence_send(to, type, level, status, photo, muc, nick, pass)
+function xows_xmp_presence_send(to, type, show, stat, nick, mucx)
 {
   // Create the initial and default <presence> stanza
   const stanza = xows_xml_node("presence");
@@ -1731,37 +1730,34 @@ function xows_xmp_presence_send(to, type, level, status, photo, muc, nick, pass)
   if(type) stanza.setAttribute("type", type);
 
   // Append the <show> and <priority> children
-  if(level > XOWS_SHOW_OFF) {
+  if(show > XOWS_SHOW_OFF) {
     // Translate show level number to string
-    xows_xml_parent(stanza, xows_xml_node("show",null,xows_xmp_show_str.get(level)));
+    xows_xml_parent(stanza, xows_xml_node("show", null, xows_xmp_show_str.get(show)));
     // Set priority according show level
-    xows_xml_parent(stanza, xows_xml_node("priority",null,(level * 20)));
+    xows_xml_parent(stanza, xows_xml_node("priority", null, (show * 20)));
     // Append <status> child
-    if(status) xows_xml_parent(stanza, xows_xml_node("status",null,status));
+    if(stat) xows_xml_parent(stanza, xows_xml_node("status", null, stat));
 
-    //if(xows_cli_feat_srv_has(XOWS_NS_VCARD)) {
-      // Append vcard-temp:x:update for avatar update child
-      xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
-                                  (photo)?xows_xml_node("photo",null,photo):null));
-    //}
+    /* -- We stop support for XEP-0153 (vCard-Based Avatars) --
+    // Append vcard-temp:x:update for avatar update child
+    xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
+                                (photo)?xows_xml_node("photo",null,photo):null));
+    */
 
     // Append <c> (caps) child
-    xows_xml_parent(stanza, xows_xml_node("c",{ "xmlns":XOWS_NS_CAPS,
-                                                "hash":"sha-1",
-                                                "node":XOWS_APP_NODE,
-                                                "ver":xows_xmp_caps_self_verif()}));
-  }
-
-  // Append the proper <x> child for MUC protocole
-  if(muc) {
-    const x = xows_xml_node("x",{"xmlns":XOWS_NS_MUC});
-    // Append <password> child if supplied
-    if(pass) xows_xml_parent(x, xows_xml_node("password",null,pass));
-    xows_xml_parent(stanza, x);
+    xows_xml_parent(stanza, xows_xml_node("c",{"xmlns":XOWS_NS_CAPS,"hash":"sha-1","node":XOWS_APP_NODE,"ver":xows_xmp_caps_self_verif()}));
   }
 
   // Append <nick> child if supplied
   if(nick) xows_xml_parent(stanza, xows_xml_node("nick",{"xmlns":XOWS_NS_NICK},nick));
+
+  // Append the proper <x> child for MUC protocole
+  if(mucx) {
+    const x = xows_xml_node("x",{"xmlns":XOWS_NS_MUC});
+    // Append <password> child if supplied
+    if(mucx.pass) xows_xml_parent(x, xows_xml_node("password",null,pass));
+    xows_xml_parent(stanza, x);
+  }
 
   // Send the final <presence> stanza
   xows_xmp_send(stanza);
@@ -2402,7 +2398,7 @@ const XOWS_NS_VCARDXUPDATE = "vcard-temp:x:update";
 function xows_xmp_vcardt_set_query(vcard, onparse)
 {
   // Create and launch the query
-  const iq = xows_xml_node("iq",{"type":"set","to":xows_xmp_bind.bare},
+  const iq = xows_xml_node("iq",{"type":"set","to":xows_xmp_bind.jbar},
               xows_xml_node("vCard",{"xmlns":XOWS_NS_VCARD},vcard));
 
   // Use generic iq parsing function
@@ -2488,8 +2484,8 @@ function xows_xmp_pubsub_recv(from, event)
   // Get each item child
   const item = [];
   for(let i = 0, n = items.childNodes.length; i < n; ++i) {
-    item.push({ "id": items.childNodes[i].getAttribute("id"),
-                "data": items.childNodes[i].firstChild});
+    item.push({ "id"      : items.childNodes[i].getAttribute("id"),
+                "content" : items.childNodes[i].firstChild});
   }
 
   // Forward event
@@ -2585,6 +2581,26 @@ function xows_xmp_pubsub_conf_set_query(node, form, onparse)
   const iq =  xows_xml_node("iq",{"type":"set"},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUBOWNER},
                   xows_xml_node("configure",{"node":node},x)));
+
+  // Send final message with generic parsing function
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
+ * Generic function to delete PEP Node
+ *
+ * @param   {string}    node      PEP node (xmlns)
+ * @param   {string}    id        Item Id to delete
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_pubsub_retract(node, id, onparse)
+{
+  const item = xows_xml_node("item",{"id":id});
+
+  // Create the query
+  const iq =  xows_xml_node("iq",{"type":"set"},
+                xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
+                  xows_xml_node("retract",{"node":node},item)));
 
   // Send final message with generic parsing function
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
@@ -4140,7 +4156,7 @@ function xows_xmp_jing_initiate_sdp(to, sdp, onresult)
   const sid = xows_gen_nonce_asc(16); // xows_sdp_get_sid(sdp);
 
   // Complete <jingle> node with proper attributes
-  jingle.setAttribute("initiator",xows_xmp_bind.full);
+  jingle.setAttribute("initiator",xows_xmp_bind.jful);
   jingle.setAttribute("action","session-initiate");
   jingle.setAttribute("sid",sid);
 
@@ -4163,7 +4179,7 @@ function xows_xmp_jing_accept_sdp(to, sid, sdp, onresult)
   const jingle = xows_xmp_jing_sdp2jingle(sdp);
 
   // Complete <jingle> node with proper attributes
-  jingle.setAttribute("responder",xows_xmp_bind.full);
+  jingle.setAttribute("responder",xows_xmp_bind.jful);
   jingle.setAttribute("action","session-accept");
   jingle.setAttribute("sid",sid);
 
@@ -4213,8 +4229,8 @@ function xows_xmp_caps_self_features()
   let avatar = XOWS_NS_AVATAR_META;
 
   // Optional features (pubsub notify subscribtion)
-  if(xows_options.vcard4_notify) vcard4 += "+notify";
   if(xows_options.avatar_notify) avatar += "+notify";
+  //if(xows_options.vcard4_notify) vcard4 += "+notify";
 
   const caps = [
     xows_xml_node("identity",{"category":"client","name":XOWS_APP_NAME,"type":"web"}),
@@ -4232,8 +4248,8 @@ function xows_xmp_caps_self_features()
     xows_xml_node("feature",{"var":XOWS_NS_RETRACT}),
     xows_xml_node("feature",{"var":XOWS_NS_REPLY}),
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
-    xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
-    xows_xml_node("feature",{"var":vcard4}),
+    //xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
+    //xows_xml_node("feature",{"var":vcard4}),
     xows_xml_node("feature",{"var":XOWS_NS_AVATAR_DATA}),
     xows_xml_node("feature",{"var":avatar}),
     xows_xml_node("feature",{"var":XOWS_NS_BOOKMARKS+"+notify"}),

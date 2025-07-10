@@ -104,6 +104,37 @@ function xows_cach_avat_get(hash)
 }
 
 /**
+ * Load or generate temporary avatar data-URL corresponding to the
+ * given seed
+ *
+ * @param   {string}   [seed]     Seed string to generate hash and image
+ * @param   {string}   [hash]     Pre-computed hash to generate image
+ *
+ * @return  {string}    Avatar data-URL
+ */
+function xows_cach_avat_gen(seed, hash)
+{
+  // Generate DJB2 hash from seed
+  if(seed) hash = xows_bytes_to_hex(xows_hash_djb2(seed));
+
+  // Check whether temp avatar already exist
+  if(xows_cach_avat_db.has(hash)) {
+
+    return xows_cach_avat_db.get(hash);
+
+  } else {
+
+    // Generate dummy avatar image
+    const data = xows_gen_avatar(XOWS_AVAT_SIZE, null, hash);
+
+    // Store in live DB and localStorage
+    xows_cach_avat_db.set(hash, data);
+
+    return data;
+  }
+}
+
+/**
  * Map for cached peer data stored by JID
  */
 const xows_cach_peer_db = new Map();

@@ -1003,25 +1003,41 @@ let xows_tpl_avat_cls_db = new Map();
  *
  * @return  {string}    CSS class name corresponding to Avatar data hash
  */
-function xows_tpl_spawn_avat_cls(hash)
+function xows_tpl_spawn_avat_cls(peer)
 {
-  if(hash) {
-    if(!xows_tpl_avat_cls_db.has(hash)) {
-      // Compose the CSS class name
-      const cls = "h-" + hash;
+  // Get avatar Hash or Generate temporary
+  let hash;
+  if(peer.avat) {
 
-      // Add new style sheet with class definition
-      const style = document.createElement('style');
-      style.type = 'text/css';
-      style.innerText = "."+cls+" {background-image:url(\""+xows_cach_avat_get(hash)+"\");}\r\n";
-      document.head.appendChild(style);
+    hash = peer.avat; //< XEP-0084 Avatar Hash value
 
-      // Add this to local DB to keep track of added classes
-      xows_tpl_avat_cls_db.set(hash, cls);
-    }
-    return xows_tpl_avat_cls_db.get(hash);
+  } else {
+
+    // Generate DJB2 Hash from Peer UID or JID
+    const seed = peer.ocid ? peer.ocid : peer.addr;
+    hash = xows_bytes_to_hex(xows_hash_djb2(seed));
+
+    // Generate (if don't exists) temporary avatar using given hash
+    xows_cach_avat_gen(null, hash);
   }
-  return "";
+
+  // Create Avatar Steel Sheet rule
+  if(!xows_tpl_avat_cls_db.has(hash)) {
+
+    // Compose the CSS class name
+    const cls = "h-" + hash;
+
+    // Add new style sheet with class definition
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerText = "."+cls+" {background-image:url(\""+xows_cach_avat_get(hash)+"\");}\r\n";
+    document.head.appendChild(style);
+
+    // Add this to local DB to keep track of added classes
+    xows_tpl_avat_cls_db.set(hash, cls);
+  }
+
+  return xows_tpl_avat_cls_db.get(hash);
 }
 
 /**
@@ -1081,7 +1097,7 @@ function xows_tpl_spawn_rost_cont(cont, text)
     inst.querySelector("PEER-META").innerText = cont.stat ? cont.stat:"";
     badg_show.dataset.show = cont.show || 0;
     // Set proper class for avatar
-    inst.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont.avat);
+    inst.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
   } else {
     // We awaits for contact subscription
     inst.title = cont.addr;
@@ -1118,7 +1134,7 @@ function xows_tpl_update_rost_cont(li, cont, text)
     badg_show.dataset.show = cont.show || 0;
     cont_bt_rtry.disabled = true;
     // Set proper class for avatar
-    li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont.avat);
+    li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
   } else {
     // We awaits for contact subscription
     li.title = cont.addr;
@@ -1198,13 +1214,12 @@ function xows_tpl_spawn_room_occu(occu, priv = false)
 
   // Set content to proper elements
   inst.title = occu.name+" ("+occu.addr+")";
-  //inst.dataset.full = full || "";
   inst.querySelector("PEER-NAME").innerText = occu.name;
   inst.querySelector("PEER-META").innerText = occu.stat ? occu.stat : "";
   inst.querySelector("BADG-SHOW").dataset.show = occu.show || 0;
   // Set proper class for avatar
   const peer_avat = inst.querySelector("PEER-AVAT");
-  peer_avat.className = xows_tpl_spawn_avat_cls(occu.avat);
+  peer_avat.className = xows_tpl_spawn_avat_cls(occu);
   return inst;
 }
 
@@ -1218,12 +1233,11 @@ function xows_tpl_update_room_occu(li, occu)
 {
   // Update content
   li.title = occu.name+" ("+li.id+")";
-  //li.dataset.full = full || "";
   li.querySelector("PEER-NAME").innerText = occu.name;
   li.querySelector("PEER-META").innerText = occu.stat ? occu.stat : "";
   li.querySelector("BADG-SHOW").dataset.show = occu.show || 0;
   // Set proper class for avatar
-  li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(occu.avat);
+  li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(occu);
 }
 
 /**
@@ -1338,7 +1352,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
       // Set Quoted avatar
       const rply_avat = inst.querySelector("RPLY-AVAT");
       rply_avat.dataset.peer = peerid;
-      rply_avat.className = xows_tpl_spawn_avat_cls(peer_rply.avat);
+      rply_avat.className = xows_tpl_spawn_avat_cls(peer_rply);
 
       // Set Quoted nickname
       const rply_from = inst.querySelector("RPLY-FROM");
@@ -1391,7 +1405,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
   // Set avatar class with JID data
   const mesg_avat = inst.querySelector("MESG-AVAT");
   mesg_avat.dataset.peer = peerid;
-  mesg_avat.className = xows_tpl_spawn_avat_cls(author.avat);
+  mesg_avat.className = xows_tpl_spawn_avat_cls(author);
 
   // Set proper value to message elements
   if(author.self) {
@@ -1666,23 +1680,22 @@ function xows_tpl_admn_memb_update(li, affi, aref)
  * Build and returns a new instance of Jingle Audio Peer <strm-video> Element
  * from existing template.
  *
+ * @param   {object}    peer      Peer object
  * @param   {string}    jid       Call Peer full JID
- * @param   {string}    nick      Peer Nickname
- * @param   {string}    avat      Peer avatar image URL
  *
  * @return  {element}   Audio Peer <strm-audio> Element
  */
-function xows_tpl_spawn_stream_audio(jid, nick, avat)
+function xows_tpl_spawn_stream_audio(peer, jid)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["strm-audio"].firstChild.cloneNode(true);
 
   // Set content to proper elements
   inst.dataset.from = jid;
-  inst.title = nick;
+  inst.title = peer.name;
   const strm_avat = inst.querySelector("STRM-AVAT");
   //strm_avat.dataset.jid = jid;
-  strm_avat.className = xows_tpl_spawn_avat_cls(avat);
+  strm_avat.className = xows_tpl_spawn_avat_cls(peer);
 
   return inst;
 }
@@ -1691,20 +1704,19 @@ function xows_tpl_spawn_stream_audio(jid, nick, avat)
  * Build and returns a new instance of Jingle Video Peer <strm-video> Element
  * from existing template.
  *
+ * @param   {object}    peer      Peer object
  * @param   {string}    jid       Call Peer full JID
- * @param   {string}    nick      Peer Nickname
- * @param   {string}    avat      Peer avatar image URL
  *
  * @return  {element}   Video Peer <strm-video> Element
  */
-function xows_tpl_spawn_stream_video(jid, nick, avat)
+function xows_tpl_spawn_stream_video(peer, jid)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["strm-video"].firstChild.cloneNode(true);
 
   // Set content to proper elements
   inst.dataset.from = jid;
-  inst.title = nick;
+  inst.title = peer.name;
 
   return inst;
 }
