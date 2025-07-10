@@ -219,7 +219,7 @@ function xows_wrtc_setup(ices, onlinked, onerror)
     const ice = {urls:ices[i].type+":"+ices[i].host};
     // Check whether we need to generate credentials
     if(ices[i].secret) {
-      const creds = xows_wrtc_gen_credential(xows_cli_self.bare, ices[i].secret);
+      const creds = xows_wrtc_gen_credential(xows_cli_self.addr, ices[i].secret);
       ice.username = creds.username;
       ice.credential = creds.password;
     } else {

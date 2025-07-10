@@ -246,6 +246,75 @@ function xows_gui_peer_doc(peer, id)
 }
 
 /**
+ * Toggle class of Peer element, either in current document or in 
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ * @param   {boolean}   force     Force enable or disable
+ */
+function xows_gui_peer_doc_cls_tog(peer, id, cls, force)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.toggle(cls,force);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.toggle(cls,force);
+  }
+}
+
+/**
+ * Add class to Peer element, either in current document or in 
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ */
+function xows_gui_peer_doc_cls_add(peer, id, cls)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.add(cls);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.add(cls);
+  }
+}
+
+/**
+ * Remove class to Peer element, either in current document or in 
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ */
+function xows_gui_peer_doc_cls_rem(peer, id, cls)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.remove(cls);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.remove(cls);
+  }
+}
+
+/**
+ * Check for class in Peer element, either in current document or in 
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ */
+function xows_gui_peer_doc_cls_has(peer, id, cls)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.contains(cls);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.contains(cls);
+  }
+}
+
+/**
  * Clear and reload the most recent peer chat history
  *
  * @param   {object}    peer      Peer object to reset history
@@ -403,9 +472,9 @@ function xows_gui_peer_doc_init(peer)
     xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "room_head");
     xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "occu_list");
   }
-
+  
   // Signal first open by hidding chat history
-  xows_gui_peer_doc(peer, "hist_ul").hidden = true;
+  //xows_gui_peer_doc(peer, "hist_ul").hidden = true;
 
    // set chat title bar informations
   xows_gui_peer_doc(peer, "chat_titl").innerText = peer.name;
@@ -495,7 +564,7 @@ function xows_gui_peer_doc_import(peer)
       xows_doc_frag_import(peer.addr, "room_head");
       xows_doc_frag_import(peer.addr, "occu_list");
     }
-
+    
     // Enable or disable Multimedia Call buttons
     const in_call = (xows_wrtc_busy());
     xows_gui_peer_doc(peer, "chat_bt_cala").disabled = in_call;
@@ -533,7 +602,7 @@ function xows_gui_init()
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_panl", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "room_head", true);
   xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
-
+  
   // The DOM is now to its default state
   xows_gui_clean = true;
 
@@ -650,12 +719,6 @@ function xows_gui_cli_onconnect(user)
     xows_gui_auth = null;
   }
 
-  // Open main 'screen'
-  xows_gui_main_open();
-
-  // widen roster panel (only in narrow-screen)
-  xows_gui_rost_widen();
-
   // Check whether we recover from connexion loss
   if(xows_gui_connect_loss) {
 
@@ -687,6 +750,9 @@ function xows_gui_cli_onconnect(user)
     const muc = xows_cli_services.has(XOWS_NS_MUC);
     xows_doc("tab_room").disabled = !muc;
   }
+  
+  // Open main 'screen' after delay to let avatar and other stuff loading
+  setTimeout(xows_gui_initial_open, 500);
 }
 
 /**
@@ -1100,6 +1166,73 @@ function xows_gui_reset()
  * -------------------------------------------------------------------*/
 
 /**
+ * Check whether Peer object need a loading stage. If Peer 
+ * GUI is empty, loading process is started, otherwise simply 
+ * show Peer's GUI content.
+ *
+ * @param   {object}    peer      Peer Object
+ */
+function xows_gui_chat_load_check(peer)
+{ 
+  let loaded = true;
+  
+  switch(peer.type)
+  {
+  case XOWS_PEER_CONT: {
+      // Contact Peer need to load some archives before display
+      if(!peer.load.mam) {
+        xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
+        loaded = false;
+      }
+    } break;
+    
+  case XOWS_PEER_ROOM: {
+      // Room Peer need to load some archives, and Occupants avatars
+      if(!peer.load.mam) {
+        xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
+        loaded = false;
+      }
+      /* TODO:
+      for(let i = 0; i < peer.occu.length; ++i) {
+        if(!peer.occu[i].load.ava) {
+          loaded = false;
+          break;
+        }
+      }
+      */
+    } break;
+  case XOWS_PEER_OCCU: {
+      // Occupant Peer have nothing to load
+      xows_doc_cls_add("hist_beg","HIST-START");
+    } break;
+  }
+  
+  if(loaded) {
+    
+    // If chat frame is in loading stage, schedule load finish
+    if(xows_gui_peer_doc_cls_has(peer,"chat_load","LOADING")) {
+      
+      // Put the chat history scroll DOWN
+      xows_gui_peer_scroll_down(peer);
+      
+      // Remove loading mask
+      xows_gui_peer_doc_cls_rem(peer,"chat_load","LOADING");
+    }
+    
+    // Show or Hide Occupant list if Room or not
+    xows_doc_cls_tog("main_colr","COL-HIDE",(peer.type !== XOWS_PEER_ROOM));
+    
+  } else {
+    
+    // Set chat loading mask
+    xows_gui_peer_doc_cls_add(peer,"chat_load","LOADING");
+    
+    // Close right panel
+    xows_doc_cls_add("main_colr","COL-HIDE");
+  }
+}
+
+/**
  * Switch the current active chat contact
  *
  * @param   {string}    addr      Peer JID to select
@@ -1163,23 +1296,10 @@ function xows_gui_switch_peer(addr)
     // Set proper chat frame style
     chat_fram.classList.toggle("CHAT-ROOM", is_room);
     chat_fram.classList.toggle("CHAT-CONT",!is_room);
-
-    // Open or close right panel
-    xows_doc_cls_tog("main_colr","COL-HIDE",!is_room);
-
-    // Hidden history mean first open, need to pull some history
-    if(xows_doc_hidden("hist_ul")) {
-      xows_doc_show("hist_ul");
-      xows_gui_peer_scroll_adjust(next);
-      // For Private Conversation we bypass MAM query since it does not
-      // work very well in this context (at least with Prosody server)
-      if(next.type === XOWS_PEER_OCCU) {
-        xows_doc_cls_add("hist_beg","HIST-START");
-      } else {
-        xows_gui_mam_query(next, false, xows_gui_hist_page, 0);
-      }
-    }
-
+    
+    // Check whether peer need loading, start it or bypass
+    xows_gui_chat_load_check(next);
+    
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
 
@@ -1205,7 +1325,7 @@ function xows_gui_switch_peer(addr)
       xows_gui_peer_doc_import(null);
 
       // Close right panel
-      xows_doc_cls_add("main_colr", "COL-HIDE");
+      xows_doc_cls_add("main_colr","COL-HIDE");
     }
   }
 }
@@ -1261,6 +1381,7 @@ function xows_gui_main_open()
 
     // Close any opened page
     xows_doc_page_close(true);
+    
     // hide page 'screen'
     xows_doc_hide("scr_page");
 
@@ -1279,6 +1400,17 @@ function xows_gui_main_open()
   // Set window title
   if(xows_doc_hidden("chat_fram"))
     xows_gui_title_push(xows_l10n_get("Home")+" - XOWS");
+}
+
+/**
+ * Initial main screen Open (called at connexion success)
+ */
+function xows_gui_initial_open()
+{
+  xows_gui_main_open();
+  
+  // widen roster panel (only in narrow-screen)
+  xows_gui_rost_widen();
 }
 
 /* -------------------------------------------------------------------
@@ -1384,7 +1516,7 @@ function xows_gui_rost_tabs_toggle(tab_id)
  * Main screen - Roster Frame - Geometry
  * -------------------------------------------------------------------*/
 /**
- * Main Screen widen Roster (right) panel
+ * Main Screen widen Roster (left) panel
  */
 function xows_gui_rost_widen()
 {
@@ -3082,7 +3214,7 @@ function xows_gui_call_menu_onclick(event)
       break;
     }
     case "call_bt_geo": {
-      xows_doc("chat_fram").classList.toggle("CALL-FULL");
+      xows_doc_cls_tog("chat_fram","CALL-FULL");
       break;
     }
   }
@@ -3175,17 +3307,15 @@ function xows_gui_chat_call_open()
   const use_video = xows_gui_call_local.constraints.video; //xows_gui_call_constraints.video;
 
   // Reset Microphone button to intial state
-  const call_bt_mic = xows_doc("call_bt_mic");
-  call_bt_mic.classList.remove("MUTTED");
+  xows_doc_cls_rem("call_bt_mic","MUTTED");
 
   // Reset Microphone button to intial state
   if(use_video) {
     // Reset Camera button to intial state
-    const call_bt_cam = xows_doc("call_bt_cam");
-    call_bt_cam.classList.remove("MUTTED");
+    xows_doc_cls_rem("call_bt_cam", "MUTTED");
   }
 
-  xows_doc("call_bt_cam").hidden = !use_video;
+  xows_doc_show("call_bt_cam", use_video);
 
   // Add event listeners
   xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_menu_onclick);
@@ -4667,6 +4797,10 @@ function xows_gui_mam_parse(peer, result, count, complete)
   }
 
   xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
+  
+  // Inform MAM loaded
+  peer.load.mam = true;
+  xows_gui_chat_load_check(peer);
 }
 
 /* -------------------------------------------------------------------
@@ -4901,7 +5035,7 @@ function xows_gui_chat_rply_close()
     return;
 
   // Remove REPLY class from Chat Pannel
-  xows_doc("chat_panl").classList.remove("REPLY");
+  xows_doc_cls_rem("chat_panl","REPLY");
 
   const chat_rply = xows_doc("chat_rply");
   // Reset data and hide element
@@ -4950,7 +5084,7 @@ function xows_gui_chat_rply_set(li_msg)
   chat_rply.hidden = false;
 
   // Set REPLY class to Chat Pannel
-  xows_doc("chat_panl").classList.add("REPLY");
+  xows_doc_cls_add("chat_panl","REPLY");
 
   // set FOCUS to replied message
   xows_gui_hist_mesg_focus(xows_gui_peer, rpid);

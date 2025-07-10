@@ -832,13 +832,16 @@ badg-lock {
 }
 col-side {
   flex: none;
-  width: 240px; height: 100%;
   display: flex;
   flex-direction: row;
+  width: 240px; 
+  height: 100%;
 }
 col-midd {
   flex: auto;
-  width: 100%; height: 100%;
+  position: relative;
+  /*width: 100%;*/
+  height: 100%;
   display: flex;
   flex-direction: column;
   background-image: url("images/watermark.svg");
@@ -849,7 +852,10 @@ col-midd {
 }
 col-handle {
   flex: none;
-  width: 0; height: 100%;
+  /*width: 0; */
+  display: none; /* added */
+  width: 30px; /* added */
+  height: 100%;
   background-color: var(--base-tone5);
   z-index: 1;
 }col-handle:hover {
@@ -878,7 +884,8 @@ col-handle::before {
 }
 @media (max-width: 824px) {
   .col-side {
-    width: 0;
+    display: none; /* added */
+    /*width: 0;*/
   }
   #main_coll,
   #main_colr,
@@ -886,18 +893,21 @@ col-handle::before {
   .COLR-WIDE #main_colc,
   .COLL-WIDE #main_colc,
   .COLL-WIDE #main_colr {
-    width: 0;
-    z-index: -1;
+    display: none; /* added */
+    /*width: 0;*/
+    /*z-index: -1;*/
   }
   .COLR-WIDE #main_colr,
   .COLL-WIDE #main_coll {
-    width: 100%;
+    /*width: 100%;*/
     flex: auto;
-    z-index: 1;
+    display: flex; /* added */
+    /*z-index: 1;*/
   }
   .COLL-WIDE col-handle,
   .COLR-WIDE col-handle {
-    width: 30px;
+    display: block; /* added */
+    /*width: 30px;*/
   }
 }
 col-frame {
@@ -906,7 +916,8 @@ col-frame {
   height: 100%; width: 100%;
 }
 .COL-HIDE {
-  width: 0;
+  display: none; /* added */
+  /*width: 0;*/
 }
 row-head {
   flex: none;
@@ -924,6 +935,19 @@ row-main {
   width: 100%; height: 100%;
   overflow-y: auto;
 }
+col-load {
+  display: none;
+}
+col-load.LOADING,
+col-load.LOADERR {
+  display: block;
+  position: absolute;
+  left: 0; right: 0;
+  top: 0; bottom: 0;
+  background-color: var(--base-tone4);
+  z-index: 3;
+}
+
 /* ------------------------------------------------------------------ */
 /* Pages Screen flex layout */
 /* ------------------------------------------------------------------ */

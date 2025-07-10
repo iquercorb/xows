@@ -137,7 +137,7 @@ function xows_cach_peer_save(iden, name, avat, desc, noti)
       if(name) cach.name = name;
       if(avat) cach.avat = avat;
       if(desc) cach.desc = desc;
-      if(noti!== null) cach.noti = noti;
+      if(noti !== null) cach.noti = noti;
     } else {
       cach = {"name":name,"avat":avat,"desc":desc,"noti":noti};
     }

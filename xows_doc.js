@@ -402,6 +402,7 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("rost_fram"),  "click",    xows_gui_rost_fram_onclick);
   // User panel
   xows_doc_listener_add(xows_doc("user_panl"),  "click",    xows_gui_user_panl_onclick);
+  
   // Chat header
   xows_doc_listener_add(xows_doc("chat_head"),  "click",    xows_gui_chat_head_onclick);
   // Chat main
@@ -419,7 +420,6 @@ function xows_doc_init(onready)
   xows_doc_listener_add(chat_panl,              "paste",    xows_gui_chat_inpt_onpaste, false); //< need preventDefault()
   xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
   xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
-
   // Room Frame
   xows_doc_listener_add(xows_doc("room_head"),  "click",    xows_gui_room_head_onclick);
   xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);

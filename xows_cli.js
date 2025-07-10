@@ -184,7 +184,7 @@ Object.seal(xows_cli_self); //< prevet structure modification
  */
 function xows_cli_isself_addr(addr)
 {
-  return addr.startsWith(xows_cli_self.bare);
+  return addr.startsWith(xows_cli_self.addr);
 }
 
 /**
@@ -244,7 +244,9 @@ function xows_cli_cont_new(addr, name, subs, avat)
     "stat": "",                 //< Displayed presence status string
     "noti": true,               //< Notification Enabled/Mute
     "chat": 0,                  //< Chatstate level
-    "call": null                //< Jingle call SID
+    "call": null,               //< Jingle call SID
+    // Peer loading process elements
+    "load": {mam:false,ava:false}   
   };
 
   // set Constant properties
@@ -357,6 +359,7 @@ function xows_cli_room_new(addr, name)
     "modr": false,          //< Room is moderated
     "anon": true,           //< Room is Semi-Anonymous (true) Non-anonymous (false)
     "open": true,           //< Room is Open vs Members-Only (Registration required)
+    "nocc": 0,              //< Room declared occupant count
     // Room session data
     "init": false,          //< Newly created Room, need configuration
     "join": null,           //< Self join JID (room@service.domain/nick)
@@ -368,7 +371,9 @@ function xows_cli_room_new(addr, name)
     "writ": [],             //< Chatstate writting occupants list
     // Misc options
     "noti": true,           //< Notification Enabled/Mute
-    "book": false           //< Room is Bookmarked
+    "book": false,          //< Room is Bookmarked
+    // Peer loading process elements
+    "load": {mam:false,ava:false}  
   };
 
   // set Constant properties
@@ -435,7 +440,9 @@ function xows_cli_occu_new(room, addr, ocid, full, avat, nick, self)
     "avat": avat,                           //< Avatar hash string.
     "show": 4,                              //< Presence show level
     "stat": "",                             //< Presence status string
-    "chat": 0                               //< Chatstate level
+    "chat": 0,                              //< Chatstate level
+    // Peer loading process elements (bypass MAM)
+    "load": {mam:true,ava:false}           
   };
 
   self = self ? xows_cli_self : null;
@@ -595,7 +602,7 @@ function xows_cli_peer_get(jid, type)
   const bare = xows_jid_bare(jid);
 
   // Check for own JID
-  if(bare == xows_cli_self.bare)
+  if(bare == xows_cli_self.addr)
     return xows_cli_self;
 
   // Check for Contact
@@ -737,7 +744,7 @@ function xows_cli_author_get(peer, addr, ocid)
     }
 
   case XOWS_PEER_CONT:
-    if(addr.startsWith(xows_cli_self.bare)) {
+    if(addr.startsWith(xows_cli_self.addr)) {
       return xows_cli_self;
     } else {
       return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(addr));
@@ -925,7 +932,7 @@ function xows_cli_xmp_onsession(bind)
   xows_cli_self.full = bind.full;
 
   // Check for cached information about own account
-  const cach = xows_cach_peer_get(xows_cli_self.bare);
+  const cach = xows_cach_peer_get(xows_cli_self.addr);
   if(cach) {
     if(cach.name) xows_cli_self.name = cach.name;
     if(cach.avat) xows_cli_self.avat = cach.avat;
@@ -940,7 +947,7 @@ function xows_cli_xmp_onsession(bind)
 
   // Create default avatar if needed
   if(!xows_cli_self.avat)
-    xows_cli_self.avat = xows_cli_avat_temp(xows_cli_self.bare);
+    xows_cli_self.avat = xows_cli_avat_temp(xows_cli_self.addr);
 
 
   if(xows_cli_connect_loss) {
@@ -982,7 +989,7 @@ function xows_cli_connected()
 function xows_cli_init_disco_start()
 {
   // Query for own account infos/features
-  xows_xmp_disco_info_query(xows_cli_self.bare, null, xows_cli_init_discoinfo_self);
+  xows_xmp_disco_info_query(xows_cli_self.addr, null, xows_cli_init_discoinfo_self);
 }
 
 /**
@@ -1209,12 +1216,10 @@ function xows_cli_initialize(item)
     // This is a full/normal initialization
 
     // Query for own vcard
-    if(!xows_options.vcard4_notify)
-      xows_cli_vcard_query(xows_cli_self);
+    xows_cli_vcard_query(xows_cli_self);
 
     // Query for own avatar
-    if(!xows_options.avatar_notify)
-      xows_cli_avat_meta_query(xows_cli_self);
+    xows_cli_avat_query(xows_cli_self);
 
     // Query for own nickname
     xows_cli_nick_query(xows_cli_self);
@@ -1286,6 +1291,7 @@ function xows_cli_xmp_onclose(code, mesg)
 
       // Reset client user entity
       xows_cli_self.full = null;
+      xows_cli_self.addr = null;
       xows_cli_self.bare = null;
       xows_cli_self.name = null;
       xows_cli_self.avat = null;
@@ -1445,7 +1451,7 @@ function xows_cli_xmp_onrostpush(addr, name, subs, group)
 
     let avat = null;
 
-    // Check for stored data un cache (localStorage)
+    // Check for stored data in cache (localStorage)
     const cach = xows_cach_peer_get(addr);
     if(cach) {
       name = cach.name;
@@ -1453,7 +1459,7 @@ function xows_cli_xmp_onrostpush(addr, name, subs, group)
     }
 
     // If no avatar data was found, set default pseudo-random avatar
-    if(!avat) avat = xows_cli_avat_temp(addr);
+    //if(!avat) avat = xows_cli_avat_temp(addr);
 
     // Create new contact
     cont = xows_cli_cont_new(addr, name, subs, avat);
@@ -1462,8 +1468,7 @@ function xows_cli_xmp_onrostpush(addr, name, subs, group)
   if(cont.subs & XOWS_SUBS_TO) {
 
     // Query Avatar for the contact
-    if(!xows_options.avatar_notify)
-      xows_cli_avat_meta_query(cont);
+    xows_cli_avat_query(cont);
 
     // Query Contact Nickname
     xows_cli_nick_query(cont);
@@ -1624,13 +1629,13 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, photo)
       } else {
         xows_cli_vcard_query(cont);
       }
-
-      // Update nickname in case changed
-      xows_cli_nick_query(cont);
     }
 
+    // Update nickname in case changed
+    xows_cli_nick_query(cont);
+      
     // Update avatar in case changed
-    xows_cli_avat_meta_query(cont);
+    xows_cli_avat_query(cont);
 
     // Save current peer status to local storage
     xows_cach_peer_save(cont.addr, null, null, cont.stat, null);
@@ -1915,11 +1920,11 @@ function xows_cli_send_message(peer, body, repl, rpid, rpto)
       from = peer.room.join;
 
     } else {
-      from = xows_cli_self.bare;
+      from = xows_cli_self.addr;
 
       // If current peer client is online and support receipt, the
       // message should not be marked as "receip received"
-      if(peer.lock !== peer.bare) {
+      if(peer.lock !== peer.addr) {
         // Get resource object of current locked
         const ress = peer.ress.get(xows_jid_resc(peer.lock));
         // Check for receipt support
@@ -2166,7 +2171,7 @@ function xows_cli_change_profile(name, url, access)
     xows_cli_self.avat = xows_cach_avat_save(url);
   } else {
     // Generate or retreive pseudo-random avatar
-    xows_cli_self.avat = xows_cli_avat_temp(xows_cli_self.bare);
+    xows_cli_self.avat = xows_cli_avat_temp(xows_cli_self.addr);
   }
 
   // Update vcard with new avatar
@@ -2258,7 +2263,7 @@ function xows_cli_status_define(stat)
   xows_cli_self.stat = stat;
 
   // Save current status to local storage
-  xows_cach_peer_save(xows_cli_self.bare, null, null, stat, null);
+  xows_cach_peer_save(xows_cli_self.addr, null, null, stat, null);
 
   // Send updated presence only if there will be no wakeup
   xows_cli_presence_update();
@@ -2452,7 +2457,7 @@ function xows_cli_vcard_publish(access)
   // create new local copy of vcard if not exists
   if(!xows_cli_self.vcrd) xows_cli_self.vcrd = xows_xml_node("vcard");
 
-  const has_vcard4 = xows_cli_entity_has(xows_cli_self.bare, XOWS_NS_VCARD4);
+  const has_vcard4 = xows_cli_entity_has(xows_cli_self.addr, XOWS_NS_VCARD4);
 
   const vcard = xows_cli_self.vcrd;
 
@@ -2509,6 +2514,8 @@ function xows_cli_vcard_parse(from, vcard, error)
 
   if(error && error.name == "item-not-found") {
     xows_log(1,"cli_vcard_parse","vcard not defined",from);
+    // Set Peer avatar as loaded
+    peer.load.ava = true;
     return;
   }
 
@@ -2518,7 +2525,7 @@ function xows_cli_vcard_parse(from, vcard, error)
   xows_cli_self.vcrd = vcard;
 
   // parse either legacy vcard-temp or vCard4 depending options
-  if(xows_cli_entity_has(xows_cli_self.bare, XOWS_NS_VCARD4) && !xows_options.legacy_vcard) {
+  if(xows_cli_entity_has(xows_cli_self.addr, XOWS_NS_VCARD4) && !xows_options.legacy_vcard) {
     // XEP-0292 vCard4 parsing
     if((node = vcard.querySelector("nickname")))
       nick = xows_xml_innertext(node.firstChild); //< <nickname><text>#text
@@ -2549,7 +2556,10 @@ function xows_cli_vcard_parse(from, vcard, error)
   if(phot && !phot.length) phot = null;
 
   const avat = (phot) ? xows_cach_avat_save(phot) : null;
-
+  
+  // Set Peer avatar as loaded
+  peer.load.ava = true;
+  
   // Update the proper Contact, Occupant, or own profile
   xows_cli_peer_update(peer, nick, avat, note);
 }
@@ -2562,8 +2572,13 @@ function xows_cli_vcard_parse(from, vcard, error)
 function xows_cli_vcard_query(peer)
 {
   // Parse either legacy vcard-temp or vCard4 depending options
-  if(xows_cli_entity_has(xows_cli_self.bare, XOWS_NS_VCARD4) && !xows_options.legacy_vcard) {
-    xows_xmp_vcard4_get_query(peer.addr, xows_cli_vcard_parse);
+  if(xows_cli_entity_has(xows_cli_self.addr, XOWS_NS_VCARD4) && !xows_options.legacy_vcard) {
+    if(!xows_options.vcard4_notify) {
+      xows_xmp_vcard4_get_query(peer.addr, xows_cli_vcard_parse);
+    } else {
+      // Set Peer avatar as loaded
+      peer.load.ava = true;
+    }
   } else {
     xows_xmp_vcardt_get_query(peer.addr, xows_cli_vcard_parse);
   }
@@ -2655,7 +2670,11 @@ function xows_cli_avat_data_parse(from, id, data, error)
   xows_cli_avat_parse_stk.delete(peer);
 
   // In case of error, DO NOT update Avatar
-  if(error) return;
+  if(error) {
+    // Fallback with default generated avatar
+    xows_cli_avat_fallback(peer);
+    return;
+  }
 
   // Compose data-URL and add data to cache
   const hash = xows_cach_avat_save("data:" + meta.type + ";base64," + data, id);
@@ -2683,8 +2702,13 @@ function xows_cli_avat_meta_parse(from, item, error)
   if(error) {
     // In case own avatar is missing, which happen for newly created
     // account, we publish the current (default generated) avatar
-    if(peer.self && error.name == "item-not-found")
-      xows_cli_avat_publish("open");
+    if(peer.self) {
+      if(error.name == "item-not-found")
+        xows_cli_avat_publish("open");
+    } else {
+      // Fallback with default generated avatar
+      xows_cli_avat_fallback(peer);
+    }
     return;
   }
 
@@ -2727,6 +2751,25 @@ function xows_cli_avat_meta_query(peer)
 {
   // Query for Avatar Meta-Data
   xows_xmp_avat_meta_get_query(peer.addr, xows_cli_avat_meta_parse);
+}
+
+/**
+ * Query to get or refresh Peer Avatar (XEP-0084).
+ *
+ * @param   {string}    peer     Peer to query avatar
+ * @param   {boolean}  [force]   Force query even if notify is enabled
+ */
+function xows_cli_avat_query(peer, force = false)
+{
+  // If Avatar notification is enable, don't query avatar 
+  // to prevent useless trafic.
+  if(!xows_options.avatar_notify || force) {
+    // Query for Avatar Meta-Data
+    xows_xmp_avat_meta_get_query(peer.addr, xows_cli_avat_meta_parse);
+  } else {
+    // Set avatar loaded
+    peer.load.ava = true;
+  }
 }
 
 /**
@@ -2813,6 +2856,24 @@ function xows_cli_avat_temp(seed)
 
   // save data in live DB but not in Local Storage
   return xows_cach_avat_save(data,null,true);
+}
+
+/**
+ * Set temporary avatar for Peer as fallback in case query
+ * failed.
+ *
+ * @param    {object}   peer      Peer object to set avatar
+ */
+function xows_cli_avat_fallback(peer)
+{
+  // Generate temporary avatar data
+  const hash = xows_cli_avat_temp(peer.ocid ? peer.ocid : peer.addr);
+  
+  // Set avatar loaded
+  peer.load.ava = true;
+  
+  // Data is in cach, we update the proper Peer profile
+  xows_cli_peer_update(peer, null, hash, null);
 }
 
 /* -------------------------------------------------------------------
@@ -3377,7 +3438,9 @@ function xows_cli_muc_roominfo_parse(from, iden, feat, form)
       if(form[i]["var"] === "muc#roominfo_subject")
         if(form[i].value) room.subj = form[i].value;
 
-      //if(form[i]["var"] == "muc#roominfo_occupants")  = form[i].value; //< Number of occupants
+      if(form[i]["var"] == "muc#roominfo_occupants") 
+        if(form[i].value) room.nocc = parseInt(form[i].value); //< Number of occupants
+      
       //if(form[i]["var"] == "muc#roominfo_lang")  = form[i].value;
       //if(form[i]["var"] == "muc#roomconfig_allowinvites")  = form[i].value;
       //if(form[i]["var"] == "muc#roomconfig_changesubject")  = form[i].value;
@@ -3840,11 +3903,11 @@ function xows_cli_xmp_onoccupant(from, show, status, mucusr, ocid, photo)
     } else {
       xows_cli_vcard_query(occu); //< Must update vcard
     }
-  } else {
-    // Try to reteive an avatar via PubSub
-    if(!occu.avat)
-      xows_cli_avat_meta_query(occu);
   }
+  
+  // Query for Occupant avatar
+  if(!occu.avat)
+    xows_cli_avat_query(occu, true); //< force query
 
   // Cache Occupant as peer
   xows_cach_peer_save(occu.ocid, occu.name, occu.avat, null, null);
