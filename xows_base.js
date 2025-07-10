@@ -830,6 +830,30 @@ function xows_hash_sha256(input)
   return hash;
 }
 
+/**
+ * Generate DJB2 Hash of a given string
+ *
+ * @param   {string}    input     Input string to compute hash
+ *
+ * @return  {Uint8Array}  4 bytes DJB2 hash
+ */
+function xows_hash_djb2(input)
+{
+  let state = 5381;
+  for(let i = 0; i < input.length; ++i) {
+    state = ((state << 5) + state) + input.charCodeAt(i);
+  }
+
+  // Convert 32 bit integer to Uint8[]
+  const hash = new Uint8Array(4);
+  hash[0] = (state >> 24) & 0xff;
+  hash[1] = (state >> 16) & 0xff;
+  hash[2] = (state >>  8) & 0xff;
+  hash[3] =  state        & 0xff;
+
+  return hash;
+}
+
 /* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
  *          common string validation and parsing functions
  * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
