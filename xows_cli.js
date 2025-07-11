@@ -648,8 +648,6 @@ function xows_cli_peer_push(peer, param)
   {
     case XOWS_PEER_CONT: {
       if(peer.self) {
-        // Send presence update
-        xows_cli_presence_update();
         // Forward user update
         xows_cli_fw_onselfpush(peer, param);
       } else {
@@ -848,7 +846,7 @@ function xows_cli_set_callback(type, callback)
 
   switch(type.toLowerCase()) {
     case "connect":     xows_cli_fw_onconnect = callback; break;
-    case "selfchange":  xows_cli_fw_onselfpush = callback; break;
+    case "selfpush":    xows_cli_fw_onselfpush = callback; break;
     case "contpush":    xows_cli_fw_oncontpush = callback; break;
     case "contrem":     xows_cli_fw_oncontrem = callback; break;
     case "subspush":    xows_cli_fw_onsubspush = callback; break;
@@ -1251,18 +1249,14 @@ function xows_cli_initialize(item)
 
     // This is a full/normal initialization
 
-    // Query for own avatar
-    xows_cli_avat_fetch(xows_cli_self);
-
-    // Query for own nickname
-    xows_cli_nick_query(xows_cli_self);
-
-    // Update user parameters
-    xows_cli_fw_onselfpush(xows_cli_self);
+    // Fetch own data and push
+    xows_load_init(xows_cli_self, XOWS_LOAD_AVAT|XOWS_LOAD_NICK, xows_cli_peer_push);
   }
 
-  // Forward to GUI
-  xows_cli_fw_onconnect(xows_cli_self);
+  // Set On-Empty load stack trigger, so connection is validated
+  // only once all resources/peer are fully loaded. We set a timeout
+  // of 2 seconds in case something went wrong in loading process.
+  xows_load_onempty_set(2000, xows_cli_fw_onconnect, xows_cli_self);
 }
 
 /* -------------------------------------------------------------------
@@ -2179,6 +2173,141 @@ function xows_cli_retract_send(peer, usid)
 
 /* -------------------------------------------------------------------
  *
+ * Client API - Self presence (show and status) routines
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Send and update presence to proper destination and modify internal
+ * client data to reflect new user presence
+ */
+function xows_cli_presence_update()
+{
+  // Define values as required
+  let type, show, stat;
+
+  if(xows_cli_self.show > XOWS_SHOW_OFF) {
+    show = xows_cli_self.show;
+    stat = xows_cli_self.stat;
+  } else {
+    type = "unavailable";
+  }
+
+  // Simple presence to server
+  xows_xmp_presence_send(null, type, show, stat);
+
+  // Presence to all joined rooms
+  let i = xows_cli_room.length;
+  while(i--) {
+    if(xows_cli_room[i].join) {
+      xows_xmp_presence_send(xows_cli_room[i].join, type, show, stat);
+      // Unavailable client exited the room
+      if(type) xows_cli_room[i].join = null;
+    }
+  }
+
+  // Cache new data and Push changes to GUI
+  xows_cli_peer_push(xows_cli_self);
+}
+
+/**
+ * Presence level as chosen by user
+ */
+let xows_cli_show_saved = XOWS_SHOW_OFF;
+
+/**
+ * Set the client current presence show level
+ *
+ * @param   {number}    level     Numerical show level to set (0 to 5)
+ */
+function xows_cli_show_select(level)
+{
+  // Change the show level and send to server
+  xows_cli_self.show = xows_cli_show_saved = level;
+
+  // Send own-presence with updated values
+  xows_cli_presence_update();
+}
+
+/**
+ * Set the client current presence status
+ *
+ * @param   {string}    stat      Status string to set
+ */
+function xows_cli_status_define(stat)
+{
+  // Do not send useless presence
+  if(xows_cli_self.stat === stat)
+    return;
+
+  // Change the status and send to server
+  xows_cli_self.stat = stat;
+
+  // Send own-presence with updated values
+  xows_cli_presence_update();
+}
+/* -------------------------------------------------------------------
+ *
+ * Client API - Self activity and auto-Away routines
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Activity sleep setTimeout handle/reference
+ */
+let xows_cli_activity_hto = null;
+
+/**
+ * Decrease the client presence level to away or xa
+ */
+function xows_cli_activity_sleep()
+{
+  if(xows_cli_activity_hto)
+    clearTimeout(xows_cli_activity_hto);
+
+  if(xows_cli_self.show > XOWS_SHOW_XA) {
+    xows_cli_activity_hto = setTimeout(xows_cli_activity_sleep, 600000); //< 10 min
+
+    // Decrease the show level
+    xows_cli_self.show--;
+
+    // Send own-presence with updated values
+    xows_cli_presence_update();
+  }
+}
+
+/**
+ * Set presence back to the user chosen one if it is greater than
+ * the current "away" value and reset the timer for auto-away.
+ */
+function xows_cli_activity_wakeup()
+{
+  if(xows_cli_activity_hto)
+    clearTimeout(xows_cli_activity_hto);
+
+  xows_cli_activity_hto = setTimeout(xows_cli_activity_sleep, 600000); //< 10 min
+
+  if(xows_cli_self.show < xows_cli_show_saved) {
+
+    // Reset all to last chosen level
+    xows_cli_self.show = xows_cli_show_saved;
+
+    // Send own-presence with updated values
+    xows_cli_presence_update();
+  }
+}
+
+/**
+ * Stops presence activity and auto-away process
+ */
+function xows_cli_activity_stop()
+{
+  if(xows_cli_activity_hto)
+    clearTimeout(xows_cli_activity_hto);
+
+  xows_cli_self.show = xows_cli_show_saved = XOWS_SHOW_OFF;
+}
+
+/* -------------------------------------------------------------------
+ *
  * Client API - User profile management routines
  *
  * -------------------------------------------------------------------*/
@@ -2189,7 +2318,7 @@ function xows_cli_retract_send(peer, usid)
  * @param   {string}    url       Image Data-URL to set as avatar
  * @param   {string}    access    Access Model for published data
  */
-function xows_cli_change_profile(name, url, access)
+function xows_cli_self_edit(name, url, access)
 {
   // Update user settings
   if(name) {
@@ -2223,147 +2352,6 @@ function xows_cli_change_profile(name, url, access)
 
   // Send presence with new avatar hash
   xows_cli_presence_update();
-
-  // Forward changes
-  xows_cli_fw_onselfpush(xows_cli_self);
-}
-
-/* -------------------------------------------------------------------
- *
- * Client API - Self presence (show and status) routines
- *
- * -------------------------------------------------------------------*/
-/**
- * Send and update presence to proper destination and modify internal
- * client data to reflect new user presence
- */
-function xows_cli_presence_update()
-{
-  // Define values as required
-  let type, show, stat;
-
-  if(xows_cli_self.show > XOWS_SHOW_OFF) {
-    show = xows_cli_self.show;
-    stat = xows_cli_self.stat;
-  } else {
-    type = "unavailable";
-  }
-
-  // Simple presence to server
-  xows_xmp_presence_send(null, type, show, stat);
-
-  // Presence to all joined rooms
-  let i = xows_cli_room.length;
-  while(i--) {
-    if(xows_cli_room[i].join) {
-      xows_xmp_presence_send(xows_cli_room[i].join, type, show, stat);
-      // Unavailable client exited the room
-      if(type) xows_cli_room[i].join = null;
-    }
-  }
-
-  // Forward user status upate
-  xows_cli_fw_onselfpush(xows_cli_self);
-}
-
-/**
- * Presence level as chosen by user
- */
-let xows_cli_show_saved = XOWS_SHOW_OFF;
-
-/**
- * Set the client current presence show level
- *
- * @param   {number}    level     Numerical show level to set (0 to 5)
- */
-function xows_cli_show_select(level)
-{
-  // Change the show level and send to server
-  xows_cli_self.show = xows_cli_show_saved = level;
-
-  // Send presence with updated values
-  xows_cli_presence_update();
-}
-
-/**
- * Set the client current presence status
- *
- * @param   {string}    stat      Status string to set
- */
-function xows_cli_status_define(stat)
-{
-  // Do not send useless presence
-  if(xows_cli_self.stat === stat)
-    return;
-
-  // Change the status and send to server
-  xows_cli_self.stat = stat;
-
-  // Update Peer cached data
-  xows_cach_peer_save(xows_cli_self);
-
-  // Send updated presence only if there will be no wakeup
-  xows_cli_presence_update();
-}
-/* -------------------------------------------------------------------
- *
- * Client API - Self activity and auto-Away routines
- *
- * -------------------------------------------------------------------*/
-/**
- * Activity sleep setTimeout handle/reference
- */
-let xows_cli_activity_hto = null;
-
-/**
- * Decrease the client presence level to away or xa
- */
-function xows_cli_activity_sleep()
-{
-  if(xows_cli_activity_hto)
-    clearTimeout(xows_cli_activity_hto);
-
-  if(xows_cli_self.show > XOWS_SHOW_XA) {
-    xows_cli_activity_hto = setTimeout(xows_cli_activity_sleep, 600000); //< 10 min
-
-    // Decrease the show level
-    xows_cli_self.show--;
-
-    // Send presence with updated values
-    xows_cli_presence_update();
-  }
-}
-
-/**
- * Set presence back to the user chosen one if it is greater than
- * the current "away" value and reset the timer for auto-away.
- */
-function xows_cli_activity_wakeup()
-{
-  if(xows_cli_activity_hto)
-    clearTimeout(xows_cli_activity_hto);
-
-  xows_cli_activity_hto = setTimeout(xows_cli_activity_sleep, 600000); //< 10 min
-
-  if(xows_cli_self.show < xows_cli_show_saved) {
-
-    // Reset all to last chosen level
-    xows_cli_self.show = xows_cli_show_saved;
-
-    // Send presence with updated values
-    xows_cli_presence_update();
-  }
-}
-
-/**
- * Stops presence activity and auto-away process
- */
-function xows_cli_activity_stop()
-{
-  if(xows_cli_activity_hto)
-    clearTimeout(xows_cli_activity_hto);
-
-  xows_cli_self.show = xows_cli_show_saved = XOWS_SHOW_OFF;
 }
 
 /* -------------------------------------------------------------------
@@ -2376,39 +2364,39 @@ function xows_cli_activity_stop()
  *
  * @param   {string}    from      Sender JID
  * @param   {string}    node      PubSub node
- * @param   {object[]}  item      Received items
+ * @param   {object[]}  items     Received items
  */
-function xows_cli_xmp_onpubsub(from, node, item)
+function xows_cli_xmp_onpubsub(from, node, items)
 {
   // Checks for vcard notification
   if(node === XOWS_NS_VCARD4) {
-    if(item.length) {
+    if(items.length) {
       // Send to vcard handling function
-      xows_cli_vcard_parse(from, item[0].content);
+      xows_cli_vcard_parse(from, items[0].child);
     }
   }
 
   // Checks for avatar notification
   if(node === XOWS_NS_AVATAR_META) {
-    if(item.length) {
+    if(items.length) {
       // Send to avatar metadata parsing function
-      xows_cli_avat_meta_parse(from, item[0].content);
+      xows_cli_avat_meta_parse(from, items[0].child);
     }
   }
 
   // Checks for nickname notification
   if(node === XOWS_NS_NICK) {
-    if(item.length) {
+    if(items.length) {
       // Send to nickname parsing function
-      xows_cli_nick_parse(from, item[0].content);
+      xows_cli_nick_parse(from, items[0].child);
     }
   }
 
   // Checks for bookmarks notification
   if(node === XOWS_NS_BOOKMARKS) {
-    if(item.length) {
+    if(items.length) {
       // Send to bookmark parsing function
-      xows_cli_book_parse(from, item);
+      xows_cli_book_parse(from, items);
     }
   }
 }
@@ -2484,10 +2472,10 @@ function xows_cli_pubsub_chmod(node, access, onresult)
  * Handle result or notification of XEP-0172 User Nickname
  *
  * @param   {string}    from      Query result Sender JID
- * @param   {string}    nick      Received <nick> child
+ * @param   {string}    item      Received PubSub item content (<nick> node)
  * @param   {object}    error     Error data if any
  */
-function xows_cli_nick_parse(from, nick, error)
+function xows_cli_nick_parse(from, item, error)
 {
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
@@ -2499,7 +2487,7 @@ function xows_cli_nick_parse(from, nick, error)
   if(error) {
     xows_log(1,"cli_nick_parse","error parse nickname",from);
   } else {
-    peer.name = xows_xml_innertext(nick);
+    peer.name = xows_xml_innertext(item);
   }
 
   if(peer.load) {
@@ -2591,10 +2579,10 @@ function xows_cli_avat_data_parse(from, hash, data, error)
  * Handle received XEP-0084 avatar metadata notification
  *
  * @param   {string}    from      Query result Sender JID
- * @param   {object}    content   Received PupSub content (<metadata> Node)
+ * @param   {object}    item      Received PupSub item content (<metadata> Node)
  * @param   {object}    error     Error data if any
  */
-function xows_cli_avat_meta_parse(from, content, error)
+function xows_cli_avat_meta_parse(from, item, error)
 {
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
@@ -2604,9 +2592,9 @@ function xows_cli_avat_meta_parse(from, content, error)
   }
 
   let info = null;
-  if(content)
+  if(item)
     // Notice, the <info> node may be missing if no Avatar available
-    info = content.querySelector("info");
+    info = item.querySelector("info");
 
   if(error || !info) {
 
@@ -2840,18 +2828,18 @@ function xows_cli_vcard_query(peer)
  * Handle notification of XEP-0402 Bookmarks
  *
  * @param   {string}    from      Query result Sender JID
- * @param   {object[]}  item      List of <item> nodes
+ * @param   {object[]}  items     List of <item> nodes
  */
-function xows_cli_book_parse(from, item)
+function xows_cli_book_parse(from, items)
 {
-  for(let i = 0, n = item.length; i < n; ++i) {
+  for(let i = 0, n = items.length; i < n; ++i) {
 
-    let addr = item[i].id;
-    let name = item[i].content.getAttribute("name");
-    let auto = item[i].content.getAttribute("autojoin");
+    let addr = items[i].id;
+    let name = items[i].child.getAttribute("name");
+    let auto = items[i].child.getAttribute("autojoin");
 
     // TODO: What is that ?
-    //const temp = item[i].content.querySelector("nick");
+    //const temp = items[i].child.querySelector("nick");
     //if(temp) nick = xows_xml_innertext(temp);
 
     // Check whether Room already exists

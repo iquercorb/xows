@@ -66,6 +66,44 @@ function xows_load_task_set(task, ontask)
 }
 
 /**
+ * On-Empty trigger mechanism parameters
+ */
+const xows_load_onempty_def = {onempty:null,timeout:null,param:null};
+
+/**
+ * Set an On-Empty trigger function to be called once load stack is
+ * empty.
+ *
+ * In case of load error, the specified function is called anyway
+ * after the specified timeout (in miliseconds).
+ *
+ * If timeout is set to 0, the timeout mechanism is disabled and the
+ * function called ONLY once and if load stack is empty.
+ *
+ * @parma   {number}    timeout   Timeout for fallback trigger
+ * @param   {function}  onempty   Callback function to call
+ * @param   {*}        [param]    Optional parameter to pass to callback
+ */
+function xows_load_onempty_set(timeout, onempty, param)
+{
+  const def = xows_load_onempty_def;
+
+  // Clear any pending timeout
+  if(def.timeout) {
+    clearTimeout(def.timeout);
+    def.timeout = null;
+  }
+
+  // Set callback and custom parameter
+  def.param = param;
+  def.onempty = onempty;
+
+  // Fire new timeout
+  if(timeout > 0)
+    def.timeout = setTimeout(onempty, param);
+}
+
+/**
  * Loading process per-Item stack
  */
 const xows_load_item_stk = new Map();
@@ -97,6 +135,25 @@ function xows_load_task_done(item, task)
 
     // Call push function with supplied param
     entry.onload(item, entry.param);
+
+    // Check for empty stack to launch onempty
+    if(xows_load_onempty_def.onempty && xows_load_item_stk.size === 0) {
+
+      const def = xows_load_onempty_def;
+
+      // Clear pending timeout
+      if(def.timeout) {
+        clearTimeout(def.timeout);
+        def.timeout = null;
+      }
+
+      // Call defined callback
+      def.onempty(def.param);
+
+      // Reset parameters
+      def.onempty = null;
+      def.param = null;
+    }
   }
 }
 
@@ -139,3 +196,4 @@ function xows_load_init(item, mask, onload, param)
 
   } while(bit != xows_load_next_bit);
 }
+
