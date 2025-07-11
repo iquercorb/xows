@@ -37,6 +37,21 @@
  *                  Local Storage Managment API Module
  *
  * ------------------------------------------------------------------ */
+/**
+ * Returns the most suitable identifier for Peer, it can be either Contact or
+ * Occupant JID or Occupant Unique ID if available.
+ *
+ * @param   {object}    peer      Peer object to get most suitable ID
+ *
+ * @return  {string}    Peer identifier
+ */
+function xows_cach_peer_iden(peer)
+{
+  if(peer.type === XOWS_PEER_OCCU && peer.ocid)
+    return peer.ocid;
+
+  return peer.addr;
+}
 
 /**
  * Map for cached avatar data stored by SAH-1 hash
@@ -148,35 +163,38 @@ const xows_cach_peer_db = new Map();
  * @param   {string}    desc      Status or description
  * @param   {boolean}   noti      Enable push notification
  */
-function xows_cach_peer_save(iden, name, avat, desc, noti)
+function xows_cach_peer_save(peer)
 {
-  let cach = null;
+  const key = xows_cach_peer_iden(peer);
 
-  if(name && avat && desc && (noti !== null)) {
-    // All data supplied, we replace all data
-    cach = {"name":name,"avat":avat,"desc":desc,"noti":noti};
+  // Get existing cached data (Local Storage)
+  try {
+    cach = JSON.parse(localStorage.getItem(key));
+  } catch(e) {
+    xows_log(1,"cli_cache_peer_add","JSON parse error",e);
+  }
+
+
+  if(cach !== null) {
+
+    // Update cached data
+    if(peer.name !== cach.name) cach.name = peer.name;
+    if(peer.avat !== cach.avat) cach.avat = peer.avat;
+    if(peer.stat !== cach.stat) cach.stat = peer.stat;
+    if(peer.noti !== cach.noti) cach.noti = peer.noti;
+
   } else {
-    // If partial data update, we first extract existing data
-    // if any and update available data
-    try {
-      cach = JSON.parse(localStorage.getItem(iden));
-    } catch(e) {
-      xows_log(1,"cli_cache_peer_add","JSON parse error",e);
-    }
 
-    if(cach !== null) {
-      if(name) cach.name = name;
-      if(avat) cach.avat = avat;
-      if(desc) cach.desc = desc;
-      if(noti !== null) cach.noti = noti;
-    } else {
-      cach = {"name":name,"avat":avat,"desc":desc,"noti":noti};
-    }
+    // Create new cach data
+    cach = {"name":peer.name,
+            "avat":peer.avat,
+            "stat":peer.stat,
+            "noti":peer.noti};
   }
 
   // Store in live DB and localStorage
-  xows_cach_peer_db.set(iden, cach);
-  localStorage.setItem(iden, JSON.stringify(cach));
+  xows_cach_peer_db.set(key, cach);
+  localStorage.setItem(key, JSON.stringify(cach));
 }
 
 /**
