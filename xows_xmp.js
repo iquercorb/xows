@@ -1755,7 +1755,7 @@ function xows_xmp_presence_send(to, type, show, stat, nick, mucx)
   if(mucx) {
     const x = xows_xml_node("x",{"xmlns":XOWS_NS_MUC});
     // Append <password> child if supplied
-    if(mucx.pass) xows_xml_parent(x, xows_xml_node("password",null,pass));
+    if(mucx.pass) xows_xml_parent(x, xows_xml_node("password",null,mucx.pass));
     xows_xml_parent(stanza, x);
   }
 
