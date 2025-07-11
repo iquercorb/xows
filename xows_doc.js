@@ -1124,12 +1124,12 @@ function xows_doc_page_onclose(event)
  *
  * @param   {boolean}   soft      Soft close, prepare for new page to open only.
  */
-function xows_doc_page_close(soft)
+function xows_doc_page_close()
 {
   if(!xows_doc_page_param.pageid)
     return;
 
-  xows_log(2,"doc_page_close",(soft?"soft":"hard")+" close",xows_doc_page_param.pageid);
+  xows_log(2,"doc_page_close",xows_doc_page_param.pageid);
 
   const page = xows_doc(xows_doc_page_param.pageid);
 
@@ -1164,12 +1164,8 @@ function xows_doc_page_close(soft)
 
   // also exit potentially opened message box
   xows_doc_popu_close();
-
-  // if this is a hard-close, we switch to "screen page"
-  if(!soft) {
-    // Open main screen
-    xows_gui_main_open();
-  }
+  
+  xows_doc_hide("scr_page");
 }
 
 /**
@@ -1185,21 +1181,11 @@ function xows_doc_page_open(id, close, onclose, oninput, onclick)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
-  // Check for soft-open, meaning simply switch page
-  let soft = (xows_doc_page_param.pageid !== null);
-
-  if(soft) {
-    xows_doc_page_close(true); //< close any opened dialog
-  }
+  xows_doc_page_close(); //< close any opened dialog
 
   xows_log(2,"doc_page_open", id);
 
-  // switch 'screens' only if hard oppen
-  if(!soft) {
-    // hide main screen and show page screen
-    xows_doc_hide("scr_main");
-    xows_doc_show("scr_page");
-  }
+  xows_doc_show("scr_page");
 
   // show specific dialog
   xows_doc_show(id);

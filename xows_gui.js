@@ -647,7 +647,7 @@ function xows_gui_connect(register = false)
 {
   // Configure client callbacks
   xows_cli_set_callback("connect", xows_gui_cli_onconnect);
-  xows_cli_set_callback("selfchange", xows_gui_cli_onselfchange);
+  xows_cli_set_callback("selfpush", xows_gui_cli_onselfpush);
   xows_cli_set_callback("contpush", xows_gui_cli_oncontpush);
   xows_cli_set_callback("contrem", xows_gui_cli_oncontrem);
   xows_cli_set_callback("subspush", xows_gui_cli_onsubspush);
@@ -749,18 +749,20 @@ function xows_gui_cli_onconnect(user)
     xows_gui_peer = null;
 
     // Check whether file Upload is available
-    const upld = xows_cli_services.has(XOWS_NS_HTTPUPLOAD);
-    xows_doc("edit_bt_upld").disabled = !upld;
+    const has_upld = xows_cli_services.has(XOWS_NS_HTTPUPLOAD);
+    xows_doc("edit_bt_upld").disabled = !has_upld;
     // Add embeded download matching http upload service domain
-    if(upld) xows_tpl_embed_add_upld(xows_cli_services.get(XOWS_NS_HTTPUPLOAD)[0]);
+    if(has_upld) xows_tpl_embed_add_upld(xows_cli_services.get(XOWS_NS_HTTPUPLOAD)[0]);
 
     // Check whether MUC service is available
-    const muc = xows_cli_services.has(XOWS_NS_MUC);
-    xows_doc("tab_room").disabled = !muc;
+    const has_muc = xows_cli_services.has(XOWS_NS_MUC);
+    xows_doc("room_bt_upd").disabled = !has_muc;
   }
 
-  // Open main 'screen' after delay to let avatar and other stuff loading
-  setTimeout(xows_gui_initial_open, 500);
+  xows_gui_main_open();
+
+  // widen roster panel (only in narrow-screen)
+  xows_gui_rost_widen();
 }
 
 /**
@@ -1105,7 +1107,7 @@ function xows_gui_reset()
   xows_doc_hide("scr_main");
 
   // close any opened page or overlay element
-  xows_doc_page_close(true);
+  xows_doc_page_close();
   xows_doc_menu_close();
   xows_doc_view_close();
   xows_doc_popu_close();
@@ -1373,41 +1375,24 @@ function xows_gui_panel_close()
  */
 function xows_gui_main_open()
 {
-  // Check for opened dialog
-  if(!xows_doc_hidden("scr_page")) {
-
-    // Close any opened page
-    xows_doc_page_close(true);
-
-    // hide page 'screen'
-    xows_doc_hide("scr_page");
-
-    // Close any opened menu
-    xows_doc_menu_close();
-    // Close any opened media view
-    xows_doc_view_close();
-
-    // show main 'screen'
-    xows_doc_show("scr_main");
-  }
-
-  // close panel if any
+  // Close panel in case we are in narrow-screen with wide panel
   xows_gui_panel_close();
+
+  // show main 'screen'
+  xows_doc_show("scr_main");
+
+  // Close any opened menu
+  xows_doc_menu_close();
+
+  // Close any opened media view
+  xows_doc_view_close();
+
+  // Close any opened page
+  xows_doc_page_close();
 
   // Set window title
   if(xows_doc_hidden("chat_fram"))
     xows_gui_title_push(xows_l10n_get("Home")+" - XOWS");
-}
-
-/**
- * Initial main screen Open (called at connexion success)
- */
-function xows_gui_initial_open()
-{
-  xows_gui_main_open();
-
-  // widen roster panel (only in narrow-screen)
-  xows_gui_rost_widen();
 }
 
 /* -------------------------------------------------------------------
@@ -2815,7 +2800,7 @@ function xows_gui_cli_onprivrem(occu)
  *
  * @param   {object}    self      User Peer object
  */
-function xows_gui_cli_onselfchange(self)
+function xows_gui_cli_onselfpush(self)
 {
   xows_doc("self_show").dataset.show = self.show;
 
@@ -6120,7 +6105,7 @@ function xows_gui_page_user_onabort()
 function xows_gui_page_user_onvalid()
 {
   // Update user profile
-  xows_cli_change_profile(xows_doc("card_name").value,
+  xows_cli_self_edit(xows_doc("card_name").value,
                           xows_doc("card_avat").data,
                           xows_doc("card_open").checked?"open":"presence");
 }

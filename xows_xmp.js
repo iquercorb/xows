@@ -2485,7 +2485,7 @@ function xows_xmp_pubsub_recv(from, event)
   const item = [];
   for(let i = 0, n = items.childNodes.length; i < n; ++i) {
     item.push({ "id"      : items.childNodes[i].getAttribute("id"),
-                "content" : items.childNodes[i].firstChild});
+                "child"   : items.childNodes[i].firstChild});
   }
 
   // Forward event
