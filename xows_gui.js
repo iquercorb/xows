@@ -54,6 +54,11 @@ let xows_gui_hist_size = 128; //< size of the history 'window'
 let xows_gui_hist_page = 64;
 
 /**
+ * History loading process tasks bit (see xows_load* )
+ */
+const XOWS_LOAD_MAM = xows_load_task_bit();
+
+/**
  * Current selected GUI locale code
  */
 let xows_gui_locale = "en-US";
@@ -622,6 +627,9 @@ function xows_gui_init()
   // Store MAM parameters from options
   xows_gui_hist_size = xows_options.history_size;
   xows_gui_hist_page = xows_gui_hist_size / 2;
+
+  // Set loader functions
+  xows_load_task_set(XOWS_LOAD_MAM, xows_gui_mam_latest);
 }
 
 /* -------------------------------------------------------------------
@@ -1166,70 +1174,59 @@ function xows_gui_reset()
  * -------------------------------------------------------------------*/
 
 /**
- * Check whether Peer object need a loading stage. If Peer
- * GUI is empty, loading process is started, otherwise simply
- * show Peer's GUI content.
+ * Callback function called once Peer loading process finished
  *
  * @param   {object}    peer      Peer Object
  */
-function xows_gui_chat_load_check(peer)
+function xows_gui_preload_done(peer)
 {
-  let loaded = true;
+  // If chat frame is in loading stage, schedule load finish
+  if(xows_gui_peer_doc_cls_has(peer,"chat_load","LOADING")) {
 
-  switch(peer.type)
-  {
-  case XOWS_PEER_CONT: {
-      // Contact Peer need to load some archives before display
-      if(!peer.load.mam) {
-        xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
-        loaded = false;
-      }
-    } break;
+    // Put the chat history scroll DOWN
+    xows_gui_peer_scroll_down(peer);
 
-  case XOWS_PEER_ROOM: {
-      // Room Peer need to load some archives, and Occupants avatars
-      if(!peer.load.mam) {
-        xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
-        loaded = false;
-      }
-      /* TODO:
-      for(let i = 0; i < peer.occu.length; ++i) {
-        if(!peer.occu[i].load.ava) {
-          loaded = false;
-          break;
-        }
-      }
-      */
-    } break;
-  case XOWS_PEER_OCCU: {
-      // Occupant Peer have nothing to load
-      xows_doc_cls_add("hist_beg","HIST-START");
-    } break;
+    // Remove loading mask
+    xows_gui_peer_doc_cls_rem(peer,"chat_load","LOADING");
   }
 
-  if(loaded) {
+  // Show or Hide Occupant list if Room or not
+  xows_doc_cls_tog("main_colr","COL-HIDE",(peer.type !== XOWS_PEER_ROOM));
+}
 
-    // If chat frame is in loading stage, schedule load finish
-    if(xows_gui_peer_doc_cls_has(peer,"chat_load","LOADING")) {
+/**
+ * If Peer GUI documents are in intial state, starts the loading process,
+ * otherwise, directly show chat frame.
+ *
+ * @param   {object}    peer      Peer Object
+ */
+function xows_gui_preload_peer(peer)
+{
+  let load_mask = 0;
 
-      // Put the chat history scroll DOWN
-      xows_gui_peer_scroll_down(peer);
-
-      // Remove loading mask
-      xows_gui_peer_doc_cls_rem(peer,"chat_load","LOADING");
-    }
-
-    // Show or Hide Occupant list if Room or not
-    xows_doc_cls_tog("main_colr","COL-HIDE",(peer.type !== XOWS_PEER_ROOM));
-
-  } else {
-
-    // Set chat loading mask
-    xows_gui_peer_doc_cls_add(peer,"chat_load","LOADING");
+  if(xows_gui_peer_doc_cls_has(peer,"chat_load","LOADING")) {
 
     // Close right panel
     xows_doc_cls_add("main_colr","COL-HIDE");
+
+    switch(peer.type)
+    {
+    case XOWS_PEER_CONT:
+      load_mask |= XOWS_LOAD_MAM;
+      break;
+
+    case XOWS_PEER_ROOM:
+      load_mask |= XOWS_LOAD_MAM;
+      break;
+
+    case XOWS_PEER_OCCU:
+      // Occupant have nothing to load
+      xows_doc_cls_add("hist_beg","HIST-START");
+      break;
+    }
   }
+
+  xows_load_init(peer, load_mask, xows_gui_preload_done);
 }
 
 /**
@@ -1298,7 +1295,7 @@ function xows_gui_switch_peer(addr)
     chat_fram.classList.toggle("CHAT-CONT",!is_room);
 
     // Check whether peer need loading, start it or bypass
-    xows_gui_chat_load_check(next);
+    xows_gui_preload_peer(next);
 
     // Clear contact unread notification for next peer
     xows_gui_unread_reset(next);
@@ -1923,13 +1920,13 @@ function xows_gui_cli_onroomjoin(room, code, error)
   // Close panel in case we are in narrow-screen with wide panel
   xows_gui_panel_close();
 
-  // Code 201 mean initial room config
-  if(code.includes(201))
-    xows_gui_mbox_conf_open(room);
-
   // Update privileges related GUI elements
   xows_gui_room_head_update(room);
   xows_gui_chat_head_update(room);
+
+  // Check whether Room is awaiting initial configuration
+  if(room.init)
+    xows_gui_mbox_conf_open(room);
 }
 /**
  * Handle the received MUC Room terminal Own presence (Room exit)
@@ -4604,13 +4601,14 @@ function xows_gui_cli_onretract(peer, usid)
 const xows_gui_mam_query_to = new Map();
 
 /**
- * Query arvhived message for the current chat contact
+ * Query arvhived message for the specified Peer
  *
  * The 'after' parameter is used to choose to get either newers or
  * older messages than the ones currently present in the history <div>
  * if 'after' parameter is true, the function will query for newer
  * messages.
  *
+ * @param   {object}    peer      Peer object
  * @param   {boolean}   after     Get archives beyond first of after last message
  * @param   {number}    count     Desired count of message to gather, default is 20
  * @param   {boolean}   delay     Delay to temporize query, default is 100 MS
@@ -4808,8 +4806,16 @@ function xows_gui_mam_parse(peer, result, count, complete)
   xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
 
   // Inform MAM loaded
-  peer.load.mam = true;
-  xows_gui_chat_load_check(peer);
+  xows_load_task_done(peer, XOWS_LOAD_MAM);
+}
+/**
+ * Query latest arvhived message for the specified peer
+ *
+ * @param   {object}    peer     Peer object
+ */
+function xows_gui_mam_latest(peer)
+{
+  xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
 }
 
 /* -------------------------------------------------------------------
