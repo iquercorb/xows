@@ -401,7 +401,7 @@ function xows_doc_init(onready)
   xows_doc_listener_add(xows_doc("rost_tabs"),  "click",    xows_gui_rost_tabs_onclick);
   xows_doc_listener_add(xows_doc("rost_fram"),  "click",    xows_gui_rost_fram_onclick);
   // User panel
-  xows_doc_listener_add(xows_doc("user_panl"),  "click",    xows_gui_user_panl_onclick);
+  xows_doc_listener_add(xows_doc("self_panl"),  "click",    xows_gui_self_panl_onclick);
 
   // Chat header
   xows_doc_listener_add(xows_doc("chat_head"),  "click",    xows_gui_chat_head_onclick);

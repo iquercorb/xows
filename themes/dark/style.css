@@ -1887,7 +1887,7 @@ li-peer.PEER-ROOM peer-avat {
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control panel */
 /* ------------------------------------------------------------------ */
-#user_panl {
+#self_panl {
   background-color: var(--base-tone2);
   padding: 4px;
   height: 78px;
@@ -1897,7 +1897,7 @@ li-peer.PEER-ROOM peer-avat {
   color: var(--text-tone0);
   font-size: .85em;
 }
-#user_panl badg-show {
+#self_panl badg-show {
   border-color: var(--base-tone2);
 }
 .self-cont {
@@ -1930,7 +1930,7 @@ li-peer.PEER-ROOM peer-avat {
   opacity: .4;
   cursor: default;
 }
-#menu_show {
+#self_bttn {
   display: flex;
   flex-direction: row;
   height: 44px; width: 210px;
@@ -1938,10 +1938,10 @@ li-peer.PEER-ROOM peer-avat {
   align-items: center;
   cursor: pointer;
 }
-#menu_show:hover {
+#self_bttn:hover {
   background-color: var(--base-tone4);
 }
-#menu_show:hover badg-show {
+#self_bttn:hover badg-show {
   border-color: var(--base-tone4);
 }
 #self_bt_conf {
@@ -1961,7 +1961,7 @@ li-peer.PEER-ROOM peer-avat {
 /* Main Page - Left Col - Foot Frame - User control elements  */
 /* ------------------------------------------------------------------ */
 
-#drop_show {
+#drop_self {
   position:absolute;
   left:27px; bottom:90px;
   width: 275px;
@@ -1969,22 +1969,22 @@ li-peer.PEER-ROOM peer-avat {
   border-radius: 15px 15px 15px 15px;
   border-top: 15px solid var(--link-base);
 }
-#drop_show li {
+#drop_self li {
   padding: 10px 0;
 }
-#drop_show .menu-icon {
+#drop_self .menu-icon {
   position: unset;
   width: 14px; height: 14px;
   border: 2px solid var(--base-tone0);
   border-radius: 50%;
   margin: 4px 6px;
 }
-#drop_show::after {
+#drop_self::after {
   display: block;
   border-top-color: var(--base-tone0);
   left:70px; bottom: -32px;
 }
-.menu-cont {
+#drop_self .drop-peer {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -1993,41 +1993,41 @@ li-peer.PEER-ROOM peer-avat {
   border-bottom: 1px solid var(--base-tone4);
   cursor: default;
 }
-#drop_show peer-avat {
+#drop_self peer-avat {
   width: 48px; height: 48px;
 }
-#drop_show peer-name {
+#drop_self peer-name {
   color: var(--text-tone0);
   font-weight: normal;
   font-size: 1.2em;
   max-height: 24px;
   line-height: 24px;
 }
-#menu_stat {
+#self_mi_stat {
   padding: 10px 10px;
   border-radius: 2px;
   border-bottom: 1px solid var(--base-tone4);
   cursor: pointer;
 }
-#menu_stat:hover {
+#self_mi_stat:hover {
   background-color: var(--base-tone2);
 }
-#menu_stat h5 {
+#self_mi_stat h5 {
   margin: 5px 0;
   font-weight: normal;
   font-size: 0.85em;
 }
-#menu_stat peer-meta {
+#self_mi_stat peer-meta {
   max-height: unset;
   white-space: unset;
   padding: 0 0 10px 0;
   font-size: 0.8em;
   color: var(--text-tone2);
 }
-#menu_stat.PLACEHOLD peer-meta::before {
+#self_mi_stat.PLACEHOLD peer-meta::before {
 
 }
-#drop_show button {
+#drop_self button {
   display: block;
   width: 35px; height: 35px;
   padding: 0;
@@ -2039,7 +2039,7 @@ li-peer.PEER-ROOM peer-avat {
   background-repeat: no-repeat;
   cursor: pointer;
   opacity: .7;
-}#drop_show button:hover  {
+}#drop_self button:hover  {
   opacity: 1;
   background-color: rgba(220,220,255,0.2);
 }

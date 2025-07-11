@@ -2164,22 +2164,30 @@ function xows_cli_change_profile(name, url, access)
 
   // Update user settings
   if(url) {
+
     // Create new avatar from supplied image
     xows_cli_self.avat = xows_cach_avat_save(url);
+
+    // Publish new avatar
+    xows_cli_avat_publish(access);
+
   } else {
-    // Retract previous avatar
-    if(xows_cli_self.avat)
+
+    // This is avatar suppression
+    if(xows_cli_self.avat) {
+
+      // Retract previous avatar
       xows_cli_avat_retract(xows_cli_self.avat);
-    xows_cli_self.avat = null;
+
+      // Set avatar to null
+      xows_cli_self.avat = null;
+    }
   }
 
   // Publish user nickname
   xows_cli_nick_publish();
 
-  // Publish new avatar
-  xows_cli_avat_publish(access);
-
-  // For legacy vcard-temps, send presence with new avatar hash
+  // Send presence with new avatar hash
   xows_cli_presence_update();
 
   // Forward changes

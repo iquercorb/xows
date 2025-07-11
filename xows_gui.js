@@ -2820,28 +2820,16 @@ function xows_gui_cli_onprivrem(occu)
  */
 function xows_gui_cli_onselfchange(self)
 {
-  const user_panl = xows_doc("user_panl");
-
   xows_doc("self_show").dataset.show = self.show;
 
-  xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
-  const peer_avat = user_panl.querySelectorAll("PEER-AVAT");
-  for(let i = 0; i < peer_avat.length; ++i)
-    peer_avat[i].className = "h-"+self.avat;
+  // Create new Avatar CSS class
+  const avat_cls = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
+  xows_doc("self_avat").className = avat_cls;
+  xows_doc("self_name").innerText = self.name;
 
-  const peer_name = user_panl.querySelectorAll("PEER-NAME");
-  for(let i = 0; i < peer_name.length; ++i)
-    peer_name[i].innerText = self.name;
-
-  const peer_meta = user_panl.querySelectorAll("PEER-META");
-  for(let i = 0; i < peer_meta.length; ++i) {
-    peer_meta[i].innerText = self.stat;
-    peer_meta[i].className = (self.stat) ? "" : "PLACEHOLD";
-  }
-
-  const peer_addr = user_panl.querySelectorAll("PEER-ADDR");
-  for(let i = 0; i < peer_addr.length; ++i)
-    peer_addr[i].innerText = self.addr;
+  const self_meta = xows_doc("self_meta");
+  self_meta.innerText = self.stat;
+  self_meta.className = (self.stat) ? "" : "PLACEHOLD";
 
   // Update all opened chat history
   let i = xows_cli_cont.length;
@@ -2856,7 +2844,7 @@ function xows_gui_cli_onselfchange(self)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_user_panl_onclick(event)
+function xows_gui_self_panl_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
@@ -2864,10 +2852,32 @@ function xows_gui_user_panl_onclick(event)
     // Open user porfile page
     xows_gui_page_user_open();
 
-  if(event.target.closest("#menu_show"))
+  if(event.target.closest("#self_bttn")) {
     // Open user show/presence level menu
-    xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show",
-                          xows_gui_menu_show_onclick);
+    xows_doc_menu_toggle(xows_doc("self_bttn"), "drop_self",
+                         xows_gui_self_bttn_onclick,
+                         xows_gui_self_bttn_onshow);
+  }
+}
+
+/**
+ * User Presence (show) menu on-show (open) callback
+ *
+ * @param   {object}    button    Drop menu button
+ * @param   {object}    drop      Drop menu object
+ */
+function xows_gui_self_bttn_onshow(button, drop)
+{
+  // Update avatar CSS class
+  const cls = xows_tpl_spawn_avat_cls(xows_cli_self);
+  drop.querySelector("PEER-AVAT").className = cls;
+  drop.querySelector("PEER-NAME").innerText = xows_cli_self.name;
+  drop.querySelector("PEER-ADDR").innerText = xows_cli_self.addr;
+
+  // Set status
+  const drop_meta = drop.querySelector("PEER-META");
+  drop_meta.className = (xows_cli_self.stat) ? "" : "PLACEHOLD";
+  drop_meta.innerText = xows_cli_self.stat;
 }
 
 /**
@@ -2875,17 +2885,17 @@ function xows_gui_user_panl_onclick(event)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_menu_show_onclick(event)
+function xows_gui_self_bttn_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
   // Close menu and unfocus button
-  xows_doc_menu_toggle(xows_doc("menu_show"), "drop_show");
+  xows_doc_menu_toggle(xows_doc("self_bttn"), "drop_self");
 
   if(event.target.id === "self_bt_edit")
     xows_gui_page_user_open();
 
-  if(event.target.closest("#menu_stat"))
+  if(event.target.closest("#self_mi_stat"))
     xows_gui_ibox_stat_open();
 
   // Retreive the parent <li> element of the event target
@@ -2906,7 +2916,6 @@ function xows_gui_menu_show_onclick(event)
 
       // Disconnect
       xows_gui_disconnect();
-
       return;
     }
   }
@@ -6083,14 +6092,9 @@ function xows_gui_page_user_onabort()
   //xows_doc("card_addr").value = xows_cli_self.jbar;
   xows_doc("card_name").value = xows_cli_self.name;
 
-  // Get temp or cached avatar
-  /*
-  const data = xows_cach_avat_get_or_temp(xows_cli_self);
-  xows_doc("card_avat").style.backgroundImage = "url(\""+data+"\")";
-  xows_doc("card_avat").data = data; //< ad-hoc property
-  */
-
   let data;
+
+  // Get temp or cached avatar
   if(xows_cli_self.avat) {
     data = xows_cach_avat_get(xows_cli_self.avat);
     xows_doc("card_avat").data = data; //< ad-hoc property
@@ -6109,12 +6113,10 @@ function xows_gui_page_user_onabort()
  */
 function xows_gui_page_user_onvalid()
 {
-  const access = xows_doc("card_open").checked ? "open" : "presence";
-
   // Update user profile
   xows_cli_change_profile(xows_doc("card_name").value,
                           xows_doc("card_avat").data,
-                          access);
+                          xows_doc("card_open").checked?"open":"presence");
 }
 
 /**
