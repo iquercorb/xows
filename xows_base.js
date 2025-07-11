@@ -50,7 +50,7 @@
  */
 const XOWS_APP_NAME = "Xows";
 const XOWS_APP_VERS = "0.9.8";
-const XOWS_APP_NODE = "https://github.com/sedenion/xows";
+const XOWS_APP_NODE = "https://github.com/iquercorb/xows";
 
 /**
  * Global status signal
@@ -1042,8 +1042,8 @@ function xows_clean_dom(node)
 /**
  *  Static color pallet for Avatar generation
  */
-const xows_avat_pallete = ["#FF5C25","#FFBF00","#9FCC14","#4ED921","#00CA33","#20D98C",
-                           "#21ABD9","#4171FF","#926EFF","#BA43E0","#DB42B4","#E63864"];
+const xows_avat_pallete = ["#D94F22","#F2B80C","#8DB222","#4CA92C","#37B156","#22A871",
+                           "#2BA4CC","#395BBF","#5C44D5","#9B54B3","#AB4491","#CF385C"];
 
 /**
  *  Draw an icon with the specified paramers
