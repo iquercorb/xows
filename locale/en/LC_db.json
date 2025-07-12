@@ -197,9 +197,6 @@
   "Audio call":
   "",
 
-  "Chatoom configuration":
-  "",
-
   "Add Channel to Bookmarks":
   "",
 
@@ -209,7 +206,7 @@
   "Disable notifications":
   "",
 
-  "Chatoom occupants list":
+  "Channel occupants list":
   "",
 
   "Back to recent messages":
@@ -261,6 +258,9 @@
   "",
 
   "Role in Channel":
+  "",
+
+  "Occupant options":
   "",
 
   "Affiliation":
@@ -545,10 +545,19 @@
   "My Nickname":
   "",
 
+  "The nickname associated with your account to interact with other users, if none is defined, your account username is used.":
+  "",
+
   "Avatar image":
   "",
 
+  "Your account's profile picture displayed to other users, if none is defined, a default image will be shown.":
+  "",
+
   "Profile access":
+  "",
+
+  "Set access rules for your profile data, if restricted, only subscribed users can see your avatar and access profile data.":
   "",
 
   "Profile data in open access":

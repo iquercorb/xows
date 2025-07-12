@@ -2875,7 +2875,7 @@ function xows_gui_self_bttn_onclick(event)
   xows_doc_menu_toggle(xows_doc("self_bttn"), "drop_self");
 
   if(event.target.id === "self_bt_edit")
-    xows_gui_page_self_open();
+    xows_gui_page_edit_open();
 
   if(event.target.closest("#self_mi_stat"))
     xows_gui_ibox_stat_open();
@@ -6074,37 +6074,36 @@ function xows_gui_page_regi_open()
 /**
  * User Profile page on-abort callback function
  */
-function xows_gui_page_self_onabort()
+function xows_gui_page_edit_onabort()
 {
   // Reset inputs values
-  //xows_doc("self_addr").value = xows_cli_self.jbar;
-  xows_doc("self_name").value = xows_cli_self.name;
+  xows_doc("edit_name").value = xows_cli_self.name;
 
   let data;
 
   // Get temp or cached avatar
   if(xows_cli_self.avat) {
     data = xows_cach_avat_get(xows_cli_self.avat);
-    xows_doc("self_avat").data = data; //< ad-hoc property
+    xows_doc("edit_avat").data = data; //< ad-hoc property
   } else {
     data = xows_cach_avat_gen(xows_cli_self.addr, null); // Generate temporary avatar
-    xows_doc("self_avat").data = null; //< ad-hoc property
+    xows_doc("edit_avat").data = null; //< ad-hoc property
   }
 
-  xows_doc("self_avat").style.backgroundImage = "url(\""+data+"\")";
+  xows_doc("edit_avat").style.backgroundImage = "url(\""+data+"\")";
 
-  xows_doc("self_open").checked = true;
+  xows_doc("edit_open").checked = true;
 }
 
 /**
  * User Profile page on-valid callback function
  */
-function xows_gui_page_self_onvalid()
+function xows_gui_page_edit_onvalid()
 {
   // Update user profile
-  xows_cli_self_edit(xows_doc("self_name").value,
-                     xows_doc("self_avat").data,
-                     xows_doc("self_open").checked?"open":"presence");
+  xows_cli_self_edit(xows_doc("edit_name").value,
+                     xows_doc("edit_avat").data,
+                     xows_doc("edit_open").checked?"open":"presence");
 }
 
 /**
@@ -6112,21 +6111,21 @@ function xows_gui_page_self_onvalid()
  *
  * @param   {object}    target    Target object of the triggered Event
  */
-function xows_gui_page_self_oninput(target)
+function xows_gui_page_edit_oninput(target)
 {
   let changed;
 
   switch(target.id)
   {
-  case "self_open": //< Checkbox for Data in open access
-    changed = !xows_doc("self_open").checked; break;
-  case "self_name": //< Nickname input text field
-    changed = (xows_doc("self_name").value != xows_cli_self.name);
+  case "edit_open": //< Checkbox for Data in open access
+    changed = !xows_doc("edit_open").checked; break;
+  case "edit_name": //< Nickname input text field
+    changed = (xows_doc("edit_name").value != xows_cli_self.name);
   }
 
   // Open Message Box dialog
-  if(changed) xows_doc_popu_open_for_save(xows_gui_page_self_onvalid,
-                                          xows_gui_page_self_onabort);
+  if(changed) xows_doc_popu_open_for_save(xows_gui_page_edit_onvalid,
+                                          xows_gui_page_edit_onabort);
 }
 
 /**
@@ -6134,19 +6133,19 @@ function xows_gui_page_self_oninput(target)
  *
  * @param   {object}    target    Target object of the triggered Event
  */
-function xows_gui_page_self_onclick(target)
+function xows_gui_page_edit_onclick(target)
 {
-  if(target.id === "self_bt_avch") { //< Change avatar
+  if(target.id === "edit_bt_avch") { //< Change avatar
 
     // Emulate click on file input
-    xows_doc("self_file").click();
+    xows_doc("edit_file").click();
 
     return;
   }
 
-  if(target.id === "self_bt_avrm") { //< Remove avatar
+  if(target.id === "edit_bt_avrm") { //< Remove avatar
 
-    const self_avat = xows_doc("self_avat");
+    const self_avat = xows_doc("edit_avat");
 
     // set null avatar data
     self_avat.data = null;
@@ -6156,8 +6155,8 @@ function xows_gui_page_self_onclick(target)
     self_avat.style.backgroundImage = "url(\""+data+"\")";
 
     // Open Message box dialog
-    xows_doc_popu_open_for_save(xows_gui_page_self_onvalid,
-                                xows_gui_page_self_onabort);
+    xows_doc_popu_open_for_save(xows_gui_page_edit_onvalid,
+                                xows_gui_page_edit_onabort);
   }
 }
 
@@ -6166,9 +6165,9 @@ function xows_gui_page_self_onclick(target)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_page_self_ev_file(event)
+function xows_gui_page_edit_ev_file(event)
 {
-  const self_file = xows_doc("self_file");
+  const self_file = xows_doc("edit_file");
 
   if(self_file.files[0]) {
     // Create file reader to read image data
@@ -6180,12 +6179,12 @@ function xows_gui_page_self_ev_file(event)
       image.onload = function(e) {
         // Set avatar data on background
         const url = xows_gen_avatar(XOWS_AVAT_SIZE, this);
-        const self_avat = xows_doc("self_avat");
+        const self_avat = xows_doc("edit_avat");
         self_avat.data = url;
         self_avat.style.backgroundImage = "url(\""+url+"\")";
         // Open Message Box dialog
-        xows_doc_popu_open_for_save(xows_gui_page_self_onvalid,
-                                    xows_gui_page_self_onabort);
+        xows_doc_popu_open_for_save(xows_gui_page_edit_onvalid,
+                                    xows_gui_page_edit_onabort);
       };
       // Start image loading (should be quick)
       image.src = e.target.result;
@@ -6198,27 +6197,30 @@ function xows_gui_page_self_ev_file(event)
 /**
  * User Profile page on-close callback function
  */
-function xows_gui_page_self_onclose()
+function xows_gui_page_edit_onclose()
 {
   // remove "change" event listener to file input
-  xows_doc_listener_rem(xows_doc("self_file"),"change",xows_gui_page_self_ev_file);
+  xows_doc_listener_rem(xows_doc("edit_file"),"change",xows_gui_page_edit_ev_file);
 }
 
 /**
  * User Profile page open
  */
-function xows_gui_page_self_open()
+function xows_gui_page_edit_open()
 {
   // Initialize inputs values
-  xows_gui_page_self_onabort();
+  xows_gui_page_edit_onabort();
+
+  // Set account address in page header frame
+  xows_doc("edit_addr").innerText = xows_cli_self.addr;
 
   // Open dialog page
-  xows_doc_page_open("page_self", true, xows_gui_page_self_onclose,
-                                        xows_gui_page_self_oninput,
-                                        xows_gui_page_self_onclick);
+  xows_doc_page_open("page_edit", true, xows_gui_page_edit_onclose,
+                                        xows_gui_page_edit_oninput,
+                                        xows_gui_page_edit_onclick);
 
   // add "change" event listener to file input
-  xows_doc_listener_add(xows_doc("self_file"),"change",xows_gui_page_self_ev_file);
+  xows_doc_listener_add(xows_doc("edit_file"),"change",xows_gui_page_edit_ev_file);
 }
 
 

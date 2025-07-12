@@ -197,9 +197,6 @@
   "Audio call":
   "Appel audio",
 
-  "Chatoom configuration":
-  "Configuration du Salon",
-
   "Add Channel to Bookmarks":
   "Ajouter le Salon aux Favoris",
 
@@ -209,7 +206,7 @@
   "Disable notifications":
   "Désactiver les notifications",
 
-  "Chatoom occupants list":
+  "Channel occupants list":
   "Liste des occupants du Salon",
 
   "Back to recent messages":
@@ -262,6 +259,9 @@
 
   "Role in Channel":
   "Rôle dans le Salon",
+  
+  "Occupant options":
+  "Options de l'occupant",
 
   "Affiliation":
   "Affiliation",
@@ -544,13 +544,22 @@
 
   "My Nickname":
   "Mon pseudonyme",
-
+  
+  "The nickname associated with your account to interact with other users, if none is defined, your account username is used.":
+  "Le pseudonyme associé à votre compte pour interagir avec les autres utilisateurs, si aucun n'est défini, le nom d'utilisateur du compte est utilisé.",
+  
   "Avatar image":
   "Image d'avatar",
+  
+  "Your account's profile picture displayed to other users, if none is defined, a default image will be shown.":
+  "L'image de profile de votre compte affiché aux autres utilisateurs, si aucune n'est définie, une image par défaut sera affichée.",
 
   "Profile access":
   "Accès au profile",
-
+  
+  "Set access rules for your profile data, if restricted, only subscribed users can see your avatar and access profile data.":
+  "Définissez des règles d'accès pour vos données de profil. Si restreintes, seuls les utilisateurs abonnés peuvent voir votre avatar et accéder aux données de profil.",
+  
   "Profile data in open access":
   "Données du profile en accès libre",
 
