@@ -168,6 +168,7 @@ let xows_cli_self = {
   "avat": null,   //< Avatar picture Hash
   "show": 0,      //< Presence level
   "stat": null,   //< Presence Status string
+  "noti": false,  //< Dummy flag to sill compatible with cache
   "load": 0       //< Loading Mask
 };
 // Set constant values
@@ -521,8 +522,8 @@ function xows_cli_occu_get_or_new(room, addr, ocid)
   }
 
   // Add Occupant in Room with available cached data
-  const key = ocid ? ocid : addr;
-  const cach = xows_cach_peer_get(key);
+  const iden = ocid ? ocid : addr;
+  const cach = xows_cach_peer_get(iden);
   const avat = cach ? cach.avat : null;
 
   return xows_cli_occu_new(room, addr, ocid, null, avat, false);
@@ -659,6 +660,9 @@ function xows_cli_peer_push(peer, param)
     case XOWS_PEER_OCCU: {
       // Forward Occupant update
       xows_cli_fw_onoccupush(peer, param);
+      // Forward update Private Conversation
+      if(xows_cli_priv_has(peer))
+        xows_cli_fw_onprivpush(peer);
     } break;
 
     case XOWS_PEER_ROOM: {
@@ -755,7 +759,7 @@ function xows_cli_author_get(peer, addr, ocid)
 
 /* -------------------------------------------------------------------
  *
- * Client API - Initialization routines
+ * Client API - Initialization
  *
  * -------------------------------------------------------------------*/
 /**
@@ -766,22 +770,23 @@ const XOWS_LOAD_NICK  =  xows_load_task_bit();
 const XOWS_LOAD_INFO  =  xows_load_task_bit();
 
  /**
- * Global flag for client warmup function
+ * Global flag for client initialization
  */
-let xows_cli_warmed = false;
+let xows_cli_ready = false;
 
 /**
- * Function that initialize some stuff for client to work properly
+ * Client module initialization. This function must be called once before
+ * any connection attempt.
  */
-function xows_cli_warmup()
+function xows_cli_init()
 {
-  if(!xows_cli_warmed) {
+  if(!xows_cli_ready) {
 
     xows_load_task_set(XOWS_LOAD_AVAT, xows_cli_avat_fetch);
     xows_load_task_set(XOWS_LOAD_NICK, xows_cli_nick_query);
     xows_load_task_set(XOWS_LOAD_INFO, xows_cli_muc_roominfo_query);
 
-    xows_cli_warmed = true;
+    xows_cli_ready = true;
   }
 }
 
@@ -901,6 +906,9 @@ function xows_cli_xmp_onerror(code, mesg)
  */
 function xows_cli_connect(url, jid, password, register)
 {
+  // Module initialization
+  xows_cli_init();
+
   // Reset all stuff from previous session
   xows_cli_cont.length = 0;
   xows_cli_room.length = 0;
@@ -941,11 +949,18 @@ function xows_cli_connect(url, jid, password, register)
   xows_xmp_set_callback("error", xows_cli_xmp_onerror);
   xows_xmp_set_callback("close", xows_cli_xmp_onclose);
 
-  // Some final initialization
-  xows_cli_warmup();
-
   // Open a new XMPP connection
   return xows_xmp_connect(url, jid, password, register);
+}
+
+/**
+ * Checks wether client is connected
+ *
+ * @return  {boolean}   True if client is connected, false otherwise
+ */
+function xows_cli_connected()
+{
+  return (xows_cli_self.jful !== null);
 }
 
 /**
@@ -963,49 +978,32 @@ function xows_cli_xmp_onsession(bind)
   xows_cli_self.jbar = bind.jbar;
   xows_cli_self.jful = bind.jful;
 
-  // Check for cached information about own account
-  const cach = xows_cach_peer_get(xows_cli_self.addr);
-  if(cach) {
-    if(cach.name) xows_cli_self.name = cach.name;
-    if(cach.avat) xows_cli_self.avat = cach.avat;
-    if(cach.stat) xows_cli_self.stat = cach.stat;
+  // Fetch available own data from cache
+  xows_cach_peer_fetch(xows_cli_self);
+
+  // If required set own default nickname
+  if(!xows_cli_self.name) {
+    const userid = bind.node;
+    xows_cli_self.name = userid.charAt(0).toUpperCase()+userid.slice(1);
   }
 
-  // Compose default name and nickname from JID
-  if(xows_cli_self.name === null) {
-    const userid = xows_xmp_bind.node;
-    xows_cli_self.name = userid.charAt(0).toUpperCase() + userid.slice(1);
-  }
+  // Set initial own presence value
+  xows_cli_self.show = xows_cli_show_saved = XOWS_SHOW_ON;
 
-  /*
-  // Create default avatar if needed
-  if(!xows_cli_self.avat)
-    xows_cli_self.avat = xows_cli_avat_temp(xows_cli_self.addr);
-  */
+  // Set empty own status if null or undefined
+  if(xows_cli_self.stat === null || xows_cli_self.stat === undefined)
+    xows_cli_self.stat = "";
 
   if(xows_cli_connect_loss) {
 
-    // Query for MUC room list
-    xows_cli_muc_roomlist_query();
-
     // Recovery from connection loss, skip features & services discovery
-    xows_xmp_rost_get_query(xows_cli_initialize);
+    xows_cli_session_start();
 
   } else {
 
     // Start features & services discovery
-    xows_cli_init_disco_start();
+    xows_cli_warmup_start();
   }
-}
-
-/**
- * Checks wether client is connected
- *
- * @return  {boolean}   True if client is connected, false otherwise
- */
-function xows_cli_connected()
-{
-  return (xows_cli_self.jful !== null);
 }
 
 /* -------------------------------------------------------------------
@@ -1017,12 +1015,15 @@ function xows_cli_connected()
  * Client API - Entities Discovery routines
  * -------------------------------------------------------------------*/
 /**
- * Initial discovery - start discovery
+ * Client warming up, this function starts the initial features
+ * and services discovery.
  */
-function xows_cli_init_disco_start()
+function xows_cli_warmup_start()
 {
+  xows_log(2,"cli_warmup_start","ignition");
+
   // Query for own account infos/features
-  xows_xmp_disco_info_query(xows_cli_self.addr, null, xows_cli_init_discoinfo_self);
+  xows_xmp_disco_info_query(xows_cli_self.addr, null, xows_cli_warmup_discnfo_self);
 }
 
 /**
@@ -1033,13 +1034,13 @@ function xows_cli_init_disco_start()
  * @param   {string[]}  feat      Array of parsed feature strings
  * @param   {object}   [form]     Optionnal x data form included in result
  */
-function xows_cli_init_discoinfo_self(from, iden, feat, form)
+function xows_cli_warmup_discnfo_self(from, iden, feat, form)
 {
   // Add account features
   xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
 
   // Query for host (server) infos/features
-  xows_xmp_disco_info_query(xows_xmp_host, null, xows_cli_init_discoinfo_host);
+  xows_xmp_disco_info_query(xows_xmp_host, null, xows_cli_warmup_discnfo_host);
 }
 
 /**
@@ -1050,19 +1051,19 @@ function xows_cli_init_discoinfo_self(from, iden, feat, form)
  * @param   {string[]}  feat      Array of parsed feature strings
  * @param   {object}   [form]     Optionnal x data form included in result
  */
-function xows_cli_init_discoinfo_host(from, iden, feat, form)
+function xows_cli_warmup_discnfo_host(from, iden, feat, form)
 {
   // Add host features
   xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
 
   // Query for host (server) items/services
-  xows_xmp_disco_items_query(xows_xmp_host, xows_cli_init_discoitems_host);
+  xows_xmp_disco_items_query(xows_xmp_host, xows_cli_warmup_discitms_host);
 }
 
 /**
  * Stack for host item discovery
  */
-const xows_cli_init_discoitems_stk = [];
+const xows_cli_warmup_discitms_stk = [];
 
 /**
  * Initial discovery - parse host item list.
@@ -1070,7 +1071,7 @@ const xows_cli_init_discoitems_stk = [];
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  item      Array of parsed <item> objects
  */
-function xows_cli_init_discoitems_host(from, item)
+function xows_cli_warmup_discitms_host(from, item)
 {
   if(item.length) {
 
@@ -1084,19 +1085,19 @@ function xows_cli_init_discoitems_host(from, item)
 
       // Add item to host item list and stack for disco#info
       entity.item.push(jid);
-      xows_cli_init_discoitems_stk.push(jid);
+      xows_cli_warmup_discitms_stk.push(jid);
     }
 
     // Query infos for first item in stack
-    xows_xmp_disco_info_query(xows_cli_init_discoitems_stk.shift(), null, xows_cli_init_discoinfo_item);
+    xows_xmp_disco_info_query(xows_cli_warmup_discitms_stk.shift(), null, xows_cli_warmup_discnfo_item);
 
   } else {
 
     // No item, query for external services or finish discovery
     if(xows_cli_entity_has(xows_xmp_host, XOWS_NS_EXTDISCO)) {
-      xows_xmp_extdisco_query(xows_xmp_host, null, xows_cli_init_extdisco_host);
+      xows_xmp_extdisco_query(xows_xmp_host, null, xows_cli_warmup_extdisc_host);
     } else {
-      xows_cli_init_disco_finish();
+      xows_cli_warmup_config();
     }
   }
 }
@@ -1109,23 +1110,23 @@ function xows_cli_init_discoitems_host(from, item)
  * @param   {string[]}  feat      Array of parsed feature strings
  * @param   {object}   [form]     Optionnal x data form included in result
  */
-function xows_cli_init_discoinfo_item(from, iden, feat, form)
+function xows_cli_warmup_discnfo_item(from, iden, feat, form)
 {
   // Add item features
   xows_cli_entities.set(from, {"iden":iden,"feat":feat,"item":[]});
 
-  if(xows_cli_init_discoitems_stk.length) {
+  if(xows_cli_warmup_discitms_stk.length) {
 
     // Query infos for next item in stack
-    xows_xmp_disco_info_query(xows_cli_init_discoitems_stk.shift(), null, xows_cli_init_discoinfo_item);
+    xows_xmp_disco_info_query(xows_cli_warmup_discitms_stk.shift(), null, xows_cli_warmup_discnfo_item);
 
   } else {
 
     // No more item in stack, query for external services or finish discovery
     if(xows_cli_entity_has(xows_xmp_host, XOWS_NS_EXTDISCO)) {
-      xows_xmp_extdisco_query(xows_xmp_host, null, xows_cli_init_extdisco_host);
+      xows_xmp_extdisco_query(xows_xmp_host, null, xows_cli_warmup_extdisc_host);
     } else {
-      xows_cli_init_disco_finish();
+      xows_cli_warmup_config();
     }
   }
 }
@@ -1136,7 +1137,7 @@ function xows_cli_init_discoinfo_item(from, iden, feat, form)
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  svcs      Array of parsed <service> objects
  */
-function xows_cli_init_extdisco_host(from, svcs)
+function xows_cli_warmup_extdisc_host(from, svcs)
 {
   // Copy arrays
   for(let i = 0, n = svcs.length; i < n; ++i) {
@@ -1150,20 +1151,44 @@ function xows_cli_init_extdisco_host(from, svcs)
     xows_cli_extservs.push(svcs[i]);
   }
 
-  // finish discovery
-  xows_cli_init_disco_finish();
+  // finish discovery, configure client
+  //xows_cli_warmup_config();
+
+
+  // Features and service discovery finished, now get user Roster
+  xows_xmp_rost_get_query(xows_cli_warmup_roster);
 }
 
 /**
- * Initial discovery session final processing (callback function).
+ * Initial user Roster parse after server discovery feature
+ *
+ * This function is called as callback to parse the initial roster
+ * get query that follow the client services and features discovery.
+ *
+ * Once Roster parsed, the function fetch user own data, such as
+ * avatar and nickname, then step forward to client configuration.
+ *
+ * @param   {object[]}  items     Array of parsed roster <item> objects
+ */
+function xows_cli_warmup_roster(items)
+{
+  // Parse received roster items
+  xows_cli_rost_get_parse(items);
+
+  // Fetch own data from server and go configure client
+  xows_load_init(xows_cli_self, XOWS_LOAD_AVAT|XOWS_LOAD_NICK, xows_cli_warmup_config);
+}
+
+/**
+ * Configure client according discovered features and items.
  *
  * This function is called once initial discovery is finished to setup
  * availables common services such as MUC or HTTP File Upload.
  *
- * When setup job done, the function send a query to get roster to
- * continue the client initialization.
+ * When setup job done, if MUC service is available, it lauch MUC room
+ * discovery process then call the very last initialization function.
  */
-function xows_cli_init_disco_finish()
+function xows_cli_warmup_config()
 {
   // Check for main XMPP server features
   const serv_infos = xows_cli_entities.get(xows_xmp_host);
@@ -1201,36 +1226,34 @@ function xows_cli_init_disco_finish()
   // Query for MUC room list
   xows_cli_muc_roomlist_query();
 
-  // Query for roster and finish initialization
-  xows_xmp_rost_get_query(xows_cli_initialize);
+  // Wait for Room discovery to finish and Show Up !
+  xows_load_onempty_set(1000, xows_cli_session_start);
 }
 
 /* -------------------------------------------------------------------
  * Client API - Client final initialization
  * -------------------------------------------------------------------*/
+
 /**
- * Client final initialization
+ * Initial self presence declaration, this is very last initialization
+ * function. The client is now ready and Online
  *
- * This function is called as callback to parse the initial roster
- * get query that follow the client services and features discovery.
- *
- * @param   {object[]}  item      Array of parsed roster <item> objects
+ * This function is called once per connection to send the initial presence
+ * and send user updated data (avatar, nickname, etc..) to GUI module.
  */
-function xows_cli_initialize(item)
+function xows_cli_session_start()
 {
-  // Parse received roster items
-  xows_cli_rost_get_parse(item);
+  // Push self to GUI
+  xows_cli_peer_push(xows_cli_self);
 
-  // Initial presence value
-  xows_cli_self.show = xows_cli_show_saved = XOWS_SHOW_ON;
-
-  // Send simple initial presence, without avatar advert
-  xows_xmp_presence_send(null, null, XOWS_SHOW_ON, xows_cli_self.stat);
+  // Send initial own presence
+  xows_cli_presence_update();
 
   // Initialization can be normal or following connection loss
   if(xows_cli_connect_loss) {
 
-    // This is a partial/reconnect initilization
+    // This is a reconnect initilization
+    xows_log(1,"cli_session_start","recover connexion");
 
     // Connexion is now ok
     xows_cli_connect_loss = false;
@@ -1246,10 +1269,7 @@ function xows_cli_initialize(item)
 
   } else {
 
-    // This is a full/normal initialization
-
-    // Fetch own data and push
-    xows_load_init(xows_cli_self, XOWS_LOAD_AVAT|XOWS_LOAD_NICK, xows_cli_peer_push);
+    xows_log(2,"cli_session_start","takeoff");
   }
 
   // Set On-Empty load stack trigger, so connection is validated
@@ -1314,6 +1334,7 @@ function xows_cli_xmp_onclose(code, mesg)
       // Clean the client data
       xows_cli_cont.length = 0;
       xows_cli_room.length = 0;
+      xows_cli_priv.length = 0;
 
       // Reset client user entity
       xows_cli_self.jful = null;
@@ -1322,7 +1343,6 @@ function xows_cli_xmp_onclose(code, mesg)
       xows_cli_self.name = null;
       xows_cli_self.avat = null;
       xows_cli_self.stat = null;
-      xows_cli_self.vcrd = null;
 
       // Stop presence activity
       xows_cli_activity_stop();
@@ -1470,22 +1490,16 @@ function xows_cli_xmp_onrostpush(addr, name, subs, group)
 
   if(cont) {
 
-    cont.name = name ? name : addr;
+    if(name) cont.name;
     cont.subs = subs;
 
   } else {
 
-    let avat = null;
+    // Create new contact
+    cont = xows_cli_cont_new(addr, name, subs);
 
     // Check for stored data in cache (localStorage)
-    const cach = xows_cach_peer_get(addr);
-    if(cach) {
-      name = cach.name;
-      avat = cach.avat;
-    }
-
-    // Create new contact
-    cont = xows_cli_cont_new(addr, name, subs, avat);
+    xows_cach_peer_fetch(cont);
   }
 
   let load_mask = 0;
@@ -1512,7 +1526,7 @@ function xows_cli_rost_reset()
     // Remove all resources and reset presence and status
     cont.ress.clear();
     cont.show = XOWS_SHOW_OFF;
-    cont.stat = "";
+    cont.stat = null; //< Null stat to prevent caching;
 
     // Forward "reseted" Contact
     xows_cli_fw_oncontpush(cont);
@@ -1624,9 +1638,8 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
     // If user goes unavailable, reset chatstate
     cont.chat = 0;
   }
-  // Set default show level and status
+  // Set default show level
   cont.show = XOWS_SHOW_OFF;
-  cont.stat = null;
 
   // Select new displayed show level and status according current
   // connected resources priority
@@ -1661,9 +1674,6 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
     // Update nickname in case changed
     //xows_cli_nick_query(cont);
     load_mask |= XOWS_LOAD_NICK;
-
-    // Update Peer cached data
-    xows_cach_peer_save(cont);
   }
 
   // Fetch data and push Contact
@@ -1903,7 +1913,8 @@ function xows_cli_xmp_onmessage(mesg, error)
     peer.jlck = from; //< Update "locked" ressourceas as recommended in XEP-0296
 
   if(peer.type === XOWS_PEER_OCCU) {
-    // Keep track of Occupants Private message
+    // This is Room Occupant private message, if no PM session exist
+    // and was actually added in PM list, we Forward PM session creation
     if(xows_cli_priv_add(peer))
       xows_cli_fw_onprivpush(peer);
   }
@@ -2570,7 +2581,7 @@ function xows_cli_avat_data_parse(from, hash, data, error)
     xows_cli_peer_push(peer);
   }
 
-  // Allow new query
+  // Allow new avatar fetch
   xows_cli_avat_fetch_stk.delete(peer);
 }
 
@@ -2612,6 +2623,9 @@ function xows_cli_avat_meta_parse(from, item, error)
 
       // Set Peer avatar as loaded
       xows_load_task_done(peer, XOWS_LOAD_AVAT);
+
+      // Allow new avatar fetch
+      xows_cli_avat_fetch_stk.delete(peer);
 
       return;
     }
@@ -2670,8 +2684,15 @@ const xows_cli_avat_fetch_stk = new Map();
  */
 function xows_cli_avat_fetch(peer)
 {
-  if(xows_cli_avat_fetch_stk.has(peer))
+  if(xows_cli_avat_fetch_stk.has(peer)) {
+
+    xows_log(1,"cli_avat_fetch","peer already in stack",peer.addr);
+
+    if(peer.load)
+      xows_load_task_done(peer, XOWS_LOAD_AVAT);
+
     return;
+  }
 
   // Create dummy entry to prevent multiple query
   xows_cli_avat_fetch_stk.set(peer, peer);
@@ -2787,15 +2808,16 @@ function xows_cli_vcard_parse(from, vcard, error)
   } else {
 
     // We are only interested in avatar
-    if((node = vcard.querySelector("PHOTO"))) {
+    const photo = vcard.querySelector("PHOTO");
+    if(photo) {
 
-      const type = xows_xml_innertext(node.querySelector("TYPE"));
-      const data = xows_xml_innertext(node.querySelector("BINVAL"));
+      const type = xows_xml_innertext(photo.querySelector("TYPE"));
+      const binval = xows_xml_innertext(photo.querySelector("BINVAL"));
       // create proper data-url string
-      dataurl = "data:"+type+";base64,"+data;
+      const data = "data:"+type+";base64,"+binval;
 
       // Save image in cache
-      peer.avat = xows_cach_avat_save(dataurl);
+      peer.avat = xows_cach_avat_save(data);
     }
   }
 
@@ -2805,7 +2827,7 @@ function xows_cli_vcard_parse(from, vcard, error)
     xows_cli_peer_push(peer);
   }
 
-  // Allow new query
+  // Allow new avatar fetch
   xows_cli_avat_fetch_stk.delete(peer);
 }
 
@@ -3789,13 +3811,7 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
           // Fetch latest Room info and forward joined
           xows_load_init(room, XOWS_LOAD_INFO, xows_cli_fw_onroomjoin);
         }
-/*
-        // Update infos for the newly joined room
-        xows_cli_muc_roominfo_query(room);
 
-        // Forward Room join signal
-        xows_cli_fw_onroomjoin(room, mucx.code);
-*/
       }
 
     } else {
@@ -3848,13 +3864,6 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
     occu.name = xows_jid_resc(from);
     occu.jful = mucx.jful; //< The real JID, may be unavailable
     occu.jbar = mucx.jful ? xows_jid_bare(mucx.jful) : null; //< Real bare JID;
-    // If Occupant is found offline, this mean a Private Conversation
-    // is open and occupant joined again, so, we inform Occupant is back
-    if(occu.show === XOWS_SHOW_OFF) {
-      // Forward update Private Conversation
-      if(xows_cli_priv_has(occu))
-        xows_cli_fw_onprivpush(occu);
-    }
   } else {
     // Create new Occupant object
     occu = xows_cli_occu_new(room, from, ocid, mucx.jful, null, self);
@@ -3888,13 +3897,6 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
     //xows_cli_avat_fetch(occu);
     load_mask |= XOWS_LOAD_AVAT;
   }
-
-  // Update Peer cached data
-  xows_cach_peer_save(occu);
-
-  // Forward update Private Conversation
-  if(xows_cli_priv_has(occu))
-    xows_cli_fw_onprivpush(occu);
 
   // Fetch data and push Occupant
   xows_load_init(occu, load_mask, xows_cli_peer_push, mucx.code);
@@ -4033,16 +4035,16 @@ function xows_cli_muc_set_role(occu, role)
 /**
  * Change own account password temporary saved data
  */
-const xows_cli_regi_chpass_data = {"onresult":null,"password":null,"attempt":0};
+const xows_cli_regi_chpas_data = {"onresult":null,"password":null,"attempt":0};
 
 /**
- * Function to handle own account password query result. 
- * 
+ * Function to handle own account password query result.
+ *
  * First attempt may fail with server requesting to fulfill informations, this
- * function automatically respond with fullfilled x-data form, including 
+ * function automatically respond with fullfilled x-data form, including
  * username and old passord.
- * 
- * If the second try with fulfilled x-data form also fail, the onparse function 
+ *
+ * If the second try with fulfilled x-data form also fail, the onparse function
  * is then called with error result.
  *
  * @param   {string}    type      Query result type
@@ -4051,17 +4053,17 @@ const xows_cli_regi_chpass_data = {"onresult":null,"password":null,"attempt":0};
  */
 function xows_cli_regi_chpas_parse(type, form, error)
 {
-  const data = xows_cli_regi_chpass_data;
-  
+  const data = xows_cli_regi_chpas_data;
+
   // First query has good chances to be an error with x-data form to fulfill
   if(type === "error") {
-    
+
     if(data.attempt > 0) {
       // forward error
       if(xows_isfunc(data.onparse))
         data.onparse(type, error);
     }
-    
+
     if(form) {
       // fulfill x-data form
       for(let i = 0; i < form.length; ++i) {
@@ -4070,22 +4072,22 @@ function xows_cli_regi_chpas_parse(type, form, error)
         if(form[i]["var"] === "password") form[i].value = [data.password];
       }
     }
-    
+
     // increase attempt count
     data.attempt++;
-    
+
     // Re-send query with fulfilled form
-    xows_xmp_regi_pass_set_query(null, null, form, xows_cli_regi_chpass_parse);
-    
+    xows_xmp_regi_pass_set_query(null, null, form, xows_cli_regi_chpas_parse);
+
   } else {
-    
+
     // Change current session Password to allow proper connexion loss recover
     xows_xmp_auth.pass = data.password;
-    
+
     // forward result
     if(xows_isfunc(data.onparse))
       data.onparse(type, null);
-        
+
     // reset data
     data.password = null;
   }
@@ -4099,8 +4101,8 @@ function xows_cli_regi_chpas_parse(type, form, error)
  */
 function xows_cli_regi_chpas_query(password, onparse)
 {
-  const data = xows_cli_regi_chpass_data;
-  
+  const data = xows_cli_regi_chpas_data;
+
   data.onparse = onparse;
   data.password = password;
   data.attempt = 0;
@@ -4109,13 +4111,13 @@ function xows_cli_regi_chpas_query(password, onparse)
 }
 
 /**
- * Function to handle own account password query result. 
- * 
+ * Function to handle own account password query result.
+ *
  * First attempt may fail with server requesting to fulfill informations, this
- * function automatically respond with fullfilled x-data form, including 
+ * function automatically respond with fullfilled x-data form, including
  * username and old passord.
- * 
- * If the second try with fulfilled x-data form also fail, the onparse function 
+ *
+ * If the second try with fulfilled x-data form also fail, the onparse function
  * is then called with error result.
  *
  * @param   {string}    type      Query result type
@@ -4126,16 +4128,16 @@ function xows_cli_regi_chpas_query(password, onparse)
 function xows_cli_regi_remove_parse(type, form, error)
 {
   const data = xows_cli_regi_chpass_data;
-  
+
   // First query has good chances to be an error with x-data form to fulfill
   if(type === "error") {
-    
+
     if(data.attempt > 0) {
       // forward error
       if(xows_isfunc(data.onparse))
         data.onparse(type, error);
     }
-    
+
     if(form) {
       // fulfill x-data form
       for(let i = 0; i < form.length; ++i) {
@@ -4143,22 +4145,22 @@ function xows_cli_regi_remove_parse(type, form, error)
         if(form[i]["var"] === "password") form[i].value = [xows_xmp_auth.pass];
       }
     }
-    
+
     // increase attempt count
     data.attempt++;
-    
+
     // Re-send query with fulfilled form
     xows_xmp_regi_pass_set_query(null, null, form, xows_cli_regi_chpass_parse);
-    
+
   } else {
-    
+
     // Change current session Password to allow proper connexion loss recover
     xows_xmp_auth.pass = data.password;
-    
+
     // forward result
     if(xows_isfunc(data.onparse))
       data.onparse(type, null);
-        
+
     // reset data
     data.password = null;
   }
