@@ -49,6 +49,7 @@ let xows_options = {
   theme           : "dark",     //< Them to load
   verbose         : 1,          //< Verbosity level
   uncache         : false,      //< Force uncache of loaded styles and templates
+  mincss          : false,      //< Use theme minified CSS file (style.min.css)
   allow_register  : false,      //< Allow user to access to account register dialog
   //legacy_vcard    : false,      //< Force usage of legacy XEP-0054 vcard-temp instead of XEP-0292 vCard4 Over XMPP
   //vcard4_notify   : true,       //< Request for Vcard4 PubSub notifications
@@ -171,6 +172,7 @@ function xows_init(options)
     if(options.hasOwnProperty("theme"))            xows_options.theme = options.theme;
     if(options.hasOwnProperty("verbose"))          xows_options.verbose = options.verbose;
     if(options.hasOwnProperty("uncache"))          xows_options.uncache = options.uncache;
+    if(options.hasOwnProperty("mincss"))           xows_options.mincss = options.mincss;
     if(options.hasOwnProperty("allow_register"))   xows_options.allow_register = options.allow_register;
     //if(options.hasOwnProperty("legacy_vcard"))     xows_options.legacy_vcard = options.legacy_vcard;
     //if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;

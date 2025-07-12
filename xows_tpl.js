@@ -396,7 +396,12 @@ function xows_tpl_init(onready)
   css.rel = "stylesheet";
   css.type = "text/css";
   // Select normal or minified style file
-  const css_file = "/style.css";
+  let css_file;
+  if(xows_options.mincss) {
+    css_file = "/style.min.css";
+  } else {
+    css_file = "/style.css";
+  }
   css.href = xows_options.root+"/themes/"+xows_tpl_theme+css_file;
 
   // Forces browser to reload (uncache) templates files by adding a
