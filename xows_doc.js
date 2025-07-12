@@ -1471,7 +1471,7 @@ function xows_doc_prof_update()
 
   // Fill common peer informations
   over_prof.querySelector("PEER-NAME").innerText = peer.name;
-  over_prof.querySelector("PEER-ADDR").innerText = peer.bare ? peer.bare : "";
+  over_prof.querySelector("PEER-ADDR").innerText = peer.jbar ? peer.jbar : "";
   over_prof.querySelector("BADG-SHOW").dataset.show = peer.show || 0;
   // Set proper class for avatar
   over_prof.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(peer);
@@ -1488,8 +1488,8 @@ function xows_doc_prof_update()
   // Set Occupant informations
   if(peer.type === XOWS_PEER_OCCU) {
 
-    if(peer.bare)
-      cont = xows_cli_cont_get(peer.bare);
+    if(peer.jbar)
+      cont = xows_cli_cont_get(peer.jbar);
 
     let affi_txt;
     switch(peer.affi)
@@ -1517,8 +1517,8 @@ function xows_doc_prof_update()
     prof_role.dataset.role = peer.role;
 
     // Check if we can get Contact object
-    if(peer.bare)
-      cont = xows_cli_cont_get(peer.bare);
+    if(peer.jbar)
+      cont = xows_cli_cont_get(peer.jbar);
 
     xows_doc_show("prof_occu");
 
