@@ -157,33 +157,32 @@ const xows_cach_peer_db = new Map();
 /**
  * Save User, Room or Occupant data to localStorage and live DB
  *
- * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
- * @param   {string}    name      Nickname or displayed name
- * @param   {string}    avat      Associated avatar hash
- * @param   {string}    desc      Status or description
- * @param   {boolean}   noti      Enable push notification
+ * @param   {object}    peer      Peer Object to save data
  */
 function xows_cach_peer_save(peer)
 {
-  const key = xows_cach_peer_iden(peer);
+  const iden = xows_cach_peer_iden(peer);
 
   let cach;
-  
+
   // Get existing cached data (Local Storage)
   try {
-    cach = JSON.parse(localStorage.getItem(key));
+    cach = JSON.parse(localStorage.getItem(iden));
   } catch(e) {
-    xows_log(1,"cli_cache_peer_add","JSON parse error",e);
+    xows_log(1,"cli_cache_peer_add","JSON parse error",iden);
   }
-
 
   if(cach !== null) {
 
     // Update cached data
-    if(peer.name !== cach.name) cach.name = peer.name;
-    if(peer.avat !== cach.avat) cach.avat = peer.avat;
-    if(peer.stat !== cach.stat) cach.stat = peer.stat;
-    if(peer.noti !== cach.noti) cach.noti = peer.noti;
+    cach.name = peer.name;
+    cach.avat = peer.avat;
+    cach.noti = peer.noti;
+    // Special behavior for status, null or undefined value
+    // this mean it was set by client process.
+    if(typeof peer.stat === "string") {
+      cach.stat = peer.stat;
+    }
 
   } else {
 
@@ -195,8 +194,8 @@ function xows_cach_peer_save(peer)
   }
 
   // Store in live DB and localStorage
-  xows_cach_peer_db.set(key, cach);
-  localStorage.setItem(key, JSON.stringify(cach));
+  xows_cach_peer_db.set(iden, cach);
+  localStorage.setItem(iden, JSON.stringify(cach));
 }
 
 /**
@@ -233,7 +232,7 @@ function xows_cach_peer_get(iden)
   // Try in localStorage (and load to live DB)
   if(localStorage.hasOwnProperty(iden)) {
     try {
-      xows_cach_peer_db.set(iden,JSON.parse(localStorage.getItem(iden)));
+      xows_cach_peer_db.set(iden, JSON.parse(localStorage.getItem(iden)));
     } catch(e) {
       // malformed data
       xows_log(1,"cli_cache_peer_get","JSON parse error",e);
@@ -244,6 +243,22 @@ function xows_cach_peer_get(iden)
   }
 
   return null;
+}
+
+/**
+ * Update Peer object with cached data if available
+ *
+ * @param   {object}    peer      Peer object to update
+ */
+function xows_cach_peer_fetch(peer)
+{
+  const cach = xows_cach_peer_get(xows_cach_peer_iden(peer));
+  if(cach) {
+    if(cach.name) peer.name = cach.name;
+    if(cach.avat) peer.avat = cach.avat;
+    if(cach.stat) peer.stat = cach.stat;
+    if(cach.noti) peer.noti = cach.noti;
+  }
 }
 
 /**
