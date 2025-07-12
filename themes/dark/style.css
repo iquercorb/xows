@@ -49,6 +49,7 @@
   --base-tone5:       #40404A;  /* Light tone (Main header, Chat editor) */
   --base-tone6:       #52525E;  /* Brighter tone (Input outline) */
   --base-tone7:       #32323B;  /* Little darker than Main tone (Message hover) */
+  --base-error:       #6B464D;  /* Reddish background for error field */
 
   --text-tone0:       #FFF;     /* White text (main titles, labels) */
   --text-tone1:       #DFDFE6;  /* Light text (common text) */
@@ -61,7 +62,6 @@
   --link-base :       #FFB000;  /* Link & Highlight Button background */
   --link-hover :      #FFCC17;  /* Link & Highlight Button background hover */
   --link-visited :    #F2BD0C;  /* Link visited */
-  --link-greyd :      #BD9A4B;  /* Link disabled/Greyed */
   --link-text :       #FFF;     /* Highlight Button text */
   --link-text-hover : #FFF;     /* Highlight Button text hover */
 
@@ -168,8 +168,8 @@ button:focus {
 }
 button:disabled {
   cursor: default;
-  /*color: var(--text-tone3);*/
-  /*background-color: var(--ctrl-base);*/
+  color: var(--text-tone2) !important;
+  background-color: var(--ctrl-base) !important;
 }
 .FLATTEN {
   height: 0px !important;
@@ -1046,9 +1046,11 @@ popu-text {
   color: var(--text-tone0);
   margin: 0 0 0 10px;
 }
+/*
 #over_popu.STYL-ERR popu-text {
   color: var(--text-error) !important;
 }
+*/
 popu-acts {
   flex: auto;
   min-width: 52px;
@@ -1369,7 +1371,7 @@ page-inner {
 }
 page-inner header {
   border-bottom: 1px solid var(--base-tone5);
-  margin: 0 0 25px 0;
+  margin: 0 15px 25px 0;
   padding: 5px 0 45px 0;
 }
 page-inner header span {
@@ -1385,7 +1387,6 @@ page-inner h1 {
   text-transform: uppercase;
   font-size: 1.3em;
   font-weight: bold;
-  margin-right: 15px;
   color: var(--text-tone0);
 }
 page-inner h2 {
@@ -1448,17 +1449,24 @@ page-inner fieldset p {
   font-size: 0.9em;
   color: var(--text-tone3);
 }
-page-inner fieldset input[type="text"] {
+page-inner fieldset input[type="text"],
+page-inner fieldset input[type="password"] {
   width: 100%;
   border-radius: 5px;
   margin: 10px 0 5px 0;
   font-size: 1.0em;
   border: 2px solid var(--base-tone2);
 }
-page-inner fieldset input[type="text"]:disabled {
+page-inner fieldset input[type="text"]:disabled,
+page-inner fieldset input[type="password"]:disabled {
   color: var(--text-tone3);
   background-color: var(--base-tone4);
-  border: 2px solid var(--base-tone3);
+  border-color: var(--base-tone3);
+}
+page-inner fieldset input[type="text"]:invalid,
+page-inner fieldset input[type="password"]:invalid {
+  background-color: var(--base-error);
+  border-color: var(--text-error);
 }
 page-inner fieldset button {
   float: right;
@@ -1953,7 +1961,7 @@ li-peer.PEER-ROOM peer-avat {
 #self_bttn:hover badg-show {
   border-color: var(--base-tone4);
 }
-#self_bt_conf {
+#self_bt_acct {
   background-image: url("images/gear.svg");
 }
 #app_about {
@@ -3648,11 +3656,19 @@ chat-inpt {
   }
 }
 /* ------------------------------------------------------------------ */
-/* Page for Add Contact */
+/* Page for Account option */
 /* ------------------------------------------------------------------ */
-#page_subs {
-
+#page_acct {
+  text-align: left;
 }
+#page_acct input[type="password"] {
+  height: 36px;
+  padding: 5px 10px;
+}
+#acct_bt_pass {
+  margin-top: 10px;
+}
+
 /* ------------------------------------------------------------------ */
 /* Page for User profile */
 /* ------------------------------------------------------------------ */
@@ -3679,12 +3695,6 @@ chat-inpt {
   margin: 0;
   background-size: 48px;
   background-color: inherit;
-}
-/* ------------------------------------------------------------------ */
-/* Page for Room Join/Create */
-/* ------------------------------------------------------------------ */
-#page_join {
-  text-align: center;
 }
 /* ------------------------------------------------------------------ */
 /* Page for Room Config */
