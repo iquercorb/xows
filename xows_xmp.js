@@ -1735,10 +1735,8 @@ function xows_xmp_presence_send(to, type, show, stat, nick, mucx)
     xows_xml_parent(stanza, xows_xml_node("show", null, xows_xmp_show_str.get(show)));
     // Set priority according show level
     xows_xml_parent(stanza, xows_xml_node("priority", null, (show * 20)));
-    // Append <status> child
-    if(stat) xows_xml_parent(stanza, xows_xml_node("status", null, stat));
 
-    /* -- We stop support for XEP-0153 (vCard-Based Avatars) --
+    /* This should be done by Server
     // Append vcard-temp:x:update for avatar update child
     xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
                                 (photo)?xows_xml_node("photo",null,photo):null));
@@ -1747,7 +1745,17 @@ function xows_xmp_presence_send(to, type, show, stat, nick, mucx)
     // Append <c> (caps) child
     xows_xml_parent(stanza, xows_xml_node("c",{"xmlns":XOWS_NS_CAPS,"hash":"sha-1","node":XOWS_APP_NODE,"ver":xows_xmp_caps_self_verif()}));
   }
-
+  
+  // Append <status> child
+  if(typeof stat === "string") {
+    // Great Javascript journey here. First, an empty string is always 
+    // translated as Boolean "false", but, like things were not confusing 
+    // enough, I also discovered that a String is NOT ALWAYS a String because 
+    // literal-string ARE NOT instance of String(). Am I alone to go mad when 
+    // seeing things like that ?
+    xows_xml_parent(stanza, xows_xml_node("status", null, stat));
+  }
+    
   // Append <nick> child if supplied
   if(nick) xows_xml_parent(stanza, xows_xml_node("nick",{"xmlns":XOWS_NS_NICK},nick));
 

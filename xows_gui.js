@@ -2805,8 +2805,7 @@ function xows_gui_cli_onselfpush(self)
   xows_doc("self_show").dataset.show = self.show;
 
   // Create new Avatar CSS class
-  const avat_cls = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
-  xows_doc("self_avat").className = avat_cls;
+  xows_doc("self_avat").className = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
   xows_doc("self_name").innerText = self.name;
 
   const self_meta = xows_doc("self_meta");
@@ -2919,6 +2918,16 @@ function xows_gui_ibox_stat_onvalid(value)
 }
 
 /**
+ * Self status message input box on-input callback
+ *
+ * @param   {string}    value     Input content
+ */
+function xows_gui_ibox_stat_oninput(value)
+{
+  // Dummy function to allow to set empty status
+}
+
+/**
  * Open self status message input box
  */
 function xows_gui_ibox_stat_open()
@@ -2928,7 +2937,9 @@ function xows_gui_ibox_stat_open()
     xows_l10n_get("Indicate anything you want to mention about your current situation."),
     xows_l10n_get("Enter a status message..."),
     xows_cli_self.stat,
-    xows_gui_ibox_stat_onvalid, null, null, null, null, true);
+    xows_gui_ibox_stat_onvalid, null,
+    null, null,
+    xows_gui_ibox_stat_oninput, true);
 }
 
 /* -------------------------------------------------------------------
@@ -6145,14 +6156,14 @@ function xows_gui_page_edit_onclick(target)
 
   if(target.id === "edit_bt_avrm") { //< Remove avatar
 
-    const self_avat = xows_doc("edit_avat");
+    const edit_avat = xows_doc("edit_avat");
 
     // set null avatar data
-    self_avat.data = null;
+    edit_avat.data = null;
 
     // Generate default temp avatar
     const data = xows_cach_avat_gen(xows_cli_self.addr, null); // Generate temporary avatar
-    self_avat.style.backgroundImage = "url(\""+data+"\")";
+    edit_avat.style.backgroundImage = "url(\""+data+"\")";
 
     // Open Message box dialog
     xows_doc_popu_open_for_save(xows_gui_page_edit_onvalid,
@@ -6167,9 +6178,9 @@ function xows_gui_page_edit_onclick(target)
  */
 function xows_gui_page_edit_ev_file(event)
 {
-  const self_file = xows_doc("edit_file");
+  const edit_file = xows_doc("edit_file");
 
-  if(self_file.files[0]) {
+  if(edit_file.files[0]) {
     // Create file reader to read image data
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -6179,9 +6190,9 @@ function xows_gui_page_edit_ev_file(event)
       image.onload = function(e) {
         // Set avatar data on background
         const url = xows_gen_avatar(XOWS_AVAT_SIZE, this);
-        const self_avat = xows_doc("edit_avat");
-        self_avat.data = url;
-        self_avat.style.backgroundImage = "url(\""+url+"\")";
+        const edit_avat = xows_doc("edit_avat");
+        edit_avat.data = url;
+        edit_avat.style.backgroundImage = "url(\""+url+"\")";
         // Open Message Box dialog
         xows_doc_popu_open_for_save(xows_gui_page_edit_onvalid,
                                     xows_gui_page_edit_onabort);
@@ -6190,7 +6201,7 @@ function xows_gui_page_edit_ev_file(event)
       image.src = e.target.result;
     };
     // Launch file reading
-    reader.readAsDataURL(self_file.files[0]);
+    reader.readAsDataURL(edit_file.files[0]);
   }
 }
 

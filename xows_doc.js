@@ -831,7 +831,7 @@ function xows_doc_ibox_onkey(event)
  * @param   {function} [oninput]  Optional callback function for input events
  * @param   {boolean}  [modal]    Optional open in 'modal' dialog mode
  */
-function xows_doc_ibox_open(head, hint, phold, value, onvalid, valid, onabort, abort, oninput, modal)
+function xows_doc_ibox_open(head, hint, phold, value, onvalid, valid, onabort, abort, oninput, modal = true)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
@@ -1164,7 +1164,7 @@ function xows_doc_page_close()
 
   // also exit potentially opened message box
   xows_doc_popu_close();
-  
+
   xows_doc_hide("scr_page");
 }
 
@@ -1578,6 +1578,8 @@ function xows_doc_prof_update()
  */
 function xows_doc_prof_open(peer, onclick)
 {
+  const over_prof = xows_doc("over_prof");
+
   // Store Occupant object
   xows_doc_prof_param.peer = peer;
   xows_doc_prof_param.onclick = onclick;
