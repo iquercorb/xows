@@ -919,7 +919,6 @@ function xows_cli_connect(url, jid, password, register)
   xows_cli_self.name = null;
   xows_cli_self.avat = null;
   xows_cli_self.stat = null;
-  xows_cli_self.vcrd = null;
 
   // Reset presence activity
   xows_cli_activity_stop();
@@ -3847,7 +3846,6 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
   if(occu) {
     // Update Occupant
     occu.name = xows_jid_resc(from);
-    occu.ocid = ocid;
     occu.jful = mucx.jful; //< The real JID, may be unavailable
     occu.jbar = mucx.jful ? xows_jid_bare(mucx.jful) : null; //< Real bare JID;
     // If Occupant is found offline, this mean a Private Conversation

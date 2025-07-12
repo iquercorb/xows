@@ -167,6 +167,8 @@ function xows_cach_peer_save(peer)
 {
   const key = xows_cach_peer_iden(peer);
 
+  let cach;
+  
   // Get existing cached data (Local Storage)
   try {
     cach = JSON.parse(localStorage.getItem(key));

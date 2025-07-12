@@ -1474,7 +1474,7 @@ function xows_doc_prof_update()
   over_prof.querySelector("PEER-ADDR").innerText = peer.bare ? peer.bare : "";
   over_prof.querySelector("BADG-SHOW").dataset.show = peer.show || 0;
   // Set proper class for avatar
-  over_prof.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(peer.avat);
+  over_prof.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(peer);
 
   // Set State message or keep placeholder
   const peer_meta = over_prof.querySelector("PEER-META");
