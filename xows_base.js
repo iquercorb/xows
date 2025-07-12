@@ -1134,7 +1134,7 @@ function xows_gen_avatar(size, image, seed)
 
       // Get pseudo-random color from seed
       let s = 0, i = seed.length;
-      while(i--) s += seed.charCodeAt(i) * 7;
+      while(i--) s += seed.charCodeAt(i) * seed.charCodeAt(i);
       ct.fillStyle = xows_avat_pallete[Math.floor(xows_random(s)*12)];
       ct.rect(0, 0, size, size);
       ct.fill();
