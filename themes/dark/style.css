@@ -347,6 +347,7 @@ peer-list {
   overflow-x: hidden;
   overflow-y: scroll;
   scrollbar-color: var(--base-tone0) transparent;
+  padding: 0 5px;
 }
 peer-list::-webkit-scrollbar-thumb {
   background-color: var(--base-tone0);
@@ -609,7 +610,7 @@ btn-close:hover {
 /* ------------------------------------------------------------------ */
 menu-drop {
   padding: 0;
-  z-index: 3;
+  z-index: 8;
   border-radius: 4px;
   background-color: var(--base-tone0);
   border-color: var(--base-tone0);
@@ -797,7 +798,7 @@ badg-lock {
   position: absolute;
   top: 0; left: 0;
   bottom: 0; right: 0;
-  z-index: 2;
+  z-index: 7;
 }
 .VOID-DARK {
   background-color: #000;
@@ -809,12 +810,16 @@ badg-lock {
 #scr_page {
   display: flex;
   flex-direction: column;
+  position: absolute;
+  top: 0; left: 0;
   width: 100vw; height: 100vh;
   background-image: url("images/watermark.svg");
   background-size: 80% 600px;
   background-position: center;
   background-repeat: no-repeat;
+  background-color: var(--base-tone3);
   overflow: hidden;
+  z-index: 6;
 }
 /* ------------------------------------------------------------------ */
 /* Main Screen flex layout */
@@ -945,7 +950,7 @@ col-load.LOADERR {
   left: 0; right: 0;
   top: 0; bottom: 0;
   background-color: var(--base-tone4);
-  z-index: 3;
+  z-index: 5;
 }
 
 /* ------------------------------------------------------------------ */
@@ -989,7 +994,7 @@ col-page {
   display: flex;
   position: absolute;
   align-items: center;
-  z-index: 4;
+  z-index: 10;
   bottom: 12px;
   right: 10px; left: 10px;
   max-width: 770px;
@@ -1081,7 +1086,7 @@ popu-acts {
   position: absolute;
   top: 0; bottom: 0;
   left: 0; right: 0;
-  z-index: 4;
+  z-index: 10;
   background-color: rgba(0,0,0,0.6);
 }
 #view_wrap {
@@ -1126,7 +1131,7 @@ popu-acts {
   flex-direction: column;
   top: 50%;
   transform: translate(0, -50%);
-  z-index: 4;
+  z-index: 10;
   width: 90%;
   min-width: 300px;
   max-width: 500px;
@@ -1239,7 +1244,7 @@ dbox-icon.STYL-ASK {
   flex-direction: column;
   top: 50%;
   transform: translate(0, -50%);
-  z-index: 4;
+  z-index: 10;
   width: 90%;
   min-width: 300px;
   max-width: 500px;
@@ -1749,6 +1754,7 @@ li-peer {
   overflow: hidden;
   cursor: pointer !important;
   margin: 5px 0;
+  border-radius: 5px;
 } li-peer:hover,
   li-peer.SELECTED {
   background-color: var(--base-tone4);
@@ -1763,6 +1769,7 @@ li-peer:hover badg-lock,
 li-peer.SELECTED badg-lock {
   background-color: var(--base-tone4);
 }
+/*
 li-peer::before {
   display: block;
   flex:none;
@@ -1782,6 +1789,7 @@ li-peer.SELECTED::before {
   visibility: visible;
   height: 35px;
 }
+*/
 li-peer.SELECTED peer-name {
   color: var(--text-tone1);
 }
@@ -1933,10 +1941,11 @@ li-peer.PEER-ROOM peer-avat {
 #self_bttn {
   display: flex;
   flex-direction: row;
-  height: 44px; width: 210px;
+  height: 44px; width: 200px;
   border-radius: 3px;
   align-items: center;
   cursor: pointer;
+  padding-right: 4px;
 }
 #self_bttn:hover {
   background-color: var(--base-tone4);
@@ -3266,7 +3275,7 @@ chat-inpt {
 }
 #drop_emoj {
   display: block;
-  z-index: 3;
+  z-index: 8;
   text-align: left;
   position:relative;
   float: right;
@@ -3427,9 +3436,10 @@ chat-inpt {
 #room_rost {
   text-align: center;
   background-color: var(--base-tone3);
+  padding: 0 5px;
 }
 #room_rost li-peer {
-  padding-left: 6px;
+  border-radius: 5px;
 }
 #room_rost li-peer::before {
   display: none;
@@ -3447,7 +3457,7 @@ chat-inpt {
 /* ------------------------------------------------------------------ */
 #drop_occu {
   display: block;
-  z-index: 3;
+  z-index: 8;
   text-align: left;
   position:absolute;
   width: 150px;
@@ -3472,7 +3482,7 @@ chat-inpt {
 }
 .subm-drop {
   display: none;
-  z-index: 4;
+  z-index: 9;
   text-align: left;
   position:absolute;
   width: 150px;
