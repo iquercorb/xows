@@ -5554,15 +5554,10 @@ function xows_gui_occu_list_onclick(event)
   const li_peer = event.target.closest("LI-PEER");
   if(!li_peer) return;
 
-  // Toggle Occupant selection
-  const li_selected = xows_doc("occu_list").querySelector(".SELECTED");
-  if(li_selected) li_selected.classList.remove("SELECTED");
-
-  // Add selected to next occupant <li-peer>
-  document.getElementById(li_peer.id).classList.add("SELECTED");
-
   // Checks whether user clicked on menu button
   if(event.target.name === "occu_bt_menu") {
+    // Select occupant (Temporarly, to keep track of it)
+    li_peer.classList.add("SELECTED");
     // Open Occupant menu
     xows_doc_menu_toggle(event.target, "drop_occu", xows_gui_occu_drop_onclick,
                                                     xows_gui_occu_drop_onshow);
@@ -5686,9 +5681,11 @@ function xows_gui_occu_drop_onclick(event)
 
   // Get related room occupant <li-peer> element
   const li_peer = xows_doc("occu_list").querySelector(".SELECTED");
+  li_peer.classList.remove("SELECTED"); //< Unselect it
 
   // Close menu and unfocus button
   xows_doc_menu_toggle(li_peer.querySelector("BUTTON"), "drop_occu");
+
 
   // Get related menu item <li> element where click occurred
   const li = event.target.closest("LI");
