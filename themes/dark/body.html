@@ -7,11 +7,13 @@
     <col-padd></col-padd>
     <!-- Middle Collumn -->
     <col-page>
+      <!-- Important : Page Auth must be the first the browser read to properly pre-fill login/pass -->
+      <page-inner hidden id="page_auth" title="${'Login'}" XOWS_TPL_IMPORT></page-inner>
       <page-inner hidden id="page_mucc" title="${'Channel Parameters'}" XOWS_TPL_IMPORT></page-inner>
       <page-inner hidden id="page_muca" title="${'Channel Administration'}" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_user" title="${'User Parameters'}" XOWS_TPL_IMPORT></page-inner>
-      <page-inner hidden id="page_auth" title="${'Login'}" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_self" title="${'User profile'}" XOWS_TPL_IMPORT></page-inner>
       <page-inner hidden id="page_regi" title="${'Register'}" XOWS_TPL_IMPORT></page-inner>
+      <page-inner hidden id="page_acct" title="${'Account options'}" XOWS_TPL_IMPORT></page-inner>
       <page-inner hidden id="page_wait" title="${'Connecting'}" XOWS_TPL_IMPORT></page-inner>
     </col-page>
     <!-- Right Collumn -->

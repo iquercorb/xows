@@ -2830,9 +2830,9 @@ function xows_gui_self_panl_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
-  if(event.target.id === "self_bt_conf")
+  if(event.target.id === "self_bt_acct")
     // Open user porfile page
-    xows_gui_page_user_open();
+    xows_gui_page_acct_open();
 
   if(event.target.closest("#self_bttn")) {
     // Open user show/presence level menu
@@ -2875,7 +2875,7 @@ function xows_gui_self_bttn_onclick(event)
   xows_doc_menu_toggle(xows_doc("self_bttn"), "drop_self");
 
   if(event.target.id === "self_bt_edit")
-    xows_gui_page_user_open();
+    xows_gui_page_self_open();
 
   if(event.target.closest("#self_mi_stat"))
     xows_gui_ibox_stat_open();
@@ -6074,37 +6074,37 @@ function xows_gui_page_regi_open()
 /**
  * User Profile page on-abort callback function
  */
-function xows_gui_page_user_onabort()
+function xows_gui_page_self_onabort()
 {
   // Reset inputs values
-  //xows_doc("card_addr").value = xows_cli_self.jbar;
-  xows_doc("card_name").value = xows_cli_self.name;
+  //xows_doc("self_addr").value = xows_cli_self.jbar;
+  xows_doc("self_name").value = xows_cli_self.name;
 
   let data;
 
   // Get temp or cached avatar
   if(xows_cli_self.avat) {
     data = xows_cach_avat_get(xows_cli_self.avat);
-    xows_doc("card_avat").data = data; //< ad-hoc property
+    xows_doc("self_avat").data = data; //< ad-hoc property
   } else {
     data = xows_cach_avat_gen(xows_cli_self.addr, null); // Generate temporary avatar
-    xows_doc("card_avat").data = null; //< ad-hoc property
+    xows_doc("self_avat").data = null; //< ad-hoc property
   }
 
-  xows_doc("card_avat").style.backgroundImage = "url(\""+data+"\")";
+  xows_doc("self_avat").style.backgroundImage = "url(\""+data+"\")";
 
-  xows_doc("card_open").checked = true;
+  xows_doc("self_open").checked = true;
 }
 
 /**
  * User Profile page on-valid callback function
  */
-function xows_gui_page_user_onvalid()
+function xows_gui_page_self_onvalid()
 {
   // Update user profile
-  xows_cli_self_edit(xows_doc("card_name").value,
-                          xows_doc("card_avat").data,
-                          xows_doc("card_open").checked?"open":"presence");
+  xows_cli_self_edit(xows_doc("self_name").value,
+                     xows_doc("self_avat").data,
+                     xows_doc("self_open").checked?"open":"presence");
 }
 
 /**
@@ -6112,21 +6112,21 @@ function xows_gui_page_user_onvalid()
  *
  * @param   {object}    target    Target object of the triggered Event
  */
-function xows_gui_page_user_oninput(target)
+function xows_gui_page_self_oninput(target)
 {
   let changed;
 
   switch(target.id)
   {
-  case "card_open": //< Checkbox for Data in open access
-    changed = !xows_doc("card_open").checked; break;
-  case "card_name": //< Nickname input text field
-    changed = (xows_doc("card_name").value != xows_cli_self.name);
+  case "self_open": //< Checkbox for Data in open access
+    changed = !xows_doc("self_open").checked; break;
+  case "self_name": //< Nickname input text field
+    changed = (xows_doc("self_name").value != xows_cli_self.name);
   }
 
   // Open Message Box dialog
-  if(changed) xows_doc_popu_open_for_save(xows_gui_page_user_onvalid,
-                                          xows_gui_page_user_onabort);
+  if(changed) xows_doc_popu_open_for_save(xows_gui_page_self_onvalid,
+                                          xows_gui_page_self_onabort);
 }
 
 /**
@@ -6134,30 +6134,30 @@ function xows_gui_page_user_oninput(target)
  *
  * @param   {object}    target    Target object of the triggered Event
  */
-function xows_gui_page_user_onclick(target)
+function xows_gui_page_self_onclick(target)
 {
-  if(target.id === "card_avch") { //< Change avatar
+  if(target.id === "self_bt_avch") { //< Change avatar
 
     // Emulate click on file input
-    xows_doc("card_file").click();
+    xows_doc("self_file").click();
 
     return;
   }
 
-  if(target.id === "card_avrm") { //< Remove avatar
+  if(target.id === "self_bt_avrm") { //< Remove avatar
 
-    const card_avat = xows_doc("card_avat");
+    const self_avat = xows_doc("self_avat");
 
     // set null avatar data
-    card_avat.data = null;
+    self_avat.data = null;
 
     // Generate default temp avatar
     const data = xows_cach_avat_gen(xows_cli_self.addr, null); // Generate temporary avatar
-    card_avat.style.backgroundImage = "url(\""+data+"\")";
+    self_avat.style.backgroundImage = "url(\""+data+"\")";
 
     // Open Message box dialog
-    xows_doc_popu_open_for_save(xows_gui_page_user_onvalid,
-                                xows_gui_page_user_onabort);
+    xows_doc_popu_open_for_save(xows_gui_page_self_onvalid,
+                                xows_gui_page_self_onabort);
   }
 }
 
@@ -6166,11 +6166,11 @@ function xows_gui_page_user_onclick(target)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_page_user_ev_file(event)
+function xows_gui_page_self_ev_file(event)
 {
-  const card_file = xows_doc("card_file");
+  const self_file = xows_doc("self_file");
 
-  if(card_file.files[0]) {
+  if(self_file.files[0]) {
     // Create file reader to read image data
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -6180,45 +6180,183 @@ function xows_gui_page_user_ev_file(event)
       image.onload = function(e) {
         // Set avatar data on background
         const url = xows_gen_avatar(XOWS_AVAT_SIZE, this);
-        const card_avat = xows_doc("card_avat");
-        card_avat.data = url;
-        card_avat.style.backgroundImage = "url(\""+url+"\")";
+        const self_avat = xows_doc("self_avat");
+        self_avat.data = url;
+        self_avat.style.backgroundImage = "url(\""+url+"\")";
         // Open Message Box dialog
-        xows_doc_popu_open_for_save(xows_gui_page_user_onvalid,
-                                    xows_gui_page_user_onabort);
+        xows_doc_popu_open_for_save(xows_gui_page_self_onvalid,
+                                    xows_gui_page_self_onabort);
       };
       // Start image loading (should be quick)
       image.src = e.target.result;
     };
     // Launch file reading
-    reader.readAsDataURL(card_file.files[0]);
+    reader.readAsDataURL(self_file.files[0]);
   }
 }
 
 /**
  * User Profile page on-close callback function
  */
-function xows_gui_page_user_onclose()
+function xows_gui_page_self_onclose()
 {
   // remove "change" event listener to file input
-  xows_doc_listener_rem(xows_doc("card_file"),"change",xows_gui_page_user_ev_file);
+  xows_doc_listener_rem(xows_doc("self_file"),"change",xows_gui_page_self_ev_file);
 }
 
 /**
  * User Profile page open
  */
-function xows_gui_page_user_open()
+function xows_gui_page_self_open()
 {
   // Initialize inputs values
-  xows_gui_page_user_onabort();
+  xows_gui_page_self_onabort();
 
   // Open dialog page
-  xows_doc_page_open("page_user",true,  xows_gui_page_user_onclose,
-                                        xows_gui_page_user_oninput,
-                                        xows_gui_page_user_onclick);
+  xows_doc_page_open("page_self", true, xows_gui_page_self_onclose,
+                                        xows_gui_page_self_oninput,
+                                        xows_gui_page_self_onclick);
 
   // add "change" event listener to file input
-  xows_doc_listener_add(xows_doc("card_file"),"change",xows_gui_page_user_ev_file);
+  xows_doc_listener_add(xows_doc("self_file"),"change",xows_gui_page_self_ev_file);
+}
+
+
+/* -------------------------------------------------------------------
+ * Page Screen - Account options Page
+ * -------------------------------------------------------------------*/
+/**
+ * Account options page on-abort callback function
+ */
+function xows_gui_page_acct_onabort()
+{
+}
+
+/**
+ * Account options page on-valid callback function
+ */
+function xows_gui_page_acct_onvalid()
+{
+
+}
+
+/**
+ * Account options page on-input event callback function
+ *
+ * @param   {object}    target    Target object of the triggered Event
+ */
+function xows_gui_page_acct_oninput(target)
+{
+  const acct_pass = xows_doc("acct_pass");
+  const acct_pnew = xows_doc("acct_pnew");
+  const acct_pcnf = xows_doc("acct_pcnf");
+
+  xows_doc("acct_bt_pass").disabled = (!acct_pass.value || !acct_pnew.value || !acct_pcnf.value);
+}
+
+/**
+ * Account options page handle change password result
+ *
+ * @param   {object}    target    Target object of the triggered Event
+ */
+function xows_gui_page_acct_onchpas(type, error)
+{
+  const acct_pass = xows_doc("acct_pass");
+  const acct_pnew = xows_doc("acct_pnew");
+  const acct_pcnf = xows_doc("acct_pcnf");
+
+  if(type === "error") {
+    xows_doc_popu_open(XOWS_STYL_ERR,xows_l10n_get("Password change failed")+": "+error.name);
+  } else {
+    xows_doc_popu_open(XOWS_STYL_SCS,"Password has been changed successfully");
+  }
+
+  // Reset input to initial state
+  acct_pass.setCustomValidity("");
+  acct_pass.value = "";
+  acct_pnew.value = "";
+  acct_pcnf.setCustomValidity("");
+  acct_pcnf.value = "";
+}
+
+/**
+ * Account options page on-click event callback function
+ *
+ * @param   {object}    target    Target object of the triggered Event
+ */
+function xows_gui_page_acct_onclick(target)
+{
+  const acct_pass = xows_doc("acct_pass");
+  const acct_pnew = xows_doc("acct_pnew");
+  const acct_pcnf = xows_doc("acct_pcnf");
+
+  // Reset any invalid state
+  acct_pass.setCustomValidity("");
+  acct_pcnf.setCustomValidity("");
+
+  if(target.id === "acct_bt_pass") {
+
+    // Check current password match
+    if(acct_pass.value !== xows_xmp_auth.pass) {
+      xows_doc_popu_open(XOWS_STYL_ERR,"The current password you entered is wrong");
+
+      // Empty password
+      acct_pass.setCustomValidity("Wrong password");
+
+      return;
+    }
+
+    // Check if new password and confirmation matches
+    if(acct_pnew.value !== acct_pcnf.value) {
+      xows_doc_popu_open(XOWS_STYL_ERR,"The password confirmation does not match");
+
+      // Empty new password and confirmation
+      acct_pcnf.setCustomValidity("Confirmation does not match");
+
+      return;
+    }
+
+    // Send password change query
+    xows_cli_regi_chpas_query(acct_pnew.value, xows_gui_page_acct_onchpas);
+  }
+
+  if(target.id === "acct_bt_unre") {
+    // Open confirmation message box
+    xows_gui_mbox_unre_open();
+  }
+}
+
+/**
+ * Account options page on-close callback function
+ */
+function xows_gui_page_acct_onclose()
+{
+
+}
+
+/**
+ * Account options page open
+ */
+function xows_gui_page_acct_open()
+{
+  const acct_pass = xows_doc("acct_pass");
+  const acct_pnew = xows_doc("acct_pnew");
+  const acct_pcnf = xows_doc("acct_pcnf");
+
+  // Reset input to initial state
+  acct_pass.setCustomValidity("");
+  acct_pass.value = "";
+  acct_pnew.value = "";
+  acct_pcnf.setCustomValidity("");
+  acct_pcnf.value = "";
+
+  // Set account address in page header frame
+  xows_doc("acct_addr").innerText = xows_cli_self.addr;
+
+  // Open dialog page
+  xows_doc_page_open("page_acct", true, xows_gui_page_acct_onclose,
+                                        xows_gui_page_acct_oninput,
+                                        xows_gui_page_acct_onclick);
 }
 
 /* -------------------------------------------------------------------
@@ -6805,4 +6943,39 @@ function xows_gui_prof_open(peer)
 {
   // Open Contact Profile popup
   xows_doc_prof_open(peer, xows_gui_prof_onclick);
+}
+
+
+/* -------------------------------------------------------------------
+ * Message Dialog-Box - Account deletion Message-Dialog
+ * -------------------------------------------------------------------*/
+/**
+ * Account deletion message box on-abort callback function
+ */
+function xows_gui_mbox_unre_onabort()
+{
+
+}
+
+/**
+ * Account deletion message box on-valid callback function
+ */
+function xows_gui_mbox_unre_onvalid()
+{
+  xows_cli_regi_remove_query(null, null);
+}
+
+/**
+ * Account deletion message box open
+ *
+ * @param   {object}    occu      Occupant object
+ * @param   {number}    affi      Affiliation value to set
+ */
+function xows_gui_mbox_unre_open()
+{
+  // Open Message Dialog-Box
+  xows_doc_mbox_open(XOWS_STYL_ASK, "Account deletion",
+                     "Are you sure you want to delete your XMPP/Jabber account on this server ? This action cannot be reversed.",
+                     xows_gui_mbox_unre_onvalid, "Yes, farewell",
+                     xows_gui_mbox_unre_onabort, "God damn, NO !");
 }

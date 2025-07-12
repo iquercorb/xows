@@ -235,16 +235,16 @@
 
   "Contact profile":
   "Profile de contact",
-  
+
   "Subscribe":
   "S'abonner",
-  
+
   "Pending...":
   "En attente...",
 
   "This user have no status message":
   "Cet utilisateur n'a pas de message d'etat",
-  
+
   "Contact subscription":
   "Abonnement au contact",
 
@@ -256,7 +256,7 @@
 
   "Unavailable":
   "Indisponible",
-  
+
   "Affiliation to Channel":
   "Affiliation au Salon",
 
@@ -298,19 +298,19 @@
 
   "Occupants":
   "Occupants",
-  
+
   "Change occupant role":
   "Changer le role de l'occupant",
-  
+
   "Assign the Channel role":
   "Assigner le rôle de Salon",
 
   "Kick occupant":
   "Expulser l'occupant",
-  
+
   "Change occupant affiliation":
   "Changer l'affiliation de l'occupant",
-  
+
   "Grant Channel affiliation":
   "Accorder l'affiliation de Salon",
 
@@ -343,34 +343,34 @@
 
   "Configure":
   "Configurer",
-  
+
   "You were banned from the Channel":
   "Vous avez été bannis du Salon",
-  
+
   "You were kicked from the Channel":
   "Vous avez été expulsé du Salon",
-  
+
   "Rules changes caused you to leave the Channel":
   "Un changement de règles vous a fait sortir du Salon",
-  
+
   "Server error caused you to leave the Channel":
   "Une erreur de server vous a fait sortir du Salon",
-  
+
   "Revoke contact subscription":
   "Révoquer l'abonnement au contact",
 
   "Do you really want to remove contact and revoke subscription authorization ?":
   "Souhaitez-vous vraiment supprimer le contact et révoquer l'autorisation d'abonnement ?",
-  
+
   "Do you really want to remove contact and abort subscription authorization request ?":
   "Souhaitez-vous vraiment supprimer le contact et annuler la demande d'autorisation d'abonnement ?",
-  
+
   "Contact subscription request":
   "Demande d'abonnement d'un contact",
-  
+
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "Un nouveau contact demande une autorisation d'abonnement. Voulez-vous l'autoriser et ajouter ce contact ?",
-  
+
   "Allow":
   "Autoriser",
 
@@ -553,6 +553,57 @@
 
   "Profile data in open access":
   "Données du profile en accès libre",
+
+  "Account options":
+  "Options du compte",
+
+  "Account password":
+  "Mot de passe du compte",
+
+  "Current password":
+  "Mot de passe actuel",
+
+  "New password":
+  "Nouveau mot de passe",
+
+  "Confirm password":
+  "Confirmez le mot de passe",
+
+  "To change your account password, enter your current password, then specify and confirm the new password to set.":
+  "Pour changer votre mot de passe de compte, entrez votre mot de passe actuel, puis spécifiez et confirmez le nouveau mot de passe à définir.",
+
+  "Change Password":
+  "Changer le Mot de passe",
+
+  "The current password you entered is wrong":
+  "Le mot de passe actuel saisit est incorrecte",
+
+  "The password confirmation does not match":
+  "La confirmation du mot de passe ne correspond pas",
+
+  "Password has been changed successfully":
+  "Le mot de passe a été modifié avec succès",
+
+  "Password change failed":
+  "Le changement de mot de passe a échoué",
+
+  "Account deletion":
+  "Suppression de compte",
+
+  "Cancel registration with current server and delete your account data permanently.":
+  "Annule l'enregistrement avec le serveur actuel et supprimme les données de votre compte de façon permanente.",
+
+  "Delete your account":
+  "Supprimer votre compte",
+
+  "Are you sure you want to delete your XMPP/Jabber account on this server ? This action cannot be reversed.":
+  "Êtes-vous sûr de vouloir supprimer votre compte XMPP/Jabber sur ce serveur ? Cette action est irréversible.",
+
+  "Yes, farewell":
+  "Oui, adieu",
+
+  "God damn, NO !":
+  "Bon dieu, NON !",
 
   "Uploading file":
   "Envoi du fichier",

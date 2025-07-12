@@ -2238,13 +2238,12 @@ function xows_xmp_regi_get_query(to, onparse)
   xows_xmp_send(iq, xows_xmp_regi_get_parse, onparse);
 }
 
-
 /**
  * Send a register form query to the specified destination
  *
  * @param   {string}    to        Peer or service JID or null
  * @param   {object}    data      Registration data to submit or null to ignore
- * @param   {object[]}  form      Fulfilled x-data form null to ignore
+ * @param   {object[]}  form      Fulfilled x-data form or null to ignore
  * @param   {function} [onparse]  Optional callback to receive query result
  */
 function xows_xmp_regi_set_query(to, data, form, onparse)
@@ -2346,6 +2345,109 @@ function xows_xmp_regi_server_get_parse(from, data, form, error)
 
   // Submit the register parmaters
   xows_xmp_regi_set_query(null, data, form, xows_xmp_regi_server_set_parse);
+}
+
+/**
+ * Function to parse result of password set query
+ *
+ * @param   {object}    stanza    Received query response stanza
+ * @param   {function}  onparse   Callback to forward parse result
+ */
+function xows_xmp_regi_pass_set_parse(stanza, onparse)
+{
+  const type = stanza.getAttribute("type");
+  let form = null;
+  
+  // First query may be an error with x-data form to fulfill
+  if(type === "error") {
+
+    xows_xmp_error_log(stanza,1,"xmp_regi_pass_set_parse","set "+XOWS_NS_REGISTER);
+    
+    // Check whether we have <x> element
+    const x = stanza.querySelector("x");
+    if(x) form = xows_xmp_xdata_parse(x);
+  }
+  
+  // Forward parse result
+  if(xows_isfunc(onparse))
+    onparse(type, form, xows_xmp_error_parse(stanza));
+}
+
+/**
+ * Send a register password set query
+ *
+ * @param   {string}    pass      New password to set
+ * @param   {object[]}  form      Fulfilled x-data form or null to ignore
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_regi_pass_set_query(pass, form, onparse)
+{
+  // Create the base <query> node
+  const query = xows_xml_node("query",{"xmlns":XOWS_NS_REGISTER});
+
+  // Add child nodes as supplied
+  if(pass) {
+    xows_xml_parent(query, xows_xml_node("username",null,xows_xmp_auth.user));
+    xows_xml_parent(query, xows_xml_node("password",null,pass));
+  }
+
+  if(form !== null)
+    xows_xml_parent(query, xows_xmp_xdata_make(form));
+
+  // Create and launch the query
+  const iq =  xows_xml_node("iq",{"type":"set"},query);
+
+  // Send query with dedicated parsing function
+  xows_xmp_send(iq, xows_xmp_regi_pass_set_parse, onparse);
+}
+
+/**
+ * Function to parse result of Cancel registration query
+ *
+ * @param   {object}    stanza    Received query response stanza
+ * @param   {function}  onparse   Callback to forward parse result
+ */
+function xows_xmp_regi_remove_parse(stanza, onparse)
+{
+  const type = stanza.getAttribute("type");
+  let form = null;
+  
+  // First query may be an error with x-data form to fulfill
+  if(type === "error") {
+
+    xows_xmp_error_log(stanza,1,"xmp_regi_remove_parse","set "+XOWS_NS_REGISTER);
+    
+    // Check whether we have <x> element
+    const x = stanza.querySelector("x");
+    if(x) form = xows_xmp_xdata_parse(x);
+  }
+  
+  // Forward parse result
+  if(xows_isfunc(onparse))
+    onparse(type, form, xows_xmp_error_parse(stanza));
+}
+
+/**
+ * Send query to cancel registration with server
+ *
+ * @param   {object[]}  form      Fulfilled x-data form or null to ignore
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_regi_remove_query(form, onparse)
+{
+  const query = xows_xml_node("query",{"xmlns":XOWS_NS_REGISTER});
+    
+  if(form !== null) {
+    xows_xml_parent(query, xows_xmp_xdata_make(form));
+  } else {
+    xows_xml_parent(query, xows_xml_node("remove"));
+  }
+
+  // Create and launch the query
+  const iq =  xows_xml_node("iq",{"type":"set"},query);
+       
+  // We use generical iq parse function to get potential error message
+  xows_xmp_send(iq, xows_xmp_regi_remove_parse, onparse);
 }
 
 /* -------------------------------------------------------------------

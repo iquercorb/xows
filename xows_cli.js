@@ -4025,6 +4025,156 @@ function xows_cli_muc_set_role(occu, role)
 {
   xows_xmp_muc_role_set_query(occu.room.addr, {"nick":occu.name,"role":role}, null);
 }
+/* -------------------------------------------------------------------
+ *
+ * Client API - Self account management
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Change own account password temporary saved data
+ */
+const xows_cli_regi_chpass_data = {"onresult":null,"password":null,"attempt":0};
+
+/**
+ * Function to handle own account password query result. 
+ * 
+ * First attempt may fail with server requesting to fulfill informations, this
+ * function automatically respond with fullfilled x-data form, including 
+ * username and old passord.
+ * 
+ * If the second try with fulfilled x-data form also fail, the onparse function 
+ * is then called with error result.
+ *
+ * @param   {string}    type      Query result type
+ * @param   {object[]}  form      Parsed x-data form if any (or null)
+ * @param   {object}    error     Error data if any
+ */
+function xows_cli_regi_chpas_parse(type, form, error)
+{
+  const data = xows_cli_regi_chpass_data;
+  
+  // First query has good chances to be an error with x-data form to fulfill
+  if(type === "error") {
+    
+    if(data.attempt > 0) {
+      // forward error
+      if(xows_isfunc(data.onparse))
+        data.onparse(type, error);
+    }
+    
+    if(form) {
+      // fulfill x-data form
+      for(let i = 0; i < form.length; ++i) {
+        if(form[i]["var"] === "username") form[i].value = [xows_xmp_auth.user];
+        if(form[i]["var"] === "old_password") form[i].value = [xows_xmp_auth.pass];
+        if(form[i]["var"] === "password") form[i].value = [data.password];
+      }
+    }
+    
+    // increase attempt count
+    data.attempt++;
+    
+    // Re-send query with fulfilled form
+    xows_xmp_regi_pass_set_query(null, null, form, xows_cli_regi_chpass_parse);
+    
+  } else {
+    
+    // Change current session Password to allow proper connexion loss recover
+    xows_xmp_auth.pass = data.password;
+    
+    // forward result
+    if(xows_isfunc(data.onparse))
+      data.onparse(type, null);
+        
+    // reset data
+    data.password = null;
+  }
+}
+
+/**
+ * Change own account password
+ *
+ * @param   {string}    password  New password to set
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_cli_regi_chpas_query(password, onparse)
+{
+  const data = xows_cli_regi_chpass_data;
+  
+  data.onparse = onparse;
+  data.password = password;
+  data.attempt = 0;
+
+  xows_xmp_regi_pass_set_query(password, null, xows_cli_regi_chpas_parse);
+}
+
+/**
+ * Function to handle own account password query result. 
+ * 
+ * First attempt may fail with server requesting to fulfill informations, this
+ * function automatically respond with fullfilled x-data form, including 
+ * username and old passord.
+ * 
+ * If the second try with fulfilled x-data form also fail, the onparse function 
+ * is then called with error result.
+ *
+ * @param   {string}    type      Query result type
+ * @param   {object[]}  form      Parsed x-data form if any (or null)
+ * @param   {object}    error     Error data if any
+ */
+/*
+function xows_cli_regi_remove_parse(type, form, error)
+{
+  const data = xows_cli_regi_chpass_data;
+  
+  // First query has good chances to be an error with x-data form to fulfill
+  if(type === "error") {
+    
+    if(data.attempt > 0) {
+      // forward error
+      if(xows_isfunc(data.onparse))
+        data.onparse(type, error);
+    }
+    
+    if(form) {
+      // fulfill x-data form
+      for(let i = 0; i < form.length; ++i) {
+        if(form[i]["var"] === "username") form[i].value = [xows_xmp_auth.user];
+        if(form[i]["var"] === "password") form[i].value = [xows_xmp_auth.pass];
+      }
+    }
+    
+    // increase attempt count
+    data.attempt++;
+    
+    // Re-send query with fulfilled form
+    xows_xmp_regi_pass_set_query(null, null, form, xows_cli_regi_chpass_parse);
+    
+  } else {
+    
+    // Change current session Password to allow proper connexion loss recover
+    xows_xmp_auth.pass = data.password;
+    
+    // forward result
+    if(xows_isfunc(data.onparse))
+      data.onparse(type, null);
+        
+    // reset data
+    data.password = null;
+  }
+}
+*/
+
+/**
+ * Cancel registration with server (account deletion)
+ *
+ * @param   {object[]} [form]     Optional x-data form to submit
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_cli_regi_remove_query(form, onparse)
+{
+  xows_xmp_regi_remove_query(form, onparse);
+}
 
 /* -------------------------------------------------------------------
  *

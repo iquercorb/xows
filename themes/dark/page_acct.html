@@ -1,0 +1,28 @@
+<header>
+  <h1>${'Account options'}</h1>
+  <span id="acct_addr"></span>
+</header>
+
+<section>
+  <h2>${'Account password'}</h2>
+  <fieldset>
+    <label for="acct_pass">${'Current password'}</label>
+    <input id="acct_pass" type="password"></input>
+  </fieldset>
+   <fieldset>
+    <label for="acct_pnew">${'New password'}</label>
+    <input id="acct_pnew" type="password"></input>
+  </fieldset>
+   <fieldset>
+    <label for="acct_pcnf">${'Confirm password'}</label>
+    <input id="acct_pcnf" type="password"></input>
+  </fieldset>
+  <p>${'To change your account password, enter your current password, then specify and confirm the new password to set.'}</p>
+  <button id="acct_bt_pass" type="submit" class="btn-valid" disabled>${'Change Password'}</button>
+</section>
+
+<section>
+  <h2>${'Account deletion'}</h2>
+  <p>${'Cancel registration with current server and delete your account data permanently.'}</p>
+  <button id="acct_bt_unre" type="submit" class="btn-valid">${'Delete your account'}</button>
+</section>

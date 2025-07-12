@@ -235,16 +235,16 @@
 
   "Contact profile":
   "",
-  
+
   "Subscribe":
   "",
-  
+
   "Pending...":
   "",
-  
+
   "This user have no status message":
   "",
-  
+
   "Contact subscription":
   "",
 
@@ -256,7 +256,7 @@
 
   "Unavailable":
   "",
-  
+
   "Affiliation to Channel":
   "",
 
@@ -298,7 +298,7 @@
 
   "Occupants":
   "",
-  
+
   "Change occupant role":
   "",
 
@@ -307,10 +307,10 @@
 
   "Kick occupant":
   "",
-  
+
   "Change occupant affiliation":
   "",
-  
+
   "Grant Channel affiliation":
   "",
 
@@ -343,16 +343,16 @@
 
   "Configure":
   "",
-  
+
   "You were banned from the Channel":
   "",
-  
+
   "You were kicked from the Channel":
   "",
-  
+
   "Rules changes caused you to leave the Channel":
   "",
-  
+
   "Server error caused you to leave the Channel":
   "",
 
@@ -361,13 +361,13 @@
 
   "Do you really want to remove contact and revoke subscription authorization ?":
   "",
-  
+
   "Do you really want to remove contact and abort subscription authorization request ?":
   "",
-  
+
   "Contact subscription request":
   "",
-  
+
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "",
 
@@ -552,6 +552,57 @@
   "",
 
   "Profile data in open access":
+  "",
+
+  "Account options":
+  "",
+
+  "Account password":
+  "",
+
+  "Current password":
+  "",
+
+  "New password":
+  "",
+
+  "Confirm password":
+  "",
+
+  "To change your account password, enter your current password, then specify and confirm the new password to set.":
+  "",
+
+  "Change Password":
+  "",
+
+  "The current password you entered is wrong":
+  "",
+
+  "The password confirmation does not match":
+  "",
+
+  "Password has been changed successfully":
+  "",
+
+  "Password change failed":
+  "",
+
+  "Account deletion":
+  "",
+
+  "Cancel registration with current server and delete your account data permanently.":
+  "",
+
+  "Delete your account":
+  "",
+
+  "Are you sure you want to delete your XMPP/Jabber account on this server ? This action cannot be reversed.":
+  "",
+
+  "Yes, farewell":
+  "",
+
+  "God damn, NO !":
   "",
 
   "Uploading file":
