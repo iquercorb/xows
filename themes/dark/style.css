@@ -3436,7 +3436,6 @@ chat-inpt {
 #room_rost {
   text-align: center;
   background-color: var(--base-tone3);
-  padding: 0 5px;
 }
 #room_rost li-peer {
   border-radius: 5px;
