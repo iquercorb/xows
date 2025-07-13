@@ -1103,7 +1103,7 @@ function xows_xmp_message_recv(stanza)
     return true;
   }
 
-  let time, body, cstt, repl, rpid, rpto, orid, szid, ocid;
+  let time, body, cstt, repl, rpid, rpto, orid, szid, ocid, mucx;
 
   let i = stanza.childNodes.length;
   while(i--) {
@@ -1159,11 +1159,23 @@ function xows_xmp_message_recv(stanza)
     if(xmlns === XOWS_NS_MUCUSER) {
       if(type === "groupchat") {
         const mucstat = node.querySelectorAll("status"); //< search for <status>
-        const muccode = [];
-        for(let j = 0; j < mucstat.length; ++j)
-          muccode.push(parseInt(mucstat[j].getAttribute("code")));
-        xows_xmp_fw_onmucnoti(id, from, muccode);
-        return true;
+        if(mucstat.length) {
+          const muccode = [];
+          for(let j = 0; j < mucstat.length; ++j)
+            muccode.push(parseInt(mucstat[j].getAttribute("code")));
+          xows_xmp_fw_onmucnoti(id, from, muccode);
+          return true;
+        }
+        /*
+        const item = node.querySelectorAll("status"); //< search for <item>
+        if(item) {
+          // I don't know what to do with that...
+          mucx = {"jid" :item.getAttribute("jid"),
+                  "affi":item.getAttribute("affiliation"),
+                  "role":item.getAttribute("role"),
+                  "nick":item.getAttribute("nick")};
+        }
+        */
       }
       continue;
     }

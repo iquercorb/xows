@@ -68,7 +68,7 @@ function xows_load_task_set(task, ontask)
 /**
  * On-Empty trigger mechanism parameters
  */
-const xows_load_onempty_def = {onempty:null,timeout:null,param:null};
+const xows_load_onempty_def = {onempty:null,toid:null,param:null};
 
 /**
  * Set an On-Empty trigger function to be called once load stack is
@@ -86,12 +86,18 @@ const xows_load_onempty_def = {onempty:null,timeout:null,param:null};
  */
 function xows_load_onempty_set(timeout, onempty, param)
 {
+  if(xows_load_item_stk.size === 0) {
+    // Loading stack allready empty, skip waiting
+    onempty(param);
+    return;
+  }
+
   const def = xows_load_onempty_def;
 
   // Clear any pending timeout
-  if(def.timeout) {
-    clearTimeout(def.timeout);
-    def.timeout = null;
+  if(def.toid) {
+    clearTimeout(def.toid);
+    def.toid = null;
   }
 
   // Set callback and custom parameter
@@ -100,7 +106,7 @@ function xows_load_onempty_set(timeout, onempty, param)
 
   // Fire new timeout
   if(timeout > 0)
-    def.timeout = setTimeout(onempty, param);
+    def.toid = setTimeout(onempty, timeout, param);
 }
 
 /**
@@ -126,7 +132,7 @@ function xows_load_task_done(item, task)
      // Search for saved load parameters in stack
      const entry = xows_load_item_stk.get(item);
      if(!entry) {
-       xows_log(1,"load_task_done","entry not found for item");
+       xows_log(1,"load_task_done","entry not found for item","task=0x"+task);
        return;
      }
 
@@ -142,10 +148,12 @@ function xows_load_task_done(item, task)
       const def = xows_load_onempty_def;
 
       // Clear pending timeout
-      if(def.timeout) {
-        clearTimeout(def.timeout);
-        def.timeout = null;
+      if(def.toid) {
+        clearTimeout(def.toid);
+        def.toid = null;
       }
+
+      xows_log(1,"load_task_done","fireing onempty",def.onempty.name);
 
       // Call defined callback
       def.onempty(def.param);
@@ -177,7 +185,7 @@ function xows_load_init(item, mask, onload, param)
 
   // Check for double-init
   if(xows_load_item_stk.has(item)) {
-    xows_log(1,"load_init","item already setup for load");
+    xows_log(1,"load_init","item already setup for load","mask=0x"+mask);
     return;
   }
 

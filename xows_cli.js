@@ -373,6 +373,7 @@ function xows_cli_room_new(addr, name)
     "role": 0,              //< Self Room Role (Level)
     "affi": 0,              //< Self Room Affiliation (Level)
     "nick": null,           //< Reserverd Nickname in Room
+    "rcon": false,          //< Signal connect loss recover
     // Room Occupants list
     "occu": [],             //< Room occupant array
     "writ": [],             //< Chatstate writting occupants list
@@ -1260,9 +1261,6 @@ function xows_cli_session_start()
   // Push self to GUI
   xows_cli_peer_push(xows_cli_self);
 
-  // Send initial own presence
-  xows_cli_presence_update();
-
   // Initialization can be normal or following connection loss
   if(xows_cli_connect_loss) {
 
@@ -1276,7 +1274,8 @@ function xows_cli_session_start()
     let i = xows_cli_room.length;
     while(i--) {
       if(xows_cli_room[i].join) {
-        xows_cli_room[i].join = null;
+        xows_cli_room[i].join = null; //< need to join room again
+        xows_cli_room[i].rcon = true; //< this is a rejoin after recover
         xows_cli_muc_join_retry(xows_cli_room[i]);
       }
     }
@@ -1285,6 +1284,10 @@ function xows_cli_session_start()
 
     xows_log(2,"cli_session_start","takeoff");
   }
+
+  // Send initial own presence (after Room rejoin on connect loss to prevent
+  // sending invalid presence to non-joined room)
+  xows_cli_presence_update();
 
   // Set On-Empty load stack trigger, so connection is validated
   // only once all resources/peer are fully loaded. We set a timeout

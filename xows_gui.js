@@ -345,7 +345,7 @@ function xows_gui_peer_hist_reload(peer)
   xows_gui_peer_doc(peer,"hist_end").hidden = true;
 
   // Query for the last archives, with no delay
-  xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
+  xows_gui_mam_fetch_latest(peer);
 }
 
 /**
@@ -698,7 +698,7 @@ function xows_gui_init()
   xows_gui_hist_page = xows_gui_hist_size / 2;
 
   // Set loader functions
-  xows_load_task_set(XOWS_LOAD_MAM, xows_gui_mam_latest);
+  xows_load_task_set(XOWS_LOAD_MAM, xows_gui_mam_fetch_initial);
 }
 
 /* -------------------------------------------------------------------
@@ -781,7 +781,7 @@ function xows_gui_cli_onconnect(user)
     if(xows_gui_auth.cred) {
 
       // Output log
-      xows_log(2,"gui_loggedin","Saving credential");
+      xows_log(2,"gui_cli_onconnect","Saving credential");
 
       // Store credentials
       if(window.PasswordCredential) {
@@ -799,23 +799,39 @@ function xows_gui_cli_onconnect(user)
   // Check whether we recover from connexion loss
   if(xows_gui_connect_loss) {
 
+    xows_log(1,"gui_cli_onconnect","recover connection");
+
     // Reset connection loss
     xows_gui_connect_loss = false;
 
-    // Query to force fetching last messages with no delay for all opened chat history
+    // Update history for openned chat
     let i = xows_cli_cont.length;
-    while(i--) xows_gui_mam_query(xows_cli_cont[i], true, xows_gui_hist_page, 0, true);
+    while(i--) {
+      const cont = xows_cli_cont[i];
+      // Presence of LOADING class mean chat were not openned, we don't update history
+      if(!xows_gui_peer_doc_cls_has(cont,"chat_load","LOADING")) {
+        xows_gui_mam_fetch_latest(cont);
+      }
+    }
 
     i = xows_cli_room.length;
-    while(i--) xows_gui_mam_query(xows_cli_room[i], true, xows_gui_hist_page, 0, true);
+    while(i--) {
+      const room = xows_cli_room[i];
+      // Presence of LOADING class mean chat were not openned, we don't update history
+      if(!xows_gui_peer_doc_cls_has(room,"chat_load","LOADING")) {
+        xows_gui_mam_fetch_latest(room);
+      }
+    }
 
   } else {
+
+    xows_log(2,"gui_cli_onconnect","initial connection");
 
     // Push history to allow message box if user click Back
     window.history.pushState({},"",window.location.pathname);
 
     // Reset the Roster and Chat window
-    xows_gui_peer = null;
+    xows_gui_switch_peer(null);
 
     // Check whether file Upload is available
     const has_upld = xows_cli_services.has(XOWS_NS_HTTPUPLOAD);
@@ -1251,7 +1267,6 @@ function xows_gui_reset()
  */
 function xows_gui_preload_done(peer)
 {
-  // If chat frame is in loading stage, schedule load finish
   if(xows_gui_peer_doc_cls_has(peer,"chat_load","LOADING")) {
 
     // Put the chat history scroll DOWN
@@ -1311,7 +1326,6 @@ function xows_gui_switch_peer(addr)
   const prev = xows_gui_peer;
 
   if(prev) {
-    console.log("addr="+addr+" prev.addr="+prev.addr);
     // Do no switch to same contact
     if(addr === prev.addr) return;
     // Send chat state to notify current user
@@ -1965,11 +1979,20 @@ function xows_gui_cli_onroomjoin(room, code, error)
     return;
   }
 
-  // Switch peer to newly joined room
-  xows_gui_switch_peer(room.addr);
+  // check if this is a re-join after connection loss
+  if(room.rcon) {
 
-  // Close panel in case we are in narrow-screen with wide panel
-  xows_gui_panel_close();
+    // We do NOT switch to room automatically
+    room.rcon = false; //< reset flag
+
+  } else {
+
+    // Switch peer to newly joined room
+    xows_gui_switch_peer(room.addr);
+
+    // Close panel in case we are in narrow-screen with wide panel
+    xows_gui_panel_close();
+  }
 
   // Update privileges related GUI elements
   xows_gui_room_head_update(room);
@@ -2386,12 +2409,17 @@ function xows_gui_unread_tab_update(peer, mesg, call, ring)
     badg_noti.dataset.ring = remain_ring;
   }
 
+  // Get subscribe count
+  //let remain_subs = parseInt(badg_noti.dataset.subs);
+
   // Update ringing animation class
   tab_rost.classList.toggle("RINGING", remain_ring > 0);
 
   // Show or hide notification spot
-  let has_notif = (remain_mesg > 0 || remain_call > 0 || remain_ring > 0);
+  /* This si now done via CSS
+  let has_notif = (remain_mesg > 0 || remain_call > 0 || remain_ring > 0 || remain_subs > 0);
   badg_noti.hidden = !has_notif;
+  */
 }
 
 /**
@@ -2401,7 +2429,7 @@ function xows_gui_unread_tab_update(peer, mesg, call, ring)
  * @param   {object}    peer      Peer object, either Room or Contact
  * @param   {string}    id        Message Id (not yet used)
  */
-function xows_gui_unread_add(peer, id)
+function xows_gui_unread_mesg(peer, id)
 {
   // Get the corresponding peer <li-peer> (room or contact) in roster
   const li_peer = xows_gui_rost_li_get(peer);
@@ -2414,7 +2442,7 @@ function xows_gui_unread_add(peer, id)
   badg_noti.dataset.mesg = parseInt(badg_noti.dataset.mesg) + 1;
 
   // Update tab button class and animation according new state
-  xows_gui_unread_tab_update(peer, 1);
+  xows_gui_unread_tab_update(peer, 1, null, null);
 }
 
 /**
@@ -2463,9 +2491,9 @@ function xows_gui_unread_reset(peer)
   const badg_noti = li_peer.querySelector("BADG-NOTI");
 
   // Get unread element to 'substract' for roster tab button update
-  const mesg = - parseInt(badg_noti.dataset.mesg);
-  const ring = - parseInt(badg_noti.dataset.ring);
-  const call = - parseInt(badg_noti.dataset.call);
+  const mesg = -(parseInt(badg_noti.dataset.mesg)); //< invert sign
+  const ring = -(parseInt(badg_noti.dataset.ring)); //< invert sign
+  const call = -(parseInt(badg_noti.dataset.call)); //< invert sign
 
   // Reset the unread spot <div> properties
   badg_noti.dataset.mesg = 0;
@@ -4609,7 +4637,7 @@ function xows_gui_hist_incoming_notify(peer, mesg)
 
   // If offsecreen peer, add an Unread messag notification
   if(peer !== xows_gui_peer)
-    xows_gui_unread_add(peer, mesg.id);
+    xows_gui_unread_mesg(peer, mesg.id);
 
   // If GUI is not in focus, send browser Push Notification
   if(!xows_gui_has_focus)
@@ -4751,12 +4779,12 @@ const xows_gui_mam_query_to = new Map();
  * messages.
  *
  * @param   {object}    peer      Peer object
- * @param   {boolean}   after     Get archives beyond first of after last message
+ * @param   {boolean}   after     Get archives before latest or after newest message
  * @param   {number}    count     Desired count of message to gather, default is 20
- * @param   {boolean}   delay     Delay to temporize query, default is 100 MS
+ * @param   {boolean}   delay     Delay to temporize query, default is 500 MS
  * @param   {boolean}   force     Bypass optimization process and force query
  */
-function xows_gui_mam_query(peer, after, count = 20, delay = 100, force = false)
+function xows_gui_mam_query(peer, after, count = 20, delay = 500, force = false)
 {
   if(xows_gui_mam_query_to.has(peer))  //< Query already pending
     return;
@@ -4951,13 +4979,24 @@ function xows_gui_mam_parse(peer, result, count, complete)
   xows_load_task_done(peer, XOWS_LOAD_MAM);
 }
 /**
+ * Query arvhived message for the specified peer in the purpose of
+ * initial history fetch, when chat history is empty.
+ *
+ * @param   {object}    peer     Peer object
+ */
+function xows_gui_mam_fetch_initial(peer)
+{
+  xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
+}
+
+/**
  * Query latest arvhived message for the specified peer
  *
  * @param   {object}    peer     Peer object
  */
-function xows_gui_mam_latest(peer)
+function xows_gui_mam_fetch_latest(peer)
 {
-  xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
+  xows_gui_mam_query(peer, true, xows_gui_hist_page, 0, true);
 }
 
 /* -------------------------------------------------------------------
@@ -5620,6 +5659,8 @@ function xows_gui_cli_onoccupush(occu, mucx)
   // Get Occupant's Room
   const room = occu.room;
 
+  xows_log(2,"gui_cli_onoccupush","push occupant","room="+occu.room.addr);
+
   if(mucx) {
     // checks whether we have a special status code with this occupant
     if(mucx.code.includes(110)) { //< Self presence update
@@ -5746,7 +5787,8 @@ function xows_gui_occu_list_onclick(event)
     li_peer.classList.add("SELECTED");
     // Open Occupant menu
     xows_doc_menu_toggle(event.target, "drop_occu", xows_gui_occu_drop_onclick,
-                                                    xows_gui_occu_drop_onshow);
+                                                    xows_gui_occu_drop_onshow,
+                                                    xows_gui_occu_drop_onclose);
   }
 }
 
@@ -5758,6 +5800,17 @@ function xows_gui_occu_list_onclick(event)
 /* -------------------------------------------------------------------
  * Main screen - Room Occupants - List - Occupant Contextual Menu
  * -------------------------------------------------------------------*/
+
+/**
+ * Occupant drop menu on-close Callback function
+ */
+function xows_gui_occu_drop_onclose()
+{
+  // Clear selected occupant
+  const li_peer = xows_doc("occu_list").querySelector(".SELECTED");
+  li_peer.classList.remove("SELECTED"); //< Unselect it
+}
+
 /**
  * Occupant drop menu placement Callback function
  *
@@ -5867,11 +5920,9 @@ function xows_gui_occu_drop_onclick(event)
 
   // Get related room occupant <li-peer> element
   const li_peer = xows_doc("occu_list").querySelector(".SELECTED");
-  li_peer.classList.remove("SELECTED"); //< Unselect it
 
   // Close menu and unfocus button
   xows_doc_menu_toggle(li_peer.querySelector("BUTTON"), "drop_occu");
-
 
   // Get related menu item <li> element where click occurred
   const li = event.target.closest("LI");

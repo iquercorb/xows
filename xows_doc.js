@@ -1257,7 +1257,7 @@ function xows_doc_page_opened(page)
 /**
  * Currently opened menu elements
  */
-const xows_doc_menu_param = {button:null,drop:null,onclick:null};
+const xows_doc_menu_param = {button:null,drop:null,onclick:null,onclose:null};
 
 /**
  * Close current opened menu
@@ -1273,18 +1273,24 @@ function xows_doc_menu_close()
 
     // Remove event listener from menu drop element
     xows_doc_listener_rem(param.drop, "click", param.onclick);
+
   }
 
   // Unfocus button element
-  if(param.button) param.button.blur();
+  if(param.button)
+    param.button.blur();
 
   // hide the 'void' screen
   xows_doc_hide("scr_void");
+
+  if(param.onclose)
+    param.onclose();
 
   // Reset parameters
   param.button = null;
   param.drop = null;
   param.onclick = null;
+  param.onclose = null;
 }
 
 /**
@@ -1295,10 +1301,11 @@ function xows_doc_menu_close()
  *
  * @param   {object}    button    Menu button reference object
  * @param   {object}    dropid    Menu drop object Id
- * @param   {function}  onclick   Menu onclick callback
- * @param   {function}  [onshow]  Optional Menu onshow callback
+ * @param   {function}  onclick   Menu on-click callback
+ * @param   {function}  [onshow]  Optional Menu on-show callback
+ * @param   {function}  [onclose] Optional Menu on-close callback
  */
-function xows_doc_menu_toggle(button, dropid, onclick, onshow)
+function xows_doc_menu_toggle(button, dropid, onclick, onshow, onclose)
 {
   const param = xows_doc_menu_param;
 
@@ -1320,6 +1327,7 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow)
     param.button = button;
     param.drop = drop;
     param.onclick = onclick;
+    param.onclose = onclose;
 
     // show the 'void' screen to catch clicks outside menu
     xows_doc_show("scr_void");
