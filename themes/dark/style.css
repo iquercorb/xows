@@ -1641,10 +1641,11 @@ head-acts {
   flex: none;
   height: 100%;
   white-space: nowrap;
+  align-content: center;
 }
 head-acts button {
   display: inline-block;
-  width: 32px; height: 100%;
+  width: 32px; height: 18px;
   padding: 0;
   border: 0;
   background-color: transparent;
@@ -2163,6 +2164,10 @@ head-info badg-show {
 }
 #chat_bt_occu {
   background-image: url("images/contacts.svg");
+  width: 37px;
+  background-position-x: 11px;
+  margin-left: 5px;
+  border-left: 1px solid var(--base-tone6);
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - Chat Windows */
