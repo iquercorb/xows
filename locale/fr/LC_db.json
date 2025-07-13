@@ -191,6 +191,15 @@
   "Set the message of the day, a welcome message or the discussion subject.":
   "Définissez le message du jour, un message de bienvenue ou le sujet de discussion.",
 
+  "Nickname for":
+  "Pseudonyme pour",
+  
+  "Specify your new nickname for this Channel.":
+  "Spécifiez votre nouveau pseudonyme pour ce Salon",
+  
+  "Enter a nickname...":
+  "Entrez un pseudonyme...",
+  
   "Video call":
   "Appel vidéo",
 
@@ -199,7 +208,13 @@
 
   "Add Channel to Bookmarks":
   "Ajouter le Salon aux Favoris",
-
+  
+  "Change nickname":
+  "Changer de pseudonyme",
+  
+  "Edit Channel topic":
+  "Modifier le sujet du Salon",
+  
   "Enable notifications":
   "Activer les notifications",
 

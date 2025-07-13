@@ -1685,8 +1685,8 @@ function xows_xmp_presence_recv(stanza)
 
         mucx = {"affi" : xows_xmp_affi_val.get(item.getAttribute("affiliation")),
                 "role" : xows_xmp_role_val.get(item.getAttribute("role")),
-                "jful"  : item.getAttribute("jid"),
-                "nick" : item.getAttribute("nickname"),
+                "jful" : item.getAttribute("jid"),
+                "nick" : item.getAttribute("nick"),
                 "code" : []};
 
         const mucs = node.querySelectorAll("status"); //< search for <status>
@@ -1717,8 +1717,9 @@ function xows_xmp_presence_recv(stanza)
  * @param   {string}    stat      Status string to set
  * @param   {string}   [nick]     Optional nickname
  * @param   {boolean}  [mucx]     Optional MUC data
+ * @param   {string}   [phot]     Optional Avatar Hash
  */
-function xows_xmp_presence_send(to, type, show, stat, nick, mucx)
+function xows_xmp_presence_send(to, type, show, stat, nick, mucx, phot)
 {
   // Create the initial and default <presence> stanza
   const stanza = xows_xml_node("presence");
@@ -1736,26 +1737,26 @@ function xows_xmp_presence_send(to, type, show, stat, nick, mucx)
     // Set priority according show level
     xows_xml_parent(stanza, xows_xml_node("priority", null, (show * 20)));
 
-    /* This should be done by Server
-    // Append vcard-temp:x:update for avatar update child
-    xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
-                                (photo)?xows_xml_node("photo",null,photo):null));
-    */
+    // Append vcard-temp:x:update for avatar update
+    if(typeof phot === "string") {
+      xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_VCARDXUPDATE},
+                                xows_xml_node("photo",null,phot)));
+    }
 
     // Append <c> (caps) child
     xows_xml_parent(stanza, xows_xml_node("c",{"xmlns":XOWS_NS_CAPS,"hash":"sha-1","node":XOWS_APP_NODE,"ver":xows_xmp_caps_self_verif()}));
   }
-  
+
   // Append <status> child
   if(typeof stat === "string") {
-    // Great Javascript journey here. First, an empty string is always 
-    // translated as Boolean "false", but, like things were not confusing 
-    // enough, I also discovered that a String is NOT ALWAYS a String because 
-    // literal-string ARE NOT instance of String(). Am I alone to go mad when 
+    // Great Javascript journey here. First, an empty string is always
+    // translated as Boolean "false", but, like things were not confusing
+    // enough, I also discovered that a String is NOT ALWAYS a String because
+    // literal-string ARE NOT instance of String(). Am I alone to go mad when
     // seeing things like that ?
     xows_xml_parent(stanza, xows_xml_node("status", null, stat));
   }
-    
+
   // Append <nick> child if supplied
   if(nick) xows_xml_parent(stanza, xows_xml_node("nick",{"xmlns":XOWS_NS_NICK},nick));
 
@@ -2365,17 +2366,17 @@ function xows_xmp_regi_pass_set_parse(stanza, onparse)
 {
   const type = stanza.getAttribute("type");
   let form = null;
-  
+
   // First query may be an error with x-data form to fulfill
   if(type === "error") {
 
     xows_xmp_error_log(stanza,1,"xmp_regi_pass_set_parse","set "+XOWS_NS_REGISTER);
-    
+
     // Check whether we have <x> element
     const x = stanza.querySelector("x");
     if(x) form = xows_xmp_xdata_parse(x);
   }
-  
+
   // Forward parse result
   if(xows_isfunc(onparse))
     onparse(type, form, xows_xmp_error_parse(stanza));
@@ -2419,17 +2420,17 @@ function xows_xmp_regi_remove_parse(stanza, onparse)
 {
   const type = stanza.getAttribute("type");
   let form = null;
-  
+
   // First query may be an error with x-data form to fulfill
   if(type === "error") {
 
     xows_xmp_error_log(stanza,1,"xmp_regi_remove_parse","set "+XOWS_NS_REGISTER);
-    
+
     // Check whether we have <x> element
     const x = stanza.querySelector("x");
     if(x) form = xows_xmp_xdata_parse(x);
   }
-  
+
   // Forward parse result
   if(xows_isfunc(onparse))
     onparse(type, form, xows_xmp_error_parse(stanza));
@@ -2444,7 +2445,7 @@ function xows_xmp_regi_remove_parse(stanza, onparse)
 function xows_xmp_regi_remove_query(form, onparse)
 {
   const query = xows_xml_node("query",{"xmlns":XOWS_NS_REGISTER});
-    
+
   if(form !== null) {
     xows_xml_parent(query, xows_xmp_xdata_make(form));
   } else {
@@ -2453,7 +2454,7 @@ function xows_xmp_regi_remove_query(form, onparse)
 
   // Create and launch the query
   const iq =  xows_xml_node("iq",{"type":"set"},query);
-       
+
   // We use generical iq parse function to get potential error message
   xows_xmp_send(iq, xows_xmp_regi_remove_parse, onparse);
 }

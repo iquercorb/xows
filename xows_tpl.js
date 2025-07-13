@@ -1218,7 +1218,7 @@ function xows_tpl_spawn_room_occu(occu, priv = false)
   } else {
     inst.id = occu.addr;
   }
-
+  inst.dataset.ocid = occu.ocid;
   // Set content to proper elements
   inst.title = occu.name+" ("+occu.addr+")";
   inst.querySelector("PEER-NAME").innerText = occu.name;

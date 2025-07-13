@@ -491,6 +491,7 @@ function xows_gui_peer_doc_init(peer)
     meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
     // Cannot bookmark public rooms or already bookmarked
     xows_gui_peer_doc(peer, "chat_bt_bkmk").hidden = (peer.book || peer.publ);
+    xows_gui_peer_doc(peer, "chat_bt_nick").hidden = false;
     xows_gui_peer_doc(peer, "chat_bt_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
     xows_gui_peer_doc(peer, "chat_bt_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
   } else {
@@ -534,6 +535,11 @@ function xows_gui_peer_doc_reset(peer)
  */
 function xows_gui_peer_doc_export(peer)
 {
+  if(!xows_doc_frag_db.has(peer.addr)) {
+    xows_log(1,"gui_peer_doc_export","offscreen document doesn't exist",peer.addr);
+    return;
+  }
+
   // Save chat history scroll parameters
   const chat_main = xows_doc("chat_main");
 
@@ -561,6 +567,12 @@ function xows_gui_peer_doc_export(peer)
 function xows_gui_peer_doc_import(peer)
 {
   if(peer) {
+
+    if(!xows_doc_frag_db.has(peer.addr)) {
+      xows_log(1,"gui_peer_doc_import","offscreen document doesn't exist",peer.addr);
+      return;
+    }
+
     // import document elements from offscreen fragment
     xows_doc_frag_import(peer.addr, "chat_head");
     xows_doc_frag_import(peer.addr, "chat_hist");
@@ -589,6 +601,63 @@ function xows_gui_peer_doc_import(peer)
   }
 }
 
+/**
+ * Reassign saved Peer offscreen elements to another reference
+ *
+ * @param   {string}    src       Reassing source reference
+ * @param   {object}    peer      Peer object
+ */
+function xows_gui_peer_doc_reassign(src, peer)
+{
+  if(!xows_doc_frag_db.has(src)) {
+    xows_log(1,"gui_peer_doc_reassign","offscreen document doesn't exist",src);
+    return;
+  }
+
+  if(peer === xows_gui_peer) {
+
+    // Create new scroll dummy object from current chat window
+    const chat_main = xows_doc("chat_main");
+    xows_gui_peer_scroll_db.set(peer.addr,{
+      scrollTop:chat_main.scrollTop,
+      scrollHeight:chat_main.scrollHeight,
+      clientHeight:chat_main.clientHeight,
+      scrollSaved:chat_main.scrollSaved || 0});
+
+    // Move document elements to offscreen fragment
+    xows_doc_frag_export(src, "chat_head");
+    xows_doc_frag_export(src, "chat_hist");
+    xows_doc_frag_export(src, "chat_panl");
+    if(peer.type === XOWS_PEER_ROOM) {
+      xows_doc_frag_export(src, "room_head");
+      xows_doc_frag_export(src, "occu_list");
+    }
+
+  } else {
+
+    // Copy scroll dummy object from source reference
+    const scroll = xows_gui_peer_scroll_db.get(src);
+    xows_gui_peer_scroll_db.set(peer.addr,scroll);
+  }
+
+  // clone elements from source offscreen slot
+  xows_doc_frag_clone(peer.addr, src, "chat_head");
+  xows_doc_frag_clone(peer.addr, src, "chat_hist");
+  xows_doc_frag_clone(peer.addr, src, "chat_panl");
+  if(peer.type === XOWS_PEER_ROOM) {  //< XOWS_PEER_ROOM
+    xows_doc_frag_clone(peer.addr, src, "room_head");
+    xows_doc_frag_clone(peer.addr, src, "occu_list");
+  }
+
+  // Delete reassigned elements
+  xows_doc_frag_db.delete(src);
+  xows_gui_peer_scroll_db.delete(src);
+
+  if(peer === xows_gui_peer) {
+    // Bring back Peer documents with new reference
+    xows_gui_peer_doc_import(peer);
+  }
+}
 
 /* -------------------------------------------------------------------
  *
@@ -1242,6 +1311,7 @@ function xows_gui_switch_peer(addr)
   const prev = xows_gui_peer;
 
   if(prev) {
+    console.log("addr="+addr+" prev.addr="+prev.addr);
     // Do no switch to same contact
     if(addr === prev.addr) return;
     // Send chat state to notify current user
@@ -1572,25 +1642,21 @@ function xows_gui_rost_fram_onclick(event)
   }
 
   // This is a normal click on Peer in list
-  switch(li_peer.className)
-  {
-  case "PEER-PEND": {
-    // Get Peer object
-    // Open Subscription Allow/Deny dialog
-    xows_gui_mbox_subs_auth_open(li_peer.id);
-    } return;
-  case "PEER-ROOM":
-    // Special handling for Room join
-    xows_gui_switch_room(li_peer.id);
-    return;
-  case "PEER-OCCU":
-    // Special handling for Private Message
-    xows_gui_switch_peer(li_peer.dataset.id);
-    break;
-  default: // PEER-CONT
+  if(li_peer.classList.contains("PEER-CONT")) {
     // Select peer
     xows_gui_switch_peer(li_peer.id);
-    break;
+  } else
+  if(li_peer.classList.contains("PEER-ROOM")) {
+    // Special handling for Room join
+    xows_gui_switch_room(li_peer.id);
+  } else
+  if(li_peer.classList.contains("PEER-OCCU")) {
+    // Special handling for Private Message
+    xows_gui_switch_peer(li_peer.dataset.id);
+  } else
+  if(li_peer.classList.contains("PEER-PEND")) {
+    // Open Subscription Allow/Deny dialog
+    xows_gui_mbox_subs_auth_open(li_peer.id);
   }
 
   // Close panel in case we are in narrow-screen with wide panel
@@ -1917,9 +1983,9 @@ function xows_gui_cli_onroomjoin(room, code, error)
  * Handle the received MUC Room terminal Own presence (Room exit)
  *
  * @param   {object}    room      Room object
- * @param   {object}   [code]     Optionnal list of status code
+ * @param   {object}   [mucx]     Optionnal MUC x extra parameters
  */
-function xows_gui_cli_onroomexit(room, code)
+function xows_gui_cli_onroomexit(room, mucx)
 {
   // Close chat window if Room is current peer
   if(room === xows_gui_peer)
@@ -1938,16 +2004,16 @@ function xows_gui_cli_onroomexit(room, code)
 
   let text = null;
 
-  if(code.includes(301))
+  if(mucx.code.includes(301))
     text = xows_l10n_get("You were banned from the Channel");
 
-  if(code.includes(307))
+  if(mucx.code.includes(307))
     text = xows_l10n_get("You were kicked from the Channel");
 
-  if(code.includes(321))
+  if(mucx.code.includes(321))
     text = xows_l10n_get("Rules changes caused you to leave the Channel");
 
-  if(code.includes(321))
+  if(mucx.code.includes(321))
     text = xows_l10n_get("Server error caused you to leave the Channel");
 
   if(text) {
@@ -2040,11 +2106,8 @@ function xows_gui_ibox_join_regi_onvalid(value)
 {
   const room = xows_gui_ibox_join_regi.room;
 
-  // Update Room's self nickname
-  room.nick = value;
-
   // Try register again
-  xows_cli_muc_regi_query(room, xows_gui_ibox_join_regi_onresult);
+  xows_cli_muc_regi_query(room, value, xows_gui_ibox_join_regi_onresult);
 }
 
 /**
@@ -2186,7 +2249,8 @@ function xows_gui_rost_switch(tab_id)
 
   // Swicht to selected Peer
   if(li_peer && li_peer.classList.contains("PEER-OCCU")) {
-    // Special case for Occupant, the Occupant JID is in dataset
+    // Special case for Occupant, they are Private Message session and
+    // the Occupant JID is in dataset instead of id
     xows_gui_switch_peer(li_peer.dataset.id);
   } else {
     xows_gui_switch_peer(li_peer ? li_peer.id : null);
@@ -2728,10 +2792,33 @@ function xows_gui_priv_init(occu)
  * Function to add or update item of the roster Room list
  *
  * @param   {object}    occu      Occupant object to add or update
+ * @param   {object}   [mucx]     Optional MUC x extra parameters
  */
-function xows_gui_cli_onprivpush(occu)
+function xows_gui_cli_onprivpush(occu, mucx)
 {
   const dst_ul = xows_doc("priv_occu");
+
+  if(mucx) {
+    // check for nicname change
+    if(mucx.code.includes(303)) {
+
+      // The mucx object should embedd an extrea ad-hoc property
+      // containing the old occupant address to switch
+      if(!mucx.prev) {
+        xows_log(1,"gui_cli_onprivpush","missing previous JID for nickname change");
+        return;
+      }
+
+      // Search for existing occupant <li-peer> element for this Room
+      let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+mucx.prev+"']");
+
+      // Change <li-peer> element data-id
+      if(li_peer) li_peer.dataset.id = occu.addr;
+
+      // We also need to reassing offscreen document with new Occupant address
+      xows_gui_peer_doc_reassign(mucx.prev, occu);
+    }
+  }
 
   let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+occu.addr+"']");
   if(li_peer) {
@@ -2739,12 +2826,19 @@ function xows_gui_cli_onprivpush(occu)
     xows_tpl_update_room_occu(li_peer, occu);
     // Update chat title bar
     xows_gui_chat_head_update(occu);
-    // If Occupant is found offline, this mean a Private Conversation
-    // is open and occupant joined again, so, we inform Occupant is back
+    // Update message history
+    xows_gui_hist_update(occu, occu);
+
+    // Except for nickname change, if Occupant is found offline, this mean
+    // a Private Conversation is open and occupant joined again, so, we inform
+    // Occupant is back
     if(occu.show === XOWS_SHOW_OFF) {
-      // Add message to history
-      const hist_ul = xows_gui_peer_doc(occu, "hist_ul");
-      hist_ul.appendChild(xows_tpl_mesg_null_spawn(0,"internal",occu.name+" "+xows_l10n_get("joined the conversation")));
+      // check for nicname change
+      if(!(mucx && mucx.code.includes(303))) {
+        // Add message to history
+        const hist_ul = xows_gui_peer_doc(occu, "hist_ul");
+        hist_ul.appendChild(xows_tpl_mesg_null_spawn(0,"internal",occu.name+" "+xows_l10n_get("joined the conversation")));
+      }
     }
   } else {
     // Append new instance of occupant <li_peer> from template to roster <ul>
@@ -2987,6 +3081,7 @@ function xows_gui_chat_head_update(peer)
     meta_inpt.innerText = peer.subj;
     meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
     xows_gui_peer_doc(peer, "chat_bt_bkmk").hidden = (peer.book || peer.publ);
+    xows_gui_peer_doc(peer, "chat_bt_nick").hidden = false;
     xows_gui_peer_doc(peer, "chat_bt_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
     xows_gui_peer_doc(peer, "chat_bt_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
   } else {
@@ -2996,8 +3091,11 @@ function xows_gui_chat_head_update(peer)
     const has_ices = xows_cli_external_has("stun", "turn");
     xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
     xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
-    if(peer.type === XOWS_PEER_OCCU)
+    if(peer.type === XOWS_PEER_OCCU) {
       xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
+      // Occupant may also change address (change nick)
+      xows_gui_peer_doc(peer, "chat_addr").innerText = "("+peer.addr+")";
+    }
   }
 }
 
@@ -3033,6 +3131,10 @@ function xows_gui_chat_head_onclick(event)
   case "chat_bt_subj":
     // Open Room topic input box
     xows_gui_ibox_room_subj_open(xows_gui_peer);
+    break;
+  case "chat_bt_nick":
+    // Open Nickname input box
+    xows_gui_ibox_room_nick_open(xows_gui_peer);
     break;
   case "chat_bt_bkmk":
     // Open confirmation dialog
@@ -3112,11 +3214,52 @@ function xows_gui_ibox_room_subj_open(room)
   xows_gui_ibox_room_subj.room = room;
 
   // Open the input box dialog
-  xows_doc_ibox_open(xows_l10n_get("Set topic of") + " #" + room.name,
-    xows_l10n_get("Set the message of the day, a welcome message or the discussion subject."),
-    xows_l10n_get("Enter a topic..."),
-    room.subj,
+  xows_doc_ibox_open(xows_l10n_get("Set topic of")+" #"+room.name,
+    "Set the message of the day, a welcome message or the discussion subject.",
+    "Enter a topic...", room.subj,
     xows_gui_ibox_room_subj_onvalid, null, null, null, null, true);
+}
+
+/* -------------------------------------------------------------------
+ * Main Screen - Chat Frame - Room Header - Nickname Input-Dialog
+ * -------------------------------------------------------------------*/
+/**
+ * Room subject/topic input box param
+ */
+const xows_gui_ibox_room_nick = {room:null};
+
+/**
+ * Room subject/topic input box on-valid callback
+ *
+ * @param   {string}    value     Input content
+ */
+function xows_gui_ibox_room_nick_onvalid(value)
+{
+  const room = xows_gui_ibox_room_nick.room;
+
+  // Get entered subject
+  const nick = value.trimEnd();
+
+  // If changed, inform of the new room topic
+  if(nick != xows_jid_resc(room.addr))
+    xows_cli_muc_set_nick(room, nick);
+}
+
+/**
+ * Open Room subject/topic input box
+ */
+function xows_gui_ibox_room_nick_open(room)
+{
+  if(room.type !== XOWS_PEER_ROOM)
+    return;
+
+  xows_gui_ibox_room_nick.room = room;
+
+  // Open the input box dialog
+  xows_doc_ibox_open(xows_l10n_get("Nickname for")+" #"+room.name,
+    "Specify your new nickname for this Channel.",
+    "Enter a nickname...", xows_jid_resc(room.addr),
+    xows_gui_ibox_room_nick_onvalid, null, null, null, null, true);
 }
 
 /* -------------------------------------------------------------------
@@ -3990,6 +4133,9 @@ function xows_gui_cli_oncallend(peer, sid, reason)
  */
 function xows_gui_chat_main_onscroll(event)
 {
+  if(!xows_gui_peer)
+    return;
+
   const chat_main = xows_doc("chat_main");
 
   // Switch from full to empty chat frame can generate a scroll equal
@@ -5467,19 +5613,43 @@ function xows_gui_occu_list_update(room)
  * Handle the received occupant from MUC Room
  *
  * @param   {object}    occu      Occupant object
- * @param   {object}   [code]     Optionnal list of status code
+ * @param   {object}   [mucx]     Optionnal MUX x extra parameters
  */
-function xows_gui_cli_onoccupush(occu, code)
+function xows_gui_cli_onoccupush(occu, mucx)
 {
   // Get Occupant's Room
   const room = occu.room;
 
-  // checks whether we have a special status code with this occupant
-  if(code && code.includes(110)) { //< Self presence update
+  if(mucx) {
+    // checks whether we have a special status code with this occupant
+    if(mucx.code.includes(110)) { //< Self presence update
 
-    // Update privileges related GUI elements
-    xows_gui_room_head_update(room);
-    xows_gui_chat_head_update(room);
+      // Update privileges related GUI elements
+      xows_gui_room_head_update(room);
+      xows_gui_chat_head_update(room);
+    }
+
+    // check for nicname change
+    if(mucx.code.includes(303)) {
+
+      // The mucx object should embedd an extrea ad-hoc property
+      // containing the old occupant address to switch
+      if(!mucx.prev) {
+        xows_log(1,"gui_cli_onoccupush","missing previous JID for nickname change");
+        return;
+      }
+
+      // Search for existing occupant <li-peer> element for this Room
+      let li_peer;
+      if(room === xows_gui_peer) {
+        li_peer = document.getElementById(mucx.prev);
+      } else {
+        li_peer = xows_doc_frag_element_find(room.addr,"occu_list",mucx.prev);
+      }
+
+      // Change <li-peer> element id
+      if(li_peer) li_peer.id = occu.addr;
+    }
   }
 
   // Select the proper role/affiliation <ul> to put the occupant in
@@ -5514,6 +5684,15 @@ function xows_gui_cli_onoccupush(occu, code)
 
   // Update message history avatars
   xows_gui_hist_update(room, occu);
+
+  // Update Private Message with relatives
+  if(occu.self) {
+    let i = xows_cli_priv.length;
+    while(i--) {
+      if(xows_cli_priv[i].room === room)
+        xows_gui_hist_update(xows_cli_priv[i], occu);
+    }
+  }
 }
 
 /**
@@ -5544,12 +5723,8 @@ function xows_gui_cli_onoccurem(occu)
     }
   }
 
-  // If we are in Private Conversation with occupant we don't
-  // delete the Occupant Peer object since we need it to keep Chat
-  // Frame "alive" and futhermore, the occupant may rejoin the
-  // Room, bringin back the possiblity to send PM
-  if(!xows_cli_priv_has(occu))
-    xows_cli_occu_rem(occu);
+  // Client can remove object from Room
+  xows_cli_occu_rem(occu);
 }
 
 /**

@@ -372,7 +372,7 @@ function xows_cli_room_new(addr, name)
     "join": null,           //< Self join JID (room@service.domain/nick)
     "role": 0,              //< Self Room Role (Level)
     "affi": 0,              //< Self Room Affiliation (Level)
-    "nick": "",             //< Self Nickname in Room
+    "nick": null,           //< Reserverd Nickname in Room
     // Room Occupants list
     "occu": [],             //< Room occupant array
     "writ": [],             //< Chatstate writting occupants list
@@ -439,11 +439,18 @@ function xows_cli_occu_new(room, addr, ocid, jful, avat, self)
 
   const occu = {
     "name": nick,       //< Nickname
+    // IMPORTANT !
+    //   Occupant address/JID may change as its nickname change !
+    //
+    "addr": addr,       //< Common Peer Address (Occupant JID: room@service/nick)
+    "jlck": addr,       //< Current Locked Resource (Occupant JID)
+    // Room Occupant attributes
     "affi": 0,          //< Room affiliation
     "role": 0,          //< Room role
     "jful": jful,       //< Occupant Real Full JID (user@domain/ressource)
     "jbar": jbar,       //< Occupant Real Bare JID (user@domain)
     "avat": avat,       //< Avatar hash string.
+    // Standard presence values
     "show": 4,          //< Presence show level
     "stat": "",         //< Presence status string
     "chat": 0,          //< Chatstate level
@@ -458,8 +465,8 @@ function xows_cli_occu_new(room, addr, ocid, jful, avat, self)
   // set Constant properties
   xows_def_readonly(occu,"type",XOWS_PEER_OCCU);  //< Peer type
   xows_def_readonly(occu,"room",room);            //< Occupant Room reference
-  xows_def_readonly(occu,"addr",addr);            //< Common Peer Address (Occupant JID: room@service/nick)
-  xows_def_readonly(occu,"jlck",addr);            //< Current Locked Resource (Occupant JID)
+  //xows_def_readonly(occu,"addr",addr);            //< Common Peer Address (Occupant JID: room@service/nick)
+  //xows_def_readonly(occu,"jlck",addr);            //< Current Locked Resource (Occupant JID)
   xows_def_readonly(occu,"ocid",ocid);            //< Identitfier, either Occupant JID or Anonymous UID
   xows_def_readonly(occu,"self",self);            //< Indicates Object refer to current client
 
@@ -624,8 +631,15 @@ function xows_cli_peer_get(jid, type)
     let room = xows_cli_room.find(xows_cli_test_addr, bare);
     if(room) {
       // Check for Occupant
-      if(type & XOWS_PEER_OCCU && jid.includes("/"))
-          return room.occu.find(xows_cli_test_addr, jid);
+      let occu;
+      if(type & XOWS_PEER_OCCU && jid.includes("/")) {
+        occu = room.occu.find(xows_cli_test_addr, jid);
+        if(occu) {
+          return occu;
+        } else {
+          return xows_cli_priv.find(xows_cli_test_addr, jid);
+        }
+      }
       return room;
     }
   }
@@ -662,7 +676,7 @@ function xows_cli_peer_push(peer, param)
       xows_cli_fw_onoccupush(peer, param);
       // Forward update Private Conversation
       if(xows_cli_priv_has(peer))
-        xows_cli_fw_onprivpush(peer);
+        xows_cli_fw_onprivpush(peer, param);
     } break;
 
     case XOWS_PEER_ROOM: {
@@ -1526,7 +1540,6 @@ function xows_cli_rost_reset()
     // Remove all resources and reset presence and status
     cont.ress.clear();
     cont.show = XOWS_SHOW_OFF;
-    cont.stat = null; //< Null stat to prevent caching;
 
     // Forward "reseted" Contact
     xows_cli_fw_oncontpush(cont);
@@ -1657,17 +1670,17 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
   if(cont.show > XOWS_SHOW_OFF) {
 
     // We got Avatar hash in presence (probably via XEP-0398)
-    if(phot) {
+    if(typeof phot === "string") {
       if(phot.length > 0) { // Empty string mean no avatar
         if(xows_cach_avat_has(phot)) {
           cont.avat = phot; //< We already got this one
         } else {
-          //xows_cli_avat_fetch(cont); //< Non cached data, fetch it
-          load_mask |= XOWS_LOAD_AVAT;
+          load_mask |= XOWS_LOAD_AVAT; //< Non-cached data, fetch it
         }
+      } else {
+        cont.avat = null;
       }
     } else if(!cont.avat) { //< If contact have no avatar, try to get one
-      //xows_cli_avat_fetch(cont);
       load_mask |= XOWS_LOAD_AVAT;
     }
 
@@ -2193,23 +2206,36 @@ function xows_cli_retract_send(peer, usid)
 function xows_cli_presence_update()
 {
   // Define values as required
-  let type, show, stat;
+  let type, show = 0, stat, phot;
 
   if(xows_cli_self.show > XOWS_SHOW_OFF) {
     show = xows_cli_self.show;
     stat = xows_cli_self.stat;
+    phot = xows_cli_self.avat;
   } else {
     type = "unavailable";
   }
 
   // Simple presence to server
-  xows_xmp_presence_send(null, type, show, stat);
+  xows_xmp_presence_send(null, type, show, stat, null, null, phot);
 
   // Presence to all joined rooms
   let i = xows_cli_room.length;
   while(i--) {
     if(xows_cli_room[i].join) {
-      xows_xmp_presence_send(xows_cli_room[i].join, type, show, stat);
+
+      // XEP-0045 says:
+      //
+      // "When a MUC service receives an <x/> tagged join stanza from an
+      // already-joined client (as identified by the client's full JID),
+      // the service should assume that the client lost its synchronization,
+      // and therefore it SHOULD send exactly the same stanzas to the client
+      // as if it actually just joined the MUC."
+      //
+      // Ok, so... what mean "lost its synchronization" ?
+
+      xows_xmp_presence_send(xows_cli_room[i].join, type, show, stat, null, null, phot);
+
       // Unavailable client exited the room
       if(type) xows_cli_room[i].join = null;
     }
@@ -2382,7 +2408,7 @@ function xows_cli_xmp_onpubsub(from, node, items)
   if(node === XOWS_NS_VCARD4) {
     if(items.length) {
       // Send to vcard handling function
-      xows_cli_vcard_parse(from, items[0].child);
+      xows_cli_vcardt_parse(from, items[0].child);
     }
   }
 
@@ -2565,7 +2591,7 @@ function xows_cli_avat_data_parse(from, hash, data, error)
   // In case of error, DO NOT update Avatar
   if(error) {
     // As fallback, try to get avatar from Vcard
-    xows_cli_vcard_query(peer);
+    xows_cli_vcardt_query(peer);
     return;
   }
 
@@ -2631,7 +2657,7 @@ function xows_cli_avat_meta_parse(from, item, error)
     }
 
     // As fallback, try to get avatar from Vcard
-    xows_cli_vcard_query(peer);
+    xows_cli_vcardt_query(peer);
 
     return;
   }
@@ -2734,6 +2760,9 @@ function xows_cli_avat_publish(access)
   // If requested, change access model Avatar-Metadata
   if(access)
     xows_cli_pubsub_chmod(XOWS_NS_AVATAR_DATA, access);
+
+  // Keep complient with XEP-0153, also publish vcard-temp
+  xows_cli_vcardt_publish();
 }
 
 /**
@@ -2784,6 +2813,42 @@ function xows_cli_avat_meta_publish(from, type, error)
 /* -------------------------------------------------------------------
  * Client API - PubSub - Vcard routines
  * -------------------------------------------------------------------*/
+/**
+ * Publish user own vcard-temp to store nickname and, most important, Avatar
+ */
+function xows_cli_vcardt_publish()
+{
+  // Array to store vcard Nodes
+  const vcard = [];
+
+  /* XEP-0292 vCard4 version
+    // Add <nickname> node
+    vcard.push(xows_xml_node("nickname",xows_xml_node("text",null,xows_cli_self.name));
+    if(xows_cli_self.avat) {
+      // Get avatar data-URL
+      const data = xows_cach_avat_get(xows_cli_self.avat);
+      // Add <photo> node
+      vcard.push(xows_xml_node("photo",xows_xml_node("uri",null,data));
+    }
+  */
+
+  // Add <NICKNAME> node
+  vcard.push(xows_xml_node("NICKNAME",null,xows_cli_self.name));
+  if(xows_cli_self.avat) {
+    // Get avatar data-URL
+    const data = xows_cach_avat_get(xows_cli_self.avat);
+    const bin_type = xows_url_to_type(data);
+    const bin_data = xows_url_to_data(data);
+    // Add <PHOTO> node
+    vcard.push(xows_xml_node("PHOTO",null,[xows_xml_node("TYPE",  null,bin_type),
+                                           xows_xml_node("BINVAL",null,bin_data)]));
+  }
+
+  xows_log(2,"cli_vcard_publish","publish own vCard-temp");
+
+  // Send query
+  xows_xmp_vcardt_set_query(vcard);
+}
 
 /**
  * Function to handle parsed result of vcard query
@@ -2792,7 +2857,7 @@ function xows_cli_avat_meta_publish(from, type, error)
  * @param   {object}    vcard     Vcard content
  * @param   {object}    error     Error data if any
  */
-function xows_cli_vcard_parse(from, vcard, error)
+function xows_cli_vcardt_parse(from, vcard, error)
 {
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
@@ -2802,6 +2867,9 @@ function xows_cli_vcard_parse(from, vcard, error)
   }
 
   if(error) {
+
+    // No avatar available
+    peer.avat = null;
 
     xows_log(1,"cli_vcard_parse","error parsing vcard",from);
 
@@ -2818,6 +2886,11 @@ function xows_cli_vcard_parse(from, vcard, error)
 
       // Save image in cache
       peer.avat = xows_cach_avat_save(data);
+
+    } else {
+
+      // No avatar available
+      peer.avat = null;
     }
   }
 
@@ -2836,10 +2909,10 @@ function xows_cli_vcard_parse(from, vcard, error)
  *
  * @param   {string}    peer      Peer object to query vcard
  */
-function xows_cli_vcard_query(peer)
+function xows_cli_vcardt_query(peer)
 {
   // Query Vcard-temps (mainly for Avatar)
-  xows_xmp_vcardt_get_query(peer.addr, xows_cli_vcard_parse);
+  xows_xmp_vcardt_get_query(peer.addr, xows_cli_vcardt_parse);
 }
 
 /* -------------------------------------------------------------------
@@ -3566,6 +3639,10 @@ function xows_cli_muc_regi_set_result(from, type, error)
   // Get parameters
   const param = xows_cli_muc_regi_param.get(room);
 
+  if(type !== "error")
+    // Set room reserved nickname
+    room.nick = param.nick;
+
   if(xows_isfunc(param.onresult))
     param.onresult(room, type, error);
 
@@ -3603,6 +3680,10 @@ function xows_cli_muc_regi_get_result(from, data, form, error)
 
   // Check if we got already-registered response
   if(data.registered) {
+
+    // Set room reserved nickname
+    room.nick = param.nick;
+
     if(xows_isfunc(param.onresult))
       param.onresult(room, "registered", null);
 
@@ -3625,14 +3706,15 @@ function xows_cli_muc_regi_get_result(from, data, form, error)
  * Query for MUC Room registration request
  *
  * @param   {object}    room      Room object to join
+ * @param   {object}    nick      Reserved nickname to register
  * @param   {function}  onresult  Callback to parse received result
  */
-function xows_cli_muc_regi_query(room, onresult)
+function xows_cli_muc_regi_query(room, nick, onresult)
 {
   if(xows_cli_muc_regi_param.has(room))
     return;
 
-  xows_cli_muc_regi_param.set(room, {"onresult":onresult,"nick":room.nick});
+  xows_cli_muc_regi_param.set(room, {"onresult":onresult,"nick":nick});
 
   // Send request for Room register (will respond by xform)
   xows_xmp_regi_get_query(room.addr, xows_cli_muc_regi_get_result);
@@ -3649,14 +3731,25 @@ function xows_cli_muc_regi_query(room, onresult)
  */
 function xows_cli_muc_join_retry(room)
 {
+  // XEP-0045:
+  //
+  // "Even if a user has registered one room nickname, the service SHOULD
+  // allow the user to specify a different nickname on entering the room
+  // (e.g., in order to join from different client resources), although
+  // the service MAY choose to "lock down" nicknames and therefore deny
+  // entry to the user, including a <not-acceptable/> error."
+  //
+  // What a mess... How a registered user change its reserved nickname ?
+
   // Compose destination using Room JID and nickname
-  const to = room.addr + "/" + room.nick;
+  let to = room.addr + "/";
+  to += room.nick ? room.nick : xows_cli_self.name;
 
   // Content of MUC <x> node (Password)
   const mucx = {pass:room.pass};
 
   // Send initial presence to Room to join
-  xows_xmp_presence_send(to, null, xows_cli_self.show, xows_cli_self.stat, xows_cli_self.nick, mucx);
+  xows_xmp_presence_send(to, null, xows_cli_self.show, xows_cli_self.stat, null, mucx, xows_cli_self.avat);
 }
 
 /**
@@ -3676,8 +3769,7 @@ function xows_cli_muc_join_nick(from, nick)
   }
 
   // Set own nickname for this Room
-  if(!room.nick)
-    room.nick = nick ? nick : xows_cli_self.name;
+  room.nick = nick;
 
   // Send presence to join
   xows_cli_muc_join_retry(room);
@@ -3692,10 +3784,9 @@ function xows_cli_muc_join_nick(from, nick)
  *
  * @param   {object}   [room]     Room object to join, or null
  * @param   {string}   [name]     Optional Room identifier or JID to join or create
- * @param   {string}   [nick]     Optional nickname to join room
  * @param   {string}   [pass]     Optional password to join room
  */
-function xows_cli_muc_join_atempt(room, name, nick, pass)
+function xows_cli_muc_join_atempt(room, name, pass)
 {
   // Check if we got a room object
   if(room) {
@@ -3729,7 +3820,6 @@ function xows_cli_muc_join_atempt(room, name, nick, pass)
   }
 
   // Set nickname and password if supplied
-  room.nick = nick;
   room.pass = pass;
 
   // Query for own reserved nickname, then join room
@@ -3816,21 +3906,25 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
 
     } else {
 
-      // We leaved the Room for some reasons
-      room.join = null;
+      // Check whether this is nickname change rather than true departure
+      if(!mucx.code.includes(303)) {
 
-      // Forward removed Private Conversation
-      for(let i = 0; i < room.occu.length; ++i)
-        if(xows_cli_priv_has(room.occu[i]))
-          xows_cli_fw_onprivrem(room.occu[i]);
+        // We leaved the Room for some reasons
+        room.join = null;
 
-      // Reset Room occupant list
-      room.occu.length = 0;
+        // Forward removed Private Conversation
+        for(let i = 0; i < room.occu.length; ++i)
+          if(xows_cli_priv_has(room.occu[i]))
+            xows_cli_fw_onprivrem(room.occu[i]);
 
-      // Forward Room exit signal
-      xows_cli_fw_onroomexit(room, mucx.code);
+        // Reset Room occupant list
+        room.occu.length = 0;
 
-      return; //< nothing else to do
+        // Forward Room exit signal
+        xows_cli_fw_onroomexit(room, mucx);
+
+        return; //< nothing else to do
+      }
     }
   }
 
@@ -3840,24 +3934,42 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
   // Check wheter the occupant is to be removed
   if(occu && show === XOWS_SHOW_OFF) {
 
-    // set show off for last update
-    occu.show = show;
+    // Check whether this is nickname change rather than true departure
+    if(mucx.code.includes(303)) {
 
-    // Forward removed Private Conversation
-    if(xows_cli_priv_has(occu))
-      xows_cli_fw_onprivrem(occu);
+      // We add an extra ad-hoc property in mucx object
+      // to forward old occupant address to GUI allowing
+      // to perform proper document id switch.
+      mucx.prev = occu.addr;
 
-    // Forward removed Occupant
-    xows_cli_fw_onoccurem(occu);
+      // Change occupant nickname
+      occu.name = mucx.nick;
 
-    return; //< return now
+      // Update occupant address
+      const addr = room.addr + "/" + occu.name;
+      occu.addr = addr;
+      occu.jlck = addr;
+
+      // Change Room "join" address for own nick changes
+      if(occu.self)
+        room.join = addr;
+
+    } else {
+
+      // set show off for last update
+      occu.show = show;
+
+      // Forward removed Private Conversation
+      if(xows_cli_priv_has(occu))
+        xows_cli_fw_onprivrem(occu);
+
+      // Forward removed Occupant
+      xows_cli_fw_onoccurem(occu);
+
+      return; //< return now
+    }
   }
 
-  // Handle Nickname change
-  if(mucx.code.includes(303)) {
-    // TODO: Do we really have something to do here ?
-    //const nick = mucx.nick;
-  }
 
   if(occu) {
     // Update Occupant
@@ -3884,22 +3996,22 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
   let load_mask = 0;
 
   // We got Avatar hash in presence (probably via XEP-0398)
-  if(phot) {
+  if(typeof phot === "string") {
     if(phot.length > 0) { // Empty string mean no avatar
       if(xows_cach_avat_has(phot)) {
         occu.avat = phot; //< We already got this one
       } else {
-        //xows_cli_avat_fetch(occu); //< Non cached data, fetch it
-        load_mask |= XOWS_LOAD_AVAT;
+        load_mask |= XOWS_LOAD_AVAT; //< Non-cached data, fetch it
       }
+    } else {
+      occu.avat = null;
     }
   } else if(!occu.avat) { //< If occupant  have no avatar, try to get one
-    //xows_cli_avat_fetch(occu);
     load_mask |= XOWS_LOAD_AVAT;
   }
 
   // Fetch data and push Occupant
-  xows_load_init(occu, load_mask, xows_cli_peer_push, mucx.code);
+  xows_load_init(occu, load_mask, xows_cli_peer_push, mucx);
 }
 
 /**
@@ -3995,6 +4107,21 @@ function xows_cli_xmp_onsubject(id, from, subj)
 }
 
 /**
+ * Change own nickname in specified Room
+ *
+ * @param   {object}    room      Room object
+ * @param   {string}    nick      New nickname
+ */
+function xows_cli_muc_set_nick(room, nick)
+{
+  // Compose destination using Room JID and nickname
+  let to = room.addr + "/" + nick;
+
+  // Send new presence with new Nickname
+  xows_xmp_presence_send(to, null, xows_cli_self.show, xows_cli_self.stat, null, null, xows_cli_self.avat);
+}
+
+/**
  * Set subject for the specified room.
  *
  * @param   {object}    room      Recipient Room
@@ -4027,6 +4154,7 @@ function xows_cli_muc_set_role(occu, role)
 {
   xows_xmp_muc_role_set_query(occu.room.addr, {"nick":occu.name,"role":role}, null);
 }
+
 /* -------------------------------------------------------------------
  *
  * Client API - Self account management

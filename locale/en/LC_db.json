@@ -191,6 +191,15 @@
   "Set the message of the day, a welcome message or the discussion subject.":
   "",
 
+  "Nickname for":
+  "",
+  
+  "Specify your new nickname for this Channel.":
+  "",
+  
+  "Enter a nickname...":
+  "",
+
   "Video call":
   "",
 
@@ -199,7 +208,13 @@
 
   "Add Channel to Bookmarks":
   "",
-
+  
+  "Change nickname":
+  "",
+  
+  "Edit Channel topic":
+  "",
+  
   "Enable notifications":
   "",
 

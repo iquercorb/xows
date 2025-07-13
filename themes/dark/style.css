@@ -2073,6 +2073,7 @@ li-peer.PEER-ROOM peer-avat {
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
 #chat_fram.CHAT-CONT #chat_bt_subj,
+#chat_fram.CHAT-CONT #chat_bt_nick,
 #chat_fram.CHAT-ROOM #chat_bt_calv,
 #chat_fram.CHAT-ROOM #chat_bt_cala,
 #chat_fram.CHAT-CONT #chat_bt_cnfg,
@@ -2135,6 +2136,9 @@ head-info badg-show {
 }
 #chat_bt_subj {
   background-image: url("images/topic.svg");
+}
+#chat_bt_nick {
+  background-image: url("images/arobase.svg");
 }
 #chat_bt_noti {
   background-image: url("images/notify_on.svg");
