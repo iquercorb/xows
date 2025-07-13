@@ -130,7 +130,7 @@ function xows_cach_avat_get(hash)
 function xows_cach_avat_temp_data(iden, hash)
 {
   // Generate 4-bytes DJB2 hash from identity
-  const djb2 = xows_hash_djb2(iden);
+  const djb2 = xows_hash_sdbm(iden);
 
   // Create hex-string version of hash number
   if(!hash) hash = xows_bytes_to_hex(djb2);
@@ -165,7 +165,7 @@ function xows_cach_avat_temp_data(iden, hash)
  */
 function xows_cach_avat_temp_hash(iden)
 {
-  return xows_bytes_to_hex(xows_hash_djb2(iden));
+  return xows_bytes_to_hex(xows_hash_sdbm(iden));
 }
 
 /**

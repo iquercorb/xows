@@ -847,17 +847,17 @@ function xows_hash_sha256(input)
 }
 
 /**
- * Generate DJB2 Hash of a given string
+ * Generate SDBM Hash of a given string
  *
  * @param   {string}    input     Input string to compute hash
  *
- * @return  {Uint8Array}  4 bytes DJB2 hash
+ * @return  {Uint8Array}  4 bytes SDBM hash
  */
-function xows_hash_djb2(input)
+function xows_hash_sdbm(input)
 {
-  let state = 5381;
+  let state = 0;
   for(let i = 0; i < input.length; ++i) {
-    state = ((state << 5) + state) + input.charCodeAt(i);
+    state = input.charCodeAt(i) + (state << 6) + (state << 16) - state;
   }
 
   // Convert 32 bit integer to Uint8[]
@@ -1058,8 +1058,8 @@ function xows_clean_dom(node)
 /**
  *  Static color pallet for Avatar generation
  */
-const xows_avat_pallete = ["#D94F22","#F2B80C","#8DB222","#4CA92C","#37B156","#22A871",
-                           "#2BA4CC","#395BBF","#5C44D5","#9B54B3","#AB4491","#CF385C"];
+const xows_avat_pallete = ["#22A849","#24ABC1","#F2C40C","#395BBF","#9B54B3","#E97333","#CF3838",
+                           "#395BBF","#F2C40C","#22A849","#24ABC1","#9B54B3","#CF3838","#E97333"];
 
 /**
  *  Draw an icon with the specified paramers
@@ -1149,7 +1149,9 @@ function xows_gen_avatar(size, image, seed)
     if(seed) {
 
       // Get pseudo-random color from seed
-      ct.fillStyle = xows_avat_pallete[Math.floor(xows_random(seed) * 12)];
+      const sc = Math.abs(seed) % 14;
+      console.log("AVATAR COLOR INDEX:"+sc);
+      ct.fillStyle = xows_avat_pallete[sc];
       ct.rect(0, 0, size, size);
       ct.fill();
 
