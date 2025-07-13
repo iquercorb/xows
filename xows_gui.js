@@ -3241,7 +3241,7 @@ function xows_gui_ibox_room_nick_onvalid(value)
   const nick = value.trimEnd();
 
   // If changed, inform of the new room topic
-  if(nick != xows_jid_resc(room.addr))
+  if(nick != xows_jid_resc(room.join))
     xows_cli_muc_set_nick(room, nick);
 }
 
@@ -3258,7 +3258,7 @@ function xows_gui_ibox_room_nick_open(room)
   // Open the input box dialog
   xows_doc_ibox_open(xows_l10n_get("Nickname for")+" #"+room.name,
     "Specify your new nickname for this Channel.",
-    "Enter a nickname...", xows_jid_resc(room.addr),
+    "Enter a nickname...", xows_jid_resc(room.join),
     xows_gui_ibox_room_nick_onvalid, null, null, null, null, true);
 }
 
