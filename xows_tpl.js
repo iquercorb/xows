@@ -1018,12 +1018,14 @@ function xows_tpl_spawn_avat_cls(peer)
 
   } else {
 
-    // Generate DJB2 Hash from Peer UID or JID
-    const seed = peer.ocid ? peer.ocid : peer.addr;
-    hash = xows_bytes_to_hex(xows_hash_djb2(seed));
+    // Get proper peer identity
+    const iden = xows_cach_peer_iden(peer);
+
+    // Generate temporary avatar hash from Peer ident
+    hash = xows_cach_avat_temp_hash(iden);
 
     // Generate (if don't exists) temporary avatar using given hash
-    xows_cach_avat_gen(null, hash);
+    xows_cach_avat_temp_data(iden, hash);
   }
 
   // Create Avatar Steel Sheet rule

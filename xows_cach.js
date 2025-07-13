@@ -122,15 +122,18 @@ function xows_cach_avat_get(hash)
  * Load or generate temporary avatar data-URL corresponding to the
  * given seed
  *
- * @param   {string}   [seed]     Seed string to generate hash and image
- * @param   {string}   [hash]     Pre-computed hash to generate image
+ * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
+ * @param   {string}   [hash]     Optional pre-computed hash to store avatar
  *
  * @return  {string}    Avatar data-URL
  */
-function xows_cach_avat_gen(seed, hash)
+function xows_cach_avat_temp_data(iden, hash)
 {
-  // Generate DJB2 hash from seed
-  if(seed) hash = xows_bytes_to_hex(xows_hash_djb2(seed));
+  // Generate 4-bytes DJB2 hash from identity
+  const djb2 = xows_hash_djb2(iden);
+
+  // Create hex-string version of hash number
+  if(!hash) hash = xows_bytes_to_hex(djb2);
 
   // Check whether temp avatar already exist
   if(xows_cach_avat_db.has(hash)) {
@@ -139,14 +142,30 @@ function xows_cach_avat_gen(seed, hash)
 
   } else {
 
-    // Generate dummy avatar image
-    const data = xows_gen_avatar(XOWS_AVAT_SIZE, null, hash);
+    // Generate dummy avatar using DJB2 number as seed
+    const data = xows_gen_avatar(XOWS_AVAT_SIZE, null, xows_bytes_to_int(djb2));
 
     // Store in live DB and localStorage
     xows_cach_avat_db.set(hash, data);
 
     return data;
   }
+}
+
+/**
+ * Generates hash string for temporary avatar storage from
+ * the specified Peer identity (or any other string).
+ *
+ * Use this function to keep consistency accross generated
+ * temporary avatars in conjonction with xows_cach_avat_temp_data()
+ *
+ * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
+ *
+ * @return  {string}    DJb2 Hash value as hexadecimal string representation
+ */
+function xows_cach_avat_temp_hash(iden)
+{
+  return xows_bytes_to_hex(xows_hash_djb2(iden));
 }
 
 /**

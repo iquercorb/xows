@@ -6097,7 +6097,7 @@ function xows_gui_page_edit_onabort()
     data = xows_cach_avat_get(xows_cli_self.avat);
     xows_doc("edit_avat").data = data; //< ad-hoc property
   } else {
-    data = xows_cach_avat_gen(xows_cli_self.addr, null); // Generate temporary avatar
+    data = xows_cach_avat_temp_data(xows_cli_self.addr, null); // Generate temporary avatar
     xows_doc("edit_avat").data = null; //< ad-hoc property
   }
 
@@ -6162,7 +6162,7 @@ function xows_gui_page_edit_onclick(target)
     edit_avat.data = null;
 
     // Generate default temp avatar
-    const data = xows_cach_avat_gen(xows_cli_self.addr, null); // Generate temporary avatar
+    const data = xows_cach_avat_temp_data(xows_cli_self.addr, null); // Generate temporary avatar
     edit_avat.style.backgroundImage = "url(\""+data+"\")";
 
     // Open Message box dialog
@@ -6189,7 +6189,7 @@ function xows_gui_page_edit_ev_file(event)
       // Define onload function to handle loaded data
       image.onload = function(e) {
         // Set avatar data on background
-        const url = xows_gen_avatar(XOWS_AVAT_SIZE, this);
+        const url = xows_gen_avatar(XOWS_AVAT_SIZE, this, null);
         const edit_avat = xows_doc("edit_avat");
         edit_avat.data = url;
         edit_avat.style.backgroundImage = "url(\""+url+"\")";

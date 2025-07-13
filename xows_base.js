@@ -363,6 +363,22 @@ function xows_bytes_to_hex(uint8)
   return hex;
 }
 
+/**
+ * Convert 4-bytes Uint8Array to 32 bit number
+ *
+ * @param   {Uint8Array}  uint8   Input bytes data
+ * @param   {number}      offset  Optional Uint8Array offset
+ *
+ * @return  {number}    32 bit integer number
+ */
+function xows_bytes_to_int(uint8, offset = 0)
+{
+  return  (uint8[0+offset])
+        | (uint8[1+offset] <<  8)
+        | (uint8[2+offset] << 16)
+        | (uint8[3+offset] << 24);
+}
+
 /* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
  *                hash and crypto utilities functions
  * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
@@ -1050,7 +1066,7 @@ const xows_avat_pallete = ["#D94F22","#F2B80C","#8DB222","#4CA92C","#37B156","#2
  *
  * @param   {number}    size      Icon size in pixels
  * @param   {Image}     image     Optional background image
- * @param   {string}    seed      Optional name to generate background and Letter
+ * @param   {number}   [seed]     Optional seed number for pseudo-random color
  *
  * @return  {string}    Resulting icon as Data-URL string
  */
@@ -1133,9 +1149,7 @@ function xows_gen_avatar(size, image, seed)
     if(seed) {
 
       // Get pseudo-random color from seed
-      let s = 0, i = seed.length;
-      while(i--) s += seed.charCodeAt(i) * seed.charCodeAt(i);
-      ct.fillStyle = xows_avat_pallete[Math.floor(xows_random(s)*12)];
+      ct.fillStyle = xows_avat_pallete[Math.floor(xows_random(seed) * 12)];
       ct.rect(0, 0, size, size);
       ct.fill();
 

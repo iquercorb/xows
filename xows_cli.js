@@ -2612,11 +2612,11 @@ function xows_cli_avat_meta_parse(from, item, error)
     // Generate a temporary Avatar and publish it
     if(xows_options.avatar_autopub && peer === xows_cli_self) {
 
-      // Generate DJB2 hash as seed for Avatar generation
-      const seed = xows_bytes_to_hex(xows_hash_djb2(peer.addr));
+      // Generate temporary avatar data
+      const data = xows_cach_avat_temp_data(peer.addr, null);
 
-      // Generate dummy avatar and save it as real
-      peer.avat = xows_cach_avat_save(xows_gen_avatar(XOWS_AVAT_SIZE,null,seed));
+      // Save temp avatar as real avatar and get proper hash value
+      peer.avat = xows_cach_avat_save(data);
 
       // Publish this avatar
       xows_cli_avat_publish("open");
