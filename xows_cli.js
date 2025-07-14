@@ -2378,11 +2378,8 @@ function xows_cli_self_edit(name, url, access)
     // This is avatar suppression
     if(xows_cli_self.avat) {
 
-      // Retract previous avatar
-      xows_cli_avat_retract(xows_cli_self.avat);
-
-      // Set avatar to null
-      xows_cli_self.avat = null;
+      // Retract current avatar
+      xows_cli_avat_retract();
     }
   }
 
@@ -2769,14 +2766,26 @@ function xows_cli_avat_publish(access)
 }
 
 /**
- * Delete XEP-0084 avatar data
+ * Retract XEP-0084 Avatar data and metadata items from PubSub.
  *
- * @param   {string}    hash      Avatar Hash to delete
+ * This function has effect only if a avalid avatar hash is
+ * available.
  */
-function xows_cli_avat_retract(hash)
+function xows_cli_avat_retract()
 {
-  xows_xmp_pubsub_retract(XOWS_NS_AVATAR_META, hash, null);
-  xows_xmp_pubsub_retract(XOWS_NS_AVATAR_DATA, hash, null);
+  if(xows_cli_self.avat !== null) {
+
+    // We must retract data before metadata or we got item-not-found
+    // error once it's time to retract data
+    //xows_xmp_pubsub_retract(XOWS_NS_AVATAR_DATA, xows_cli_self.avat, null);
+    xows_xmp_pubsub_retract(XOWS_NS_AVATAR_META, xows_cli_self.avat, null);
+
+    // Annnd... it's gone.
+    xows_cli_self.avat = null;
+
+  } else {
+    xows_log(1,"cli_avat_retract","No avatar Hash-ID to retract");
+  }
 }
 
 /**
