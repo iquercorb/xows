@@ -27,6 +27,11 @@ fcallbacks functions. The main code avoids as most as possible Javascript's fals
 friends like the "this" keyword, anonymous functions, modern syntactic sugar and 
 confusing (to me) paradigms such as Promises, "sync" and "async" mechanism.
 
+The current code state is judged by myself as "terribly messy", as the MUC 
+features and graphical interface had lead me to massive code rewrite along the 
+development process, with a lot of ad-hoc things. **Therefore, it is highly 
+probable that it remain a lot of small (or less small) bugs.**
+
 Things that still to be Implemented/Fixed/Tested
 ----------------------------------------------------------------------------------------
  - Probably a lot of small bugs
