@@ -30,7 +30,7 @@ confusing (to me) paradigms such as Promises, "sync" and "async" mechanism.
 The current code state is judged by myself as "terribly messy", as the MUC 
 features and graphical interface had lead me to massive code rewrite along the 
 development process, with a lot of ad-hoc things. **Therefore, it is highly 
-probable that it remain a lot of small (or less small) bugs.**
+probable that it remain a lot of small (or less small) bugs.** 
 
 Things that still to be Implemented/Fixed/Tested
 ----------------------------------------------------------------------------------------
