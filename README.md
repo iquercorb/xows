@@ -34,6 +34,7 @@ Things that still to be Implemented/Fixed/Tested
  - A good Tutorial for deployment
  - Some code refactoring (especially on the GUI side)
  - A proper loading handling to avoid graphicals glitchs
+ - The Audio/video calls (WebRTC) is currently at a very prototypale stage
 
 Screenshots
 ----------------------------------------------------------------------------------------
