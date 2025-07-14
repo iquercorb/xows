@@ -1762,7 +1762,7 @@ li-peer {
   width: 100%; height: 40px;
   overflow: hidden;
   cursor: pointer !important;
-  margin: 5px 0;
+  margin: 10px 0;
   border-radius: 5px;
 } li-peer:hover,
   li-peer.SELECTED {
@@ -2388,11 +2388,6 @@ call-geom button:hover {
 }
 hist-bound {
   height: 700px;
-  text-align: center;
-  font-size: 1.1em;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: var(--base-tone6);
   margin: auto 16px 0 16px;
   background-color: transparent;
   background-size: 1000px;
@@ -2401,13 +2396,26 @@ hist-bound {
   background-image: url("images/chat_phold.svg");
 }
 #hist_beg.HIST-START {
+  display: grid;
+  align-items: end;
   height: 200px;
-  padding-top: 90px;
   background-image: none;
-  border-bottom: 2px solid var(--base-tone5);
+  border-bottom: 1px solid var(--base-tone5);
 }
 #hist_beg.HIST-START::before {
   content: attr(data-text);
+  display: grid;
+  align-items: center;
+  width: 100%; height: 45px;
+  color: var(--text-tone1);
+  font-size: 1.0em;
+  font-style: italic;
+  text-transform: uppercase;
+  background-repeat: no-repeat;
+  background-image: url("images/logo_white.svg");
+  padding-left: 60px;
+  margin-bottom: 25px;
+  opacity: 0.7;
 }
 @media (max-width: 824px) {
   #chat_hist ul {
@@ -3136,9 +3144,8 @@ button.trsh-bt-abort {
   height: 25px;
   border-radius: 6px 6px 0 0;
   font-family: Arial;
-  font-size: .75em;
-  font-weight: bold;
-  color: var(--text-tone1);
+  font-size: .85em;
+  color: var(--text-tone0);
   background-color: var(--back-base);
   cursor: pointer;
   margin: 0 16px -3px 16px;
@@ -3150,7 +3157,6 @@ button.trsh-bt-abort {
   content:"\25BE";
 }
 #chat_nav:hover {
-  color: var(--text-tone0);
   background-color: var(--back-hover);
 }
 #chat_nav.UNDREAD {
