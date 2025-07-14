@@ -246,7 +246,6 @@ function xows_l10n_houre(stamp)
 {
   const date = new Date(stamp);
 
-  // Check whether the supplied time date is today
-  return date.toLocaleTimeString(xows_l10n_current,{hour:'2-digit',minute:'2-digit'});
+  return date.toLocaleTimeString(xows_l10n_current,{hour:'2-digit',minute:'2-digit'}).replace(/AM|PM/,'');
 }
 
