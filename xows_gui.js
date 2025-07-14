@@ -191,7 +191,7 @@ function xows_gui_ondevicesinfos(devinfo)
 
   // Update relevant GUI element
   if(xows_gui_peer)
-    xows_gui_chat_head_update(xows_gui_peer);
+    xows_gui_peer_chat_update(xows_gui_peer);
 }
 
 /**
@@ -226,11 +226,6 @@ function xows_gui_medias_has(type)
  * Constant for initial offscreen slot identifier
  */
 const XOWS_GUI_FRAG_INIT = "NULL";
-
-/**
- * Object that stores saved scroll values
- */
-const xows_gui_peer_scroll_db = new Map();
 
 /**
  * Get Peer related element by id, either in current document or in
@@ -326,31 +321,25 @@ function xows_gui_peer_doc_cls_has(peer, id, cls)
  */
 function xows_gui_peer_hist_reload(peer)
 {
-  let chat_main;
-
-  // Get current DOM element or offscreen dummy object
+  // Scroll down
   if(peer === xows_gui_peer) {
-    chat_main = xows_doc("chat_main");
+    xows_doc_scroll_down(document.getElementById("chat_main"));
   } else {
-    chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+    xows_doc_scroll_down(xows_doc_scroll_db.get(peer.addr));
   }
-
-  // Reset scroll
-  chat_main.scrollTop = (chat_main.scrollHeight - chat_main.clientHeight);
-  chat_main.scrollSaved = 0; //< ad-hoc property we created
 
   // Reset the chat history to initial stat
   xows_gui_peer_doc(peer,"hist_beg").className = "";
   xows_gui_peer_doc(peer,"hist_ul").innerText = "";
   xows_gui_peer_doc(peer,"hist_end").hidden = true;
 
-  // Query for the last archives, with no delay
+  // Query for the latest archives, with no delay
   xows_gui_mam_fetch_latest(peer);
 }
 
 /**
  * Save the main chat scroll position for the specified peer in the
- * ad-hoc 'scrollSaved' property.
+ * ad-hoc 'scrollBottom' property.
  *
  * If the specified Peer history is offscreen, the function operate on
  * the offscreen dummy object.
@@ -359,17 +348,13 @@ function xows_gui_peer_hist_reload(peer)
  */
 function xows_gui_peer_scroll_save(peer)
 {
-  let chat_main;
+  console.warn("gui_peer_scroll_save: xows_gui_peer_scroll_kept=",xows_gui_peer_scroll_kept);
 
-  // Get current DOM element or offscreen dummy object
   if(peer === xows_gui_peer) {
-    chat_main = xows_doc("chat_main");
+    xows_doc_scroll_save(document.getElementById("chat_main"));
   } else {
-    chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+    xows_doc_scroll_save(xows_doc_scroll_db.get(peer.addr));
   }
-
-  // Save scroll parameter in an ad-hoc 'scrollSaved' property we create
-  chat_main.scrollSaved = chat_main.scrollHeight - (chat_main.scrollTop + chat_main.clientHeight);
 }
 
 /**
@@ -385,9 +370,9 @@ function xows_gui_peer_scroll_get(peer)
 {
   // Returns current DOM element or offscreen dummy object ad-hoc propery
   if(peer === xows_gui_peer) {
-    return xows_doc("chat_main").scrollSaved;
+    return document.getElementById("chat_main").scrollBottom;
   } else {
-    return xows_gui_peer_scroll_db.get(peer.addr).scrollSaved;
+    return xows_doc_scroll_db.get(peer.addr).scrollBottom;
   }
 }
 
@@ -401,20 +386,15 @@ function xows_gui_peer_scroll_get(peer)
  */
 function xows_gui_peer_scroll_down(peer)
 {
+  console.warn("gui_peer_scroll_down: xows_gui_peer_scroll_kept=",xows_gui_peer_scroll_kept);
+
   if(xows_gui_peer_doc(peer,"hist_end").hidden) {
 
-    let chat_main;
-
-    // Get current DOM element or offscreen dummy object
     if(peer === xows_gui_peer) {
-      chat_main = xows_doc("chat_main");
+      xows_doc_scroll_down(document.getElementById("chat_main"));
     } else {
-      chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+      xows_doc_scroll_down(xows_doc_scroll_db.get(peer.addr));
     }
-
-    // Reset scroll
-    chat_main.scrollTop = (chat_main.scrollHeight - chat_main.clientHeight);
-    chat_main.scrollSaved = 0;
 
   } else {
     // If the most recent message is beyond the current history "window"
@@ -422,6 +402,12 @@ function xows_gui_peer_scroll_down(peer)
     xows_gui_peer_hist_reload(peer);
   }
 }
+
+/**
+ * Flag to signal automatic scroll adjustement was performed to allow ignore
+ * the next generated "onscroll" event.
+ */
+let xows_gui_peer_scroll_kept = false;
 
 /**
  * Compensate (to keept at position) the main chat scroll corresponding
@@ -432,18 +418,160 @@ function xows_gui_peer_scroll_down(peer)
  *
  * @param   {object}    peer      Peer object to get scroll value
  */
-function xows_gui_peer_scroll_adjust(peer)
+function xows_gui_peer_scroll_keep(peer)
 {
-  let chat_main;
+  console.log("gui_peer_scroll_keep");
 
-  // Get current DOM element or offscreen dummy object
   if(peer === xows_gui_peer) {
-    chat_main = xows_doc("chat_main");
+
+    // Modifying scroll parameter programmatically triggers an "onscroll" event
+    // the same as if user actually scrolled from Browser window. This produce
+    // unwanted scroll position "save" whitch mess up all calculations.
+    //
+    // To prevent that, after each scroll adjustment on resize, we set a flag
+    // to signal that the "onscroll" event was fired by automatic adjustement
+    // so it is possible to ignore the event.
+    xows_gui_peer_scroll_kept = true;
+
+    xows_doc_scroll_keep(document.getElementById("chat_main"));
   } else {
-    chat_main = xows_gui_peer_scroll_db.get(peer.addr);
+    xows_doc_scroll_keep(xows_doc_scroll_db.get(peer.addr));
+  }
+}
+
+/**
+ * Common function to clone current DOM elements to initial offscreen
+ * Document Fragment.
+ *
+ * Clones the current DOM elements to a new Document Fragment used to be
+ * initial content to be cloned for any new Peer's Document Fragment.
+ *
+ * This function should be called only ONCE right after DOM finished to
+ * load, when at its initial state.
+ */
+function xows_gui_peer_frag_init()
+{
+  // Create intial offscreen slot from current document
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_head", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_hist", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_panl", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "room_head", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
+
+  // Export scroll parameters to offscreen
+  xows_doc_scroll_export(XOWS_GUI_FRAG_INIT, "chat_main");
+}
+
+/**
+ * Common function to create new set of Peer's offscreen DocumentFragment.
+ *
+ * Clones the initial DOM elements (which was saved in a Document Fragment at
+ * initialization) to a new DocumentFragment referenced under the specified
+ * slot (usually, Peer's address).
+ *
+ * If source is specified, the new set of DocumentFragment is cloned from
+ * the specified source instead of saved initial DOM elements.
+ *
+ * @param   {string}    slot      Destination slot (Peer's address)
+ * @param   {string}   [source]   Optional source slot.
+ */
+function xows_gui_peer_frag_new(slot, source)
+{
+  if(!source)
+    source = XOWS_GUI_FRAG_INIT;
+
+  if(!xows_doc_frag_db.has(source)) {
+    xows_log(1,"gui_peer_frag_new","source fragment doesn't exist",slot);
+    return;
   }
 
-  chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + (chat_main.scrollSaved || 0));
+  // Clone elements from initial offscreen slot
+  xows_doc_frag_clone(slot, source, "chat_head");
+  xows_doc_frag_clone(slot, source, "chat_hist");
+  xows_doc_frag_clone(slot, source, "chat_panl");
+  xows_doc_frag_clone(slot, source, "room_head");
+  xows_doc_frag_clone(slot, source, "occu_list");
+
+  // Copy offscreen scroll parameters
+  xows_doc_scroll_copy(slot, source);
+}
+
+/**
+ * Common function to "export" current DOM elements to Peer's offscreen
+ * Document Fragment.
+ *
+ * Moves the current DOM elements to the offscreen Document Fragment
+ * referenced by the specified slot (usually, Peer's address).
+ *
+ * @param   {string}    slot      Document fragment slot (Peer's address)
+ */
+function xows_gui_peer_frag_export(slot)
+{
+  if(!xows_doc_frag_db.has(slot)) {
+    xows_log(1,"gui_peer_frag_export","fragment doesn't exist",slot);
+    return;
+  }
+
+  // Export document elements to offscreen fragment
+  xows_doc_frag_export(slot, "chat_head");
+  xows_doc_frag_export(slot, "chat_hist");
+  xows_doc_frag_export(slot, "chat_panl");
+  xows_doc_frag_export(slot, "room_head");
+  xows_doc_frag_export(slot, "occu_list");
+
+  // Export scroll parameters to offscreen
+  xows_doc_scroll_export(slot, "chat_main");
+}
+
+/**
+ * Common function to "import" Peer's offscreen Document Fragment to
+ * current DOM.
+ *
+ * Moves elements from offscreen Document Fragment referenced by the
+ * specified slot (usually, Peer's address) to the current DOM, actualy
+ * replacing DOM elements .
+ *
+ * If the specified slot is null (or undefined) the function Moves elements
+ * from the INITIAL offscreen Document Fragment instead.
+ *
+ * @param   {string}    slot      Document fragment slot (Peer's address) or null
+ */
+function xows_gui_peer_frag_import(slot)
+{
+  let clone = false;
+  if(!slot) {
+    slot = XOWS_GUI_FRAG_INIT;
+    clone = true;
+  }
+
+  if(!xows_doc_frag_db.has(slot)) {
+    xows_log(1,"gui_peer_frag_import","fragment doesn't exist",slot);
+    return;
+  }
+
+  // Import document elements from offscreen fragment
+  xows_doc_frag_import(slot, "chat_head", clone);
+  xows_doc_frag_import(slot, "chat_hist", clone);
+  xows_doc_frag_import(slot, "chat_panl", clone);
+  xows_doc_frag_import(slot, "room_head", clone);
+  xows_doc_frag_import(slot, "occu_list", clone);
+
+  // Import scroll parameters from offscreen
+  xows_doc_scroll_import(slot, "chat_main");
+}
+
+/**
+ * Common function to delete Peer's related offscreen element.
+ *
+ * @param   {string}    slot      Document fragment slot (Peer's address)
+ */
+function xows_gui_peer_frag_discard(slot)
+{
+  // Delete Document Fragment
+  xows_doc_frag_delete(slot);
+
+  // Delete Scroll parameters
+  xows_doc_scroll_delete(slot);
 }
 
 /**
@@ -469,46 +597,18 @@ function xows_gui_peer_doc_init(peer)
   if(xows_doc_frag_db.has(peer.addr))
     return;
 
-  // clone elements from initial offscreen slot
-  xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "chat_head");
-  xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "chat_hist");
-  xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "chat_panl");
-  if(peer.type === XOWS_PEER_ROOM) {  //< XOWS_PEER_ROOM
-    xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "room_head");
-    xows_doc_frag_clone(peer.addr, XOWS_GUI_FRAG_INIT, "occu_list");
-  }
+  // Clone elements from initial offscreen slot
+  xows_gui_peer_frag_new(peer.addr);
 
   // Signal first open by hidding chat history
-  //xows_gui_peer_doc(peer, "hist_ul").hidden = true;
-
-   // set chat title bar informations
-  xows_gui_peer_doc(peer, "chat_titl").innerText = peer.name;
-
-  const meta_inpt = xows_gui_peer_doc(peer, "meta_inpt");
-
-  if(peer.type === XOWS_PEER_ROOM) {  //< XOWS_PEER_ROOM
-    meta_inpt.innerText = peer.subj ? peer.subj : "";
-    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
-    // Cannot bookmark public rooms or already bookmarked
-    xows_gui_peer_doc(peer, "chat_bt_bkmk").hidden = (peer.book || peer.publ);
-    xows_gui_peer_doc(peer, "chat_bt_nick").hidden = false;
-    xows_gui_peer_doc(peer, "chat_bt_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
-    xows_gui_peer_doc(peer, "chat_bt_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
-  } else {
-    meta_inpt.innerText = peer.stat ? peer.stat : "";
-    xows_gui_peer_doc(peer, "chat_show").dataset.show = peer.show;
-    xows_gui_peer_doc(peer, "chat_addr").innerText = "("+peer.addr+")";
-    if(peer.type === XOWS_PEER_OCCU)
-      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
-  }
+  //xows_gui_peer_doc(peer,"hist_ul").hidden = true;
 
   // Set chat input placeholder
   const placeholder = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
   xows_gui_peer_doc(peer, "chat_inpt").setAttribute("placeholder",placeholder);
 
-  // Since DOM element's scroll parameters are not operables in offscreen, we
-  // create a dummy object to operate/save scroll in offscreen context
-  xows_gui_peer_scroll_db.set(peer.addr,{scrollTop:0,scrollHeight:0,clientHeight:0,scrollSaved:0});
+  // Set chat header bar informations
+  xows_gui_peer_chat_update(peer);
 
   // Set notification button
   xows_gui_chat_noti_update(peer);
@@ -535,28 +635,8 @@ function xows_gui_peer_doc_reset(peer)
  */
 function xows_gui_peer_doc_export(peer)
 {
-  if(!xows_doc_frag_db.has(peer.addr)) {
-    xows_log(1,"gui_peer_doc_export","offscreen document doesn't exist",peer.addr);
-    return;
-  }
-
-  // Save chat history scroll parameters
-  const chat_main = xows_doc("chat_main");
-
-  const param = xows_gui_peer_scroll_db.get(peer.addr);
-  param.scrollTop = chat_main.scrollTop;
-  param.scrollHeight = chat_main.scrollHeight;
-  param.clientHeight = chat_main.clientHeight;
-  param.scrollSaved = chat_main.scrollSaved || 0;
-
   // Export document elements to offscreen fragment
-  xows_doc_frag_export(peer.addr,"chat_head");
-  xows_doc_frag_export(peer.addr,"chat_hist");
-  xows_doc_frag_export(peer.addr,"chat_panl");
-  if(peer.type === XOWS_PEER_ROOM) {
-    xows_doc_frag_export(peer.addr,"room_head");
-    xows_doc_frag_export(peer.addr,"occu_list");
-  }
+  xows_gui_peer_frag_export(peer.addr);
 }
 
 /**
@@ -568,94 +648,86 @@ function xows_gui_peer_doc_import(peer)
 {
   if(peer) {
 
-    if(!xows_doc_frag_db.has(peer.addr)) {
-      xows_log(1,"gui_peer_doc_import","offscreen document doesn't exist",peer.addr);
-      return;
-    }
-
     // import document elements from offscreen fragment
-    xows_doc_frag_import(peer.addr, "chat_head");
-    xows_doc_frag_import(peer.addr, "chat_hist");
-    xows_doc_frag_import(peer.addr, "chat_panl");
-    if(peer.type === XOWS_PEER_ROOM) {
-      xows_doc_frag_import(peer.addr, "room_head");
-      xows_doc_frag_import(peer.addr, "occu_list");
-    }
+    xows_gui_peer_frag_import(peer.addr);
 
-    // Enable or disable Multimedia Call buttons
-    const in_call = (xows_wrtc_busy());
-    xows_gui_peer_doc(peer, "chat_bt_cala").disabled = in_call;
-    xows_gui_peer_doc(peer, "chat_bt_calv").disabled = in_call;
-
-    // Restore chat history with compensation in case of frame resize
-    const chat_main = xows_doc("chat_main");
-    chat_main.scrollTop = chat_main.scrollHeight - (chat_main.clientHeight + xows_gui_peer_scroll_db.get(peer.addr).scrollSaved);
+    // Update chat header bar informations
+    xows_gui_peer_chat_update(peer);
 
   } else {
+
     // restore (clone) from initial (empty) document elements
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_head", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_hist", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "chat_panl", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "room_head", true);
-    xows_doc_frag_import(XOWS_GUI_FRAG_INIT, "occu_list", true);
+    xows_gui_peer_frag_import(null);
   }
 }
 
 /**
  * Reassign saved Peer offscreen elements to another reference
  *
- * @param   {string}    src       Reassing source reference
- * @param   {object}    peer      Peer object
+ * @param   {object}    peer      Peer object with updated address
+ * @param   {string}    slot      Previous Peer's slot (address) to be reassigned
  */
-function xows_gui_peer_doc_reassign(src, peer)
+function xows_gui_peer_doc_reassign(peer, slot)
 {
-  if(!xows_doc_frag_db.has(src)) {
-    xows_log(1,"gui_peer_doc_reassign","offscreen document doesn't exist",src);
-    return;
-  }
-
-  if(peer === xows_gui_peer) {
-
-    // Create new scroll dummy object from current chat window
-    const chat_main = xows_doc("chat_main");
-    xows_gui_peer_scroll_db.set(peer.addr,{
-      scrollTop:chat_main.scrollTop,
-      scrollHeight:chat_main.scrollHeight,
-      clientHeight:chat_main.clientHeight,
-      scrollSaved:chat_main.scrollSaved || 0});
-
+  if(peer === xows_gui_peer)
     // Move document elements to offscreen fragment
-    xows_doc_frag_export(src, "chat_head");
-    xows_doc_frag_export(src, "chat_hist");
-    xows_doc_frag_export(src, "chat_panl");
-    if(peer.type === XOWS_PEER_ROOM) {
-      xows_doc_frag_export(src, "room_head");
-      xows_doc_frag_export(src, "occu_list");
-    }
-
-  } else {
-
-    // Copy scroll dummy object from source reference
-    const scroll = xows_gui_peer_scroll_db.get(src);
-    xows_gui_peer_scroll_db.set(peer.addr,scroll);
-  }
+    xows_gui_peer_frag_export(slot);
 
   // clone elements from source offscreen slot
-  xows_doc_frag_clone(peer.addr, src, "chat_head");
-  xows_doc_frag_clone(peer.addr, src, "chat_hist");
-  xows_doc_frag_clone(peer.addr, src, "chat_panl");
-  if(peer.type === XOWS_PEER_ROOM) {  //< XOWS_PEER_ROOM
-    xows_doc_frag_clone(peer.addr, src, "room_head");
-    xows_doc_frag_clone(peer.addr, src, "occu_list");
-  }
+  xows_gui_peer_frag_new(peer.addr, slot);
 
-  // Delete reassigned elements
-  xows_doc_frag_db.delete(src);
-  xows_gui_peer_scroll_db.delete(src);
+  // Delete previous offscreen elements
+  xows_gui_peer_frag_discard(slot);
 
-  if(peer === xows_gui_peer) {
+  if(peer === xows_gui_peer)
     // Bring back Peer documents with new reference
     xows_gui_peer_doc_import(peer);
+}
+
+/**
+ * Update Peer's chat frame and Occupant list elements heads according
+ * Peer data.
+ *
+ * @param   {object}    peer      Peer object
+ */
+function xows_gui_peer_chat_update(peer)
+{
+  // Update chat title bar
+  xows_gui_peer_doc(peer, "chat_titl").innerText = peer.name;
+
+  const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
+
+  if(peer.type === XOWS_PEER_ROOM) {
+    meta_inpt.innerText = peer.subj;
+    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
+    xows_gui_peer_doc(peer, "chat_bt_bkmk").hidden = (peer.book || peer.publ);
+    xows_gui_peer_doc(peer, "chat_bt_nick").hidden = false;
+    xows_gui_peer_doc(peer, "chat_bt_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
+    xows_gui_peer_doc(peer, "chat_bt_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
+  } else {
+    meta_inpt.innerText = peer.stat;
+    xows_gui_peer_doc(peer, "chat_show").dataset.show = peer.show;
+    // Show or hide Multimedia Call buttons
+    const has_ices = xows_cli_external_has("stun", "turn");
+    xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
+    xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
+    if(peer.type === XOWS_PEER_OCCU) {
+      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
+      // Occupant may also change address (change nick)
+      xows_gui_peer_doc(peer, "chat_addr").innerText = "("+peer.addr+")";
+    }
+  }
+
+  // Enable or disable Multimedia Call buttons
+  const in_call = (xows_wrtc_busy());
+  xows_gui_peer_doc(peer, "chat_bt_cala").disabled = in_call;
+  xows_gui_peer_doc(peer, "chat_bt_calv").disabled = in_call;
+
+  // If Peer is a Room alos update Occupant List header bar
+  if(peer.type === XOWS_PEER_ROOM) {
+    // Occupants configuration button
+    const occu_bt_cnfg = xows_gui_peer_doc(peer, "occu_bt_cnfg");
+    occu_bt_cnfg.hidden = (peer.affi < XOWS_AFFI_ADMN);
   }
 }
 
@@ -671,11 +743,7 @@ function xows_gui_peer_doc_reassign(src, peer)
 function xows_gui_init()
 {
   // Create intial offscreen slot from current document
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_head", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_hist", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_panl", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "room_head", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
+  xows_gui_peer_frag_init();
 
   // The DOM is now to its default state
   xows_gui_clean = true;
@@ -1995,8 +2063,7 @@ function xows_gui_cli_onroomjoin(room, code, error)
   }
 
   // Update privileges related GUI elements
-  xows_gui_room_head_update(room);
-  xows_gui_chat_head_update(room);
+  xows_gui_peer_chat_update(room);
 
   // Check whether Room is awaiting initial configuration
   if(room.init)
@@ -2587,7 +2654,7 @@ function xows_gui_cli_oncontpush(cont, text)
       // Update the existing contact <li-peer> element according template
       xows_tpl_update_rost_cont(li_peer, cont, text);
       // Update chat title bar
-      xows_gui_chat_head_update(cont);
+      xows_gui_peer_chat_update(cont);
       // Update message history
       xows_gui_hist_update(cont, cont);
       // If contact goes offline, ensure chatstat resets
@@ -2742,7 +2809,7 @@ function xows_gui_cli_onroompush(room)
     // Update room <li_peer> element according template
     xows_tpl_update_rost_room(li_peer, room);
     // Update chat title bar
-    xows_gui_chat_head_update(room);
+    xows_gui_peer_chat_update(room);
   } else {
     // Append new instance of room <li_peer> from template to roster <ul>
     li_peer = xows_tpl_spawn_rost_room(room);
@@ -2844,7 +2911,7 @@ function xows_gui_cli_onprivpush(occu, mucx)
       if(li_peer) li_peer.dataset.id = occu.addr;
 
       // We also need to reassing offscreen document with new Occupant address
-      xows_gui_peer_doc_reassign(mucx.prev, occu);
+      xows_gui_peer_doc_reassign(occu, mucx.prev);
     }
   }
 
@@ -2853,7 +2920,7 @@ function xows_gui_cli_onprivpush(occu, mucx)
     // Update occupant <li_peer> element according template
     xows_tpl_update_room_occu(li_peer, occu);
     // Update chat title bar
-    xows_gui_chat_head_update(occu);
+    xows_gui_peer_chat_update(occu);
     // Update message history
     xows_gui_hist_update(occu, occu);
 
@@ -2899,7 +2966,7 @@ function xows_gui_cli_onprivrem(occu)
     xows_tpl_update_room_occu(li_peer, occu);
 
     // Update chat title bar
-    xows_gui_chat_head_update(occu);
+    xows_gui_peer_chat_update(occu);
 
     // Add message to history
     const hist_ul = xows_gui_peer_doc(occu, "hist_ul");
@@ -3091,40 +3158,6 @@ function xows_gui_chat_noti_update(peer)
 
   // Toggle chat action button class
   chat_bt_noti.classList.toggle("DISABLED", !notify);
-}
-
-/**
- * Chat header bar informations update
- *
- * @param   {object}    peer      Peer object, either Contact or Room
- */
-function xows_gui_chat_head_update(peer)
-{
-  // Update chat title bar
-  xows_gui_peer_doc(peer, "chat_titl").innerText = peer.name;
-
-  const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
-
-  if(peer.type === XOWS_PEER_ROOM) {
-    meta_inpt.innerText = peer.subj;
-    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
-    xows_gui_peer_doc(peer, "chat_bt_bkmk").hidden = (peer.book || peer.publ);
-    xows_gui_peer_doc(peer, "chat_bt_nick").hidden = false;
-    xows_gui_peer_doc(peer, "chat_bt_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
-    xows_gui_peer_doc(peer, "chat_bt_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
-  } else {
-    meta_inpt.innerText = peer.stat;
-    xows_gui_peer_doc(peer, "chat_show").dataset.show = peer.show;
-    // Show or hide Multimedia Call buttons
-    const has_ices = xows_cli_external_has("stun", "turn");
-    xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
-    xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
-    if(peer.type === XOWS_PEER_OCCU) {
-      xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
-      // Occupant may also change address (change nick)
-      xows_gui_peer_doc(peer, "chat_addr").innerText = "("+peer.addr+")";
-    }
-  }
 }
 
 /**
@@ -4155,14 +4188,33 @@ function xows_gui_cli_oncallend(peer, sid, reason)
  * -------------------------------------------------------------------*/
 
 /**
+ * Callback function to handle chat frame resizing
+ */
+function xows_gui_chat_onresize()
+{
+  if(xows_gui_peer)
+    xows_gui_peer_scroll_keep(xows_gui_peer);
+}
+
+/**
  * Callback function to handle user scroll the chat history window
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_chat_main_onscroll(event)
+function xows_gui_chat_onscroll(event)
 {
   if(!xows_gui_peer)
     return;
+
+  console.warn("gui_chat_main_onscroll: xows_gui_peer_scroll_kept=",xows_gui_peer_scroll_kept);
+
+  // Check whether the "onscroll" event was fired by an automatic scroll
+  // position adjustement, in this case we ignore the event as we are only
+  // intereseted by scroll user.
+  if(xows_gui_peer_scroll_kept) {
+    xows_gui_peer_scroll_kept = false;
+    return;
+  }
 
   const chat_main = xows_doc("chat_main");
 
@@ -4181,7 +4233,7 @@ function xows_gui_chat_main_onscroll(event)
   }
 
   // If scroll is enough far from bottom, show the "Back to recent" banner
-  if(chat_main.scrollSaved > chat_main.clientHeight)
+  if(chat_main.scrollBottom > chat_main.clientHeight)
     xows_gui_chat_nav_open(xows_gui_peer);
 
   const hist_end = xows_doc("hist_end");
@@ -4189,13 +4241,13 @@ function xows_gui_chat_main_onscroll(event)
   // Check whether we have cropped history
   if(!hist_end.hidden) {
     // Check whether the scroll is at bottom of frame
-    if(chat_main.scrollSaved < hist_end.offsetHeight * 0.8) {
+    if(chat_main.scrollBottom < hist_end.offsetHeight * 0.8) {
       // Query archive for current chat contact
       xows_gui_mam_query(xows_gui_peer, true, xows_gui_hist_page);
     }
   } else {
     // Check whether the scroll is at bottom of frame
-    if(chat_main.scrollSaved < 50) {
+    if(chat_main.scrollBottom < 50) {
       // Hide the "Back to recent" banner/button
       xows_gui_chat_nav_close(xows_gui_peer);
     }
@@ -4399,18 +4451,6 @@ function xows_gui_mesg_trsh_valid(li_msg)
 
   // Send message retraction
   if(usid) xows_cli_retract_send(xows_gui_peer, usid);
-}
-
-/**
- * Callback function to handle chat frame resizing
- *
- * @param   {object[]}  entries   Array of ResizeObserverEntry entries
- * @param   {object}    observer  Reference to the ResizeObserver
- */
-function xows_gui_chat_main_onresize(entries, observer)
-{
-  if(xows_gui_peer)
-    xows_gui_peer_scroll_adjust(xows_gui_peer);
 }
 
 /* -------------------------------------------------------------------
@@ -4887,7 +4927,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   } else {
     // Adjust scroll position from bottom once top of history was removed
     // si we can save it at proper position later
-    xows_gui_peer_scroll_adjust(peer);
+    xows_gui_peer_scroll_keep(peer);
   }
 
   let li_rep, li_rpl, li_prv, added = 0;
@@ -4967,7 +5007,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   // Applying scroll sorcery to keep scroll aligned with visible content
   if(prepend) {
     // Ensure scroll is compensated after content heigth changed
-    xows_gui_peer_scroll_adjust(peer);
+    xows_gui_peer_scroll_keep(peer);
   } else {
     // Save current offset from bottom to properly align it later
     xows_gui_peer_scroll_save(peer);
@@ -5570,19 +5610,6 @@ function xows_gui_cli_onchatstate(peer, chat)
  * Main Screen - Room Occupants
  *
  * -------------------------------------------------------------------*/
-/**
- * Enable or disable UI elements according Room role and affiliation
- *
- * @param   {object}    room      Room object
- * @param   {object}   [occu]     Optional Occupant object
- */
-function xows_gui_room_head_update(room, occu)
-{
-  // Occupants configuration button
-  const occu_bt_cnfg = xows_gui_peer_doc(room,"occu_bt_cnfg");
-  occu_bt_cnfg.hidden = (room.affi < XOWS_AFFI_ADMN);
-}
-
 /* -------------------------------------------------------------------
  *
  * Main Screen - Room Occupants - Header
@@ -5662,14 +5689,6 @@ function xows_gui_cli_onoccupush(occu, mucx)
   xows_log(2,"gui_cli_onoccupush","push occupant","room="+occu.room.addr);
 
   if(mucx) {
-    // checks whether we have a special status code with this occupant
-    if(mucx.code.includes(110)) { //< Self presence update
-
-      // Update privileges related GUI elements
-      xows_gui_room_head_update(room);
-      xows_gui_chat_head_update(room);
-    }
-
     // check for nicname change
     if(mucx.code.includes(303)) {
 
@@ -5690,6 +5709,13 @@ function xows_gui_cli_onoccupush(occu, mucx)
 
       // Change <li-peer> element id
       if(li_peer) li_peer.id = occu.addr;
+    }
+
+    // checks whether we have a special status code with this occupant
+    if(mucx.code.includes(110)) { //< Self presence update
+
+      // Update privileges related GUI elements
+      xows_gui_peer_chat_update(room);
     }
   }
 

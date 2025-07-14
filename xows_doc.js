@@ -49,9 +49,16 @@ function xows_doc(id)
 }
 
 /**
- * Object that stores backed documents Fragments
+ * Object that stores offscreen Documents Fragments
  */
 const xows_doc_frag_db = new Map();
+
+
+/**
+ * Object that stores offscreen Scroll Parameters
+ */
+const xows_doc_scroll_db = new Map();
+
 
 /**
  * Global reference to document's Selection object
@@ -344,6 +351,155 @@ function xows_doc_frag_element_find(slot, element, id)
 }
 
 /**
+ * Create new offscreen scroll parameters.
+ *
+ * @param   {string}    slot      Offscreen slot identifier
+ */
+function xows_doc_scroll_init(slot)
+{
+  xows_doc_scroll_db.set(slot,{
+    scrollTop    : 0,
+    scrollHeight : 0,
+    clientHeight : 0,
+    scrollBottom : 0 }); //< ad-hoc porperty
+}
+
+/**
+ * Get offscreen scroll parameters.
+ *
+ * @param   {string}    slot      Offscreen slot identifier
+ *
+ * @return  {object}    Offscreen scroll parameters
+ */
+function xows_doc_scroll_get(slot)
+{
+  return xows_doc_scroll_db.get(slot);
+}
+
+/**
+ * Save specified element scroll parameters to offscreen slot.
+ *
+ * @param   {string}    slot      Destination offscreen slot
+ * @param   {string}    id        DOM element Id to be saved
+ */
+function xows_doc_scroll_export(slot, id)
+{
+  const s = document.getElementById(id);
+
+  xows_doc_scroll_db.set(slot,{
+    scrollTop    : s.scrollTop,
+    scrollHeight : s.scrollHeight,
+    clientHeight : s.clientHeight,
+    scrollBottom : s.scrollBottom || 0 }); //< ad-hoc porperty
+}
+
+/**
+ * Apply saved scroll parameters to the specified DOM element.
+ *
+ * @param   {string}    slot      Source offscreen slot
+ * @param   {string}    id        DOM element Id to be updated
+ */
+function xows_doc_scroll_import(slot, id)
+{
+  const d = document.getElementById(id);
+  const s = xows_doc_scroll_db.get(slot);
+
+  d.scrollTop = s.scrollTop;
+  d.scrollHeight = s.scrollHeight;
+  d.clientHeight = s.clientHeight;
+  d.scrollBottom = s.scrollBottom; //< Ad-hoc property for proper restoration
+}
+
+/**
+ * Copy offscreen scroll parameters from one slot to another
+ *
+ * @param   {string}    dst       Destination offscreen slot
+ * @param   {string}    src       Source offscreen slot
+ */
+function xows_doc_scroll_copy(dst, src)
+{
+  xows_doc_scroll_db.set(dst, xows_doc_scroll_db.get(src));
+}
+
+/**
+ * Delete offscreen scroll parameters.
+ *
+ * @param   {string}    slot      Offscreen slot identifier
+ */
+function xows_doc_scroll_delete(slot)
+{
+  return xows_doc_scroll_db.delete(slot);
+}
+
+/**
+ * Import offscreen scroll parameters to the specified DOM element, adjusting
+ * element's scroll position against the bottom of scrollable content,
+ * compensating any changes of client area or scrollable content size.
+ *
+ * @param   {string}    slot      Source offscreen slot
+ * @param   {string}    id        DOM element Id to be updated
+ */
+function xows_doc_scroll_import(slot, id)
+{
+  const d = document.getElementById(id);
+
+  // Use ad-hoc "scrollBottom" property to adjust scroll position
+  // relative to the bottom of the scrollable content.
+  d.scrollTop = d.scrollHeight - (d.clientHeight + xows_doc_scroll_db.get(slot).scrollBottom);
+}
+
+/**
+ * Calculates and store the element's scroll position relative to the bottom
+ * of the scrollable content allowing later scroll adjustment relative to the
+ * bottom of the scrollable content.
+ *
+ * @param   {element|object}  element  DOM element or object to save
+ * @param   {boolean}         force    Force to save even "kept" flag is set
+ */
+function xows_doc_scroll_save(element, force)
+{
+  // DOM stock scroll parameters are designed in the perspective of TOP-to-DOWN
+  // scroll, keeping the scroll position relative to the TOP of the scrollable
+  // content in case of client area or scrollable content size changes.
+  //
+  // This is a problem in some contexts (for instance, in chat history), where
+  // scroll mechanism is usually reversed (DOWN-to-TOP) and where in case of
+  // client area or scrollable content size change, the scroll position should
+  // be kept reltative to the scrollable content's BOTTOM.
+  //
+  // As workaround, we create and maintain an ad-hoc "scrollBottom" property
+  // in the scrollable element's parent, which is the calculated scroll position
+  // relative to the BOTTOM of scrollable content. We then can use this
+  // parameter to do the required math to counter the Browser defaut behavior.
+
+  // Save parameters
+  element.scrollBottom = element.scrollHeight - (element.clientHeight + element.scrollTop);
+}
+
+/**
+ * Adjusts the element's scroll to compensate client area or scrollable content
+ * size change, in the way to keep it at same position relative to scrollable
+ * content's bottom.
+ *
+ * @param   {element|object}  element  DOM element or object to adjust
+ */
+function xows_doc_scroll_keep(element)
+{
+  element.scrollTop = element.scrollHeight - (element.clientHeight + (element.scrollBottom || 0));
+}
+
+/**
+ * Moves the element's scroll to the bottom of the scrollable content.
+ *
+ * @param   {element|object}  element  DOM element or object to adjust
+ */
+function xows_doc_scroll_down(element)
+{
+  element.scrollTop = (element.scrollHeight - element.clientHeight);
+  element.scrollBottom = 0;
+}
+
+/**
  * Set edition caret either before or after the specified node
  *
  * @param   {element}   node      Reference node to position caret
@@ -406,13 +562,10 @@ function xows_doc_init(onready)
   // Chat header
   xows_doc_listener_add(xows_doc("chat_head"),  "click",    xows_gui_chat_head_onclick);
   // Chat main
-  xows_doc_listener_add(xows_doc("chat_main"),  "scroll",   xows_gui_chat_main_onscroll);
+  xows_doc_listener_add(xows_doc("chat_main"),  "scroll",   xows_gui_chat_onscroll);
+
   xows_doc_listener_add(xows_doc("chat_hist"),  "click",    xows_gui_chat_hist_onclick);
   xows_doc_listener_add(xows_doc("chat_hist"),  "touchstart", xows_gui_chat_hist_onclick);
-  // Add Resize observer
-  const observer = new ResizeObserver(xows_gui_chat_main_onresize);
-  observer.observe(xows_doc("chat_main"));
-  observer.observe(xows_doc("chat_hist"));
   // Chat foot
   const chat_panl = xows_doc("chat_panl");
   xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
@@ -449,6 +602,14 @@ function xows_doc_init(onready)
   xows_doc_listener_add(window,                 "unload",    xows_cli_flyyoufools);
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window,                 "popstate",  xows_gui_nav_onpopstate);
+  // Set event listener to handle chat scroll moving on resize
+  xows_doc_listener_add(window,                 "resize",   xows_gui_chat_onresize);
+
+  // Add Resize observer to handle chat scroll moving on resize, this on is
+  // required in addition to "resize" trigger to handle case where the chat_main
+  // element is resized by CSS, typically, when the Jingle Call frame is displayed
+  const observer = new ResizeObserver(xows_gui_chat_onresize);
+  observer.observe(xows_doc("chat_main"));
 
   // Set template callback
   xows_tpl_set_callback("embload",  xows_doc_media_onload);
@@ -475,7 +636,7 @@ function xows_doc_media_onload(media)
   media.parentNode.classList.remove("LOADING");
 
   // Force adjust scroll
-  xows_gui_chat_main_onresize();
+  xows_gui_chat_onresize();
 }
 
 /**
@@ -1273,8 +1434,10 @@ function xows_doc_menu_close()
 
     // Remove event listener from menu drop element
     xows_doc_listener_rem(param.drop, "click", param.onclick);
-
   }
+
+  if(param.onclose)
+    param.onclose();
 
   // Unfocus button element
   if(param.button)
@@ -1283,12 +1446,9 @@ function xows_doc_menu_close()
   // hide the 'void' screen
   xows_doc_hide("scr_void");
 
-  if(param.onclose)
-    param.onclose();
-
   // Reset parameters
-  param.button = null;
   param.drop = null;
+  param.button = null;
   param.onclick = null;
   param.onclose = null;
 }
