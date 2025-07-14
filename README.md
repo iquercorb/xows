@@ -44,9 +44,6 @@ Things that still to be Implemented/Fixed/Tested
 Screenshots
 ----------------------------------------------------------------------------------------
 
-The following screenshots are not up-to-date and do not reflect exactly the current 
-stage of GUI.
-
 ![Multi-User Chat](snapshots/01.png)
 
 ![Private Message and Notification](snapshots/02.png)
