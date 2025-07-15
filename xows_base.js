@@ -1150,7 +1150,6 @@ function xows_gen_avatar(size, image, seed)
 
       // Get pseudo-random color from seed
       const sc = Math.abs(seed) % 14;
-      console.log("AVATAR COLOR INDEX:"+sc);
       ct.fillStyle = xows_avat_pallete[sc];
       ct.rect(0, 0, size, size);
       ct.fill();

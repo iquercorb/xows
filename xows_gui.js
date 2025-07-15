@@ -348,8 +348,6 @@ function xows_gui_peer_hist_reload(peer)
  */
 function xows_gui_peer_scroll_save(peer)
 {
-  console.warn("gui_peer_scroll_save: xows_gui_peer_scroll_kept=",xows_gui_peer_scroll_kept);
-
   if(peer === xows_gui_peer) {
     xows_doc_scroll_save(document.getElementById("chat_main"));
   } else {
@@ -386,8 +384,6 @@ function xows_gui_peer_scroll_get(peer)
  */
 function xows_gui_peer_scroll_down(peer)
 {
-  console.warn("gui_peer_scroll_down: xows_gui_peer_scroll_kept=",xows_gui_peer_scroll_kept);
-
   if(xows_gui_peer_doc(peer,"hist_end").hidden) {
 
     if(peer === xows_gui_peer) {
@@ -420,8 +416,6 @@ let xows_gui_peer_scroll_kept = false;
  */
 function xows_gui_peer_scroll_keep(peer)
 {
-  console.log("gui_peer_scroll_keep");
-
   if(peer === xows_gui_peer) {
 
     // Modifying scroll parameter programmatically triggers an "onscroll" event
@@ -4205,8 +4199,6 @@ function xows_gui_chat_onscroll(event)
 {
   if(!xows_gui_peer)
     return;
-
-  console.warn("gui_chat_main_onscroll: xows_gui_peer_scroll_kept=",xows_gui_peer_scroll_kept);
 
   // Check whether the "onscroll" event was fired by an automatic scroll
   // position adjustement, in this case we ignore the event as we are only
