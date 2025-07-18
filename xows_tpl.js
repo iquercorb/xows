@@ -37,6 +37,11 @@
  *                      DOM Templates API Module
  *
  * ------------------------------------------------------------------ */
+
+const XOWS_TPL_NONE       = 0;
+const XOWS_TPL_IMPORT     = 1;
+const XOWS_TPL_INSTANCED  = 2;
+
 /**
  * Private parser for HTML parsing from string
  */
@@ -212,12 +217,28 @@ function xows_tpl_emer(event) {xows_tpl_fw_onemberror(event);};
  * Launch the download of the specified template file
  *
  * @param   {string}    name      Template name to retreive file path
- * @param   {boolean}   isinst    Indicate whether is instantiable
+ * @param   {number}    type      Template type (instanced or import)
  */
-function xows_tpl_template_load(name, isinst)
+function xows_tpl_template_load(name, type)
 {
   // build download path URL
-  let path = xows_options.root+"/themes/"+xows_tpl_theme+"/"+name+".html";
+  let path = xows_options.root+"/themes/"+xows_tpl_theme;
+
+  // Select proper subfolder according template type
+  switch(type)
+  {
+  case XOWS_TPL_IMPORT:
+    path += "/import/";
+    break;
+  case XOWS_TPL_INSTANCED:
+    path += "/instanced/";
+    break;
+  default:
+    path += "/";
+  }
+
+  path += name+".html";
+
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
   if(xows_options.uncache) {
@@ -226,11 +247,11 @@ function xows_tpl_template_load(name, isinst)
   // Launch request to download template file
   const xhr = new XMLHttpRequest();
   xhr.open("GET", path, true);
-  xhr._isinst = isinst; //< set ad hoc member
+  xhr._type = type; //< set ad hoc member
   xhr.onreadystatechange = function() {
     if(this.readyState === 4)
       if(this.status === 200) {
-        xows_tpl_template_parse(this.responseText, this.responseURL, this._isinst);
+        xows_tpl_template_parse(this.responseText, this.responseURL, this._type);
       } else {
         xows_init_fatal(this.status, this.responseURL);
       }
@@ -282,9 +303,9 @@ function xows_tpl_template_done()
  *
  * @param   {string}    html      HTML data to parse
  * @param   {string}    path      File URL/Path the data come from
- * @param   {boolean}   isinst    Indicate whether is instantiable
+ * @param   {number}    type      Template type (instanced or import)
  */
-function xows_tpl_template_parse(html, path, isinst, isinst2)
+function xows_tpl_template_parse(html, path, type)
 {
   xows_log(2,"tpl_template_parse","parsing template",path);
 
@@ -305,7 +326,7 @@ function xows_tpl_template_parse(html, path, isinst, isinst2)
   const stat_load = [];
   const inst_load = [];
 
-  if(!isinst) {
+  if(type !== XOWS_TPL_INSTANCED) {
     // Search for element with "XOWS_TPL_IMPORT" attribute, meaning
     // its inner content must be loaded from another template file
     nodes = template.querySelectorAll("[XOWS_TPL_IMPORT]");
@@ -337,7 +358,7 @@ function xows_tpl_template_parse(html, path, isinst, isinst2)
   // Extract file name from path
   let name = path.substring(path.lastIndexOf("/")+1).split(".")[0];
 
-  if(isinst) {
+  if(type === XOWS_TPL_INSTANCED) {
     if(template.firstChild) {
       // Store instantiable data
       xows_tpl_model[name] = document.createDocumentFragment();
@@ -357,11 +378,11 @@ function xows_tpl_template_parse(html, path, isinst, isinst2)
     }
     // Start loading the needed static template files
     i = stat_load.length;
-    while(i--) xows_tpl_template_load(stat_load[i], false);
+    while(i--) xows_tpl_template_load(stat_load[i], XOWS_TPL_IMPORT);
   }
   // Start loading the needed instantiable template files
   i = inst_load.length;
-  while(i--) xows_tpl_template_load(inst_load[i], true);
+  while(i--) xows_tpl_template_load(inst_load[i], XOWS_TPL_INSTANCED);
 
   // Decrease remain count
   xows_tpl_template_parse_remain--;
@@ -384,6 +405,7 @@ function xows_tpl_init(onready)
 {
   // Set the onready callback
   if(onready) xows_tpl_fw_onready = onready;
+
   // Change default root and theme folder if requested
   if(xows_options.root)
     xows_options.root = xows_options.root;
@@ -1688,20 +1710,18 @@ function xows_tpl_admn_memb_update(li, affi, aref)
  * from existing template.
  *
  * @param   {object}    peer      Peer object
- * @param   {string}    jid       Call Peer full JID
  *
  * @return  {element}   Audio Peer <strm-audio> Element
  */
-function xows_tpl_spawn_stream_audio(peer, jid)
+function xows_tpl_spawn_stream_audio(peer)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["strm-audio"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.dataset.from = jid;
+  inst.dataset.peer = xows_cli_peer_iden(peer);
   inst.title = peer.name;
   const strm_avat = inst.querySelector("STRM-AVAT");
-  //strm_avat.dataset.jid = jid;
   strm_avat.className = xows_tpl_spawn_avat_cls(peer);
 
   return inst;
@@ -1712,17 +1732,16 @@ function xows_tpl_spawn_stream_audio(peer, jid)
  * from existing template.
  *
  * @param   {object}    peer      Peer object
- * @param   {string}    jid       Call Peer full JID
  *
  * @return  {element}   Video Peer <strm-video> Element
  */
-function xows_tpl_spawn_stream_video(peer, jid)
+function xows_tpl_spawn_stream_video(peer)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["strm-video"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.dataset.from = jid;
+  inst.dataset.peer = xows_cli_peer_iden(peer);
   inst.title = peer.name;
 
   return inst;

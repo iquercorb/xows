@@ -120,6 +120,7 @@
   <!-- Middle Collumn (Chat Window) -->
   <col-midd id="main_colc">
     <col-frame hidden id="chat_fram">
+      <col-load id="chat_load" class="LOADING"></col-load>
       <!-- Head Frame (Chat Title bar) -->
       <row-head id="chat_head">
         <head-info>
@@ -140,27 +141,29 @@
           <button id="chat_bt_occu" title="${'Channel occupants list'}"></button>
         </head-acts>
       </row-head>
+      
       <!-- Half Frame (Chat Multimedia session) -->
-      <div id="chat_call">
+      <div hidden id="call_view">
         <div id="call_grid">
           <strm-audio id="strm-audio" XOWS_TPL_INSTANCED></strm-audio>
           <strm-video id="strm-video" XOWS_TPL_INSTANCED></strm-video>
         </div>
         <div id="call_menu">
-          <call-volum>
-            <button id="call_bt_spk" title="${'Mute or unmute sound'}"></button>
-            <input id="call_in_vol" type="range" min="0" max="100" value="50" title="${'Volume'}">
-          </call-volum>
-          <call-acts>
-            <button id="call_bt_cam" title="${'Enable or disable the camera'}"></button>
-            <button id="call_bt_mic" title="${'Mute or unmute the microphone'}"></button>
-            <button id="call_bt_hup" title="${'Hang up'}"></button>
-          </call-acts>
-          <call-geom>
-            <button id="call_bt_geo" title="${'Expand/Reduce'}"></button>
-          </call-geom>
+          <div class="call-volum">
+            <button id="call_spkr" title="${'Mute or unmute sound'}"></button>
+            <input id="call_volu" type="range" min="0" max="100" value="50" title="${'Volume'}">
+          </div>
+          <div class="call-acts">
+            <button id="call_came" title="${'Enable or disable the camera'}"></button>
+            <button id="call_micr" title="${'Mute or unmute the microphone'}"></button>
+            <button id="call_hgup" title="${'Hang up'}"></button>
+          </div>
+          <div class="call-geom">
+            <button id="call_expd" title="${'Expand/Reduce'}"></button>
+          </div>
         </div>
       </div>
+      
       <!-- Main Frame (Chat Messages history) -->
       <row-main id="chat_main">
         <!-- Chat History  -->
@@ -171,20 +174,10 @@
             <li-mesg id="hist-mesg" XOWS_TPL_INSTANCED></li-mesg>
             <li-mesg id="hist-null" XOWS_TPL_INSTANCED></li-mesg> <!-- Special Null dummy message -->
           </ul>
-          <hist-bound hidden id="hist_end"></hist-bound>
-          <!-- Chat History - Call Signaling Dialog -->
-          <div hidden id="hist_ring" data-type="">
-            <ring-icon class="CALL-RING"></ring-icon>
-            <ring-text>${'Incoming call...'}</ring-text>
-            <ring-acts>
-              <button id="ring_bt_pkup" title="${'Accept call'}"></button>
-              <button id="ring_bt_deny" title="${'Reject call'}"></button>
-              <btn-close hidden id="ring_bt_clos" title="${'Close'}"></btn-close>
-            </ring-acts>
-          </div>
-          <col-load id="chat_load" class="LOADING"></col-load>
+          <!-- DEPRECATED <hist-bound hidden id="hist_end"></hist-bound> -->
         </div>
-        <!-- Chat Upload Progress -->
+        
+        <!-- Chat History - Upload Progress -->
         <div hidden id="hist_upld">
           <section>
             <h3>${'Uploading file'}</h3>
@@ -197,6 +190,18 @@
             <btn-close id="upld_exit"></btn-close>
           </fieldset>
         </div>
+        
+        <!-- Chat History - Call Signaling Dialog -->
+        <div hidden id="call_ring" data-type="">
+          <ring-icon class="CALL-RING"></ring-icon>
+          <ring-text>${'Incoming call...'}</ring-text>
+          <ring-acts>
+            <button id="ring_bt_pkup" title="${'Accept call'}"></button>
+            <button id="ring_bt_deny" title="${'Reject call'}"></button>
+            <btn-close id="ring_bt_clos" title="${'Close'}"></btn-close>
+          </ring-acts>
+        </div>
+        
       </row-main>
       <!-- Foot Frame (Chat Input Panel) -->
       <row-foot id="chat_foot">
@@ -206,7 +211,7 @@
         </aside>
         <div id="chat_panl">
           <div hidden id="chat_nav">
-            ${'Back to recent messages'}
+            <span id="nav_text" data-back="${'Back to recent messages'}" data-unrd="${'New unread messages'}" data-ring="${'New incomming call'}"></span>
           </div>
           <div hidden id="chat_rply" data-id="" data-to="">
             ${'Reply to'}<span id="rply_name"></span>
