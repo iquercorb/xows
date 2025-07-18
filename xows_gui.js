@@ -602,6 +602,11 @@ function xows_gui_peer_doc_import(peer)
     const hist_upld = xows_doc("hist_upld");
     if(!hist_upld.hidden) xows_doc_listener_add(hist_upld, "click", xows_gui_hist_upld_onclick);
 
+    if(!xows_doc("call_view").hidden) {
+      xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_view_onclick);
+      xows_doc_listener_add(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
+    }
+
     const chat_panl = xows_doc("chat_panl");
     xows_doc_listener_add(chat_panl, "click", xows_gui_chat_panl_onclick);
     xows_doc_listener_add(chat_panl, "input", xows_gui_chat_inpt_oninput);
@@ -3463,10 +3468,10 @@ function xows_gui_call_view_open(peer)
       xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_view_onclick);
       xows_doc_listener_add(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
     }
-  }
 
-  // Show Call view
-  call_view.hidden = false;
+    // Show Call view
+    call_view.hidden = false;
+  }
 }
 
 /**
@@ -3788,7 +3793,8 @@ function xows_gui_call_ring_close(peer)
   const call_ring = xows_gui_peer_doc(peer,"call_ring");
 
   // Remove event listener
-  xows_doc_listener_rem(call_ring, "click", xows_gui_call_ring_onclick);
+  if(peer === xows_gui_peer)
+    xows_doc_listener_rem(call_ring, "click", xows_gui_call_ring_onclick);
 
   // Hide the dialog
   call_ring.hidden = true;
