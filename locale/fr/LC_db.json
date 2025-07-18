@@ -193,13 +193,13 @@
 
   "Nickname for":
   "Pseudonyme pour",
-  
+
   "Specify your new nickname for this Channel.":
   "Spécifiez votre nouveau pseudonyme pour ce Salon",
-  
+
   "Enter a nickname...":
   "Entrez un pseudonyme...",
-  
+
   "Video call":
   "Appel vidéo",
 
@@ -208,13 +208,13 @@
 
   "Add Channel to Bookmarks":
   "Ajouter le Salon aux Favoris",
-  
+
   "Change nickname":
   "Changer de pseudonyme",
-  
+
   "Edit Channel topic":
   "Modifier le sujet du Salon",
-  
+
   "Enable notifications":
   "Activer les notifications",
 
@@ -229,6 +229,9 @@
 
   "New unread messages":
   "Nouveaux messages non lus",
+
+  "New incomming call":
+  "Nouvel appel entrant",
 
   "Upload a file":
   "Envoyer un fichier",
@@ -274,7 +277,7 @@
 
   "Role in Channel":
   "Rôle dans le Salon",
-  
+
   "Occupant options":
   "Options de l'occupant",
 
@@ -559,22 +562,22 @@
 
   "My Nickname":
   "Mon pseudonyme",
-  
+
   "The nickname associated with your account to interact with other users, if none is defined, your account username is used.":
   "Le pseudonyme associé à votre compte pour interagir avec les autres utilisateurs, si aucun n'est défini, le nom d'utilisateur du compte est utilisé.",
-  
+
   "Avatar image":
   "Image d'avatar",
-  
+
   "Your account's profile picture displayed to other users, if none is defined, a default image will be shown.":
   "L'image de profile de votre compte affiché aux autres utilisateurs, si aucune n'est définie, une image par défaut sera affichée.",
 
   "Profile access":
   "Accès au profile",
-  
+
   "Set access rules for your profile data, if restricted, only subscribed users can see your avatar and access profile data.":
   "Définissez des règles d'accès pour vos données de profil. Si restreintes, seuls les utilisateurs abonnés peuvent voir votre avatar et accéder aux données de profil.",
-  
+
   "Profile data in open access":
   "Données du profile en accès libre",
 
@@ -683,11 +686,14 @@
   "The call has been declined":
   "L'appel a été refusé",
 
-  "The other person is buzy":
+  "The other party is buzy":
   "Le correspondant est occupé",
 
-  "The other person has hung up":
+  "The other party hung up":
   "Le correspondant a raccroché",
+
+  "Establishing relay...":
+  "Établissement du relais...",
 
   "Call in progress...":
   "Appel en cours...",

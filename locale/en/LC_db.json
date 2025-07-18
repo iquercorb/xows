@@ -193,10 +193,10 @@
 
   "Nickname for":
   "",
-  
+
   "Specify your new nickname for this Channel.":
   "",
-  
+
   "Enter a nickname...":
   "",
 
@@ -208,13 +208,13 @@
 
   "Add Channel to Bookmarks":
   "",
-  
+
   "Change nickname":
   "",
-  
+
   "Edit Channel topic":
   "",
-  
+
   "Enable notifications":
   "",
 
@@ -228,6 +228,9 @@
   "",
 
   "New unread messages":
+  "",
+
+  "New incomming call":
   "",
 
   "Upload a file":
@@ -683,10 +686,13 @@
   "The call has been declined":
   "",
 
-  "The other person is buzy":
+  "The other party is buzy":
   "",
 
-  "The other person has hung up":
+  "The other party hung up":
+  "",
+
+  "Establishing relay...":
   "",
 
   "Call in progress...":
