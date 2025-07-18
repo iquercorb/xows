@@ -56,7 +56,8 @@ let xows_options = {
   avatar_autopub  : true,       //< Auto-publish the default Avatar if none exists for user
   avatar_notify   : true,       //< Request for User Avatar PubSub notifications
   login_delay     : 2000,       //< Delay (in milliseconds) between registration and failed attempts
-  history_size    : 256,        //< Size of message history "window" (history pull will gather half this value)
+  history_count   : 50,         //< Maximum count of history message to fetch each query
+  history_delay   : 500,        //< Temporization delay for older message fetch
   extern_services : []          //< Additionnal External Services (as XEP-0215 replacement with same fashion)
 };
 
@@ -104,7 +105,7 @@ function xows_init_login_auto(cred)
 }
 
 /**
- * Private initialization function, used as callback, called once the
+ * Initialization function, used as callback, called once the
  * Doc (Document) module is successfully initialized
  *
  * This is the last initialization callback, loading process is
@@ -112,6 +113,9 @@ function xows_init_login_auto(cred)
  */
 function xows_init_ondoc()
 {
+  // Initialize Client
+  xows_cli_init();
+
   // Initialize GUI
   xows_gui_init();
 
@@ -179,7 +183,8 @@ function xows_init(options)
     if(options.hasOwnProperty("avatar_autopub"))   xows_options.avatar_autopub = options.avatar_autopub;
     if(options.hasOwnProperty("avatar_notify"))    xows_options.avatar_notify = options.avatar_notify;
     if(options.hasOwnProperty("fail_delay"))       xows_options.fail_delay = options.fail_delay;
-    if(options.hasOwnProperty("history_size"))     xows_options.history_size = options.history_size;
+    if(options.hasOwnProperty("history_count"))    xows_options.history_count = options.history_count;
+    if(options.hasOwnProperty("history_delay"))    xows_options.history_delay = options.history_delay;
     if(options.hasOwnProperty("extern_services"))  xows_options.extern_services = options.extern_services;
   }
 
