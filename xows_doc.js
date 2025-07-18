@@ -1481,15 +1481,15 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow, onclose)
     if(param.onclick)
       xows_doc_listener_add(param.drop, "click", param.onclick);
 
-    // Call optionnal onshow function
-    if(xows_isfunc(onshow))
-      onshow(param.bttn, param.drop);
-
     // show the 'void' screen to catch clicks outside menu
     xows_doc_show("scr_void");
 
     // Show menu drop element
     param.drop.hidden = false;
+
+    // Call optionnal onshow function
+    if(xows_isfunc(onshow))
+      onshow(param.bttn, param.drop);
 
     // Focus on button element
     param.bttn.focus();
