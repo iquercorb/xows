@@ -74,7 +74,6 @@
   --reje-base:        #E64545;  /* Reject button background */
   --reje-hover:       #F26161;  /* Reject button background hover */
   --reje-text:        #FFF;     /* Reject button text */
-
   --acce-base:        #2FC661;  /* Accept button background */
   --acce-hover:       #3FE274;  /* Accept button background hover */
   --acce-text:        #FFF;     /* Accept button text */
@@ -86,16 +85,25 @@
   --ctrl-text:        #FFF;     /* Input Control Text */
   --ctrl-box:         #4F505C;  /* Input Control Box */
 
-  /* Unread notifications spot & banner */
-  --notif-base:       #E64545;  /* Notification background */
-  --notif-hover:      #F26161;  /* Notification background hover */
+  /* history back to recent ribbon */
+  --nav-base:        #5C5C73;  /* Normal Ribbon background */
+  --nav-line:        #70708C;  /* Normal Ribbon outline */
+  --nav-hover:       #6A6A85;  /* Normal Ribbon background hover */
+  --nav-text:        #FFF;     /* Normal Ribbon text */
+
+  /* Unread notifications spot & nav ribbon */
+  --notif-spot:       #E64545;  /* Notification spot */
   --notif-text:       #FFF;     /* Notification text */
+  --notif-base:       #D65656;  /* Notification ribbon background */
+  --notif-line:       #ED8282;  /* Notification ribbon outline */
+  --notif-hover:      #E66B6B;  /* Notification ribbon background hover */
 
   /* history back to recent ribbon */
-  --back-base:        #5C5C73;  /* Normal Ribbon background */
-  --back-hover:       #6A6A85;  /* Normal Ribbon background hover */
-  --back-text:        #FFF;     /* Ribbon text */
-
+  --call-spot:        #2FC661;  /* In-Call spot*/
+  --ring-base:        #4FA16A;  /* Ringing elements background */
+  --ring-line:        #3CC769;  /* Ringing elements outline */
+  --ring-hover:       #46C26E;  /* Ringing elements background hover */
+  
   /* Presence 'show level' colors */
   --show-off:         #6E6E6E;  /* Offline */
   --show-dnd:         #C92B2B;  /* Do Not Disturb */
@@ -197,12 +205,12 @@ button:disabled {
 }
 @keyframes ringing-background {
   0% {
-    background-color: var(--notif-base);
+    background-color: var(--ring-hover);
   }
 }
 @keyframes ringing-border {
   0% {
-    border-color: var(--notif-base);
+    border-color: var(--ring-hover);
   }
 }
 .LOADING img,
@@ -725,7 +733,7 @@ badg-noti {
   background-size: 9px;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: var(--notif-base);
+  background-color: var(--notif-spot);
   visibility: hidden;
 }
 badg-noti::before {
@@ -1571,8 +1579,8 @@ rost-tab.SELECTED::before {
 }
 @keyframes rost-ringing {
   0% {
-    background-color: var(--notif-base);
-    border-color: var(--notif-base);
+    background-color: var(--notif-spot);
+    border-color: var(--notif-spot);
   }
 }
 rost-tab.RINGING {
@@ -2070,6 +2078,7 @@ li-peer.PEER-ROOM peer-avat {
 /* ------------------------------------------------------------------ */
 #chat_fram {
   min-width: 300px;
+  background-color: var(--base-tone4);
 }
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
@@ -2082,19 +2091,21 @@ li-peer.PEER-ROOM peer-avat {
 #chat_fram.CHAT-CONT #chat_bt_occu {
   display: none;
 }
-#chat_fram.CALL-OPEN #chat_call {
+/*
+#chat_fram.CALL-OPEN #call_view {
   display: flex;
   width: 100%; height: 33%;
   min-height: 200px;
 }
-#chat_fram.CALL-FULL #chat_call {
+*/
+#chat_fram.CALL-FULL #call_view {
   width: 100%; height: 100%;
 }
 #chat_fram.CALL-FULL #chat_main,
 #chat_fram.CALL-FULL #chat_foot {
   display: none;
 }
-#chat_fram.CALL-FULL #call_bt_geo {
+#chat_fram.CALL-FULL #call_expd {
   background-image: url("images/minimize.svg");
 }
 /* ------------------------------------------------------------------ */
@@ -2177,6 +2188,7 @@ head-info badg-show {
   background-color: var(--base-tone4);
   scrollbar-color: var(--base-tone1) transparent;
   /*scroll-snap-type: y mandatory;*/
+  position: relative;
 }
 @media (max-width: 824px) {
 
@@ -2188,13 +2200,16 @@ head-info badg-show {
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - Chat Call */
 /* ------------------------------------------------------------------ */
-#chat_call {
-  display: none;
+#call_view {
+  display: flex;
+  width: 100%; height: 33%;
+  min-height: 200px;
   flex: auto;
   flex-direction: column;
   position: relative;
-  background-color: var(--base-tone1);
+  background-color: var(--base-tone0);
   padding: 5px;
+  border-bottom: 3px solid var(--base-tone3);
 }
 #call_menu {
   position: absolute;
@@ -2202,13 +2217,13 @@ head-info badg-show {
   width: 100%;
   display: flex;
   align-items: center;
-  padding-bottom: 5px;
+  padding-bottom: 10px;
 }
 #call_menu button {
   display: inline-block;
   padding: 0;
   border: 0;
-  border-radius: 25%;
+  border-radius: 50%;
   background-size: 18px;
   background-position: center;
   background-repeat: no-repeat;
@@ -2224,18 +2239,17 @@ head-info badg-show {
   height: 100%;
 }
 strm-audio {
+  display: flex;
   width: 100px;
   height: 100px;
   margin: 15px;
-  border-radius: 25%;
+  border-radius: 50%;
   background-color: var(--base-tone5);
   border: 3px solid var(--text-tone3);
   position: relative;
 }
 strm-avat {
-  position: absolute;
   display: block;
-  top: 25%; left: 25%;
   width: 48px; height: 48px;
   margin: auto;
   background-size: cover;
@@ -2255,27 +2269,26 @@ strm-video video {
   border-radius: 5px;
   margin: auto;
 }
-call-volum {
+.call-volum {
   flex: none;
   width: 100px; height: 100%;
   padding-left: 10px;
 }
-
-#call_bt_spk {
+#call_spkr {
   width: 24px; height: 24px;
   background-color: transparent;
   background-image: url("images/volume_2.svg");
 }
-#call_bt_spk.RNG-MIN {
+#call_spkr.RNG-MIN {
   background-image: url("images/volume_1.svg");
 }
-#call_bt_spk.RNG-MAX {
+#call_spkr.RNG-MAX {
   background-image: url("images/volume_3.svg");
 }
-#call_bt_spk.MUTTED {
+#call_spkr.MUTTED {
   background-image: url("images/volume_0.svg");
 }
-#call_in_vol {
+#call_volu {
   -webkit-appearance: none;
   appearance: none;
   border-radius: 2px;
@@ -2284,10 +2297,10 @@ call-volum {
   outline: none;
   opacity:1;
 }
-#call_in_vol:disabled {
+#call_volu:disabled {
   background: var(--reje-base);
 }
-#call_in_vol::-webkit-slider-thumb {
+#call_volu::-webkit-slider-thumb {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -2298,10 +2311,10 @@ call-volum {
   background: #FFF;
   cursor: pointer;
 }
-#call_in_vol:disabled::-webkit-slider-thumb {
+#call_volu:disabled::-webkit-slider-thumb {
   background: var(--reje-base);
 }
-#call_in_vol::-moz-range-thumb {
+#call_volu::-moz-range-thumb {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -2312,60 +2325,60 @@ call-volum {
   background: #FFF;
   cursor: pointer;
 }
-#call_in_vol:disabled::-moz-range-thumb {
+#call_volu:disabled::-moz-range-thumb {
   background: var(--reje-base);
 }
-call-acts {
+.call-acts {
   flex: auto;
   height: 100%;
   text-align: center;
 }
-call-acts button {
+.call-acts button {
   width: 48px; height: 48px;
   margin: 0 5px;
   background-color: var(--base-tone4);
 }
-call-acts button:hover  {
+.call-acts button:hover  {
   background-color: var(--base-tone6);
 }
 @media (max-width: 824px) {
-  call-acts button {
+  .call-acts button {
     margin: 0 2px;
   }
 }
-#call_bt_cam {
+#call_came {
   background-image: url("images/cam.svg");
 }
-#call_bt_cam.MUTTED {
+#call_came.MUTTED {
 background-image: url("images/cam_off.svg");
 }
-#call_bt_mic {
+#call_micr {
   background-image: url("images/mic.svg");
 }
-#call_bt_mic.MUTTED {
+#call_micr.MUTTED {
   background-image: url("images/mic_off.svg");
 }
-#call_bt_hup {
+#call_hgup {
   background-image: url("images/call_hup.svg");
   background-color: var(--reje-base) !important;
-}#call_bt_hup:hover  {
+}#call_hgup:hover  {
   background-color: var(--reje-hover) !important;
 }
-call-geom {
+.call-geom {
   flex: none;
   display: inline-block;
   width: 100px;
   text-align: right;
 }
-call-geom button {
-  width: 48px; height: 48px;
+.call-geom button {
+  width: 70px; height: 48px;
   background-color: transparent;
   opacity: .7;
 }
-call-geom button:hover {
+.call-geom button:hover {
   opacity: 1;
 }
-#call_bt_geo {
+#call_expd {
   background-image: url("images/maximize.svg");
 }
 
@@ -2387,11 +2400,11 @@ call-geom button:hover {
   padding: 0;
 }
 hist-bound {
-  height: 700px;
+  height: 1000px;
   margin: auto 16px 0 16px;
   background-color: transparent;
   background-size: 1000px;
-  background-repeat: no-repeat;
+  background-repeat: repeat-y;
   background-position: bottom left;
   background-image: url("images/chat_phold.svg");
 }
@@ -2428,7 +2441,7 @@ hist-bound {
 /* ------------------------------------------------------------------ */
 /* Chat history - Incoming call dialog */
 /* ------------------------------------------------------------------ */
-#hist_ring {
+#call_ring {
   display: flex;
   align-items: center;
   border-radius: 5px;
@@ -2442,7 +2455,7 @@ hist-bound {
     background-color: var(--base-tone6);
   }
 }
-#hist_ring.RINGING {
+#call_ring.CALL-RING {
   animation: hist-ringing 1s ease-out infinite;
 }
 ring-icon {
@@ -2454,12 +2467,53 @@ ring-icon {
   background-repeat: no-repeat;
   background-image: url("images/call.svg");
 }
+.CALL-VISI ring-icon {
+  background-image: url("images/cam.svg");
+}
+.CALL-TERM ring-icon {
+  background-image: url("images/call_end.svg");
+}
 ring-text {
-  display: inline-block;
   flex: auto;
+  display: flex;
+  flex-direction: row;
+  align-content: center;
   margin-left: 7px;
   font-weight: bold;
   color: var(--text-tone1);
+}
+.CALL-NEGO ring-text::before {
+  display: inline-block;
+  content: '\25CB';
+  margin: 8px 0 0 0;
+  width: 70px;
+  font-family: Arial;
+  font-size: 2.0em;
+  line-height: 0;
+  animation: ring-linking 1000Ms steps(5, end) infinite;
+  opacity: 0.7;
+}
+@keyframes ring-linking {
+  0% {
+    color:                  rgba(255,255,255,1.0);
+    text-shadow:  0.6em 0 0 rgba(255,255,255,0.5),
+                  1.2em 0 0 rgba(255,255,255,0.5);}
+  25% {
+    color:                  rgba(255,255,255,0.5);
+    text-shadow:  0.6em 0 0 rgba(255,255,255,1.0),
+                  1.2em 0 0 rgba(255,255,255,0.5);}
+  50% {
+    color:                  rgba(255,255,255,0.5);
+    text-shadow:  0.6em 0 0 rgba(255,255,255,0.5),
+                  1.2em 0 0 rgba(255,255,255,1.0);}
+  75% {
+    color:                  rgba(255,255,255,0.5);
+    text-shadow:  0.6em 0 0 rgba(255,255,255,1.0),
+                  1.2em 0 0 rgba(255,255,255,0.5);}
+  100% {
+    color:                  rgba(255,255,255,1.0);
+    text-shadow:  0.6em 0 0 rgba(255,255,255,0.5),
+                  1.2em 0 0 rgba(255,255,255,0.5);}
 }
 ring-acts {
   flex: auto;
@@ -2474,6 +2528,7 @@ ring-acts button {
   background-repeat: no-repeat;
 }
 #ring_bt_deny {
+  display: none;
   margin: 0 10px 0 0;
   background-color: var(--reje-base);
   background-image: url("images/delete.svg");
@@ -2482,6 +2537,7 @@ ring-acts button {
   background-color: var(--reje-hover);
 }
 #ring_bt_pkup {
+  display: none;
   margin: 0 10px 0 0;
   background-color: var(--acce-base);
   background-image: url("images/call_pup.svg");
@@ -2489,20 +2545,18 @@ ring-acts button {
 #ring_bt_pkup:hover {
   background-color: var(--acce-hover);
 }
-ring-acts btn-close {
+#ring_bt_clos {
+  display: none;
   margin: 0 10px 0 0;
 }
-.CALL-AUD {
-  background-image: url("images/call.svg");
-}
-.CALL-VID {
-  background-image: url("images/cam.svg");
-}
-.CALL-TERM {
-  background-image: url("images/call_end.svg");
+.CALL-NEGO #ring_bt_deny,
+.CALL-RING #ring_bt_deny,
+.CALL-RING.CALL-INBD #ring_bt_pkup,
+.CALL-TERM btn-close {
+  display: inline-block !important;
 }
 @media (max-width: 824px) {
-  #hist_ring {
+  #call_ring {
     height: 60px;
     margin: 0 8px 4px 8px;
   }
@@ -3141,33 +3195,65 @@ button.trsh-bt-abort {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 25px;
-  border-radius: 6px 6px 0 0;
+  height: 30px;
+  border-radius: 6px;
   font-family: Arial;
-  font-size: .85em;
-  color: var(--text-tone0);
-  background-color: var(--back-base);
+  font-size: .9em;
+  color: var(--nav-text);
+  background-color: var(--nav-base);
+  border: 1px solid var(--nav-line);
   cursor: pointer;
-  margin: 0 16px -3px 16px;
-  padding: 0 16px 5px 16px;
+  margin: 0 16px 2px 16px;
+  padding: 0 16px 2px 16px;
+  transition: margin 200Ms cubic-bezier(0.5, 1.5, 0.5, 1);
+}
+#chat_nav:hover {
+  background-color: var(--nav-hover);
+}
+#chat_nav[hidden] {
+  display: flex !important;
+  margin: 0 16px -35px 16px;
 }
 #chat_nav::before,
 #chat_nav::after {
   font-size: .9em;
   content:"\25BE";
 }
-#chat_nav:hover {
-  background-color: var(--back-hover);
-}
-#chat_nav.UNDREAD {
+#chat_nav.UNREAD {
+  color: var(--notif-text);
   background-color: var(--notif-base);
+  border: 1px solid var(--notif-line);
   cursor:pointer;
   transition: color 100ms ease;
   transition: background-color 100ms ease;
 }
-#chat_nav.UNDREAD:hover {
+#chat_nav.UNREAD:hover {
   background-color: var(--notif-hover);
 }
+#chat_nav.RINGING {
+  background-color: var(--ring-base);
+  border: 1px solid var(--ring-line);
+  cursor:pointer;
+  transition: color 100ms ease;
+  transition: background-color 100ms ease;
+  animation: ringing-background 1s ease-out infinite;
+}
+#chat_nav.RINGING:hover {
+  background-color: var(--ring-hover);
+}
+#nav_text {
+  pointer-events: none;
+}
+#nav_text::before {
+  content: attr(data-back);
+}
+.UNREAD #nav_text::before {
+  content: attr(data-unrd);
+}
+.RINGING #nav_text::before {
+  content: attr(data-ring);
+}
+
 @media (max-width: 824px) {
   #chat_nav {
     font-size: 0.8em;
@@ -3230,6 +3316,7 @@ button.trsh-bt-abort {
   margin: 0 16px 0 16px;
   border-radius: 6px;
   background-color: var(--base-tone5);
+  border: 1px solid var(--base-tone6);
   cursor: text;
   z-index: 2;
 }
@@ -3244,16 +3331,16 @@ button.trsh-bt-abort {
   cursor: pointer;
   vertical-align: middle;
   background-color: transparent;
-  background-size: 20px;
+  background-size: 16px;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: .7;
+  opacity: 0.6;
 }
 #chat_edit button:hover {
   opacity: 1;
 }
 #chat_edit button:disabled {
-  opacity: .2 !important;
+  opacity: 0.2 !important;
 }
 chat-inpt {
   display: inline-block;
