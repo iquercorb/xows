@@ -180,17 +180,23 @@ function xows_load_init(item, mask, onload, param)
     return;
   }
 
-  // Set loading mask
-  item.load = mask;
-
   // Check for double-init
   if(xows_load_item_stk.has(item)) {
-    xows_log(1,"load_init","item already setup for load","mask=0x"+mask);
-    return;
-  }
 
-  // Create new load entry for this item
-  xows_load_item_stk.set(item,{"onload":onload,"param":param});
+    xows_log(1,"load_init","item already setup for load","mask=0x"+mask);
+    //return;
+
+    // Add loading mask
+    item.load |= mask;
+
+  } else {
+
+    // Set loading mask
+    item.load = mask;
+
+    // Create new load entry for this item
+    xows_load_item_stk.set(item,{"onload":onload,"param":param});
+  }
 
   let bit = 0x1;
   do {
