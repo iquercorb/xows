@@ -1484,7 +1484,7 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow, onclose)
     // show the 'void' screen to catch clicks outside menu
     xows_doc_show("scr_void");
 
-    // Show menu drop element
+    // Show menu drop element (BEFORE onshow for correct placement !)
     param.drop.hidden = false;
 
     // Call optionnal onshow function
