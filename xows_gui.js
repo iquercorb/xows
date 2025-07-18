@@ -44,16 +44,6 @@
 const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
 
 /**
- * Maximum count of message the history can contain
- */
-let xows_gui_hist_size = 128; //< size of the history 'window'
-
-/**
- * Count of messages to gather for each history pull request
- */
-let xows_gui_hist_page = 64;
-
-/**
  * History loading process tasks bit (see xows_load* )
  */
 const XOWS_LOAD_MAM = xows_load_task_bit();
@@ -315,29 +305,6 @@ function xows_gui_peer_doc_cls_has(peer, id, cls)
 }
 
 /**
- * Clear and reload the most recent peer chat history
- *
- * @param   {object}    peer      Peer object to reset history
- */
-function xows_gui_peer_hist_reload(peer)
-{
-  // Scroll down
-  if(peer === xows_gui_peer) {
-    xows_doc_scroll_down(document.getElementById("chat_main"));
-  } else {
-    xows_doc_scroll_down(xows_doc_scroll_db.get(peer.addr));
-  }
-
-  // Reset the chat history to initial stat
-  xows_gui_peer_doc(peer,"hist_beg").className = "";
-  xows_gui_peer_doc(peer,"hist_ul").innerText = "";
-  xows_gui_peer_doc(peer,"hist_end").hidden = true;
-
-  // Query for the latest archives, with no delay
-  xows_gui_mam_fetch_latest(peer);
-}
-
-/**
  * Save the main chat scroll position for the specified peer in the
  * ad-hoc 'scrollBottom' property.
  *
@@ -349,9 +316,9 @@ function xows_gui_peer_hist_reload(peer)
 function xows_gui_peer_scroll_save(peer)
 {
   if(peer === xows_gui_peer) {
-    xows_doc_scroll_save(document.getElementById("chat_main"));
+    xows_doc_scrl_save(document.getElementById("chat_main"));
   } else {
-    xows_doc_scroll_save(xows_doc_scroll_db.get(peer.addr));
+    xows_doc_scrl_save(xows_doc_scrl_db.get(peer.addr));
   }
 }
 
@@ -370,7 +337,7 @@ function xows_gui_peer_scroll_get(peer)
   if(peer === xows_gui_peer) {
     return document.getElementById("chat_main").scrollBottom;
   } else {
-    return xows_doc_scroll_db.get(peer.addr).scrollBottom;
+    return xows_doc_scrl_db.get(peer.addr).scrollBottom;
   }
 }
 
@@ -381,29 +348,19 @@ function xows_gui_peer_scroll_get(peer)
  * the offscreen dummy object.
  *
  * @param   {object}    peer      Peer object to get scroll value
+ * @param   {boolean}  [smooth]   Perform smooth scroll
  */
-function xows_gui_peer_scroll_down(peer)
+function xows_gui_peer_scroll_down(peer, smooth = true)
 {
-  if(xows_gui_peer_doc(peer,"hist_end").hidden) {
+  // Close navigation banner
+  xows_gui_chat_nav_hide(peer);
 
-    if(peer === xows_gui_peer) {
-      xows_doc_scroll_down(document.getElementById("chat_main"));
-    } else {
-      xows_doc_scroll_down(xows_doc_scroll_db.get(peer.addr));
-    }
-
+  if(peer === xows_gui_peer) {
+    xows_doc_scrl_down(document.getElementById("chat_main"), smooth);
   } else {
-    // If the most recent message is beyond the current history "window"
-    // we must reset history and query last archived messages
-    xows_gui_peer_hist_reload(peer);
+    xows_doc_scrl_down(xows_doc_scrl_db.get(peer.addr));
   }
 }
-
-/**
- * Flag to signal automatic scroll adjustement was performed to allow ignore
- * the next generated "onscroll" event.
- */
-let xows_gui_peer_scroll_kept = false;
 
 /**
  * Compensate (to keept at position) the main chat scroll corresponding
@@ -417,19 +374,9 @@ let xows_gui_peer_scroll_kept = false;
 function xows_gui_peer_scroll_keep(peer)
 {
   if(peer === xows_gui_peer) {
-
-    // Modifying scroll parameter programmatically triggers an "onscroll" event
-    // the same as if user actually scrolled from Browser window. This produce
-    // unwanted scroll position "save" whitch mess up all calculations.
-    //
-    // To prevent that, after each scroll adjustment on resize, we set a flag
-    // to signal that the "onscroll" event was fired by automatic adjustement
-    // so it is possible to ignore the event.
-    xows_gui_peer_scroll_kept = true;
-
-    xows_doc_scroll_keep(document.getElementById("chat_main"));
+    xows_doc_scrl_keep(document.getElementById("chat_main"));
   } else {
-    xows_doc_scroll_keep(xows_doc_scroll_db.get(peer.addr));
+    xows_doc_scrl_keep(xows_doc_scrl_db.get(peer.addr));
   }
 }
 
@@ -446,14 +393,11 @@ function xows_gui_peer_scroll_keep(peer)
 function xows_gui_peer_frag_init()
 {
   // Create intial offscreen slot from current document
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_head", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_hist", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_panl", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "room_head", true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "occu_list", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "chat_fram", true);
+  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "room_fram", true);
 
   // Export scroll parameters to offscreen
-  xows_doc_scroll_export(XOWS_GUI_FRAG_INIT, "chat_main");
+  xows_doc_scrl_export(XOWS_GUI_FRAG_INIT, "chat_main");
 }
 
 /**
@@ -479,15 +423,12 @@ function xows_gui_peer_frag_new(slot, source)
     return;
   }
 
-  // Clone elements from initial offscreen slot
-  xows_doc_frag_clone(slot, source, "chat_head");
-  xows_doc_frag_clone(slot, source, "chat_hist");
-  xows_doc_frag_clone(slot, source, "chat_panl");
-  xows_doc_frag_clone(slot, source, "room_head");
-  xows_doc_frag_clone(slot, source, "occu_list");
-
   // Copy offscreen scroll parameters
-  xows_doc_scroll_copy(slot, source);
+  xows_doc_scrl_copy(slot, source);
+
+  // Clone elements from initial offscreen slot
+  xows_doc_frag_clone(slot, source, "chat_fram");
+  xows_doc_frag_clone(slot, source, "room_fram");
 }
 
 /**
@@ -506,15 +447,12 @@ function xows_gui_peer_frag_export(slot)
     return;
   }
 
-  // Export document elements to offscreen fragment
-  xows_doc_frag_export(slot, "chat_head");
-  xows_doc_frag_export(slot, "chat_hist");
-  xows_doc_frag_export(slot, "chat_panl");
-  xows_doc_frag_export(slot, "room_head");
-  xows_doc_frag_export(slot, "occu_list");
-
   // Export scroll parameters to offscreen
-  xows_doc_scroll_export(slot, "chat_main");
+  xows_doc_scrl_export(slot, "chat_main");
+
+  // Export document elements to offscreen fragment
+  xows_doc_frag_export(slot, "chat_fram");
+  xows_doc_frag_export(slot, "room_fram");
 }
 
 /**
@@ -544,14 +482,11 @@ function xows_gui_peer_frag_import(slot)
   }
 
   // Import document elements from offscreen fragment
-  xows_doc_frag_import(slot, "chat_head", clone);
-  xows_doc_frag_import(slot, "chat_hist", clone);
-  xows_doc_frag_import(slot, "chat_panl", clone);
-  xows_doc_frag_import(slot, "room_head", clone);
-  xows_doc_frag_import(slot, "occu_list", clone);
+  xows_doc_frag_import(slot, "chat_fram", clone);
+  xows_doc_frag_import(slot, "room_fram", clone);
 
   // Import scroll parameters from offscreen
-  xows_doc_scroll_import(slot, "chat_main");
+  xows_doc_scrl_import(slot, "chat_main");
 }
 
 /**
@@ -565,7 +500,7 @@ function xows_gui_peer_frag_discard(slot)
   xows_doc_frag_delete(slot);
 
   // Delete Scroll parameters
-  xows_doc_scroll_delete(slot);
+  xows_doc_scrl_delete(slot);
 }
 
 /**
@@ -594,8 +529,8 @@ function xows_gui_peer_doc_init(peer)
   // Clone elements from initial offscreen slot
   xows_gui_peer_frag_new(peer.addr);
 
-  // Signal first open by hidding chat history
-  //xows_gui_peer_doc(peer,"hist_ul").hidden = true;
+  // Set this document fragment as "closed"
+  xows_gui_peer_doc(peer, "hist_ul").dataset.closed = true;
 
   // Set chat input placeholder
   const placeholder = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
@@ -622,6 +557,8 @@ function xows_gui_peer_doc_reset(peer)
   xows_gui_peer_doc_init(peer);
 }
 
+const xows_gui_chat_observer = new ResizeObserver(xows_gui_chat_onresize);
+
 /**
  * Move and store current document Peer elements to offscreen
  *
@@ -629,6 +566,8 @@ function xows_gui_peer_doc_reset(peer)
  */
 function xows_gui_peer_doc_export(peer)
 {
+  //xows_gui_chat_observer.unobserve(xows_doc("chat_hist"));
+
   // Export document elements to offscreen fragment
   xows_gui_peer_frag_export(peer.addr);
 }
@@ -647,6 +586,31 @@ function xows_gui_peer_doc_import(peer)
 
     // Update chat header bar informations
     xows_gui_peer_chat_update(peer);
+
+    // Re-bind resize observer
+    xows_gui_chat_observer.observe(xows_doc("chat_main"));
+    //xows_gui_chat_observer.observe(xows_doc("chat_hist"));
+
+    // Recreate event listeners
+    xows_doc_listener_add(xows_doc("chat_head"), "click", xows_gui_chat_head_onclick);
+    xows_doc_listener_add(xows_doc("chat_main"), "scrollend",xows_gui_chat_onscroll);
+    xows_doc_listener_add(xows_doc("chat_hist"), "click", xows_gui_chat_hist_onclick);
+
+    const call_ring = xows_doc("call_ring");
+    if(!call_ring.hidden) xows_doc_listener_add(call_ring, "click", xows_gui_call_ring_onclick);
+
+    const hist_upld = xows_doc("hist_upld");
+    if(!hist_upld.hidden) xows_doc_listener_add(hist_upld, "click", xows_gui_hist_upld_onclick);
+
+    const chat_panl = xows_doc("chat_panl");
+    xows_doc_listener_add(chat_panl, "click", xows_gui_chat_panl_onclick);
+    xows_doc_listener_add(chat_panl, "input", xows_gui_chat_inpt_oninput);
+    xows_doc_listener_add(chat_panl, "paste", xows_gui_chat_inpt_onpaste, false); //< need preventDefault()
+    xows_doc_listener_add(xows_doc("chat_file"), "change", xows_gui_chat_file_onchange);
+    if(peer.type === XOWS_PEER_ROOM) {
+      xows_doc_listener_add(xows_doc("room_head"), "click", xows_gui_room_head_onclick);
+      xows_doc_listener_add(xows_doc("occu_list"), "click", xows_gui_occu_list_onclick);
+    }
 
   } else {
 
@@ -713,9 +677,11 @@ function xows_gui_peer_chat_update(peer)
   }
 
   // Enable or disable Multimedia Call buttons
+  /*
   const in_call = (xows_wrtc_busy());
   xows_gui_peer_doc(peer, "chat_bt_cala").disabled = in_call;
   xows_gui_peer_doc(peer, "chat_bt_calv").disabled = in_call;
+  */
 
   // If Peer is a Room alos update Occupant List header bar
   if(peer.type === XOWS_PEER_ROOM) {
@@ -736,6 +702,27 @@ function xows_gui_peer_chat_update(peer)
  */
 function xows_gui_init()
 {
+  // Set event listener to handle user keyboard
+  xows_doc_listener_add(document, "keydown", xows_gui_wnd_onkey, false); //< need preventDefault()
+  xows_doc_listener_add(document, "keyup", xows_gui_wnd_onkey);
+  // Set event listener to handle user presence and GUI focus
+  xows_doc_listener_add(document, "visibilitychange", xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window, "pagehide", xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window, "focus", xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window, "blur", xows_gui_wnd_onfocus);
+  // Set event listener to hook browser "nav back"
+  xows_doc_listener_add(window, "popstate", xows_gui_nav_onpopstate);
+  // Set event listener to handle chat scroll moving on resize
+  xows_doc_listener_add(window, "resize", xows_gui_chat_onresize);
+
+  // Main Page "scr_main" event listeners
+  xows_doc_listener_add(xows_doc("main_hndr"), "click", xows_gui_main_open);
+  xows_doc_listener_add(xows_doc("main_hndl"), "click", xows_gui_main_open);
+  // Tabs/Roster Frame listeners
+  xows_doc_listener_add(xows_doc("main_tabs"), "click", xows_gui_main_tabs_onclick);
+  xows_doc_listener_add(xows_doc("rost_fram"), "click", xows_gui_rost_fram_onclick);
+  xows_doc_listener_add(xows_doc("self_panl"), "click", xows_gui_self_panl_onclick);
+
   // Create intial offscreen slot from current document
   xows_gui_peer_frag_init();
 
@@ -755,12 +742,80 @@ function xows_gui_init()
   xows_gui_sound_load("ringbell", "ringbell.ogg", true);
   xows_gui_sound_load("hangup",   "hangup.ogg");
 
-  // Store MAM parameters from options
-  xows_gui_hist_size = xows_options.history_size;
-  xows_gui_hist_page = xows_gui_hist_size / 2;
-
   // Set loader functions
-  xows_load_task_set(XOWS_LOAD_MAM, xows_gui_mam_fetch_initial);
+  xows_load_task_set(XOWS_LOAD_MAM, xows_gui_mam_fetch_newer);
+}
+
+/**
+ * Reset the GUI to its initial state
+ */
+function xows_gui_reset()
+{
+  xows_log(2,"gui_reset","reset DOM states");
+
+  // hide all screens
+  xows_doc_hide("scr_page");
+  xows_doc_hide("scr_main");
+
+  // close any opened page or overlay element
+  xows_doc_page_close();
+  xows_doc_menu_close();
+  xows_doc_view_close();
+  xows_doc_popu_close();
+  xows_doc_ibox_close();
+  xows_doc_mbox_close();
+  xows_doc_prof_close();
+
+  // Reset columns setup
+  xows_doc_cls_rem("main_wrap", "COLR-WIDE");
+  xows_doc_cls_rem("main_wrap", "COLL-WIDE");
+  xows_doc_cls_add("main_colr", "COL-HIDE");
+
+  // clean roster lists
+  xows_doc("cont_pend").innerHTML = "";
+  xows_doc("cont_budy").innerHTML = "";
+  xows_doc("room_book").innerHTML = "";
+  xows_doc("room_publ").innerHTML = "";
+  xows_doc("room_priv").innerHTML = "";
+  xows_doc("priv_occu").innerHTML = "";
+
+  // Reset roster tabs
+  xows_doc("tab_priv").hidden = true;
+  xows_doc("tab_room").disabled = true;
+  xows_gui_rost_switch("tab_cont");
+  const priv_noti = xows_doc("priv_noti");
+  priv_noti.dataset.mesg = 0; priv_noti.dataset.call = 0; priv_noti.dataset.ring = 0;
+  priv_noti.innerText = "";
+  const room_noti = xows_doc("room_noti");
+  room_noti.dataset.mesg = 0; room_noti.dataset.call = 0; room_noti.dataset.ring = 0;
+  room_noti.innerText = "";
+  const cont_noti = xows_doc("cont_noti");
+  cont_noti.dataset.mesg = 0; cont_noti.dataset.call = 0; cont_noti.dataset.ring = 0;
+  cont_noti.dataset.subs = 0;
+  cont_noti.innerText = "";
+
+  // clean user frame
+  xows_doc("self_show").dataset.show = 0;
+  xows_doc("self_name").innerText = "";
+  xows_doc("self_meta").innerText = "";
+  xows_doc("self_avat").className = "";
+
+  // Reset Peer related elements
+  xows_gui_switch_peer(null);
+
+  // Reset chat input
+  xows_doc_cls_add("chat_inpt", "PLACEHOLD");
+  xows_doc("chat_inpt").innerText = "";
+
+  // Clear all offscreen elements
+  xows_doc_frag_clear();
+  xows_doc_scrl_clear();
+
+  // Create intial offscreen slot from current document
+  xows_gui_peer_frag_init();
+
+  // The DOM is now to its default state
+  xows_gui_clean = true;
 }
 
 /* -------------------------------------------------------------------
@@ -795,13 +850,14 @@ function xows_gui_connect(register = false)
   xows_cli_set_callback("receipt", xows_gui_cli_onreceipt);
   xows_cli_set_callback("retract", xows_gui_cli_onretract);
   xows_cli_set_callback("subject", xows_gui_cli_onsubject);
+  xows_cli_set_callback("calloffer", xows_gui_cli_oncalloffer);
+  xows_cli_set_callback("callanwse", xows_gui_cli_oncallanwse);
+  xows_cli_set_callback("callstate", xows_gui_cli_oncallstate);
+  xows_cli_set_callback("calltermd", xows_gui_cli_oncalltermd);
+  xows_cli_set_callback("callerror", xows_gui_cli_oncallerror);
   xows_cli_set_callback("error", xows_gui_cli_onerror);
   xows_cli_set_callback("close", xows_gui_cli_onclose);
   xows_cli_set_callback("timeout", xows_gui_cli_ontimeout);
-  xows_cli_set_callback("callerror", xows_gui_cli_oncallerror);
-  xows_cli_set_callback("callinit", xows_gui_cli_oncallinit);
-  xows_cli_set_callback("callaccept", xows_gui_cli_oncallaccept);
-  xows_cli_set_callback("callend", xows_gui_cli_oncallend);
 
   // Close message box
   xows_doc_popu_close();
@@ -872,7 +928,7 @@ function xows_gui_cli_onconnect(user)
       const cont = xows_cli_cont[i];
       // Presence of LOADING class mean chat were not openned, we don't update history
       if(!xows_gui_peer_doc_cls_has(cont,"chat_load","LOADING")) {
-        xows_gui_mam_fetch_latest(cont);
+        xows_gui_mam_fetch_newer(cont);
       }
     }
 
@@ -881,7 +937,7 @@ function xows_gui_cli_onconnect(user)
       const room = xows_cli_room[i];
       // Presence of LOADING class mean chat were not openned, we don't update history
       if(!xows_gui_peer_doc_cls_has(room,"chat_load","LOADING")) {
-        xows_gui_mam_fetch_latest(room);
+        xows_gui_mam_fetch_newer(room);
       }
     }
 
@@ -908,7 +964,7 @@ function xows_gui_cli_onconnect(user)
 
   xows_gui_main_open();
 
-  // widen roster panel (only in narrow-screen)
+  // Widen roster panel (only in narrow-screen)
   xows_gui_rost_widen();
 }
 
@@ -922,7 +978,7 @@ function xows_gui_disconnect()
     xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_GONE);
 
   // Hangup and clear any Media Call
-  xows_gui_call_terminate();
+  xows_gui_call_clear();
 
   // Disconnect client
   xows_cli_disconnect();
@@ -1242,80 +1298,6 @@ function xows_gui_wnd_onkey(event)
  *
  * -------------------------------------------------------------------*/
 
-/**
- * Reset the GUI to its initial state
- */
-function xows_gui_reset()
-{
-  xows_log(2,"gui_reset","reset DOM states");
-
-  // hide all screens
-  xows_doc_hide("scr_page");
-  xows_doc_hide("scr_main");
-
-  // close any opened page or overlay element
-  xows_doc_page_close();
-  xows_doc_menu_close();
-  xows_doc_view_close();
-  xows_doc_popu_close();
-  xows_doc_ibox_close();
-  xows_doc_mbox_close();
-  xows_doc_prof_close();
-
-  // Reset columns setup
-  xows_doc_cls_rem("main_wrap", "COLR-WIDE");
-  xows_doc_cls_rem("main_wrap", "COLL-WIDE");
-  xows_doc_cls_add("main_colr", "COL-HIDE");
-
-  // clean roster lists
-  xows_doc("cont_pend").innerHTML = "";
-  xows_doc("cont_budy").innerHTML = "";
-  xows_doc("room_book").innerHTML = "";
-  xows_doc("room_publ").innerHTML = "";
-  xows_doc("room_priv").innerHTML = "";
-  xows_doc("priv_occu").innerHTML = "";
-
-  // Reset roster tabs
-  xows_doc("tab_priv").hidden = true;
-  xows_doc("tab_room").disabled = true;
-  xows_gui_rost_switch("tab_cont");
-  const priv_noti = xows_doc("priv_noti");
-  priv_noti.dataset.mesg = 0; priv_noti.dataset.call = 0; priv_noti.dataset.ring = 0;
-  priv_noti.innerText = "";
-  const room_noti = xows_doc("room_noti");
-  room_noti.dataset.mesg = 0; room_noti.dataset.call = 0; room_noti.dataset.ring = 0;
-  room_noti.innerText = "";
-  const cont_noti = xows_doc("cont_noti");
-  cont_noti.dataset.mesg = 0; cont_noti.dataset.call = 0; cont_noti.dataset.ring = 0;
-  cont_noti.innerText = "";
-
-  // clean user frame
-  xows_doc("self_show").dataset.show = 0;
-  xows_doc("self_name").innerText = "";
-  xows_doc("self_meta").innerText = "";
-  xows_doc("self_avat").className = "";
-
-  // Reset Peer related elements
-  xows_gui_switch_peer(null);
-
-  // Reset chat input
-  xows_doc_cls_add("chat_inpt", "PLACEHOLD");
-  xows_doc("chat_inpt").innerText = "";
-
-  // Clear all offscreen elements
-  xows_doc_frag_clear();
-
-  // Create intial offscreen slot from current document
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_head",true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_hist",true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"chat_panl",true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"room_head",true);
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT,"occu_list",true);
-
-  // The DOM is now to its default state
-  xows_gui_clean = true;
-}
-
 /* -------------------------------------------------------------------
  *
  * Main Screen
@@ -1393,7 +1375,7 @@ function xows_gui_switch_peer(addr)
     // Send chat state to notify current user
     xows_cli_chatstate_define(prev, XOWS_CHAT_GONE);
     // Abort any uploading file
-    xows_gui_upld_onclose();
+    xows_gui_upld_close();
   }
 
   // Get the next (to be selected) contact
@@ -1415,9 +1397,6 @@ function xows_gui_switch_peer(addr)
 
   // If next contact is valid, show the chat <div>
   chat_fram.hidden = (next === null);
-
-  // Open or close Multimedia Call layout
-  chat_fram.classList.toggle("CALL-OPEN", xows_gui_call_remote.has(next));
 
   // Revert window title
   if(prev) xows_gui_title_pop();
@@ -1596,9 +1575,12 @@ function xows_gui_popu_exit_open()
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_rost_tabs_onclick(event)
+function xows_gui_main_tabs_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
+
+  // Widen roster panel (only in narrow-screen)
+  xows_gui_rost_widen();
 
   const btn = event.target.closest("ROST-TAB");
   if(btn) xows_gui_rost_switch(btn.id);
@@ -3228,7 +3210,7 @@ function xows_gui_chat_head_onclick(event)
   case "chat_bt_calv":
   case "chat_bt_cala":
     // Initiate call
-    xows_gui_call_invite(xows_gui_peer, {"audio": true,"video": (event.target.id === "chat_bt_calv")});
+    xows_gui_call_invite(xows_gui_peer, {"audio":true,"video":(event.target.id === "chat_bt_calv")});
     break;
   }
 }
@@ -3366,16 +3348,12 @@ function xows_gui_popu_room_book_open(room)
  * Main screen - Chat Frame - Call View
  *
  * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Main Screen - Chat Frame - Call View - Interaction
- * -------------------------------------------------------------------*/
-
 /**
  * Chat Call frame on-click callback function
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_call_menu_onclick(event)
+function xows_gui_call_view_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
 
@@ -3386,37 +3364,40 @@ function xows_gui_call_menu_onclick(event)
 
   switch(event.target.id)
   {
-    case "call_bt_spk": {
-      const call_in_vol = xows_doc("call_in_vol");
-      mutted = event.target.classList.toggle("MUTTED");
-      xows_gui_audio.vol.gain.value = mutted ? 0 : parseInt(call_in_vol.value) / 100;
-      call_in_vol.disabled = mutted;
-      xows_gui_sound_play(mutted ? "mute" : "unmute"); //< Play sound
-      break;
-    }
-    case "call_bt_cam": {
-      mutted = event.target.classList.toggle("MUTTED");
-      // Enable/Disable local video tracks
-      xows_gui_call_input_enable(!mutted, "video");
-      xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
-      break;
-    }
-    case "call_bt_mic": {
-      mutted = event.target.classList.toggle("MUTTED");
-      // Enable/Disable local video tracks
-      xows_gui_call_input_enable(!mutted, "audio");
-      xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
-      break;
-    }
-    case "call_bt_hup": {
-      // Hangup and clear data
-      xows_gui_call_terminate(xows_gui_peer,"success");
-      break;
-    }
-    case "call_bt_geo": {
-      xows_doc_cls_tog("chat_fram","CALL-FULL");
-      break;
-    }
+    case "call_spkr": {
+        const call_volu = xows_doc("call_volu");
+        mutted = event.target.classList.toggle("MUTTED");
+        xows_gui_audio.vol.gain.value = mutted ? 0 : parseInt(call_volu.value) / 100;
+        call_volu.disabled = mutted;
+        xows_gui_sound_play(mutted ? "mute" : "unmute"); //< Play sound
+      } break;
+
+    case "call_came": {
+        mutted = event.target.classList.toggle("MUTTED");
+        // Enable/Disable local video tracks
+        xows_cli_call_self_mute(xows_gui_peer, "video", mutted);
+        xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
+      } break;
+
+    case "call_micr": {
+        mutted = event.target.classList.toggle("MUTTED");
+        // Enable/Disable local video tracks
+        xows_cli_call_self_mute(xows_gui_peer, "audio", mutted);
+        xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
+      } break;
+
+    case "call_hgup": {
+        // Hangup and clear data
+        xows_gui_call_hangup(xows_gui_peer,"success");
+      } break;
+
+    case "call_expd": {
+        // Set Chat Frame layout to exapnd Call Frame
+        const full = xows_doc_cls_tog("chat_fram","CALL-FULL");
+        // Change expand/reduce button title
+        const title = full ? "Reduce" : "Expand";
+        xows_doc("call_expd").title = xows_l10n_get(title);
+      } break;
   }
 }
 
@@ -3425,13 +3406,13 @@ function xows_gui_call_menu_onclick(event)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_call_in_vol_oninput(event)
+function xows_gui_call_view_oninput(event)
 {
   const gain = parseInt(event.target.value) / 100;
 
   // Set volume
   xows_gui_audio.vol.gain.value = gain;
-  xows_log(2, "gui_call_in_vol_oninput", "volume", gain);
+  xows_log(2, "gui_call_volu_oninput", "volume", gain);
 
   // Change volume slider icon according current level
   let cls = "";
@@ -3442,28 +3423,195 @@ function xows_gui_call_in_vol_oninput(event)
     cls = "RNG-MIN";
   }
 
-  xows_doc("call_bt_spk").className = cls;
+  xows_doc("call_spkr").className = cls;
+}
+
+/**
+ * Function to open the Chat Multimedia Call Session layout
+ *
+ * @param   {object}    peer    Peer object
+ */
+function xows_gui_call_view_open(peer)
+{
+  const call_view = xows_gui_peer_doc(peer,"call_view");
+
+  // Reset expand/reduce button title
+  xows_gui_peer_doc(peer,"call_expd").title = xows_l10n_get("Expand");
+
+  // Reset volume slider and button to initial state
+  const call_spkr = xows_gui_peer_doc(peer,"call_spkr");
+  const call_volu = xows_gui_peer_doc(peer,"call_volu");
+
+  call_spkr.className = "";
+  call_volu.disabled = false;
+  call_volu.value = 50;
+
+  // Set gain to current volume slider position
+  xows_gui_audio.vol.gain.value = parseInt(call_volu.value) / 100;
+
+  // Reset Microphone and camera button to intial state
+  const call_came = xows_gui_peer_doc(peer,"call_came");
+  const call_micr = xows_gui_peer_doc(peer,"call_micr");
+
+  call_micr.className = "";
+  call_came.className = "";
+  call_came.hidden = !xows_cli_call_sess_meds(peer).video;
+
+  if(call_view.hidden) {
+    if(peer === xows_gui_peer) {
+      // Add event listeners
+      xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_view_onclick);
+      xows_doc_listener_add(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
+    }
+  }
+
+  // Show Call view
+  call_view.hidden = false;
+}
+
+/**
+ * Function to close Multimedia Call Session layout
+ *
+ * @param   {object}    peer    Peer object
+ */
+function xows_gui_call_view_close(peer)
+{
+  const call_view = xows_gui_peer_doc(peer,"call_view");
+
+  // Mute sound
+  xows_gui_audio.vol.gain.value = 0;
+
+  if(peer === xows_gui_peer) {
+    // Remove event listeners
+    xows_doc_listener_rem(xows_doc("call_menu"),"click",xows_gui_call_view_onclick);
+    xows_doc_listener_rem(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
+  }
+
+  // Hide Call view
+  call_view.hidden = true;
+
+  // Empty the peer/stream view grid
+  xows_gui_peer_doc(peer,"call_grid").innerHTML = "";
+
+  // Reset Chat frame layout
+  xows_doc("chat_fram").classList.remove("CALL-FULL");
+}
+
+/**
+ * Function to add peer to the Chat Multimedia session (Call view)
+ * interface
+ *
+ * @param   {object}    peer      Call Peer object
+ * @param   {object}    part      Participant Peer object
+ * @param   {object}    stream    Participant Stream object
+ */
+function xows_gui_call_view_part_add(peer, part, stream)
+{
+  const call_grid = xows_gui_peer_doc(peer, "call_grid");
+
+  const is_video = stream.getVideoTracks().length;
+  if(is_video && part.self) return; //< No local video loopback
+
+  // Search for already existing stream for this peer
+  let element = call_grid.querySelector("div[data-peer='"+xows_cli_peer_iden(part)+"']");
+
+  let media;
+
+  if(element) {
+    // Simply update stream
+    element.firstChild.srcObject = stream;
+    return;
+  } else {
+    // Create <strm-audio> or <strm-video> element from template
+    if(is_video) {
+      element = xows_tpl_spawn_stream_video(part);
+      media = element.querySelector("video");
+    } else {
+      element = xows_tpl_spawn_stream_audio(part);
+      media = element.querySelector("audio");
+    }
+  }
+
+  // Mute audio output since it will be managed through AudioContext
+  media.muted = true;
+
+  // Creates AudioSource node and store it within Media object
+  media.srcNode = xows_gui_audio.ctx.createMediaStreamSource(stream);
+
+  // If stream is Audio we create required stuff for VU-Meter animation
+  if(!is_video) {
+    // Create Analyser node dans Buffer node stored within the Media
+    // objecy to perform audio peek analysis for visual effects
+    media.fftNode = xows_gui_audio.ctx.createAnalyser();
+    media.fftNode.fftSize = 2048;
+    media.fftBuff = new Float32Array(media.fftNode.frequencyBinCount);
+    media.srcNode.connect(media.fftNode);
+  }
+
+  // Connect AudioSource -> Analyser [-> GainNode]
+  if(!part.self) media.srcNode.connect(xows_gui_audio.vol);
+
+  // Set stream to Media element
+  media.srcObject = stream;
+  media.autoplay = true;
+
+  // Add Stream element to layout
+  if(part.self) {
+    call_grid.insertBefore(element, call_grid.firstChild);
+  } else {
+    call_grid.appendChild(element);
+  }
 }
 
 /* -------------------------------------------------------------------
- * Main Screen - Chat Frame - Call View - Initialization
+ * Main Screen - Chat Frame - VU-Meter animation
  * -------------------------------------------------------------------*/
-
 /**
- * Multimedia Call speak/silence visual effect animation function handle.
+ * Call View VU-Meter animation interval handle.
  */
-let xows_gui_chat_call_fx_hnd = null;
+let xows_gui_call_view_vumet_hnd = null;
 
 /**
- * Animation function for Multimedia Call speak/silence visual effect
- * for audio streams <div> element.
+ * Start the Call View VU-Meter animation
+ *
+ * The VU-Meter animation (which is not strictly a VU-Meter) is used to
+ * show visual feedback according audio volume arround Chat Call frame
+ * participants.
+ *
+ * @param   {number}    rate    Animation refresh rate in miliseconds
+ */
+function xows_gui_call_view_vumet_run(rate)
+{
+  if(!xows_gui_call_view_vumet_hnd)
+    xows_gui_call_view_vumet_hnd = setInterval(xows_gui_call_view_vumet_anim, rate);
+}
+
+/**
+ * Stop the Call View VU-Meter animation
+ */
+function xows_gui_call_view_vumet_stop()
+{
+  clearInterval(xows_gui_call_view_vumet_hnd);
+  xows_gui_call_view_vumet_hnd = null;
+}
+
+/**
+ * Call View VU-Meter animation function.
+ *
+ * The VU-Meter animation (which is not strictly a VU-Meter) is used to
+ * show visual feedback according audio volume arround Chat Call frame
+ * participants.
  *
  * This function is used within a loop (using requestAnimationFrame) to
  * perform real-time audio analysis of input audio stream to change the
- * visual audio <div> element border color according silence or speaking.
+ * proper HTML element color according silence or speaking.
  */
-function xows_gui_chat_call_fx()
+function xows_gui_call_view_vumet_anim()
 {
+  // Avoid useless calculations
+  if(xows_doc("call_view").hidden)
+    return;
+
   // Get list of Audio Media objects
   const audio = xows_doc("call_grid").querySelectorAll("audio");
 
@@ -3481,256 +3629,246 @@ function xows_gui_chat_call_fx()
     }
 
     // If peek value is greater than threshold, change color
-    const color = peek > 0.08 ? "var(--link-base)" : "var(--text-tone3)";
+    const color = peek > 0.08 ? "var(--link-base)" : "var(--text-tone4)";
     if(audio[i].parentNode.style.borderColor !== color) {
       audio[i].parentNode.style.borderColor = color;
     }
   }
 }
 
-/**
- * Function to open the Chat Multimedia Call Session layout
- */
-function xows_gui_chat_call_open()
-{
-  // Reset volume slider and button to initial state
-  const call_bt_spk = xows_doc("call_bt_spk");
-  const call_in_vol = xows_doc("call_in_vol");
-
-  call_bt_spk.className = "";
-  call_in_vol.disabled = false;
-  call_in_vol.value = 50;
-
-  // Set gain to current volume slider position
-  xows_gui_audio.vol.gain.value = parseInt(xows_doc("call_in_vol").value) / 100;
-
-  const use_video = xows_gui_call_local.constraints.video; //xows_gui_call_constraints.video;
-
-  // Reset Microphone button to intial state
-  xows_doc_cls_rem("call_bt_mic","MUTTED");
-
-  // Reset Microphone button to intial state
-  if(use_video) {
-    // Reset Camera button to intial state
-    xows_doc_cls_rem("call_bt_cam", "MUTTED");
-  }
-
-  xows_doc_show("call_bt_cam", use_video);
-
-  // Add event listeners
-  xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_menu_onclick);
-  xows_doc_listener_add(xows_doc("call_in_vol"),"input",xows_gui_call_in_vol_oninput);
-
-  // Open Multimedia Call view layout
-  xows_doc_cls_add("chat_fram","CALL-OPEN");
-}
-
-/**
- * Function to close Multimedia Call Session layout
- */
-function xows_gui_chat_call_close()
-{
-  // Stop the speak/silence visual effects animation loop
-  if(xows_gui_chat_call_fx_hnd) {
-    clearInterval(xows_gui_chat_call_fx_hnd);
-    xows_gui_chat_call_fx_hnd = null;
-  }
-
-  // Mute sound
-  xows_gui_audio.vol.gain.value = 0;
-
-  // Remove event listeners
-  xows_doc_listener_rem(xows_doc("call_menu"),"click",xows_gui_call_menu_onclick);
-  xows_doc_listener_rem(xows_doc("call_in_vol"),"input",xows_gui_call_in_vol_oninput);
-
-  // Reset expand/reduce button title
-  xows_doc("call_bt_geo").title = xows_l10n_get("Expand");
-
-  // Close Multimedia Call view layout
-  xows_doc("chat_fram").classList.remove("CALL-OPEN","CALL-FULL");
-
-  // Empty the peer/stream view grid
-  xows_doc("call_grid").innerHTML = "";
-}
-
-/**
- * Function to add peer to the Chat Multimedia session (Call view)
- * interface
- *
- * @param   {object}    peer      Contact Peer object related to stream
- * @param   {object}    stream    Stream object to add
- */
-function xows_gui_chat_call_add_stream(peer, stream)
-{
-  const call_grid = xows_doc("call_grid");
-
-  const is_video = stream.getVideoTracks().length;
-  if(is_video && peer.self) return; //< No local video loopback
-
-  // Select JID
-  const jid = peer.self ? peer.jful : peer.call;
-
-  // Search for already existing stream for this peer
-  let media, element = call_grid.querySelector("div[jid='"+jid+"']");
-
-  if(element) {
-    element.firstChild.srcObject = stream;
-    return;
-  } else {
-    if(is_video) {
-      element = xows_tpl_spawn_stream_video(peer, jid);
-      media = element.querySelector("video");
-    } else {
-      element = xows_tpl_spawn_stream_audio(peer, jid);
-      media = element.querySelector("audio");
-    }
-  }
-
-  // Mute audio output since it will be managed through AudioContext
-  media.muted = true;
-
-  // Creates AudioSource node and store it within Media object
-  media.srcNode = xows_gui_audio.ctx.createMediaStreamSource(stream);
-
-  // If stream is Audio we create required stuff for the
-  // speak/silence visual effect (see xows_gui_chat_call_effect)
-  if(!is_video) {
-
-    // Create Analyser node dans Buffer node stored within the Media
-    // objecy to perform audio peek analysis for visual effects
-    media.fftNode = xows_gui_audio.ctx.createAnalyser();
-    media.fftNode.fftSize = 2048;
-    media.fftBuff = new Float32Array(media.fftNode.frequencyBinCount);
-    media.srcNode.connect(media.fftNode);
-
-    // Start the speak/silence visual effects animation loop
-    if(!xows_gui_chat_call_fx_hnd)
-      xows_gui_chat_call_fx_hnd = setInterval(xows_gui_chat_call_fx, 50);
-  }
-
-  // Connect AudioSource -> Analyser [-> GainNode]
-  if(!peer.self) media.srcNode.connect(xows_gui_audio.vol);
-
-  // Set stream to Media element
-  media.srcObject = stream;
-  media.autoplay = true;
-
-  // Add Stream element to layout
-  if(peer.self) {
-    call_grid.insertBefore(element, call_grid.firstChild);
-  } else {
-    call_grid.appendChild(element);
-  }
-}
-
 /* -------------------------------------------------------------------
- * Main Screen - Chat Frame - Incoming call - Initialization
+ * Main Screen - Chat Frame - Ringing dialog
  * -------------------------------------------------------------------*/
- /**
- * History Ringing dialog on-click callback
- *
- * @param   {object}    peer      Contact Peer object.
- * @param   {string}    reason    Calling dialog open reason
- * @param   {object}   [constraints] Optionnal media constraints
+/**
+ * Constants for Ring dialog type
  */
-function xows_gui_hist_ring_onclick(event)
-{
-  // Close the Signaling Call dialog
-  xows_gui_hist_ring_close();
+const XOWS_RING_TERM = 0;
+const XOWS_RING_NEGO = 1;
+const XOWS_RING_RING = 2;
 
-  // Stop Ring Bell sound
-  xows_gui_sound_stop("ringbell");
+/**
+ * History Call Ringing dialog on-click callback
+ *
+ * @param   {object}    event      Event object
+ */
+function xows_gui_call_ring_onclick(event)
+{
+  const call_ring = xows_gui_peer_doc(xows_gui_peer,"call_ring");
 
   switch(event.target.id)
   {
-  case "ring_bt_pkup":
-    // Ask user for input devices and open Call View
-    xows_gui_call_accept(xows_gui_peer);
+  case "ring_bt_clos":
+    // dummy case, will close dialog
     break;
+
   case "ring_bt_deny":
-    // Reject and clear call data
-    xows_gui_call_terminate(xows_gui_peer,"decline");
+    // Reject or abort call
+    let reason;
+    if(call_ring.classList.contains("CALL-INBD")) {
+      xows_gui_call_hangup(xows_gui_peer, "decline");
+    } else {
+      xows_gui_call_onabort(xows_gui_peer);
+    }
     break;
+
+  case "ring_bt_pkup": {
+      // Ask user for input devices and send answer
+      xows_gui_call_accept(xows_gui_peer);
+    } return; //< do not close dialog, it will pass to Negotiation state
+
+  default:
+    return; //< return without closing
   }
+
+  // Close dialog
+  xows_gui_call_ring_close(xows_gui_peer);
 }
 
 /**
- * Open History Ringing dialog
+ * Show the History Call Ringing dialog of the specified Peer
  *
  * @param   {object}    peer          Contact Peer object.
+ * @param   {number}    type          Dialog type.
  * @param   {string}    reason        Calling dialog open reason
- * @param   {object}   [constraints]  Optionnal media constraints
  */
-function xows_gui_hist_ring_open(peer, reason, constraints)
+function xows_gui_call_ring_show(peer, type, reason)
 {
-  const hist_ring = xows_gui_peer_doc(peer, "hist_ring");
+  const call_ring = xows_gui_peer_doc(peer,"call_ring");
 
-  const video = constraints ? constraints.video : false;
+  let is_video = false, inbound = false;
 
-  let icon, text, ringing, incall;
-
-  switch(reason)
-  {
-  case "decline": {   //< peer declined call
-      icon = "CALL-TERM";
-      text = xows_l10n_get("The call has been declined");
-    } break;
-
-  case "buzy": {      //< peer is buzy
-      icon = "CALL-TERM";
-      text = xows_l10n_get("The other person is buzy");
-    } break;
-
-  case "success": {   //< peer hung up call
-      icon = "CALL-TERM";
-      if(xows_wrtc_linked()) {
-        text = xows_l10n_get("The other person has hung up");
-      } else {
-        text = xows_l10n_get("You missed a call");
-      }
-    } break;
-
-  case "initiate": {  //< initiating call
-      icon = video ? "CALL-VID" : "CALL-AUD";
-      text = xows_l10n_get("Call in progress...");
-      ringing = true;
-    } break;
-
-  case "incall":  {    //< incoming call
-      icon = video ? "CALL-VID" : "CALL-AUD";
-      text = video ? xows_l10n_get("Incoming video call...") : xows_l10n_get("Incoming audio call...");
-      ringing = true; incall = true;
-    } break;
-
-  default:  {         //< Unknown reason
-      icon = "CALL-TERM";
-      text = xows_l10n_get("Unexpected end of call") + ": " + xows_l10n_get(reason);
-    } break;
+  if(type !== XOWS_RING_TERM) {
+    // Check for inbound or outbound call
+    inbound = xows_cli_call_sess_inbd(peer);
+    // Get session Medias/Constraints
+    is_video = xows_cli_call_sess_meds(peer).video;
   }
 
-  hist_ring.querySelector("RING-ICON").className = icon;
-  hist_ring.querySelector("RING-TEXT").innerText = text;
+  let text, tone, bell;
 
-  xows_gui_peer_doc(peer, "ring_bt_deny").hidden = !ringing;
-  xows_gui_peer_doc(peer, "ring_bt_pkup").hidden = !incall;
-  xows_gui_peer_doc(peer, "ring_bt_clos").hidden = ringing; //< Ringing, no Close button
+  switch(type)
+  {
+  case XOWS_RING_RING:
+    if(inbound) {
+      bell = true;
+      text = is_video ? "Incoming video call..." : "Incoming audio call...";
+    } else {
+      tone = true;
+      text = "Call in progress...";
+    }
+    break;
 
-  hist_ring.classList.toggle("RINGING", ringing);
+  case XOWS_RING_NEGO:
+    text = "Establishing relay...";
+    break;
 
-  // Show the incoming call dialog
-  hist_ring.hidden = false;
+  case XOWS_RING_TERM:
+      switch(reason)
+      {
+      case "decline":    //< peer declined call
+        text = "The call has been declined";
+        break;
 
-  // Scroll history down
-  xows_gui_peer_scroll_down(peer);
+      case "buzy":       //< peer is buzy
+        text = "The other party is buzy";
+        break;
+
+      case "success":    //< peer hung up call
+        text = xows_cli_call_sess_cntd(peer) ? "The other party hung up" : "You missed a call";
+        break;
+      }
+    break;
+  }
+
+  call_ring.classList.toggle("CALL-VISI", is_video);
+  call_ring.classList.toggle("CALL-RING", (type === XOWS_RING_RING));
+  call_ring.classList.toggle("CALL-NEGO", (type === XOWS_RING_NEGO));
+  call_ring.classList.toggle("CALL-TERM", (type === XOWS_RING_TERM));
+  call_ring.classList.toggle("CALL-INBD", inbound);
+
+  call_ring.querySelector("RING-TEXT").innerText = xows_l10n_get(text);
+
+  if(bell) {
+    xows_gui_sound_play("ringbell"); //< Play Ring Bell sound
+  } else {
+    xows_gui_sound_stop("ringbell"); //< Stop Ring Bell sound
+  }
+
+  if(tone) {
+    xows_gui_sound_play("ringtone"); //< Play Ring Bell sound
+  } else {
+    xows_gui_sound_stop("ringtone"); //< Stop Ring Bell sound
+  }
+
+  if(call_ring.hidden) {
+
+    // Add event listener
+    if(peer === xows_gui_peer)
+      xows_doc_listener_add(call_ring, "click", xows_gui_call_ring_onclick);
+
+    // Show the incoming call dialog
+    call_ring.hidden = false;
+
+    // Signals something new appending to chat
+    xows_gui_chat_onappend(peer, call_ring, false);
+  }
 }
 
 /**
- * Close History Ringing dialog
+ * History Call Ringing dialog of the specified Peer
+ *
+ * @param   {object}    peer          Contact Peer object.
  */
-function xows_gui_hist_ring_close()
+function xows_gui_call_ring_close(peer)
 {
-  // Show the incoming call message
-  xows_doc("hist_ring").hidden = true;
+  // Stop Ring Tone & Bell sound
+  xows_gui_sound_stop("ringtone");
+  xows_gui_sound_stop("ringbell");
+
+  const call_ring = xows_gui_peer_doc(peer,"call_ring");
+
+  // Remove event listener
+  xows_doc_listener_rem(call_ring, "click", xows_gui_call_ring_onclick);
+
+  // Hide the dialog
+  call_ring.hidden = true;
+}
+
+/* -------------------------------------------------------------------
+ *
+ * User Media acquisition routines
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * User media acquisition routines parameters
+ */
+const xows_gui_media_ask_param = {constr:null,onmedia:null,onabort:null,data:null};
+
+/**
+ * Acquire user input media stream specified by constraints.
+ *
+ * @param   {object}     constr     Medias constraints to acquire
+ * @param   {function}   onmedia    Acquire success callback
+ * @param   {function}   onmedia    Acquire abort callback
+ * @param   {any}       [data]      Optional extra param to pass to callbacks
+ */
+function xows_gui_media_ask(constr, onmedia, onabort, data)
+{
+  const param = xows_gui_media_ask_param;
+
+  // Save parameters
+  param.constr = constr;
+  param.onmedia = onmedia;
+  param.onabort = onabort;
+  param.data = data;
+
+  // Send media request to User
+  navigator.mediaDevices.getUserMedia(param.constr)
+    .then((stream) => param.onmedia(param.data,stream),
+          xows_gui_media_fail_open);
+}
+
+/**
+ * User media acquisition faillure Input-Box on-valid callback
+ */
+function xows_gui_media_fail_onvalid()
+{
+  // Get saved parameters
+  const param = xows_gui_media_ask_param;
+
+  // Send again media request to User with saved parameters
+  navigator.mediaDevices.getUserMedia(param.constr)
+    .then((stream) => param.onmedia(param.data,stream),
+          xows_gui_media_fail_open);
+}
+
+/**
+ * User media acquisition faillure Input-Box on-abort callback
+ */
+function xows_gui_media_fail_onabort()
+{
+  // Get saved parameters
+  const param = xows_gui_media_ask_param;
+
+  // Call on-abort callback
+  if(xows_isfunc(param.onabort))
+    param.onabort(param.data);
+}
+
+/**
+ * User media acquisition faillure Input-Box open
+ *
+ * This function is called as default fallback when user media acquisition
+ * failed.
+ */
+function xows_gui_media_fail_open()
+{
+  xows_log(1,"gui_media_fail_open","user media acquisition failed");
+
+  // Display popup error message
+  xows_doc_popu_open(XOWS_SIG_WRN, "Unable to get device stream for media call session",
+                     xows_gui_media_fail_onvalid, "Retry",
+                     xows_gui_media_fail_onabort, "Cancel");
 }
 
 /* -------------------------------------------------------------------
@@ -3738,56 +3876,50 @@ function xows_gui_hist_ring_close()
  * Multimedia-Call management
  *
  * -------------------------------------------------------------------*/
-
-/**
- * Multimedia-Call session per-peer Remote parameters
- */
-const xows_gui_call_remote = new Map();
-
-/**
- * Multimedia-Call session Local parameters
- */
-const xows_gui_call_local = {"sdp":null,"sid":null,"constraints":null,"stream":null};
-
 /* -------------------------------------------------------------------
- * Multimedia-Call - General interface functions
+ * Multimedia-Call - GUI management functions
  * -------------------------------------------------------------------*/
 /**
- * Function to hangup call and clear Call data and references
+ * Hangup and clear all active or pending call sessions
  */
 function xows_gui_call_clear()
 {
-  // Close the Media Call view frame
-  xows_gui_chat_call_close();
+  let peers = xows_cli_call_peer_list();
 
-  // Stop local stream
-  if(xows_gui_call_local.stream) {
+  for(let i = 0; i < peers.length; ++i) {
 
-    const tracks = xows_gui_call_local.stream.getTracks();
-    let i = tracks.length;
-    while(i--) tracks[i].stop();
+    // Hang up with peer
+    xows_cli_call_hangup(peers[i], "failed-application");
 
-    xows_gui_call_local.stream = null;
+    // Close and reset GUI elements
+    xows_gui_call_exit(peers[i]);
   }
-
-  xows_gui_call_local.sdp = null;
-  xows_gui_call_local.sid = null;
-
-  // Stop Ring Tone sound
-  xows_gui_sound_stop("ringtone");
-
-  // Stop Ring Bell sound
-  xows_gui_sound_stop("ringbell");
-
-  // Play Hangup sound
-  xows_gui_sound_play("hangup");
-
-  // Clear WebRTC interface
-  xows_wrtc_clear();
 }
 
 /**
- * Multimedia-Call terminate call for the specified Peer
+ * Multimedia-Call clear and reset GUI element for the specified Peer
+ *
+ * @param   {object}     peer       Related Peer object
+ */
+function xows_gui_call_exit(peer)
+{
+  // Remove calling badge from roster contact
+  xows_gui_calling_set(peer, false);
+
+  // Close any potentially opened Call view frame
+  xows_gui_call_view_close(peer);
+
+  // If no more call sessions, stop VU-Meter animation
+  if(!xows_cli_call_sess_count())
+    xows_gui_call_view_vumet_stop();
+}
+
+/* -------------------------------------------------------------------
+ * Multimedia-Call - Call interactions functions
+ * -------------------------------------------------------------------*/
+/**
+ * Multimedia-Call terminate call for the specified Peer. This function is
+ * called when user takes the initiative to hang-up.
  *
  * If not 'reason' is provided, data for the specified Remote peer is cleared
  * without sending session terminate signaling.
@@ -3795,381 +3927,228 @@ function xows_gui_call_clear()
  * @param   {object}     peer       Related Peer object
  * @param   {string}    [reason]    Optionnal reason to HangUp
  */
-function xows_gui_call_terminate(peer, reason)
+function xows_gui_call_hangup(peer, reason)
 {
-  if(reason)
-    xows_cli_jing_terminate(peer, reason);
+  // Hang up with peer
+  xows_cli_call_hangup(peer, reason);
 
-  // Prevent useless process
-  if(!xows_gui_call_remote.has(peer))
-    return;
+  // Close and reset GUI elements
+  xows_gui_call_exit(peer);
 
-  // Enable Call buttons
-  xows_gui_peer_doc(peer, "chat_bt_cala").disabled = false;
-  xows_gui_peer_doc(peer, "chat_bt_calv").disabled = false;
-
-  // Remove calling badge to roster contact
-  xows_gui_calling_set(peer, false);
-
-  const remote = xows_gui_call_remote.get(peer);
-
-  // Stop stream for this remote peer
-  if(remote.stream) {
-    const tracks = remote.stream.getTracks();
-    let i = tracks.length;
-    while(i--) tracks[i].stop();
-
-    remote.stream = null;
-  }
-
-  // Remove peer from remote entities
-  xows_gui_call_remote.delete(peer);
-
-  // Clear call data if required
-  if(!xows_gui_call_remote.size)
-    xows_gui_call_clear();
+  // Play Hangup sound
+  xows_gui_sound_play("hangup");
 }
 
 /**
- * Multimedia-Call accept incomping call from the specified Peer
+ * Multimedia-Call accept (Answer) incomping call from the specified Peer
  *
- * @param   {object}     peer     Related Peer object
- */
-function xows_gui_call_accept(peer)
-{
-  if(!xows_gui_call_remote.has(peer))
-    return;
-
-  const remote = xows_gui_call_remote.get(peer);
-
-  const medias = xows_sdp_get_medias(remote.sdp);
-
-  // Create best medias constraint according incomming call
-  // medias list and currently available local input medias
-  const constraints = { audio: (medias.audio && xows_gui_medias_has("audioinput")),
-                        video: (medias.video && xows_gui_medias_has("videoinput")) };
-
-  xows_gui_call_input_ask(constraints);
-}
-
-/**
- * Multimedia-Call invite the specified Peer for a call
+ * This function is a transition function that only starts user Media
+ * Acquisition process. Once user authorized media and stream acquired, the
+ * xows_gui_call_accept_onstream is called to launch proper routines for
+ * call accept (Answer).
+ *
+ * If the constr parameter is set to null, the function automatically
+ * determines proper media constraints according peer's medias and current
+ * available inputs.
  *
  * @param   {object}     peer         Related Peer object
- * @param   {object}     constraints  Medias constraints
+ * @param   {object}     constr       Constraints for media aquisition
  */
-function xows_gui_call_invite(peer, constraints)
+function xows_gui_call_accept(peer, constr)
 {
-  if(xows_gui_call_remote.has(peer))
-    return;
+  if(!constr) {
 
-  // Add peer as remote entiy
-  xows_gui_call_remote.set(peer,{"sid":null,"sdp":null,"stream":null});
+    // Get session medias (remote medias, at this stage)
+    constr = xows_cli_call_sess_meds(peer);
 
-  // Start by getting user Media Stream
-  xows_gui_call_input_ask(constraints);
-}
-
-/* -------------------------------------------------------------------
- * Multimedia-Call - Local/User Input-Medias routines
- * -------------------------------------------------------------------*/
-/**
- * Multimedia-Call user Input-Medias activation.
- *
- * @param   {boolean} enable      Enable or disable tacks
- * @param   {string}  type        Medias type, either 'audio', 'video' or null for both
- */
-function xows_gui_call_input_enable(enable, type)
-{
-  if(xows_gui_call_local.stream) {
-
-    const stream = xows_gui_call_local.stream;
-
-    let tracks = null;
-
-    switch(type)
-    {
-    case "video": tracks = stream.getVideoTracks(); break;
-    case "audio": tracks = stream.getAudioTracks(); break;
-    default:      tracks = stream.getTracks(); break;
-    }
-
-    if(tracks) {
-      for(let i = 0; i < tracks.length; ++i)
-        tracks[i].enabled = enable;
-    }
+    // keep only the full-duplex ables medias.
+    constr.audio = constr.audio && xows_gui_medias_has("audioinput");
+    constr.video = constr.video && xows_gui_medias_has("videoinput");
   }
-}
-
-/**
- * Multimedia-Call user Input-Medias acquiring error callback
- */
-function xows_gui_call_input_error()
-{
-  // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_WRN, xows_l10n_get("Unable to get device stream for media call session"),
-                     xows_gui_call_input_retry, "Retry",
-                     xows_gui_chat_call_close, "Cancel");
-}
-
-/**
- * Multimedia-Call user Input-Medias acquiring success callback
- *
- * @param   {object}  stream    Input MediaStream object
- */
-function xows_gui_call_input_setup(stream)
-{
-  // Store local stream
-  xows_gui_call_local.stream = stream;
-
-  // Add stream to Multimedia View
-  xows_gui_chat_call_add_stream(xows_cli_self, stream);
-
-  // Setup WebRTC interface if required
-  if(!xows_wrtc_ready()) {
-    xows_wrtc_setup(  xows_cli_external_get("stun", "turn"),
-                      xows_gui_wrtc_onlinked,
-                      xows_gui_wrtc_onerror);
-  }
-
-  // If no remote stream this is a call initiation
-  if(!xows_wrtc_has_remote()) {
-
-    // Open Ringin dialog
-    xows_gui_hist_ring_open(xows_gui_peer,"initiate",xows_gui_call_local.constraints);
-
-    // Play Ring Tone sound
-    xows_gui_sound_play("ringtone");
-  }
-
-  // Set WebRTC Local stream and wait for SDP
-  xows_wrtc_local_stream(stream, xows_gui_wrtc_onsdp);
-
-  // Disable Call buttons
-  for(const peer of xows_gui_call_remote.keys()) {
-    xows_gui_peer_doc(peer, "chat_bt_cala").disabled = true;
-    xows_gui_peer_doc(peer, "chat_bt_calv").disabled = true;
-  }
-}
-
-/**
- * Multimedia-Call user Input-Medias acquiring request function
- *
- * @param   {object}  constraints  Media constraints object
- */
-function xows_gui_call_input_ask(constraints)
-{
-  // Check whether API is available
-  if(!xows_gui_medias) {
-    xows_log(1,"gui_call_input_ask","Feature unavailable");
-    return;
-  }
-
-  xows_gui_call_local.constraints = constraints;
 
   // Send media request to User
-  navigator.mediaDevices.getUserMedia(constraints)
-    .then(xows_gui_call_input_setup, xows_gui_call_input_error);
+  xows_gui_media_ask(constr, xows_gui_call_accept_onstream, xows_gui_call_onabort, peer);
 }
 
 /**
- * Multimedia-Call user Input-Medias acquiring retry function
+ * Callback for Multimedia-Call accept (Answer) local stream acquired
+ *
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     stream       Acquired local input Stream
  */
-function xows_gui_call_input_retry()
+function xows_gui_call_accept_onstream(peer, stream)
 {
-  xows_gui_call_input_ask(xows_gui_call_local.constraints);
+  // Answer call
+  xows_cli_call_accept(peer, stream);
+
+  // Open Ring dialog in Negotiation mode
+  xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
+
+  // Get session medias (remote medias, at this stage)
+  const constr = xows_cli_call_sess_meds(peer);
+
+  // keep only medias that are reciprocal
+  constr.audio = constr.audio && xows_gui_medias_has("audioinput");
+  constr.video = constr.video && xows_gui_medias_has("videoinput");
+
+  // Add local participant (ourself) to Call View
+  xows_gui_call_view_part_add(peer, xows_cli_self, stream);
+}
+
+/**
+ * Multimedia-Call invite (Offer) the specified Peer for a call
+ *
+ * This function is a transition function that only starts user Media
+ * Acquisition process. Once user authorized media and stream acquired, the
+ * xows_gui_call_invite_onstream is called to launch proper routines for
+ * call initiation (Offer).
+ *
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     constr       Constraints for media aquisition
+ */
+function xows_gui_call_invite(peer, constr)
+{
+  // Send media request to User, on success call 'xows_cli_call_invite'
+  xows_gui_media_ask(constr, xows_gui_call_invite_onstream, xows_gui_call_onabort, peer);
+}
+
+/**
+ * Callback for Multimedia-Call invite (Offer) local stream acquired
+ *
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     stream       Acquired local input Stream
+ */
+function xows_gui_call_invite_onstream(peer, stream)
+{
+  // Initiate call (create session)
+  xows_cli_call_invite(peer, stream);
+
+  // Open Ring dialog in Negotiation mode
+  xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
+
+  // Add local participant (ourself) to Call View
+  xows_gui_call_view_part_add(peer, xows_cli_self, stream);
+}
+
+/**
+ * Callback for Multimedia-Call invite/accept media acquisition aborted
+ *
+ * @param   {object}     peer         Related Peer object
+ */
+function xows_gui_call_onabort(peer)
+{
+  // Set Ring dialog in Negotiation mode
+  xows_gui_call_ring_close(peer);
+
+  // Hang up (this will clear call stuff)
+  xows_gui_call_hangup(peer, null);
 }
 
 /* -------------------------------------------------------------------
- * Multimedia-Call - WebRTC interface routines
+ * Multimedia-Call - Client interface callbacks
  * -------------------------------------------------------------------*/
 /**
- * Multimedia-Call WebRTC error callback
+ * Callback for Multimedia-Call received call invite (inbound Offer)
  *
- * @param   {string}      text    Error message
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     stream       Remote media stream
  */
-function xows_gui_wrtc_onerror(text)
+function xows_gui_cli_oncalloffer(peer, stream)
 {
-  // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_WRN,"Call session error: "+text);
+  // Start the VU-Meter animation for Call View
+  xows_gui_call_view_vumet_run(50);
 
-  // Close potentially opened dialog
-  xows_gui_hist_ring_close();
-
-  // Clear call data
-  xows_gui_call_terminate();
-}
-
-/**
- * Multimedia-Call WebRTC local description (SDP) created callback
- *
- * @param   {string}      sdp     Local SDP description string
- */
-function xows_gui_wrtc_onsdp(sdp)
-{
-  // Store local SDP
-  xows_gui_call_local.sdp = sdp;
-
-  // Check whether we initiated call
-  const initiate = !xows_wrtc_has_remote();
-
-  for(const peer of xows_gui_call_remote.keys()) {
-    if(initiate) {
-      xows_cli_jing_initiate_sdp(peer, sdp);
-    } else {
-      xows_cli_jing_accept_sdp(peer, sdp);
-    }
-  }
-}
-
-/**
- * Multimedia-Call WebRTC remote stream available callback
- *
- * @param   {object}     stream     Remote MediaStream object
- * @param   {object}     peer       Related Peer object
- */
-function xows_gui_wrtc_onstream(stream, peer)
-{
-  const remote = xows_gui_call_remote.get(peer);
-
-  remote.stream = stream;
-
- // Add stream to Multimedia View
-  xows_gui_chat_call_add_stream(peer, stream);
-
-  // Check whether we answer this call
-  if(xows_wrtc_has_local()) {
-
-    // Close the Incoming Call dialog
-    xows_gui_hist_ring_close();
-  }
-}
-
-/**
- * Multimedia-Call WebRTC connection established callback
- */
-function xows_gui_wrtc_onlinked()
-{
-  // Stop Ring Tone sound
-  xows_gui_sound_stop("ringtone");
-
-  // Stop Ring Bell sound
-  xows_gui_sound_stop("ringbell");
-
-  for(const peer of xows_gui_call_remote.keys()) {
-    // Add calling badge to roster contact
-    xows_gui_calling_set(peer, true);
-  }
-
-  // Open Chat Multimedia View layout
-  xows_gui_chat_call_open();
-}
-
-/* -------------------------------------------------------------------
- * Multimedia-Call - XMPP/Jingle interface routines
- * -------------------------------------------------------------------*/
-/**
- * Multimedia-Call XMPP/Jingle error callback
- *
- * @param   {number}     code     Error code
- * @param   {string}     text     Error message
- */
-function xows_gui_cli_oncallerror(code, text)
-{
-  // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_WRN,"Call session error: "+text);
-
-  // Close potentially opened dialog
-  xows_gui_hist_ring_close();
-
-  // Hangup with all peer
-  for(const peer of xows_gui_call_remote.keys()) {
-    // Add calling badge to roster contact
-    xows_gui_call_terminate(peer, "failed-application");
-  }
-
-  // Clear call data
-  xows_gui_call_clear();
-}
-
-/**
- * Multimedia-Call XMPP/Jingle received session initiate callback
- *
- * @param   {object}     peer     Related Peer object
- * @param   {string}     sid      Jingle session ID
- * @param   {string}     sdp      Converted SDP Offer string
- */
-function xows_gui_cli_oncallinit(peer, sid, sdp)
-{
-  // Check whether we are busy
-  if(xows_wrtc_busy()) {
-    xows_gui_call_terminate(peer,"busy");
-    return;
-  }
-
-  // Add peer as remote entiy
-  xows_gui_call_remote.set(peer,{"sid":sid,"sdp":sdp,"stream":null});
-
-  // Setup WebRTC interface if required
-  if(!xows_wrtc_ready()) {
-    xows_wrtc_setup(  xows_cli_external_get("stun", "turn"),
-                      xows_gui_wrtc_onlinked,
-                      xows_gui_wrtc_onerror);
-  }
-
-  xows_wrtc_remote_sdp(sdp, xows_gui_wrtc_onstream, peer);
-
-  // Open the Incoming Call dialog
-  xows_gui_hist_ring_open(peer,"incall",xows_sdp_get_medias(sdp));
+  // Add remote participant to Call View
+  xows_gui_call_view_part_add(peer, peer, stream);
 
   // If peer is offscreen during incomming call, add notification
   if(peer !== xows_gui_peer)
     xows_gui_unread_call(peer, true);
 
-  // Play Ring Bell sound
-  xows_gui_sound_play("ringbell");
+  // Open Ring dialog in Ringing mode
+  xows_gui_call_ring_show(peer, XOWS_RING_RING, null);
 }
 
 /**
- * Multimedia-Call XMPP/Jingle received session accept callback
+ * Callback for Multimedia-Call received call accept (inbound Answer)
  *
- * @param   {object}     peer     Related Peer object
- * @param   {string}     sid      Jingle session ID
- * @param   {string}     sdp      Converted SDP Answer string
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     stream       Remote media stream
  */
-function xows_gui_cli_oncallaccept(peer, sid, sdp)
+function xows_gui_cli_oncallanwse(peer, stream)
 {
-  // Check for existing remote entiy
-  if(!xows_gui_call_remote.has(peer)) {
-    xows_log(1,"gui_cli_oncallaccept","accept from unknown remote",peer.addr);
-    return;
+  // Start the VU-Meter animation for Call View
+  xows_gui_call_view_vumet_run(50);
+
+  // Add remote participant to Call View
+  xows_gui_call_view_part_add(peer, peer, stream);
+}
+
+/**
+ * Callback for Multimedia-Call negotiation state changes
+ *
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     stream       Remote media stream
+ */
+function xows_gui_cli_oncallstate(peer, state)
+{
+  if(state === "ringing") {
+
+    // Set Ring dialog in Ringing mode
+    xows_gui_call_ring_show(peer, XOWS_RING_RING, null);
   }
 
-  // Save remote SDP answer
-  const remote = xows_gui_call_remote.get(peer);
-  remote.sdp = sdp;
+  if(state === "gathering") {
 
-  xows_wrtc_remote_sdp(sdp, xows_gui_wrtc_onstream, peer);
+    // Set Ring dialog in Negotiation mode
+    xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
+  }
+
+  if(state === "connected") {
+
+    // Set Ring dialog in Negotiation mode
+    xows_gui_call_ring_close(peer);
+
+    // Add calling badge to roster contact
+    xows_gui_calling_set(peer, true);
+
+    // Open Chat Multimedia View layout
+    xows_gui_call_view_open(peer);
+  }
 }
 
 /**
- * Multimedia-Call XMPP/Jingle received session terminate callback
+ * Callback for Multimedia-Call received call termination
  *
  * @param   {object}     peer     Related Peer object
- * @param   {string}     sid      Jingle session ID
- * @param   {string}     reason   Parsed terminate reason
+ * @param   {string}     reason   Termination reason string
  */
-function xows_gui_cli_oncallend(peer, sid, reason)
+function xows_gui_cli_oncalltermd(peer, reason)
 {
   // Open the Call dialog
-  xows_gui_hist_ring_open(peer, reason);
+  xows_gui_call_ring_show(peer, XOWS_RING_TERM, reason);
 
-  // If peer is offscreen during ended call change notification
-  if(peer !== xows_gui_peer)
-    xows_gui_unread_call(peer, false);
+  // Close and reset GUI elements
+  xows_gui_call_exit(peer);
 
-  // Hangup with this peer
-  xows_gui_call_terminate(peer, null);
+  // Play Hangup sound
+  xows_gui_sound_play("hangup");
+}
+
+/**
+ * Callback for Multimedia-Call received call error
+ *
+ * @param   {object}     peer     Related Peer object
+ * @param   {object}     error    Error data (DOMException)
+ */
+function xows_gui_cli_oncallerror(peer, error)
+{
+  const text = xows_l10n_get("Call session error") + ": ";
+  // Display popup error message
+  xows_doc_popu_open(XOWS_SIG_ERR,text+error.message);
+
+  // Hangup with peer
+  xows_gui_call_hangup(peer, "failed-application");
 }
 
 /* -------------------------------------------------------------------
@@ -4182,12 +4161,19 @@ function xows_gui_cli_oncallend(peer, sid, reason)
  * -------------------------------------------------------------------*/
 
 /**
- * Callback function to handle chat frame resizing
+ * Callback function to handle and process chat frame resizing
+ *
+ * This callback may be called either by Document "resize" event listener
+ * or ResizeObserver object.
+ *
+ * @param   {object}    event   Event object or array of ResizeObserverEntry
+ * @param   {object}    observ  Reference to calling ResizeObserver or undefined
+ * @param   {}
  */
-function xows_gui_chat_onresize()
+function xows_gui_chat_onresize(event, observ)
 {
   if(xows_gui_peer)
-    xows_gui_peer_scroll_keep(xows_gui_peer);
+    xows_doc_scrl_keep(document.getElementById("chat_main"));
 }
 
 /**
@@ -4203,47 +4189,22 @@ function xows_gui_chat_onscroll(event)
   // Check whether the "onscroll" event was fired by an automatic scroll
   // position adjustement, in this case we ignore the event as we are only
   // intereseted by scroll user.
-  if(xows_gui_peer_scroll_kept) {
-    xows_gui_peer_scroll_kept = false;
+  if(xows_doc_scrl_edited())
     return;
-  }
 
   const chat_main = xows_doc("chat_main");
-
-  // Switch from full to empty chat frame can generate a scroll equal
-  // to 0, the following condition prevent unwanted query triggering.
-  if(chat_main.scrollHeight === chat_main.clientHeight)
-    return;
 
   // Save scroll position
   xows_gui_peer_scroll_save(xows_gui_peer);
 
-  // Check whether the scroll is at top of frame
+  // If scroll near of top, fetch older history
   if(chat_main.scrollTop < xows_doc("hist_beg").offsetHeight * 0.8) {
     // Query archive for current chat contact
-    xows_gui_mam_query(xows_gui_peer, false, xows_gui_hist_page);
+    xows_gui_mam_fetch_older(xows_gui_peer);
   }
 
-  // If scroll is enough far from bottom, show the "Back to recent" banner
-  if(chat_main.scrollBottom > chat_main.clientHeight)
-    xows_gui_chat_nav_open(xows_gui_peer);
-
-  const hist_end = xows_doc("hist_end");
-
-  // Check whether we have cropped history
-  if(!hist_end.hidden) {
-    // Check whether the scroll is at bottom of frame
-    if(chat_main.scrollBottom < hist_end.offsetHeight * 0.8) {
-      // Query archive for current chat contact
-      xows_gui_mam_query(xows_gui_peer, true, xows_gui_hist_page);
-    }
-  } else {
-    // Check whether the scroll is at bottom of frame
-    if(chat_main.scrollBottom < 50) {
-      // Hide the "Back to recent" banner/button
-      xows_gui_chat_nav_close(xows_gui_peer);
-    }
-  }
+  // Show, hide or modify navigation bar according scroll position
+  xows_gui_chat_nav_update(xows_gui_peer, chat_main.scrollBottom, chat_main.clientHeight);
 }
 
 /**
@@ -4254,15 +4215,6 @@ function xows_gui_chat_onscroll(event)
 function xows_gui_chat_hist_onclick(event)
 {
   xows_cli_activity_wakeup(); //< Wakeup presence
-
-  if(event.target.id) {
-    // Check for history Ringing dialog
-    if(event.target.id.startsWith("ring")) {
-      // Forward to dedicated function
-      xows_gui_hist_ring_onclick(event);
-      return;
-    }
-  }
 
   // Check for click on New Message notification banner
   if(event.target.tagName === "IMG") {
@@ -4330,6 +4282,53 @@ function xows_gui_chat_hist_onclick(event)
 
       return;
     }
+  }
+}
+
+/**
+ * Function to handle new element appended to chat frame, either
+ * incomming history message, call ring notification, file upload
+ * progress dialog, etc.
+ *
+ * @param   {object}    event     Event object associated with trigger
+ * @param   {element}   element   Element that was appended to chat frame
+ * @param   {boolean}  [self]     Signal action is result of user itself
+ */
+function xows_gui_chat_onappend(peer, element, self)
+{
+  let scrolldown = false;
+
+  // Check whether user is scrolling far from bottom
+  if((xows_gui_peer_scroll_get(peer) > 50)) {
+    if(element.tagName === "LI-MESG") {
+      // This is an appended message to history
+      if(self) {
+        // Force scrolling down
+        scrolldown = true;
+      } else {
+        // Open chat "unread" navigation ribbon
+        xows_gui_chat_nav_show(peer,"UNREAD");
+      }
+    }
+    if(element.id === "call_ring") {
+      // Open chat "unread" navigation ribbon
+      xows_gui_chat_nav_show(peer,"RINGING");
+    }
+    if(element.id === "hist_upld") {
+      // Force scrolling down
+      scrolldown = true;
+    }
+  }
+
+  if(scrolldown) {
+
+    xows_gui_peer_scroll_down(peer, false);
+
+  } else {
+
+    // Keep scroll to proper position from bottom. Calling this
+    // manually allow us to get rid of ResizeObserver
+    xows_gui_peer_scroll_keep(peer);
   }
 }
 
@@ -4502,7 +4501,8 @@ function xows_gui_hist_mesg_get(peer, id)
   if(peer === xows_gui_peer) {
     hist_ul = document.getElementById("hist_ul");
   } else {
-    hist_ul = xows_doc_frag_element_find(peer.addr,"chat_hist","hist_ul");
+    //hist_ul = xows_doc_frag_element_find(peer.addr,"chat_hist","hist_ul");
+    hist_ul = xows_doc_frag_element_find(peer.addr,"chat_fram","hist_ul");
   }
 
   // First search by id attribute
@@ -4683,9 +4683,10 @@ function xows_gui_hist_incoming_notify(peer, mesg)
  * @param   {object}    peer      Related Peer object
  * @param   {object}    mesg      Message object
  * @param   {boolean}   wait      Message wait for receipt
+ * @param   {boolean}   self      Message is an echo of one sent by user itself
  * @param   {object}    error     Error data if any
  */
-function xows_gui_cli_onmessage(peer, mesg, wait, error)
+function xows_gui_cli_onmessage(peer, mesg, wait, self, error)
 {
   // Check for error message
   if(error) {
@@ -4697,9 +4698,6 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
     xows_log(1,"gui_cli_onmessage","message error",error.name);
     return;
   }
-
-  // Store whether message is sent by ourself
-  const is_sent = peer.self;
 
   // MUC specific, we may receive message from ourself as confirmation
   // of reception with server additionnal data
@@ -4726,43 +4724,28 @@ function xows_gui_cli_onmessage(peer, mesg, wait, error)
   if(mesg.rpid)
     li_rpl = xows_gui_hist_rply_get(peer, mesg.rpid, mesg.rpto);
 
-  // Check whether end of history is croped, in this case the new message
-  // must not be appended, we will show it by querying archives
-  if(xows_gui_peer_doc(peer,"hist_end").hidden || li_rep) {
+  const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
-    const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
+  // Get last valid (non discarded) previous message
+  let li_prv = hist_ul.lastChild;
+  while(li_prv && li_prv.hidden) li_prv = li_prv.previousSibling;
 
-    // To prevent history to inflate infinitely we keep it to a maximum
-    // count of message and let user ability to query for archives
-    if((hist_ul.childNodes.length + 1) > xows_gui_hist_size) {
-      hist_ul.removeChild(hist_ul.firstChild);
-      xows_gui_peer_doc(peer,"hist_beg").className = ""; //< Allow query history
-    }
+  // Create new message element
+  const li_msg = xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl);
 
-    // Get last valid (non discarded) previous message
-    let li_prv = hist_ul.lastChild;
-    while(li_prv && li_prv.hidden) li_prv = li_prv.previousSibling;
-
-    // Create new message element
-    const li_msg = xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl);
-
-    // Insert or append message, depending whether li_ref is null
-    if(li_rep) {
-      xows_gui_hist_mesg_replace(peer, li_rep, li_msg);
-    } else {
-      hist_ul.appendChild(li_msg);
-    }
+  // Insert or append message, depending whether li_ref is null
+  if(li_rep) {
+    xows_gui_hist_mesg_replace(peer, li_rep, li_msg);
+  } else {
+    hist_ul.appendChild(li_msg);
   }
 
   // Avoid notifications for correction messages
   if(!mesg.repl)
     xows_gui_hist_incoming_notify(peer, mesg);
 
-  if(!is_sent && xows_gui_peer_scroll_get(peer) > 50) {
-    xows_gui_chat_nav_open(peer, true); //< Show the "new messages" alert
-  } else {
-    xows_gui_peer_scroll_down(peer); //< Scroll down to most recent message
-  }
+  // Signals something new appending to chat
+  xows_gui_chat_onappend(peer, li_msg, self);
 }
 
 /**
@@ -4805,61 +4788,67 @@ const xows_gui_mam_query_to = new Map();
 /**
  * Query arvhived message for the specified Peer
  *
- * The 'after' parameter is used to choose to get either newers or
- * older messages than the ones currently present in the history <div>
- * if 'after' parameter is true, the function will query for newer
- * messages.
- *
  * @param   {object}    peer      Peer object
- * @param   {boolean}   after     Get archives before latest or after newest message
- * @param   {number}    count     Desired count of message to gather, default is 20
- * @param   {boolean}   delay     Delay to temporize query, default is 500 MS
- * @param   {boolean}   force     Bypass optimization process and force query
+ * @param   {number}    delay     Delay to temporize query
+ * @param   {boolean}   after     If true, fetch newer message instead of older
  */
-function xows_gui_mam_query(peer, after, count = 20, delay = 500, force = false)
+function xows_gui_mam_query(peer, delay, after)
 {
   if(xows_gui_mam_query_to.has(peer))  //< Query already pending
     return;
 
   const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
-  if(!hist_ul) return;
+  //if(!hist_ul) return;
 
   let start, end;
 
   // Get start or end time depending after parameter, we get time
   // always 25 ms after or before to prevent received the last or
   // first message already in history.
-
   if(after) {
-
-    const hist_end = xows_gui_peer_doc(peer, "hist_end");
-
-    // Check whether we already got the latest message
-    if(!force && hist_end.hidden)
-      return;
 
     if(hist_ul.childNodes.length)
       start = parseInt(hist_ul.lastChild.dataset.time) + 25;
 
-    hist_end.classList.add("LOADING");
-
   } else {
 
-    const hist_beg = xows_gui_peer_doc(peer, "hist_beg");
+    const hist_beg = xows_gui_peer_doc(peer,"hist_beg");
 
     // Check whether we already reached the first archived message
-    if(!force && hist_beg.className.length)
+    if(hist_beg.className.length)
       return;
 
     if(hist_ul.childNodes.length)
       end = parseInt(hist_ul.firstChild.dataset.time) - 25;
 
-    hist_beg.className = "LOADING";
+    //hist_beg.className = "LOADING";
   }
 
-  // To prevent flood and increase ergonomy the archive query is
-  // temporised with a fake loading time.
-  xows_gui_mam_query_to.set(peer, setTimeout(xows_cli_mam_fetch, delay, peer, count, start, end, xows_gui_mam_parse));
+  // To prevent flood and increase ergonomy the archive query is temporised
+  xows_gui_mam_query_to.set(peer, setTimeout(xows_cli_mam_fetch, delay,
+                                             peer, xows_options.history_count,
+                                             start, end,
+                                             xows_gui_mam_parse));
+}
+
+/**
+ * Fetch the newer available archived messages for the specified Peer
+ *
+ * @param   {object}    peer      Peer object
+ */
+function xows_gui_mam_fetch_newer(peer)
+{
+  xows_gui_mam_query(peer, 0, true);
+}
+
+/**
+ * Fetch older available archived messages for the specified Peer
+ *
+ * @param   {object}    peer      Peer object
+ */
+function xows_gui_mam_fetch_older(peer)
+{
+  xows_gui_mam_query(peer, xows_options.history_delay, false);
 }
 
 /**
@@ -4874,53 +4863,23 @@ function xows_gui_mam_parse(peer, result, count, complete)
 {
   const hist_ul = xows_gui_peer_doc(peer, "hist_ul");
 
-  let li_ref = null, prepend = true;
+  let li_ref = null, older = true;
 
   // Check whether we must append or prepend received archived messages
   if(result.length && hist_ul.childNodes.length) {
     // We compare time (unix epoch) to ensure last archived message is
-    // older (or equal) than the first history message.
+    // older (or equal) than the current oldest history message.
     if(hist_ul.firstChild.dataset.time >= result[result.length-1].time) {
       li_ref = hist_ul.firstChild; //< node to insert messages before
     } else {
-      prepend = false;
+      older = false;
     }
   }
 
   const hist_beg = xows_gui_peer_doc(peer, "hist_beg");
-  const hist_end = xows_gui_peer_doc(peer, "hist_end");
 
   // Disable all spin loader
   hist_beg.className = "";
-  hist_end.className = "";
-
-  // To prevent history to inflate infinitely we keep it to a maximum
-  // count of message and let user ability to query for archives
-  // Here we preventively cut the history as needed, either at top
-  // or bottom, depending the "direction" of the archive result.
-  let crop = (hist_ul.childNodes.length - xows_gui_hist_size) + count;
-  if(crop > 0) {
-    if(prepend) {
-      // Result are older messages, we delete messages at bottom of history
-      while(crop--) hist_ul.removeChild(hist_ul.lastChild);
-      hist_end.hidden = false; //< Allow query history
-    } else {
-      // Result are newer messages, we delete messages at top of history
-      while(crop--) hist_ul.removeChild(hist_ul.firstChild);
-      hist_beg.className = ""; //< Allow query history
-    }
-  }
-
-  // Preparing scroll sorcery to keep scroll aligned with visible content
-  if(prepend) {
-    // Save scroll offset from bottom once bottom of history was removed
-    // so it will be properly adjusted later
-    xows_gui_peer_scroll_save(peer);
-  } else {
-    // Adjust scroll position from bottom once top of history was removed
-    // si we can save it at proper position later
-    xows_gui_peer_scroll_keep(peer);
-  }
 
   let li_rep, li_rpl, li_prv, added = 0;
 
@@ -4979,56 +4938,19 @@ function xows_gui_mam_parse(peer, result, count, complete)
 
   // Checks whether we reached end or start of available history, so we
   // display the proper "bounding" elements.
-  if(complete) {
-    // If no message was added, we must ensure which history bound
-    // was reached since "insert" will not necessarly be set
-    if(count && !added) {
-      // compare id of the last result with the last history message
-      if(result[0].id === hist_ul.firstChild.dataset.id)
-        prepend = true; //< Set prepend to show history start
-    }
-    if(prepend) {
-      // We reached the oldest history message
-      hist_beg.className = "HIST-START";
-    } else {
-      // We reached the most recent history message
-      hist_end.hidden = true; //< Disallow reaching history
-    }
+  if(older && complete) {
+    // We reached the oldest history message
+    hist_beg.className = "HIST-START";
   }
 
-  // Applying scroll sorcery to keep scroll aligned with visible content
-  if(prepend) {
-    // Ensure scroll is compensated after content heigth changed
-    xows_gui_peer_scroll_keep(peer);
-  } else {
-    // Save current offset from bottom to properly align it later
-    xows_gui_peer_scroll_save(peer);
-  }
+  // Back scroll to proper position from bottom. Keep that here
+  // unless you enable resize observer for "chat_hist"
+  xows_gui_peer_scroll_keep(peer);
 
   xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
 
   // Inform MAM loaded
   xows_load_task_done(peer, XOWS_LOAD_MAM);
-}
-/**
- * Query arvhived message for the specified peer in the purpose of
- * initial history fetch, when chat history is empty.
- *
- * @param   {object}    peer     Peer object
- */
-function xows_gui_mam_fetch_initial(peer)
-{
-  xows_gui_mam_query(peer, false, xows_gui_hist_page, 0);
-}
-
-/**
- * Query latest arvhived message for the specified peer
- *
- * @param   {object}    peer     Peer object
- */
-function xows_gui_mam_fetch_latest(peer)
-{
-  xows_gui_mam_query(peer, true, xows_gui_hist_page, 0, true);
 }
 
 /* -------------------------------------------------------------------
@@ -5082,16 +5004,16 @@ function xows_gui_upld_load(name, url)
  */
 function xows_gui_upld_abort(name)
 {
-  xows_gui_upld_onclose();
+  xows_gui_upld_close();
 }
 
 /**
  * File Upload on-close callback function
  */
-function xows_gui_upld_onclose()
+function xows_gui_upld_close()
 {
   // Remove exit button event listener
-  xows_doc_listener_rem(xows_doc("upld_exit"),"click",xows_gui_upld_onclose);
+  xows_doc_listener_rem(xows_doc("hist_upld"),"click",xows_gui_hist_upld_onclick);
 
   xows_doc_hide("hist_upld");
 }
@@ -5117,13 +5039,10 @@ function xows_gui_upld_open(file)
                             xows_gui_upld_progress, xows_gui_upld_abort);
 
   // Add event listener for exit button
-  xows_doc_listener_add(xows_doc("upld_exit"),"click",xows_gui_upld_onclose);
+  xows_doc_listener_add(xows_doc("hist_upld"),"click",xows_gui_hist_upld_onclick);
 
   // Show the upload frame
   xows_doc_show("hist_upld");
-
-  // Scroll history down
-  xows_gui_peer_scroll_down(xows_gui_peer);
 }
 
 /**
@@ -5138,6 +5057,17 @@ function xows_gui_chat_file_onchange(event)
   // Check whether any peer is selected and file object is valid
   if(xows_gui_peer.addr && file)
     xows_gui_upld_open(file);
+}
+
+/**
+ * File Upload file object on-click callback function
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_hist_upld_onclick(event)
+{
+  if(event.target.id === "upld_exit")
+    xows_gui_upld_close();
 }
 
 /* -------------------------------------------------------------------
@@ -5178,10 +5108,8 @@ function xows_gui_chat_panl_onclick(event)
   {
     // History Navigation banner
     case "chat_nav": {
-      // Close navigation banner
-      xows_gui_chat_nav_close(xows_gui_peer);
       // Go to end of history (last messages)
-      xows_gui_peer_scroll_down(xows_gui_peer);
+      xows_gui_peer_scroll_down(xows_gui_peer, true);
       return;
     }
 
@@ -5204,7 +5132,8 @@ function xows_gui_chat_panl_onclick(event)
     // Emoji button
     case "edit_bt_emoj": {
       // Open Emoji menu
-      xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
+      xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj",
+                           xows_gui_drop_emoj_onclick);
       break;
     }
 
@@ -5223,21 +5152,17 @@ function xows_gui_chat_panl_onclick(event)
  * Unread message alert.
  *
  * @param   {object}    peer      Peer object
- * @param   {boolean}   alert     Enabled unread message alert
+ * @param   {string}   [type]     Optional type (CSS class name)
  */
-function xows_gui_chat_nav_open(peer, alert = false)
+function xows_gui_chat_nav_show(peer, type = null)
 {
   // Get the peer history bottom banner
-  const chat_nav = xows_gui_peer_doc(peer, "chat_nav");
+  const chat_nav = xows_gui_peer_doc(peer,"chat_nav");
 
-  // Set text
-  chat_nav.innerText = alert ?  xows_l10n_get("New unread messages") :
-                                xows_l10n_get("Back to recent messages");
+  // Set class name
+  chat_nav.className = type;
 
-  // Set Unread Alert class
-  chat_nav.classList.toggle("UNDREAD", alert);
-
-  // Show or hide element
+  // Show element
   chat_nav.hidden = false;
 }
 
@@ -5246,9 +5171,35 @@ function xows_gui_chat_nav_open(peer, alert = false)
  *
  * @param   {object}    peer     Peer object
  */
-function xows_gui_chat_nav_close(peer)
+function xows_gui_chat_nav_hide(peer)
 {
-  xows_gui_peer_doc(peer, "chat_nav").hidden = true;
+  xows_gui_peer_doc(peer,"chat_nav").hidden = true;
+}
+
+/**
+ * Function to update navigation bar state accordint user scroll
+ *
+ * @param   {object}    peer     Peer object
+ * @param   {number}    scroll   Chat scroll position (relative to bottom)
+ * @param   {number}    client   Chat frame client height
+ */
+function xows_gui_chat_nav_update(peer, scroll, client)
+{
+  // Get the peer history bottom banner
+  const chat_nav = xows_gui_peer_doc(peer,"chat_nav");
+
+  // If scroll is far enough from bottom, show the "Back to recent" banner
+  if(scroll >= 50) {
+    if(chat_nav.classList.contains("RINGING")) {
+      xows_gui_chat_nav_show(peer,"RINGING");
+    } else {
+      if(scroll > client)
+        xows_gui_chat_nav_show(peer,"NEUTRAL");
+    }
+  } else {
+    // If scroll near of bottom, hide the "Back to recent" banner/button
+    xows_gui_chat_nav_hide(peer);
+  }
 }
 
 /* -------------------------------------------------------------------
@@ -5514,8 +5465,8 @@ function xows_gui_drop_emoj_onclick(event)
   // Check whether we got click from drop or button
   if(li) xows_gui_chat_inpt_insert(li.childNodes[0].nodeValue, "EMO-JI"); //< Insert selected Emoji
 
-  // Close menu and unfocus button
-  xows_doc_menu_toggle(xows_doc("edit_bt_emoj"), "drop_emoj");
+  // Close menu
+  xows_doc_menu_close();
 }
 
 /* -------------------------------------------------------------------
@@ -5639,7 +5590,8 @@ function xows_gui_occu_li_get(occu)
   if(occu.room === xows_gui_peer) {
     return document.getElementById(occu.addr);
   } else {
-    return xows_doc_frag_element_find(occu.room.addr,"occu_list",occu.addr);
+    //return xows_doc_frag_element_find(occu.room.addr,"occu_list",occu.addr);
+    return xows_doc_frag_element_find(occu.room.addr,"room_fram",occu.addr);
   }
 }
 
@@ -5696,7 +5648,8 @@ function xows_gui_cli_onoccupush(occu, mucx)
       if(room === xows_gui_peer) {
         li_peer = document.getElementById(mucx.prev);
       } else {
-        li_peer = xows_doc_frag_element_find(room.addr,"occu_list",mucx.prev);
+        //li_peer = xows_doc_frag_element_find(room.addr,"occu_list",mucx.prev);
+        li_peer = xows_doc_frag_element_find(room.addr,"room_fram",mucx.prev);
       }
 
       // Change <li-peer> element id
@@ -5804,9 +5757,10 @@ function xows_gui_occu_list_onclick(event)
     // Select occupant (Temporarly, to keep track of it)
     li_peer.classList.add("SELECTED");
     // Open Occupant menu
-    xows_doc_menu_toggle(event.target, "drop_occu", xows_gui_occu_drop_onclick,
-                                                    xows_gui_occu_drop_onshow,
-                                                    xows_gui_occu_drop_onclose);
+    xows_doc_menu_toggle(event.target, "drop_occu",
+                         xows_gui_occu_drop_onclick,
+                         xows_gui_occu_drop_onshow,
+                         xows_gui_occu_drop_onclose);
   }
 }
 
@@ -5826,7 +5780,7 @@ function xows_gui_occu_drop_onclose()
 {
   // Clear selected occupant
   const li_peer = xows_doc("occu_list").querySelector(".SELECTED");
-  li_peer.classList.remove("SELECTED"); //< Unselect it
+  li_peer.classList.remove("SELECTED");
 }
 
 /**
@@ -5940,7 +5894,7 @@ function xows_gui_occu_drop_onclick(event)
   const li_peer = xows_doc("occu_list").querySelector(".SELECTED");
 
   // Close menu and unfocus button
-  xows_doc_menu_toggle(li_peer.querySelector("BUTTON"), "drop_occu");
+  xows_doc_menu_close();
 
   // Get related menu item <li> element where click occurred
   const li = event.target.closest("LI");
