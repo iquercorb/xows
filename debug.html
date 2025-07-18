@@ -47,7 +47,8 @@
     // Interface configuration
     "locale"          : "en-US",                              //< Interface Localization
     "allow_register"  : true,                                 //< Enable account register link and dialog
-    "history_size"    : 128,                                  //< Maximum message count per chat history window
+    "history_count"   : 50,                                   //< Maximum count of history message to fetch each query
+    "history_delay"   : 500,                                  //< Temporization delay for older message fetch
 
     // XMPP features configuration
     "avatar_notify"   : false,                                //< Request for User Avatar (XEP-0084) PubSub notifications
