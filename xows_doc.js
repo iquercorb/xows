@@ -53,12 +53,15 @@ function xows_doc(id)
  */
 const xows_doc_frag_db = new Map();
 
-
 /**
  * Object that stores offscreen Scroll Parameters
  */
-const xows_doc_scroll_db = new Map();
+const xows_doc_scrl_db = new Map();
 
+/**
+ * Flag to signal scroll was programatically edited
+ */
+let xows_doc_scrl_edit = false;
 
 /**
  * Global reference to document's Selection object
@@ -296,12 +299,12 @@ function xows_doc_frag_clear()
  * Get offscreen slot saved root element
  *
  * @param   {string}    slot      Offscreen slot identifier
- * @param   {string}    element   Offscreen base element id
+ * @param   {string}    id        Offscreen base element id
  */
-function xows_doc_frag_element(slot, element)
+function xows_doc_frag_element(slot, id)
 {
   if(xows_doc_frag_db.has(slot))
-    return xows_doc_frag_db.get(slot).get(element);
+    return xows_doc_frag_db.get(slot).get(id);
 
   return null;
 }
@@ -355,9 +358,9 @@ function xows_doc_frag_element_find(slot, element, id)
  *
  * @param   {string}    slot      Offscreen slot identifier
  */
-function xows_doc_scroll_init(slot)
+function xows_doc_scrl_init(slot)
 {
-  xows_doc_scroll_db.set(slot,{
+  xows_doc_scrl_db.set(slot,{
     scrollTop    : 0,
     scrollHeight : 0,
     clientHeight : 0,
@@ -371,9 +374,9 @@ function xows_doc_scroll_init(slot)
  *
  * @return  {object}    Offscreen scroll parameters
  */
-function xows_doc_scroll_get(slot)
+function xows_doc_scrl_get(slot)
 {
-  return xows_doc_scroll_db.get(slot);
+  return xows_doc_scrl_db.get(slot);
 }
 
 /**
@@ -382,32 +385,18 @@ function xows_doc_scroll_get(slot)
  * @param   {string}    slot      Destination offscreen slot
  * @param   {string}    id        DOM element Id to be saved
  */
-function xows_doc_scroll_export(slot, id)
+function xows_doc_scrl_export(slot, id)
 {
   const s = document.getElementById(id);
 
-  xows_doc_scroll_db.set(slot,{
+  // Compute scrollBottom from current state before saving
+  s.scrollBottom = s.scrollHeight - (s.clientHeight + s.scrollTop);
+
+  xows_doc_scrl_db.set(slot,{
     scrollTop    : s.scrollTop,
     scrollHeight : s.scrollHeight,
     clientHeight : s.clientHeight,
     scrollBottom : s.scrollBottom || 0 }); //< ad-hoc porperty
-}
-
-/**
- * Apply saved scroll parameters to the specified DOM element.
- *
- * @param   {string}    slot      Source offscreen slot
- * @param   {string}    id        DOM element Id to be updated
- */
-function xows_doc_scroll_import(slot, id)
-{
-  const d = document.getElementById(id);
-  const s = xows_doc_scroll_db.get(slot);
-
-  d.scrollTop = s.scrollTop;
-  d.scrollHeight = s.scrollHeight;
-  d.clientHeight = s.clientHeight;
-  d.scrollBottom = s.scrollBottom; //< Ad-hoc property for proper restoration
 }
 
 /**
@@ -416,9 +405,9 @@ function xows_doc_scroll_import(slot, id)
  * @param   {string}    dst       Destination offscreen slot
  * @param   {string}    src       Source offscreen slot
  */
-function xows_doc_scroll_copy(dst, src)
+function xows_doc_scrl_copy(dst, src)
 {
-  xows_doc_scroll_db.set(dst, xows_doc_scroll_db.get(src));
+  xows_doc_scrl_db.set(dst, xows_doc_scrl_db.get(src));
 }
 
 /**
@@ -426,9 +415,17 @@ function xows_doc_scroll_copy(dst, src)
  *
  * @param   {string}    slot      Offscreen slot identifier
  */
-function xows_doc_scroll_delete(slot)
+function xows_doc_scrl_delete(slot)
 {
-  return xows_doc_scroll_db.delete(slot);
+  return xows_doc_scrl_db.delete(slot);
+}
+
+/**
+ * Clears all offscreen scroll parameters (reset database).
+ */
+function xows_doc_scrl_clear()
+{
+  return xows_doc_scrl_db.clear();
 }
 
 /**
@@ -439,13 +436,20 @@ function xows_doc_scroll_delete(slot)
  * @param   {string}    slot      Source offscreen slot
  * @param   {string}    id        DOM element Id to be updated
  */
-function xows_doc_scroll_import(slot, id)
+function xows_doc_scrl_import(slot, id)
 {
+  const s = xows_doc_scrl_db.get(slot);
   const d = document.getElementById(id);
+
+  // Signal scroll was edited so next "onscroll" event must be ignored
+  xows_doc_scrl_edit = true;
 
   // Use ad-hoc "scrollBottom" property to adjust scroll position
   // relative to the bottom of the scrollable content.
-  d.scrollTop = d.scrollHeight - (d.clientHeight + xows_doc_scroll_db.get(slot).scrollBottom);
+  d.scrollBottom = s.scrollBottom;
+  d.scrollTop = d.scrollHeight - (d.clientHeight + d.scrollBottom);
+
+  //xows_log(1,"doc_scrl_import","scrollBottom="+d.scrollBottom,"scrollTop="+d.scrollTop+" scrollHeigh="+d.scrollHeight+" clientHeight="+d.clientHeight);
 }
 
 /**
@@ -454,9 +458,8 @@ function xows_doc_scroll_import(slot, id)
  * bottom of the scrollable content.
  *
  * @param   {element|object}  element  DOM element or object to save
- * @param   {boolean}         force    Force to save even "kept" flag is set
  */
-function xows_doc_scroll_save(element, force)
+function xows_doc_scrl_save(element)
 {
   // DOM stock scroll parameters are designed in the perspective of TOP-to-DOWN
   // scroll, keeping the scroll position relative to the TOP of the scrollable
@@ -483,8 +486,11 @@ function xows_doc_scroll_save(element, force)
  *
  * @param   {element|object}  element  DOM element or object to adjust
  */
-function xows_doc_scroll_keep(element)
+function xows_doc_scrl_keep(element)
 {
+  // Signal scroll was edited so next "onscroll" event must be ignored
+  xows_doc_scrl_edit = true;
+
   element.scrollTop = element.scrollHeight - (element.clientHeight + (element.scrollBottom || 0));
 }
 
@@ -492,11 +498,42 @@ function xows_doc_scroll_keep(element)
  * Moves the element's scroll to the bottom of the scrollable content.
  *
  * @param   {element|object}  element  DOM element or object to adjust
+ * @param   {boolean}         smooth   Perform smooth scroll (DOM element only)
  */
-function xows_doc_scroll_down(element)
+function xows_doc_scrl_down(element, smooth)
 {
-  element.scrollTop = (element.scrollHeight - element.clientHeight);
+  // Signal scroll was edited so next "onscroll" event must be ignored
+  xows_doc_scrl_edit = true;
+
+  if(smooth) {
+    element.scrollTo({top:(element.scrollHeight - element.clientHeight),behavior:"smooth"});
+  } else {
+    element.scrollTop = (element.scrollHeight - element.clientHeight);
+  }
   element.scrollBottom = 0;
+}
+
+/**
+ * Returns whether scroll was previously programmatically edited, telling
+ * that any "onscroll" event should be ignored.
+ *
+ * @return  {boolean}   True if scroll was edited, false otherwise
+ */
+function xows_doc_scrl_edited()
+{
+  // Modifying scroll parameter programmatically triggers an "onscroll" event
+  // the same as if user actually scrolled from Browser window. This produce
+  // unwanted scroll position "save" whitch mess up all calculations.
+  //
+  // To prevent that, after each scroll adjustment on resize, we set a flag
+  // to signal that the "onscroll" event was fired by automatic adjustement
+  // so it is possible to ignore the event.
+  if(xows_doc_scrl_edit) {
+    xows_doc_scrl_edit = false;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 /**
@@ -549,67 +586,19 @@ function xows_doc_sel_rng(index)
  */
 function xows_doc_init(onready)
 {
-  // Main Page "scr_main" event listeners
-  xows_doc_listener_add(xows_doc("main_tabs"),  "click",    xows_gui_rost_widen);
-  xows_doc_listener_add(xows_doc("main_hndr"),  "click",    xows_gui_main_open);
-  xows_doc_listener_add(xows_doc("main_hndl"),  "click",    xows_gui_main_open);
-  // Roster frame
-  xows_doc_listener_add(xows_doc("rost_tabs"),  "click",    xows_gui_rost_tabs_onclick);
-  xows_doc_listener_add(xows_doc("rost_fram"),  "click",    xows_gui_rost_fram_onclick);
-  // User panel
-  xows_doc_listener_add(xows_doc("self_panl"),  "click",    xows_gui_self_panl_onclick);
-
-  // Chat header
-  xows_doc_listener_add(xows_doc("chat_head"),  "click",    xows_gui_chat_head_onclick);
-  // Chat main
-  xows_doc_listener_add(xows_doc("chat_main"),  "scroll",   xows_gui_chat_onscroll);
-
-  xows_doc_listener_add(xows_doc("chat_hist"),  "click",    xows_gui_chat_hist_onclick);
-  xows_doc_listener_add(xows_doc("chat_hist"),  "touchstart", xows_gui_chat_hist_onclick);
-  // Chat foot
-  const chat_panl = xows_doc("chat_panl");
-  xows_doc_listener_add(chat_panl,              "click",    xows_gui_chat_panl_onclick);
-  xows_doc_listener_add(chat_panl,              "input",    xows_gui_chat_inpt_oninput);
-  xows_doc_listener_add(chat_panl,              "paste",    xows_gui_chat_inpt_onpaste, false); //< need preventDefault()
-  xows_doc_listener_add(xows_doc("chat_file"),  "change",   xows_gui_chat_file_onchange);
-  xows_doc_listener_add(xows_doc("drop_emoj"),  "click",    xows_gui_drop_emoj_onclick);
-  // Room Frame
-  xows_doc_listener_add(xows_doc("room_head"),  "click",    xows_gui_room_head_onclick);
-  xows_doc_listener_add(xows_doc("occu_list"),  "click",    xows_gui_occu_list_onclick);
-
-  // Page screen "scr_page" event listener
-  xows_doc_listener_add(xows_doc("scr_page"),   "keyup",    xows_doc_page_onkeyu);
-  // Close page button "page_exit" event listener
-  xows_doc_listener_add(xows_doc("page_exit"),  "click",    xows_doc_page_onclose);
   // Check whether Registering option is enabled
   if(xows_options.allow_register)
     xows_doc_show("auth_regi"); //< The link in Login Page
 
-  // Modal screen "scr_void" event listener
-  xows_doc_listener_add(xows_doc("scr_void"),   "click",    xows_doc_void_onclick);
-  // Image viewer "over_view" event listener
-  xows_doc_listener_add(xows_doc("over_view"),  "click",    xows_doc_view_onclick);
-  // Set event listener to handle user keyboard
-  xows_doc_listener_add(document,               "keydown",  xows_gui_wnd_onkey, false); //< need preventDefault()
-  xows_doc_listener_add(document,               "keyup",    xows_gui_wnd_onkey);
-  // Set event listener to handle user presence and GUI focus
-  xows_doc_listener_add(document,               "visibilitychange", xows_gui_wnd_onfocus);
-  xows_doc_listener_add(window,                 "pagehide", xows_gui_wnd_onfocus);
-  xows_doc_listener_add(window,                 "focus",    xows_gui_wnd_onfocus);
-  xows_doc_listener_add(window,                 "blur",     xows_gui_wnd_onfocus);
-  // Set event listener to handle page quit or reload
-  xows_doc_listener_add(window,                 "beforeunload", xows_cli_flyyoufools);
-  xows_doc_listener_add(window,                 "unload",    xows_cli_flyyoufools);
-  // Set event listener to hook browser "nav back"
-  xows_doc_listener_add(window,                 "popstate",  xows_gui_nav_onpopstate);
-  // Set event listener to handle chat scroll moving on resize
-  xows_doc_listener_add(window,                 "resize",   xows_gui_chat_onresize);
+  // Page screen "scr_page" event listener
+  xows_doc_listener_add(xows_doc("scr_page"),   "keyup",  xows_doc_page_onkeyu);
+  // Close page button "page_exit" event listener
+  xows_doc_listener_add(xows_doc("page_exit"),  "click",  xows_doc_page_onclose);
 
-  // Add Resize observer to handle chat scroll moving on resize, this on is
-  // required in addition to "resize" trigger to handle case where the chat_main
-  // element is resized by CSS, typically, when the Jingle Call frame is displayed
-  const observer = new ResizeObserver(xows_gui_chat_onresize);
-  observer.observe(xows_doc("chat_main"));
+  // Modal screen "scr_void" event listener
+  xows_doc_listener_add(xows_doc("scr_void"),   "click",  xows_doc_void_onclick);
+  // Image viewer "over_view" event listener
+  xows_doc_listener_add(xows_doc("over_view"),  "click",  xows_doc_view_onclick);
 
   // Set template callback
   xows_tpl_set_callback("embload",  xows_doc_media_onload);
@@ -1418,7 +1407,7 @@ function xows_doc_page_opened(page)
 /**
  * Currently opened menu elements
  */
-const xows_doc_menu_param = {button:null,drop:null,onclick:null,onclose:null};
+const xows_doc_menu_param = {bttn:null,drop:null,onclick:null,onclose:null};
 
 /**
  * Close current opened menu
@@ -1427,28 +1416,27 @@ function xows_doc_menu_close()
 {
   const param = xows_doc_menu_param;
 
-  if(param.drop) {
-
-    // Hide drop element
+  // Hide drop element
+  if(param.drop)
     param.drop.hidden = true;
 
-    // Remove event listener from menu drop element
+  // Remove event listener from menu drop element
+  if(param.onclick)
     xows_doc_listener_rem(param.drop, "click", param.onclick);
-  }
 
   if(param.onclose)
     param.onclose();
 
   // Unfocus button element
-  if(param.button)
-    param.button.blur();
+  if(param.bttn)
+    param.bttn.blur();
 
   // hide the 'void' screen
   xows_doc_hide("scr_void");
 
   // Reset parameters
   param.drop = null;
-  param.button = null;
+  param.bttn = null;
   param.onclick = null;
   param.onclose = null;
 }
@@ -1459,8 +1447,8 @@ function xows_doc_menu_close()
  * This function toggle the specified menu and show the invisible menu
  * screen to gather click event outside menu.
  *
- * @param   {object}    button    Menu button reference object
- * @param   {object}    dropid    Menu drop object Id
+ * @param   {element}   button    Menu button element
+ * @param   {string}    dropid    Menu drop-down element Id
  * @param   {function}  onclick   Menu on-click callback
  * @param   {function}  [onshow]  Optional Menu on-show callback
  * @param   {function}  [onclose] Optional Menu on-close callback
@@ -1470,7 +1458,7 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow, onclose)
   const param = xows_doc_menu_param;
 
   // Check whether menu is already open
-  if(param.button) {
+  if(param.bttn) {
 
     // Close openned menu
     xows_doc_menu_close();
@@ -1484,26 +1472,27 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow, onclose)
       return;
 
     // Set parameters
-    param.button = button;
+    param.bttn = button;
     param.drop = drop;
     param.onclick = onclick;
     param.onclose = onclose;
 
-    // show the 'void' screen to catch clicks outside menu
-    xows_doc_show("scr_void");
-
     // Add event listener to menu drop element
-    xows_doc_listener_add(param.drop, "click", param.onclick);
-
-    // Show menu drop element
-    drop.hidden = false;
+    if(param.onclick)
+      xows_doc_listener_add(param.drop, "click", param.onclick);
 
     // Call optionnal onshow function
     if(xows_isfunc(onshow))
-      onshow(button, drop);
+      onshow(param.bttn, param.drop);
+
+    // show the 'void' screen to catch clicks outside menu
+    xows_doc_show("scr_void");
+
+    // Show menu drop element
+    param.drop.hidden = false;
 
     // Focus on button element
-    button.focus();
+    param.bttn.focus();
   }
 }
 
@@ -1783,7 +1772,7 @@ function xows_doc_prof_open(peer, onclick)
 function xows_doc_void_onclick(event)
 {
   // check whether a menu is opened, and close it
-  if(xows_doc_menu_param.button)
+  if(xows_doc_menu_param.bttn)
     xows_doc_menu_close();
 
   // Close potentially opened media viewer screen
