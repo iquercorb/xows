@@ -37,36 +37,10 @@
  *                    WebRTC Interface API Module
  *
  * ------------------------------------------------------------------ */
-
 /**
- * Media Call WebRTC RTCPeerConnection object
+ * WebRTC instances list with parameters
  */
-let xows_wrtc_pc = null;
-
-/**
- * Reference to custom event callback function for SDP string created
- */
-let xows_wrtc_cb_onsdp = function(){};
-
-/**
- * Reference to custom event callback function for established connection
- */
-let xows_wrtc_cb_onlinked = function(){};
-
-/**
- * Reference to custom event callback function for error
- */
-let xows_wrtc_cb_onerror = function(){};
-
-/**
- * Queue for pending Remote Description to be configured
- */
-const xows_wrtc_remote_queue = [];
-
-/**
- * Flag for Remote Description/Stream currentely pending
- */
-let xows_wrtc_remote_pendg = false;
+const xows_wrtc_db = new Map();
 
 /**
  * Generate Turn server REST API credential from secret
@@ -90,12 +64,17 @@ function xows_wrtc_gen_credential(name, secret)
  *
  * @param   {object}      error    Error object
  */
-function xows_wrtc_onerror(error)
+function xows_wrtc_onerror(rpc, error)
 {
   xows_log(1,"wrtc_onerror",error.message);
 
+  // FIXME: This code was not tested at all
+
+  const db = xows_wrtc_db.get(rpc);
+
   // Forward error
-  xows_wrtc_cb_onerror(error.message);
+  if(xows_isfunc(db.onerror))
+    db.onerror(rpc, error, db.param);
 }
 
 /**
@@ -103,23 +82,17 @@ function xows_wrtc_onerror(error)
  *
  * @param   {object}      event     Event object
  */
-function xows_wrtc_onstatechange(event)
+function xows_wrtc_oncnxstate(event)
 {
-  xows_log(2,"wrtc_onstatechange","state",xows_wrtc_pc.connectionState);
+  const rpc = event.target;
 
-  if(xows_wrtc_pc.connectionState === "connected")
-    xows_wrtc_cb_onlinked(); //< Forward status
-}
+  xows_log(2,"wrtc_oncnxstate","Connection state",rpc.connectionState);
 
-/**
- * Callback function for WebRTC Peer Connection SDP Offer/Answer created
- *
- * @param   {object}      description    Session Description (RTCSessionDescription) object
- */
-function xows_wrtc_setlocaldesc(description)
-{
-  // Set Local Description
-  xows_wrtc_pc.setLocalDescription(description).then(null, xows_wrtc_onerror);
+  const db = xows_wrtc_db.get(rpc);
+
+  // Forward status
+  if(xows_isfunc(db.onstate))
+    db.onstate(rpc, rpc.connectionState, db.param);
 }
 
 /**
@@ -127,10 +100,15 @@ function xows_wrtc_setlocaldesc(description)
  *
  * @param   {object}      event     Event object
  */
-function xows_wrtc_onnegotiation(event)
+function xows_wrtc_onneednego(event)
 {
+  const rpc = event.target;
+
+  xows_log(2,"wrtc_onneednego","Create SDP offer");
+
   // Request to create an SDP Offer
-  xows_wrtc_pc.createOffer().then(xows_wrtc_setlocaldesc, xows_wrtc_onerror);
+  rpc.createOffer().then((rsd) => rpc.setLocalDescription(rsd))
+                   .then(null, (err) => xows_wrtc_onerror(rpc, err));
 }
 
 /**
@@ -140,20 +118,25 @@ function xows_wrtc_onnegotiation(event)
  */
 function xows_wrtc_onicestate(event)
 {
-  if(xows_wrtc_pc.iceGatheringState == "complete") {
+  const rpc = event.target;
 
+  xows_log(2,"wrtc_onicestate","ICE gathering state",rpc.iceGatheringState);
+
+  const db = xows_wrtc_db.get(rpc);
+
+  // Forward ICE state
+  if(xows_isfunc(db.onstate))
+    db.onstate(rpc, rpc.iceGatheringState, db.param);
+
+  if(rpc.iceGatheringState === "complete") {
     // Forward generated local SDP
-    if(xows_isfunc(xows_wrtc_cb_onsdp)) {
-
-      xows_log(2,"wrtc_onicestate","Local description available");
-
-      xows_wrtc_cb_onsdp(xows_wrtc_pc.localDescription.sdp);
-    }
+    if(xows_isfunc(db.onsdesc))
+      db.onsdesc(rpc, rpc.localDescription.sdp, db.param);
   }
 }
 
 /**
- * WebRTC Peer Connection ontrack callback function
+ * Callback function for WebRTC Peer Connection media stream available
  *
  * @param   {object}      event    RTCP Track event (RTCTrackEvent) object
  */
@@ -162,36 +145,30 @@ function xows_wrtc_ontrack(event)
   // Forward media stream
   if(event.streams.length) {
 
+    const rpc = event.target;
+
     xows_log(2,"wrtc_ontrack","Remote stream available");
 
-    // Takes the first item from Remote queue
-    const item = xows_wrtc_remote_queue.shift();
+    const db = xows_wrtc_db.get(rpc);
 
     // Call onstream callback with custom parameter
-    if(xows_isfunc(item.onstream))
-      item.onstream(event.streams[0], item.param);
-
-    // Remote Description no longer pending
-    xows_wrtc_remote_pendg = false;
-
-    // We can process the next Remote description in queue
-    xows_wrtc_remote_next();
+    if(xows_isfunc(db.ontrack))
+      db.ontrack(rpc, event.streams[0], db.param);
   }
 }
 
 /**
- * Clear and reset WebRTC Peer Connection
+ * Close and delete WebRTC Peer Connection
+ *
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
  */
-function xows_wrtc_clear()
+function xows_wrtc_close(rpc)
 {
+  xows_log(2,"wrtc_close","Deleting RTC object");
+
   // Close RTC Peer Connection
-  if(xows_wrtc_pc) {
-
-    xows_wrtc_pc.close();
-    xows_wrtc_pc = null;
-
-    xows_log(2,"wrtc_setup","WebRTC cleared");
-  }
+  rpc.close();
+  xows_wrtc_db.delete(rpc);
 }
 
 /**
@@ -203,81 +180,82 @@ function xows_wrtc_clear()
  * TURN servers must be provided with either REST API 'username' and 'password',
  * or a 'secret' propertie corresponding to server's static auth secret.
  *
- * @param   {object[]}    ices     Array of ICE server description objects
- * @param   {function}    onlinked Callback function for connection success
+ * @param   {object[]}    icelist  Array of ICE server description objects
+ * @param   {function}    onsdesc  Callback function for session description
+ * @param   {function}    ontrack  Callback function for connection state
+ * @param   {function}    onstate  Callback function for connection state
  * @param   {function}    onerror  Callback function for error
+ * @param   {function}   [param]   Optional extra parameter to pass to callbacks
+ *
+ * @return  {object}  New instance of RTCPeerConnection object
  */
-function xows_wrtc_setup(ices, onlinked, onerror)
+function xows_wrtc_new(icelist, onsdesc, ontrack, onstate, onerror, param)
 {
-  // Clear any previous config
-  xows_wrtc_clear();
-
   // Build array for ICE Servers descriptor
   const iceservers = [];
 
-  for(let i = 0; i < ices.length; ++i) {
-    const ice = {urls:ices[i].type+":"+ices[i].host};
+  for(let i = 0; i < icelist.length; ++i) {
+    const ice = {urls:icelist[i].type+":"+icelist[i].host};
     // Check whether we need to generate credentials
-    if(ices[i].secret) {
-      const creds = xows_wrtc_gen_credential(xows_cli_self.addr, ices[i].secret);
+    if(icelist[i].secret) {
+      const creds = xows_wrtc_gen_credential(xows_cli_self.addr, icelist[i].secret);
       ice.username = creds.username;
       ice.credential = creds.password;
     } else {
-      if(ices[i].username) ice.username = ices[i].username;
-      if(ices[i].password) ice.credential = ices[i].password;
+      if(icelist[i].username) ice.username = icelist[i].username;
+      if(icelist[i].password) ice.credential = icelist[i].password;
     }
     iceservers.push(ice);
   }
 
-  if(onlinked) xows_wrtc_cb_onlinked = onlinked;
-  if(onerror) xows_wrtc_cb_onerror = onerror;
-
-  // Create new RTC Peer Connection object
-  xows_wrtc_pc = new RTCPeerConnection({"iceServers":iceservers});
+  const rpc = new RTCPeerConnection({"iceServers":iceservers});
 
   // Set callback functions
-  xows_wrtc_pc.ontrack = xows_wrtc_ontrack;
-  xows_wrtc_pc.onnegotiationneeded = xows_wrtc_onnegotiation;
-  xows_wrtc_pc.onconnectionstatechange = xows_wrtc_onstatechange;
-  xows_wrtc_pc.onicegatheringstatechange = xows_wrtc_onicestate;
+  rpc.ontrack = xows_wrtc_ontrack;
+  rpc.onnegotiationneeded = xows_wrtc_onneednego;
+  rpc.onconnectionstatechange = xows_wrtc_oncnxstate;
+  rpc.onicegatheringstatechange = xows_wrtc_onicestate;
+  rpc.onicecandidateerror = (err) => xows_wrtc_onerror(rpc, err);
 
-  xows_log(2,"wrtc_setup","WebRTC initialized");
+  xows_wrtc_db.set(rpc,{"onerror":onerror,"onstate":onstate,"onsdesc":onsdesc,"ontrack":ontrack,"param":param});
+
+  return rpc;
 }
 
 /**
  * Set WebRTC Peer Connection local stream.
  *
- * A call before xows_wrtc_remote_sdp is considered as a call initiation to
- * produce an Offer, otherwise as call acceptance to produce an Answer.
+ * If called in first after RPC creation, while no remote SDP available in RPC
+ * object, it is assumed to be an outbound call initiation, an SDP Offer will
+ * be generated.
  *
- * Once SDP description (either Offer or Answer) created, 'onspd' callback
- * is called with the local SDP description string as parameter.
+ * If called in a later time, while remote SDP do exists in RPC object, it is
+ * assumed to be an inbound call accept, an SDP Answer will be generated.
  *
+ * Once SDP description (either Offer or Answer) created, the configured
+ * 'onsdesc' callback will be called.
+ *
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
  * @param   {object}      stream    Media Streams API MediaStream object.
- * @param   {function}    onsdp     Callback function for SDP description created
  */
-function xows_wrtc_local_stream(stream, onsdp)
+function xows_wrtc_set_local_stream(rpc, stream)
 {
-  if(!xows_wrtc_pc) {
-    xows_log(1,"wrtc_local_stream","WebRTC not initialized");
-    return;
-  }
-
-  // Set on remote response callback
-  if(onsdp) xows_wrtc_cb_onsdp = onsdp;
-
   // Add stream tracks to RTC Connection
   const tracks = stream.getTracks();
   for(let i = 0; i < tracks.length; ++i)
-    xows_wrtc_pc.addTrack(tracks[i]);
+    rpc.addTrack(tracks[i]);
 
   xows_log(2,"wrtc_local_stream","Local stream added");
 
-  // Already set remoteDescription mean call acceptance, we must created and
+  // Already set remoteDescription mean call acceptance, we must create an
   // SDP Answer.
-  if(xows_wrtc_pc.remoteDescription) {
+  if(rpc.remoteDescription) {
+
+    xows_log(2,"wrtc_local_stream","Create SDP Answer");
+
     // Request to create an SDP Answer
-    xows_wrtc_pc.createAnswer().then(xows_wrtc_setlocaldesc, xows_wrtc_onerror);
+    rpc.createAnswer().then((rsd) => rpc.setLocalDescription(rsd))
+                      .then(null, (err) => xows_wrtc_onerror(rpc, err));
   }
 
   // An unset remoteDescription mean call initiation, the WebRTC interface
@@ -285,112 +263,80 @@ function xows_wrtc_local_stream(stream, onsdp)
 }
 
 /**
- * Setup the next Remote description to WebRTC Peer Connection.
- *
- * This function is used for a Remote description management in FIFO way and
- * should not be called on itself.
- *
- * See: xows_wrtc_remote_sdp
- */
-function xows_wrtc_remote_next()
-{
-  if(!xows_wrtc_remote_queue.length || xows_wrtc_remote_pendg)
-    return;
-
-  xows_log(2,"wrtc_remote_next","Remote description added");
-
-  const item = xows_wrtc_remote_queue[0];
-  xows_wrtc_pc.setRemoteDescription(item.desc).then(null, xows_wrtc_onerror);
-
-  // Remote Description pending for new Stream
-  xows_wrtc_remote_pendg = true;
-}
-
-/**
  * Add Remote description to be supplied to WebRTC Peer Connection.
  *
- * If called before xows_wrtc_local_stream, the 'sdp' parameteris treated as
- * an incoming Answer, otherwise it is treated as an incoming Offer.
+ * If called in first after RPC creation, while no local SDP available in RPC
+ * object, it is assumed to be an inbound call initiation, an SDP Offer will be
+ * generated.
  *
- * Once remote stream availabl, 'onstream' callback is called with remote
- * media stream as first parameter and the supplied custom 'param' parameter
- * as second one.
+ * If called in a later time, while local SDP do exists in RPC object, it is
+ * assumed to be an outbound call accept, an SDP Answer will be generated.
  *
+ * Once remote stream available, the configured 'ontrack' callback will be
+ * called.
+ *
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
  * @param   {string}      sdp       Received remote SDP Description string.
- * @param   {function}    onstream  Callback function for Remote stream available.
- * @param   {any}        [param]    Optionnal user parameter to be passed to onstream
  */
-function xows_wrtc_remote_sdp(sdp, onstream, param)
+function xows_wrtc_set_remote_sdp(rpc, sdp)
 {
-  if(!xows_wrtc_pc) {
-    xows_log(1,"wrtc_local_stream","WebRTC not initialized");
-    return;
-  }
-
   // Already set localDescription mean we are initiator
-  const type = xows_wrtc_pc.localDescription ? "answer" : "offer";
-  const desc = new RTCSessionDescription({"type":type,"sdp":sdp});
+  const type = rpc.localDescription ? "answer" : "offer";
+  const rsd = new RTCSessionDescription({"type":type,"sdp":sdp});
 
-  // Add to Remote queue, this will be threated as FIFO
-  xows_wrtc_remote_queue.push({"desc":desc,"onstream":onstream,"param":param});
+  xows_log(2,"wrtc_set_remote_sdp","Setting remote SDP",type);
 
-  xows_log(2,"wrtc_remote_sdp","Remote description queued");
-
-  // Treat next
-  xows_wrtc_remote_next();
+  rpc.setRemoteDescription(rsd).then(null, (err) => xows_wrtc_onerror(rpc, err));
 }
 
 /**
  * Returns whether WebRTC Peer Connection currently have a valid
  * Local Description defined.
  *
- * #return  {boolean}   True if Local Description is defined, false otherwise.
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
+ *
+ * @return  {boolean}   True if Local Description is defined, false otherwise.
  */
-function xows_wrtc_has_local()
+function xows_wrtc_has_local(rpc)
 {
-  return xows_wrtc_pc ? (xows_wrtc_pc.localDescription !== null) : false;
+  return (rpc.localDescription !== null);
 }
 
 /**
  * Returns whether WebRTC Peer Connection currently have a valid
  * Remote Description defined.
  *
- * #return  {boolean}   True if Remote Description is defined, false otherwise.
- */
-function xows_wrtc_has_remote()
-{
-  return xows_wrtc_pc ? (xows_wrtc_pc.remoteDescription !== null) : false;
-}
-
-/**
- * Returns whether WebRTC Peer Connection is currently ready, meaning
- * object exist and is configured.
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
  *
- * #return  {boolean}   True if WebRTC Peer Connection is ready, false otherwise.
+ * @return  {boolean}   True if Remote Description is defined, false otherwise.
  */
-function xows_wrtc_ready()
+function xows_wrtc_has_remote(rpc)
 {
-  return (xows_wrtc_pc !== null);
+  return (rpc.remoteDescription !== null);
 }
 
 /**
  * Returns whether WebRTC Peer Connection currently have a valid
  * Local Description defined.
  *
- * #return  {boolean}   True if Local Description is defined, false otherwise.
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
+ *
+ * @return  {boolean}   True if Local Description is defined, false otherwise.
  */
-function xows_wrtc_linked()
+function xows_wrtc_connected(rpc)
 {
-  return xows_wrtc_pc ? (xows_wrtc_pc.connectionState === "connected") : false;
+  return (rpc.connectionState === "connected");
 }
 
 /**
  * Returns whether WebRTC Peer Connection can be considered as busy.
  *
- * #return  {boolean}   True if WebRTC Peer Connection is busy, false otherwise.
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
+ *
+ * @return  {boolean}   True if WebRTC Peer Connection is busy, false otherwise.
  */
-function xows_wrtc_busy()
+function xows_wrtc_busy(rpc)
 {
-  return xows_wrtc_has_local();
+  return (rpc.localDescription !== null);
 }
 

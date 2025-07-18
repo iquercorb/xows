@@ -3849,6 +3849,7 @@ const XOWS_NS_JINGLE_HEXT  = "urn:xmpp:jingle:apps:rtp:rtp-hdrext:0"; //< XEP-01
 const XOWS_NS_JINGLE_DTLS  = "urn:xmpp:jingle:apps:dtls:0";           //< XEP-0166 / XEP-0320
 const XOWS_NS_JINGLE_GRP   = "urn:xmpp:jingle:apps:grouping:0";       //< XEP-0166 / XEP-0338
 const XOWS_NS_JINGLE_SSMA  = "urn:xmpp:jingle:apps:rtp:ssma:0";       //< XEP-0166 / XEP-0339
+const XOWS_NS_JINGLE_RTPI  = "urn:xmpp:jingle:apps:rtp:info:1";       //< XEP-0167
 
 /**
  * Jingle (XEP-0166) event client callback
@@ -4208,34 +4209,58 @@ function xows_xmp_jing_sdp2jingle(sdp)
  */
 function xows_xmp_jing_recv(stanza)
 {
+  const id = stanza.getAttribute("id");
   const from = stanza.getAttribute("from");
   const jingle = stanza.querySelector("jingle");
   const action = jingle.getAttribute("action");
 
-  let mesg;
+  let data;
 
   if(action === "session-terminate") {
 
     // Get terminate reason
     const reason = jingle.querySelector("reason");
     if(reason && reason.childNodes[0])
-      mesg = reason.childNodes[0].tagName;
+      data = reason.childNodes[0].tagName;
+
+  } else
+  if(action === "session-info") {
+
+    // Get session info
+    data = jingle.childNodes[0].tagName;
+
+    switch(data)
+    {
+    case "ringing":
+      // Do nothing
+      break;
+    default:
+      // If the party that receives an informational message does not understand
+      // the payload, it MUST return a <feature-not-implemented/> error with a
+      // Jingle-specific error condition of <unsupported-info/>.
+      xows_xmp_iq_error_send(id, from, "error", "feature-not-implemented",
+          xows_xml_node("unsupported-info"));
+      return;
+    }
 
   } else {
 
     // Convert jingle RTP Session description to SDP string
-    mesg = xows_xmp_jing_jingle2sdp(jingle);
-    if(mesg === null) {
+    data = xows_xmp_jing_jingle2sdp(jingle);
+    if(data === null) {
       xows_log(1,"xmp_recv_jingle","error","RTP to SDP conversion failed");
       // Send back error
-      xows_xmp_iq_error_send(stanza.getAttribute("id"), from, "cancel", "bad-request");
+      xows_xmp_iq_error_send(id, from, "cancel", "bad-request");
       return;
     }
 
   }
 
+  // Acknoledge reception (sending back "result" type iq)
+  xows_xmp_iq_result_send(id, from);
+
   // Forward to client
-  xows_xmp_fw_onjingle(from, stanza.getAttribute("id"), jingle.getAttribute("sid"), action, mesg);
+  xows_xmp_fw_onjingle(from, id, jingle.getAttribute("sid"), action, data);
 }
 
 /**
@@ -4247,20 +4272,19 @@ function xows_xmp_jing_recv(stanza)
  */
 function xows_xmp_jing_result(stanza, onresult)
 {
-  if(stanza.getAttribute("type") === "error") {
+  const from = stanza.getAttribute("from");
+  const type = stanza.getAttribute("type");
 
-    const details = xows_xmp_error_log(stanza,1,"xmp_jingle_parse","Jingle query");
-
+  if(type === "error") {
     // Forward parse result
     if(xows_isfunc(onresult))
-      onresult(XOWS_SIG_ERR, details);
-
+      onresult(from, type, xows_xmp_error_parse(stanza));
     return;
   }
 
   // Forward parse result
   if(xows_isfunc(onresult))
-    onresult(3);
+    onresult(from, type, null);
 }
 
 /**
@@ -4286,6 +4310,8 @@ function xows_xmp_jing_initiate_sdp(to, sdp, onresult)
   // Send message
   xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},jingle),
                 xows_xmp_jing_result, onresult);
+
+  return sid;
 }
 
 /**
@@ -4309,6 +4335,28 @@ function xows_xmp_jing_accept_sdp(to, sid, sdp, onresult)
   // Send message
   xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},jingle),
                 xows_xmp_jing_result, onresult);
+}
+
+/**
+ * Send Jingle session info
+ *
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    sid         Jingle session ID
+ * @parma   {string}    info        Payload information to send
+ * @parma   {string}   [attr]       Optional Payload attributes
+ * @param   {function} [onresult]   Optional callback for received result
+ */
+function xows_xmp_jing_info(to, sid, info, attr, onresult)
+{
+  // Compose payload attributes
+  let info_attr = {"xmlns":XOWS_NS_JINGLE_RTPI};
+  if(attr) info_attr = Object.assign(info_attr, attr);
+
+  // Send message
+  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},
+                  xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-info"},
+                    xows_xml_node(info, info_attr, null))),
+                      xows_xmp_jing_result, onresult);
 }
 
 /**
