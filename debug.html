@@ -51,7 +51,9 @@
     "history_delay"   : 500,                                  //< Temporization delay for older message fetch
 
     // XMPP features configuration
-    "avatar_notify"   : false,                                //< Request for User Avatar (XEP-0084) PubSub notifications
+    "bookmks_notify"  : true,                                 //< Request for Native Bookmarks (XEP-0402) PEP notifications
+    "nick_notify"     : true,                                 //< Request for User Nickname (XEP-0172) PEP notifications
+    "avatar_notify"   : false,                                //< Request for User Avatar (XEP-0084) PEP notifications
     "avatar_autopub"  : true,                                 //< Auto-publish the default Avatar if none exists for user
     "extern_services" : [ { type:"stun",                      //< Manually defined XMPP External Services (following XEP-0215 schemas)
                             transport:"udp",
