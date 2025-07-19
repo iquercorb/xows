@@ -32,6 +32,7 @@
  *
  * @licend
  */
+"use strict";
 /* ------------------------------------------------------------------
  *
  *                          XMPP API Layer
@@ -986,8 +987,14 @@ function xows_xmp_error_log(stanza, level, scope, message)
 }
 
 /**
- * Parse the given error <iq> and returns the parsed error type
- * and hint text
+ * Parse the given error <iq> and returns the parsed error as
+ * object.
+ *
+ * Generated object has the following properties:
+ *    code : "code" attribute of <error> node
+ *    type : "type" attribute of <error> node
+ *    name : Tag name of <error> node's child (eg. "bad-request" ... )
+ *    text : Inner text of <error> node's child.
  *
  * @param   {object}    stanza    Received <iq> stanza
  *
@@ -1521,7 +1528,7 @@ function xows_xmp_rost_set_query(jid, name, group, onparse)
   const iq = xows_xml_node("iq",{"type":"set"},
               xows_xml_node("query",{"xmlns":XOWS_NS_ROSTER},item));
 
-  // Use generic parse function
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -2287,7 +2294,7 @@ function xows_xmp_regi_set_query(to, data, form, onparse)
 
   if(to !== null) iq.setAttribute("to",to);
 
-  // We use generical iq parse function to get potential error message
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -2497,7 +2504,7 @@ function xows_xmp_carbons_query(enable, onparse)
   const iq =  xows_xml_node("iq",{"type":"set"},
                 xows_xml_node(tag,{"xmlns":XOWS_NS_CARBONS}));
 
-  // Use generic parsing function
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -2524,7 +2531,7 @@ function xows_xmp_vcardt_set_query(vcard, onparse)
   const iq = xows_xml_node("iq",{"type":"set","to":xows_xmp_bind.jbar},
               xows_xml_node("vCard",{"xmlns":XOWS_NS_VCARD},vcard));
 
-  // Use generic iq parsing function
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -2642,7 +2649,7 @@ function xows_xmp_pubsub_publish(node, publish, access, onparse)
   const iq =  xows_xml_node("iq",{"type":"set"},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},children));
 
-  // Send final message with generic parsing function
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -2705,7 +2712,7 @@ function xows_xmp_pubsub_conf_set_query(node, form, onparse)
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUBOWNER},
                   xows_xml_node("configure",{"node":node},x)));
 
-  // Send final message with generic parsing function
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -2725,7 +2732,7 @@ function xows_xmp_pubsub_retract(node, id, onparse)
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
                   xows_xml_node("retract",{"node":node},item)));
 
-  // Send final message with generic parsing function
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -3560,7 +3567,7 @@ function xows_xmp_muc_cfg_set_cancel(to, onparse)
   const iq = xows_xml_node("iq",{"to":to,"type":"set"},
               xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},x));
 
-  // We use generical iq parse function to get potential error message
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -3580,7 +3587,7 @@ function xows_xmp_muc_cfg_set_query(to, form, onparse)
   const iq = xows_xml_node("iq",{"to":to,"type":"set"},
               xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},x));
 
-  // We use generical iq parse function to get potential error message
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -3607,7 +3614,7 @@ function xows_xmp_muc_destroy_query(to, alt, passwd, reason, onparse)
   const iq = xows_xml_node("iq",{"to":to,"type":"set"},
               xows_xml_node("query",{"xmlns":XOWS_NS_MUCOWNER},destroy));
 
-  // We use generical iq parse function to get potential error message
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -3645,7 +3652,7 @@ function xows_xmp_muc_affi_set_query(to, item, onparse)
   // Create and launch the query
   const iq = xows_xml_node("iq",{"to":to,"type":"set"},query);
 
-  // We use generical iq parse function to get potential error message
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -3746,7 +3753,7 @@ function xows_xmp_muc_role_set_query(to, item, onparse)
   // Create and launch the query
   const iq = xows_xml_node("iq",{"to":to,"type":"set"},query);
 
-  // We use generical iq parse function to get potential error message
+  // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
@@ -4238,8 +4245,9 @@ function xows_xmp_jing_recv(stanza)
       // If the party that receives an informational message does not understand
       // the payload, it MUST return a <feature-not-implemented/> error with a
       // Jingle-specific error condition of <unsupported-info/>.
+      /*
       xows_xmp_iq_error_send(id, from, "error", "feature-not-implemented",
-          xows_xml_node("unsupported-info"));
+          xows_xml_node("unsupported-info"));*/
       return;
     }
 
@@ -4264,39 +4272,15 @@ function xows_xmp_jing_recv(stanza)
 }
 
 /**
- * Parse received jingle request acknowledge, this function forward
- * only errors to client.
- *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onresult  Callback to forward result
- */
-function xows_xmp_jing_result(stanza, onresult)
-{
-  const from = stanza.getAttribute("from");
-  const type = stanza.getAttribute("type");
-
-  if(type === "error") {
-    // Forward parse result
-    if(xows_isfunc(onresult))
-      onresult(from, type, xows_xmp_error_parse(stanza));
-    return;
-  }
-
-  // Forward parse result
-  if(xows_isfunc(onresult))
-    onresult(from, type, null);
-}
-
-/**
  * Send Jingle RTP session initiate from SDP offer
  *
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sdp         SDP offer string
- * @param   {function} [onresult]   Optionnal callback for request result
+ * @param   {function} [onparse]    Optional callback to receive query result
  *
  * @return  {string}    Initiated Jingle session ID
  */
-function xows_xmp_jing_initiate_sdp(to, sdp, onresult)
+function xows_xmp_jing_initiate_sdp(to, sdp, onparse)
 {
   // Create <jingle> RTP session from SDP string
   const jingle = xows_xmp_jing_sdp2jingle(sdp);
@@ -4308,8 +4292,10 @@ function xows_xmp_jing_initiate_sdp(to, sdp, onresult)
   jingle.setAttribute("sid",sid);
 
   // Send message
-  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},jingle),
-                xows_xmp_jing_result, onresult);
+  const iq = xows_xml_node("iq",{"type":"set","to":to},jingle);
+
+  // Use generic iq parse function to forward  unhandled error
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 
   return sid;
 }
@@ -4320,9 +4306,9 @@ function xows_xmp_jing_initiate_sdp(to, sdp, onresult)
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sid         Jingle session ID
  * @parma   {string}    sdp         SDP answer string
- * @param   {function} [onresult]   Optionnal callback for request result
+ * @param   {function} [onparse]    Optional callback to receive query result
  */
-function xows_xmp_jing_accept_sdp(to, sid, sdp, onresult)
+function xows_xmp_jing_accept_sdp(to, sid, sdp, onparse)
 {
   // Create <jingle> RTP session from SDP string
   const jingle = xows_xmp_jing_sdp2jingle(sdp);
@@ -4333,8 +4319,10 @@ function xows_xmp_jing_accept_sdp(to, sid, sdp, onresult)
   jingle.setAttribute("sid",sid);
 
   // Send message
-  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},jingle),
-                xows_xmp_jing_result, onresult);
+  const iq = xows_xml_node("iq",{"type":"set","to":to},jingle);
+
+  // Use generic iq parse function to forward  unhandled error
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
 /**
@@ -4344,19 +4332,21 @@ function xows_xmp_jing_accept_sdp(to, sid, sdp, onresult)
  * @parma   {string}    sid         Jingle session ID
  * @parma   {string}    info        Payload information to send
  * @parma   {string}   [attr]       Optional Payload attributes
- * @param   {function} [onresult]   Optional callback for received result
+ * @param   {function} [onparse]    Optional callback to receive query result
  */
-function xows_xmp_jing_info(to, sid, info, attr, onresult)
+function xows_xmp_jing_info(to, sid, info, attr, onparse)
 {
   // Compose payload attributes
   let info_attr = {"xmlns":XOWS_NS_JINGLE_RTPI};
   if(attr) info_attr = Object.assign(info_attr, attr);
 
   // Send message
-  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},
-                  xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-info"},
-                    xows_xml_node(info, info_attr, null))),
-                      xows_xmp_jing_result, onresult);
+  const iq =  xows_xml_node("iq",{"type":"set","to":to},
+                xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-info"},
+                  xows_xml_node(info, info_attr, null)));
+
+  // Use generic iq parse function to forward  unhandled error
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
 /**
@@ -4365,15 +4355,17 @@ function xows_xmp_jing_info(to, sid, info, attr, onresult)
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sid         Jingle session ID
  * @parma   {string}    reason      Session terminate reason
- * @param   {function} [onresult]   Optionnal callback for request result
+ * @param   {function} [onparse]    Optional callback to receive query result
  */
-function xows_xmp_jing_terminate(to, sid, reason, onresult)
+function xows_xmp_jing_terminate(to, sid, reason, onparse)
 {
   // Send message
-  xows_xmp_send(xows_xml_node("iq",{"type":"set","to":to},
-                  xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-terminate"},
-                    xows_xml_node("reason",null,xows_xml_node(reason)))),
-                      xows_xmp_jing_result, onresult);
+  const iq =  xows_xml_node("iq",{"type":"set","to":to},
+                xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-terminate"},
+                  xows_xml_node("reason",null,xows_xml_node(reason))));
+
+  // Use generic iq parse function to forward  unhandled error
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
 /* -------------------------------------------------------------------
@@ -4396,12 +4388,16 @@ const XOWS_NS_CAPS         = "http://jabber.org/protocol/caps";
  */
 function xows_xmp_caps_self_features()
 {
-  let vcard4 = XOWS_NS_VCARD4;
-  let avatar = XOWS_NS_AVATAR_META;
+  //let ns_vcard4 = XOWS_NS_VCARD4;
+  let ns_avatar_meta = XOWS_NS_AVATAR_META;
+  let ns_nick = XOWS_NS_NICK;
+  let ns_bookmarks = XOWS_NS_BOOKMARKS;
 
   // Optional features (pubsub notify subscribtion)
-  if(xows_options.avatar_notify) avatar += "+notify";
-  //if(xows_options.vcard4_notify) vcard4 += "+notify";
+  //if(xows_options.vcard4_notify) ns_vcard4 += "+notify";
+  if(xows_options.avatar_notify) ns_avatar_meta += "+notify";
+  if(xows_options.nick_notify) ns_nick += "+notify";
+  if(xows_options.bookmks_notify) ns_bookmarks += "+notify";
 
   const caps = [
     xows_xml_node("identity",{"category":"client","name":XOWS_APP_NAME,"type":"web"}),
@@ -4419,11 +4415,12 @@ function xows_xmp_caps_self_features()
     xows_xml_node("feature",{"var":XOWS_NS_RETRACT}),
     xows_xml_node("feature",{"var":XOWS_NS_REPLY}),
     xows_xml_node("feature",{"var":XOWS_NS_VCARD}),
+    xows_xml_node("feature",{"var":ns_nick}),
     //xows_xml_node("feature",{"var":XOWS_NS_IETF_VCARD4}),
-    //xows_xml_node("feature",{"var":vcard4}),
+    //xows_xml_node("feature",{"var":ns_vcard4}),
     xows_xml_node("feature",{"var":XOWS_NS_AVATAR_DATA}),
-    xows_xml_node("feature",{"var":avatar}),
-    xows_xml_node("feature",{"var":XOWS_NS_BOOKMARKS+"+notify"}),
+    xows_xml_node("feature",{"var":ns_avatar_meta}),
+    xows_xml_node("feature",{"var":ns_bookmarks}),
     xows_xml_node("feature",{"var":XOWS_NS_JINGLE}),
     xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTP1}),
     xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTPA}),
