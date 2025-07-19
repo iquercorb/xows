@@ -32,6 +32,7 @@
  *
  * @licend
  */
+"use strict";
 /* ------------------------------------------------------------------
  *
  *                    WebRTC Interface API Module
@@ -67,8 +68,6 @@ function xows_wrtc_gen_credential(name, secret)
 function xows_wrtc_onerror(rpc, error)
 {
   xows_log(1,"wrtc_onerror",error.message);
-
-  // FIXME: This code was not tested at all
 
   const db = xows_wrtc_db.get(rpc);
 
@@ -133,6 +132,25 @@ function xows_wrtc_onicestate(event)
     if(xows_isfunc(db.onsdesc))
       db.onsdesc(rpc, rpc.localDescription.sdp, db.param);
   }
+}
+
+/**
+ * Callback function for WebRTC Peer Connection
+ * ICE Candidate error
+ *
+ *@param   {object}      event    RTCPeerConnectionIceErrorEvent object
+ */
+function xows_wrtc_oniceerror(event)
+{
+  const rpc = event.target;
+
+  xows_log(1,"wrtc_oniceerror",error.name);
+
+  const db = xows_wrtc_db.get(rpc);
+
+  // Forward error
+  if(xows_isfunc(db.onerror))
+    db.onerror(rpc, error, db.param);
 }
 
 /**
@@ -215,7 +233,7 @@ function xows_wrtc_new(icelist, onsdesc, ontrack, onstate, onerror, param)
   rpc.onnegotiationneeded = xows_wrtc_onneednego;
   rpc.onconnectionstatechange = xows_wrtc_oncnxstate;
   rpc.onicegatheringstatechange = xows_wrtc_onicestate;
-  rpc.onicecandidateerror = (err) => xows_wrtc_onerror(rpc, err);
+  rpc.onicecandidateerror = xows_wrtc_oniceerror;
 
   xows_wrtc_db.set(rpc,{"onerror":onerror,"onstate":onstate,"onsdesc":onsdesc,"ontrack":ontrack,"param":param});
 
