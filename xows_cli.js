@@ -32,6 +32,7 @@
  *
  * @licend
  */
+"use strict";
 /* ------------------------------------------------------------------
  *
  *                         Client API Module
@@ -148,9 +149,9 @@ function xows_cli_external_get(type)
 /**
  * Loading process tasks bits
  */
-const XOWS_LOAD_AVAT  =  xows_load_task_bit();
-const XOWS_LOAD_NICK  =  xows_load_task_bit();
-const XOWS_LOAD_INFO  =  xows_load_task_bit();
+const XOWS_FETCH_AVAT  =  xows_load_task_bit();
+const XOWS_FETCH_NICK  =  xows_load_task_bit();
+const XOWS_FETCH_INFO  =  xows_load_task_bit();
 
 /**
  * Initializes Jabber Client Module, setting environment for
@@ -164,9 +165,9 @@ function xows_cli_init()
   xows_doc_listener_add(window, "unload",       xows_cli_flyyoufools);
 
   // Setup Load taks callback functions
-  xows_load_task_set(XOWS_LOAD_AVAT, xows_cli_avat_fetch);
-  xows_load_task_set(XOWS_LOAD_NICK, xows_cli_nick_query);
-  xows_load_task_set(XOWS_LOAD_INFO, xows_cli_muc_roominfo_query);
+  xows_load_task_set(XOWS_FETCH_AVAT, xows_cli_avat_fetch);
+  xows_load_task_set(XOWS_FETCH_NICK, xows_cli_nick_query);
+  xows_load_task_set(XOWS_FETCH_INFO, xows_cli_muc_roominfo_query);
 }
 
 /* -------------------------------------------------------------------
@@ -330,7 +331,8 @@ function xows_cli_cont_get(addr)
 function xows_cli_best_resource(peer)
 {
   if(peer.type === XOWS_PEER_OCCU)
-    return peer.jbar ? peer.jbar : peer.addr;
+    //return peer.jbar ? peer.jbar : peer.addr;
+    return peer.addr;
 
   // Check for chat session locked JID
   if(peer.jlck != peer.jbar) {
@@ -1160,10 +1162,6 @@ function xows_cli_warmup_extdisc_host(from, svcs)
     xows_cli_extservs.push(svcs[i]);
   }
 
-  // finish discovery, configure client
-  //xows_cli_warmup_config();
-
-
   // Features and service discovery finished, now get user Roster
   xows_xmp_rost_get_query(xows_cli_warmup_roster);
 }
@@ -1185,7 +1183,7 @@ function xows_cli_warmup_roster(items)
   xows_cli_rost_get_parse(items);
 
   // Fetch own data from server and go configure client
-  xows_load_init(xows_cli_self, XOWS_LOAD_AVAT|XOWS_LOAD_NICK, xows_cli_warmup_config);
+  xows_load_task_push(xows_cli_self, XOWS_FETCH_AVAT|XOWS_FETCH_NICK, xows_cli_warmup_config);
 }
 
 /**
@@ -1231,12 +1229,31 @@ function xows_cli_warmup_config()
       xows_cli_services.get(XOWS_NS_HTTPUPLOAD).push(entity);
     }
   }
+  
+  // If MUC service available, we take one more step to discover public
+  // Rooms and fetching informations about all of them.
+  if(xows_cli_services.has(XOWS_NS_MUC)) {
+  
+    // Query for MUC room list
+    xows_cli_muc_list_query(xows_cli_warmup_finish);
+    
+  } else {
+        
+    // We finished warmup
+    xows_cli_warmup_finish();
+  }
+}
 
-  // Query for MUC room list
-  xows_cli_muc_roomlist_query();
-
+/**
+ * Final warmup function
+ *
+ * This function launch a loading timeout process to wait for everything to
+ * be loaded, then start the session.
+ */
+function xows_cli_warmup_finish()
+{
   // Wait for Room discovery to finish and Show Up !
-  xows_load_onempty_set(1000, xows_cli_session_start);
+  xows_load_onempty_set(3000, xows_cli_session_start);
 }
 
 /* -------------------------------------------------------------------
@@ -1283,10 +1300,8 @@ function xows_cli_session_start()
   // sending invalid presence to non-joined room)
   xows_cli_presence_update();
 
-  // Set On-Empty load stack trigger, so connection is validated
-  // only once all resources/peer are fully loaded. We set a timeout
-  // of 2 seconds in case something went wrong in loading process.
-  xows_load_onempty_set(2000, xows_cli_fw_onconnect, xows_cli_self);
+  // Call the configured onconnect callback (forward signal to GUI)
+  xows_cli_fw_onconnect(xows_cli_self);
 }
 
 /* -------------------------------------------------------------------
@@ -1516,10 +1531,10 @@ function xows_cli_xmp_onrostpush(addr, name, subs, group)
   let load_mask = 0;
 
   if(cont.subs & XOWS_SUBS_TO)
-    load_mask |= XOWS_LOAD_AVAT|XOWS_LOAD_NICK;
+    load_mask |= XOWS_FETCH_AVAT|XOWS_FETCH_NICK;
 
   // Fetch data and push Contact
-  xows_load_init(cont, load_mask, xows_cli_peer_push);
+  xows_load_task_push(cont, load_mask, xows_cli_peer_push);
 }
 
 /**
@@ -1617,6 +1632,8 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
     return;
   }
 
+  xows_log(2,"cli_xmp_onpresence","received presence",from);
+
   // Reset the locked resource as defined in XEP-0296
   cont.jlck = cont.jbar;
 
@@ -1648,6 +1665,7 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
     // If user goes unavailable, reset chatstate
     cont.chat = 0;
   }
+  
   // Set default show level
   cont.show = XOWS_SHOW_OFF;
 
@@ -1672,22 +1690,25 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
         if(xows_cach_avat_has(phot)) {
           cont.avat = phot; //< We already got this one
         } else {
-          load_mask |= XOWS_LOAD_AVAT; //< Non-cached data, fetch it
+          load_mask |= XOWS_FETCH_AVAT; //< Non-cached data, fetch it
         }
       } else {
         cont.avat = null;
       }
     } else if(!cont.avat) { //< If contact have no avatar, try to get one
-      load_mask |= XOWS_LOAD_AVAT;
+      
+      // Fetch for avatar only if PEP notify is disabled
+      if(!xows_options.avatar_notify)
+        load_mask |= XOWS_FETCH_AVAT;
     }
 
-    // Update nickname in case changed
-    //xows_cli_nick_query(cont);
-    load_mask |= XOWS_LOAD_NICK;
+    // Fetch for nickname only if PEP notify is disabled
+    if(!xows_options.nick_notify)
+      load_mask |= XOWS_FETCH_NICK;
   }
 
   // Fetch data and push Contact
-  xows_load_init(cont, load_mask, xows_cli_peer_push);
+  xows_load_task_push(cont, load_mask, xows_cli_peer_push);
 }
 
 /**
@@ -2390,7 +2411,7 @@ function xows_cli_self_edit(name, url, access)
  *
  * -------------------------------------------------------------------*/
 /**
- * Handles an incoming PubSub event
+ * Handles an incoming PubSub event/notification
  *
  * @param   {string}    from      Sender JID
  * @param   {string}    node      PubSub node
@@ -2398,6 +2419,8 @@ function xows_cli_self_edit(name, url, access)
  */
 function xows_cli_xmp_onpubsub(from, node, items)
 {
+  xows_log(2,"cli_xmp_onpubsub","received notification",node);
+  
   // Checks for vcard notification
   if(node === XOWS_NS_VCARD4) {
     if(items.length) {
@@ -2521,7 +2544,7 @@ function xows_cli_nick_parse(from, item, error)
   }
 
   if(peer.load) {
-    xows_load_task_done(peer, XOWS_LOAD_NICK);
+    xows_load_task_done(peer, XOWS_FETCH_NICK);
   } else {
     xows_cli_peer_push(peer);
   }
@@ -2596,7 +2619,7 @@ function xows_cli_avat_data_parse(from, hash, data, error)
   peer.avat = hash;
 
   if(peer.load) {
-    xows_load_task_done(peer, XOWS_LOAD_AVAT);
+    xows_load_task_done(peer, XOWS_FETCH_AVAT);
   } else {
     xows_cli_peer_push(peer);
   }
@@ -2642,7 +2665,7 @@ function xows_cli_avat_meta_parse(from, item, error)
       xows_cli_avat_publish("open");
 
       // Set Peer avatar as loaded
-      xows_load_task_done(peer, XOWS_LOAD_AVAT);
+      xows_load_task_done(peer, XOWS_FETCH_AVAT);
 
       // Allow new avatar fetch
       xows_cli_avat_fetch_stk.delete(peer);
@@ -2667,7 +2690,7 @@ function xows_cli_avat_meta_parse(from, item, error)
     peer.avat = hash;
 
     if(peer.load) {
-      xows_load_task_done(peer, XOWS_LOAD_AVAT);
+      xows_load_task_done(peer, XOWS_FETCH_AVAT);
     } else {
       xows_cli_peer_push(peer);
     }
@@ -2709,7 +2732,7 @@ function xows_cli_avat_fetch(peer)
     xows_log(1,"cli_avat_fetch","peer already in stack",peer.addr);
 
     if(peer.load)
-      xows_load_task_done(peer, XOWS_LOAD_AVAT);
+      xows_load_task_done(peer, XOWS_FETCH_AVAT);
 
     return;
   }
@@ -2901,7 +2924,7 @@ function xows_cli_vcardt_parse(from, vcard, error)
   }
 
   if(peer.load) {
-    xows_load_task_done(peer, XOWS_LOAD_AVAT);
+    xows_load_task_done(peer, XOWS_FETCH_AVAT);
   } else {
     xows_cli_peer_push(peer);
   }
@@ -2963,7 +2986,7 @@ function xows_cli_book_parse(from, items)
     if(auto) xows_cli_muc_join_atempt(room);
 
     // Fetch info and push Room
-    xows_load_init(room, XOWS_LOAD_INFO, xows_cli_peer_push);
+    xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_peer_push);
   }
 }
 
@@ -3383,45 +3406,79 @@ let xows_cli_fw_onoccurem = function() {};
 let xows_cli_fw_onsubject = function() {};
 
 /**
+ * MUC Room list query parameters
+ */
+const xows_cli_muc_list_param = {stack:[],ondisco:null};
+
+/**
  * Parse result (aka. Public Room list) of disco#items queries
  * to MUC available services.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  item      Array of parsed <item> objects
  */
-function xows_cli_muc_roomlist_parse(from, item)
+function xows_cli_muc_list_parse(from, item)
 {
   // Forward null to signal query response
   xows_cli_fw_onroompush(null);
 
-  for(let i = 0, n = item.length; i < n; ++i) {
+  for(let i = 0; i < item.length; ++i) {
 
     // Create new room in local list
     const room = xows_cli_room_new(item[i].jid);
 
     // Fetch infos and push Room
-    xows_load_init(room, XOWS_LOAD_INFO, xows_cli_peer_push);
+    xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_peer_push);
+  }
+    
+  const param = xows_cli_muc_list_param;
+    
+  // Process ondisco job
+  if(param.ondisco) {
+
+    // Search for MUC service addres in stack
+    for(let i = 0; i < param.stack.length; ++i) {
+      if(param.stack[i] === from) {
+        param.stack.splice(i, 1);
+        break;
+      }
+    }
+    
+    // If all MUC services was discovered, fire ondisco
+    if(!param.stack.length) {
+      param.ondisco();
+      param.ondisco = null;
+    }
   }
 }
 
 /**
  * Query disco#items to MUC available services (if any) to gather list
  * of public Room (MUC Service's Items).
+ * 
+ * @param   {function}    ondisco   Optional callback for discovery finished
  */
-function xows_cli_muc_roomlist_query()
+function xows_cli_muc_list_query(ondisco)
 {
   // Verify the server provide MUC service
   if(!xows_cli_services.has(XOWS_NS_MUC)) {
     xows_log(1,"cli_muc_discoitems_query","aborted","no MUC service available");
     return;
   }
-
+  
+  const param = xows_cli_muc_list_param;
+  
+  if(xows_isfunc(ondisco)) 
+    param.ondisco = ondisco;
+  
   // Get array of available MUC services
   const muc = xows_cli_services.get(XOWS_NS_MUC);
 
   // Send Item discovery to all available MUC services
-  for(let i = 0, n = muc.length; i < n; ++i)
-    xows_xmp_disco_items_query(muc[i], xows_cli_muc_roomlist_parse);
+  for(let i = 0, n = muc.length; i < n; ++i) {
+    if(param.ondisco) param.stack.push(muc[i]); //< Add muc service to stack
+    xows_xmp_disco_items_query(muc[i], xows_cli_muc_list_parse);
+  }
 }
 
 /**
@@ -3491,7 +3548,7 @@ function xows_cli_muc_roominfo_parse(from, iden, feat, form)
   }
 
   if(room.load) {
-    xows_load_task_done(room, XOWS_LOAD_INFO);
+    xows_load_task_done(room, XOWS_FETCH_INFO);
   } else {
     xows_cli_peer_push(room);
   }
@@ -3854,6 +3911,8 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
     return;
   }
 
+  xows_log(2,"cli_xmp_onoccupant","received occupant",from);
+
   // MUC Status codes (most of them)
   //
   // 110: Inform user that presence refers to itself
@@ -3905,7 +3964,7 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
         } else {
 
           // Fetch latest Room info and forward joined
-          xows_load_init(room, XOWS_LOAD_INFO, xows_cli_fw_onroomjoin);
+          xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_fw_onroomjoin);
         }
 
       }
@@ -4007,17 +4066,19 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
       if(xows_cach_avat_has(phot)) {
         occu.avat = phot; //< We already got this one
       } else {
-        load_mask |= XOWS_LOAD_AVAT; //< Non-cached data, fetch it
+        load_mask |= XOWS_FETCH_AVAT; //< Non-cached data, fetch it
       }
     } else {
       occu.avat = null;
     }
   } else if(!occu.avat) { //< If occupant  have no avatar, try to get one
-    load_mask |= XOWS_LOAD_AVAT;
+    
+    // PEP notify doesn't work in MUC context, so we fetch avatar anyway
+    load_mask |= XOWS_FETCH_AVAT;
   }
 
   // Fetch data and push Occupant
-  xows_load_init(occu, load_mask, xows_cli_peer_push, mucx);
+  xows_load_task_push(occu, load_mask, xows_cli_peer_push, mucx);
 }
 
 /**
@@ -4530,6 +4591,16 @@ function xows_cli_call_sess_count()
 }
 
 /**
+ * Returns whether a call session exists, meaning call buzy.
+ *
+ * @return  {boolean}    True if buzy, false otherwise
+ */
+function xows_cli_call_sess_buzy()
+{
+  return xows_cli_call_sess_db.size > 0;
+}
+
+/**
  * Mute or unmute the specified local (self) media stream.
  *
  * @param   {object}    peer    Peer object
@@ -4748,7 +4819,7 @@ function xows_cli_wrtc_onsdesc(rpc, sdp, peer)
 
     // Send SDP answer via Jingle, then wait for remote peer RTC
     // to connect, final step handled in 'xows_cli_wrtc_onstate'
-    xows_xmp_jing_accept_sdp(peer.jrpc, sess.sid, sdp, null);
+    xows_xmp_jing_accept_sdp(peer.jrpc, sess.sid, sdp, xows_cli_jing_parse);
 
   } else {
     // SDP is an Offer for remote callee
@@ -4756,7 +4827,7 @@ function xows_cli_wrtc_onsdesc(rpc, sdp, peer)
 
     // Send SDP offer via Jingle, then wait for remote peer Jingle
     // answer, either with session-accept or session-terminate.
-    sess.sid = xows_xmp_jing_initiate_sdp(peer.jrpc, sdp, null);
+    sess.sid = xows_xmp_jing_initiate_sdp(peer.jrpc, sdp, xows_cli_jing_parse);
   }
 }
 
@@ -4825,7 +4896,25 @@ function xows_cli_wrtc_onstate(rpc, state, peer)
  */
 function xows_cli_wrtc_onerror(rpc, error, peer)
 {
-  xows_cli_fw_oncallerror(peer, error);
+  // Presence of errorCode property mean error come from ICE gathering
+  // process, typically STUN or TURN server is unreachable or returned 
+  // error. 
+  //
+  // Otherwise, error is a DOMEception from the WebRTC API possibly caused
+  // by (too) many different things.
+  
+  let reason;
+  if(error.errorCode) { //< ICE Gathering error
+    reason = "failed-transport";
+  } else {              //< WebRTC API DOMException
+    reason = "failed-application";
+  }
+
+  // Forward error
+  xows_cli_fw_oncallerror(peer, true, error);
+    
+  // Hang up with peer
+  xows_cli_call_hangup(peer, reason);
 }
 
 /* -------------------------------------------------------------------
@@ -4863,6 +4952,13 @@ function xows_cli_xmp_onjingle(from, id, sid, action, data)
   case "session-initiate": {
       peer.jrpc = from;
 
+      if(peer.type === XOWS_PEER_OCCU) {
+        // This is Room Occupant private message, if no PM session exist
+        // and was actually added in PM list, we Forward PM session creation
+        if(xows_cli_priv_add(peer))
+          xows_cli_fw_onprivpush(peer);
+      }
+  
       // Create new (inbound) session dataset for Peer
       const sess = xows_cli_call_sess_new(peer, true);
 
@@ -4906,5 +5002,36 @@ function xows_cli_xmp_onjingle(from, id, sid, action, data)
       // Clear call session
       xows_cli_call_sess_clear(peer);
     } break;
+    
+  default:
+    xows_xmp_iq_error_send(id, from, "cancel", "bad-request"); //< Send back iq error
+    break;
   }
 }
+
+/**
+ * Callback function for Jingle query result parsing
+ *
+ * @param   {string}    from      Sender JID
+ * @param   {string}    type      Result type
+ * @param   {object}    error     Error data if any
+ */
+function xows_cli_jing_parse(from, type, error)
+{
+  // Retreive related Peer
+  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
+  if(!peer) {
+    xows_log(1,"cli_jing_parse","unknown/unsubscribed JID",from);
+    return;
+  }
+  
+  if(type === "error") {
+
+    // Forward error
+    xows_cli_fw_oncallerror(peer, false, error);
+
+    // Clear call session
+    xows_cli_call_sess_clear(peer);
+  }
+}
+

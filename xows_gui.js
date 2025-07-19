@@ -32,6 +32,7 @@
  *
  * @licend
  */
+"use strict";
 /* ------------------------------------------------------------------
  *
  *                         GUI API Interface
@@ -46,7 +47,7 @@ const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
 /**
  * History loading process tasks bit (see xows_load* )
  */
-const XOWS_LOAD_MAM = xows_load_task_bit();
+const XOWS_FETCH_HIST = xows_load_task_bit();
 
 /**
  * Current selected GUI locale code
@@ -529,9 +530,6 @@ function xows_gui_peer_doc_init(peer)
   // Clone elements from initial offscreen slot
   xows_gui_peer_frag_new(peer.addr);
 
-  // Set this document fragment as "closed"
-  xows_gui_peer_doc(peer, "hist_ul").dataset.closed = true;
-
   // Set chat input placeholder
   const placeholder = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
   xows_gui_peer_doc(peer, "chat_inpt").setAttribute("placeholder",placeholder);
@@ -591,6 +589,8 @@ function xows_gui_peer_doc_import(peer)
     xows_gui_chat_observer.observe(xows_doc("chat_main"));
     //xows_gui_chat_observer.observe(xows_doc("chat_hist"));
 
+    const is_room = (peer.type === XOWS_PEER_ROOM);
+
     // Recreate event listeners
     xows_doc_listener_add(xows_doc("chat_head"), "click", xows_gui_chat_head_onclick);
     xows_doc_listener_add(xows_doc("chat_main"), "scrollend",xows_gui_chat_onscroll);
@@ -612,10 +612,15 @@ function xows_gui_peer_doc_import(peer)
     xows_doc_listener_add(chat_panl, "input", xows_gui_chat_inpt_oninput);
     xows_doc_listener_add(chat_panl, "paste", xows_gui_chat_inpt_onpaste, false); //< need preventDefault()
     xows_doc_listener_add(xows_doc("chat_file"), "change", xows_gui_chat_file_onchange);
-    if(peer.type === XOWS_PEER_ROOM) {
+    if(is_room) {
       xows_doc_listener_add(xows_doc("room_head"), "click", xows_gui_room_head_onclick);
       xows_doc_listener_add(xows_doc("occu_list"), "click", xows_gui_occu_list_onclick);
     }
+
+    // Set proper chat frame style
+    const chat_fram = xows_doc("chat_fram");
+    chat_fram.classList.toggle("CHAT-ROOM", is_room);
+    chat_fram.classList.toggle("CHAT-BUDY", !is_room);
 
   } else {
 
@@ -656,37 +661,34 @@ function xows_gui_peer_doc_reassign(peer, slot)
 function xows_gui_peer_chat_update(peer)
 {
   // Update chat title bar
-  xows_gui_peer_doc(peer, "chat_titl").innerText = peer.name;
 
-  const meta_inpt = xows_gui_peer_doc(peer,"meta_inpt");
+  const char_titl = xows_gui_peer_doc(peer,"chat_titl");
+  const chat_meta = xows_gui_peer_doc(peer,"chat_meta");
 
   if(peer.type === XOWS_PEER_ROOM) {
-    meta_inpt.innerText = peer.subj;
-    meta_inpt.className = peer.subj ? "" : "PLACEHOLD";
+    char_titl.innerText = "# "+ peer.name;
+    chat_meta.innerText = peer.subj;
+    chat_meta.className = peer.subj ? "" : "PLACEHOLD";
     xows_gui_peer_doc(peer, "chat_bt_bkmk").hidden = (peer.book || peer.publ);
     xows_gui_peer_doc(peer, "chat_bt_nick").hidden = false;
     xows_gui_peer_doc(peer, "chat_bt_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
     xows_gui_peer_doc(peer, "chat_bt_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
   } else {
-    meta_inpt.innerText = peer.stat;
+    char_titl.innerText = peer.name;
+    chat_meta.innerText = peer.stat;
     xows_gui_peer_doc(peer, "chat_show").dataset.show = peer.show;
-    // Show or hide Multimedia Call buttons
+    // Show or hide Call buttons
     const has_ices = xows_cli_external_has("stun", "turn");
     xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
     xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
     if(peer.type === XOWS_PEER_OCCU) {
       xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
       // Occupant may also change address (change nick)
+      xows_gui_peer_doc(peer, "chat_addr").innerText = "(# "+peer.room.name +")";
+    } else {
       xows_gui_peer_doc(peer, "chat_addr").innerText = "("+peer.addr+")";
     }
   }
-
-  // Enable or disable Multimedia Call buttons
-  /*
-  const in_call = (xows_wrtc_busy());
-  xows_gui_peer_doc(peer, "chat_bt_cala").disabled = in_call;
-  xows_gui_peer_doc(peer, "chat_bt_calv").disabled = in_call;
-  */
 
   // If Peer is a Room alos update Occupant List header bar
   if(peer.type === XOWS_PEER_ROOM) {
@@ -694,6 +696,23 @@ function xows_gui_peer_chat_update(peer)
     const occu_bt_cnfg = xows_gui_peer_doc(peer, "occu_bt_cnfg");
     occu_bt_cnfg.hidden = (peer.affi < XOWS_AFFI_ADMN);
   }
+
+  // Enable or disable Call buttons
+  xows_gui_peer_buzy_update(peer);
+}
+
+/**
+ * Update Peer's chat frame to enable or disable Call buttons
+ * according global buzy state
+ *
+ * @param   {object}    peer      Peer object
+ */
+function xows_gui_peer_buzy_update(peer)
+{
+  // Enable or disable Multimedia Call buttons
+  const unavailable = xows_cli_call_sess_buzy() || (peer.show <= XOWS_SHOW_DND);
+  xows_gui_peer_doc(peer, "chat_bt_cala").disabled = unavailable;
+  xows_gui_peer_doc(peer, "chat_bt_calv").disabled = unavailable;
 }
 
 /* -------------------------------------------------------------------
@@ -748,7 +767,7 @@ function xows_gui_init()
   xows_gui_sound_load("hangup",   "hangup.ogg");
 
   // Set loader functions
-  xows_load_task_set(XOWS_LOAD_MAM, xows_gui_mam_fetch_newer);
+  xows_load_task_set(XOWS_FETCH_HIST, xows_gui_mam_fetch_newer);
 }
 
 /**
@@ -931,19 +950,15 @@ function xows_gui_cli_onconnect(user)
     let i = xows_cli_cont.length;
     while(i--) {
       const cont = xows_cli_cont[i];
-      // Presence of LOADING class mean chat were not openned, we don't update history
-      if(!xows_gui_peer_doc_cls_has(cont,"chat_load","LOADING")) {
-        xows_gui_mam_fetch_newer(cont);
-      }
+      // Update only if history already preloaded
+      if(xows_gui_preload_done(cont)) xows_gui_mam_fetch_newer(cont);
     }
 
     i = xows_cli_room.length;
     while(i--) {
       const room = xows_cli_room[i];
-      // Presence of LOADING class mean chat were not openned, we don't update history
-      if(!xows_gui_peer_doc_cls_has(room,"chat_load","LOADING")) {
-        xows_gui_mam_fetch_newer(room);
-      }
+      // Update only if history already preloaded
+      if(xows_gui_preload_done(room)) xows_gui_mam_fetch_newer(room);
     }
 
   } else {
@@ -1310,19 +1325,40 @@ function xows_gui_wnd_onkey(event)
  * -------------------------------------------------------------------*/
 
 /**
+ * Returns whether Peer history preloaded was done
+ *
+ * @param   {object}    peer      Peer Object
+ *
+ * @return  {boolean)   True if preload done, false otherwise
+ */
+function xows_gui_preload_done(peer)
+{
+  // We use the "hidden" state of the "chat_main" element as flag for preloaded
+  // done state. The initial state is "hidden" is preload need to be done.
+  if(peer === xows_gui_peer) {
+    return !document.getElementById("chat_main").hidden;
+  } else {
+    return !xows_doc_frag_find(peer.addr,"chat_main").hidden;
+  }
+}
+
+/**
  * Callback function called once Peer loading process finished
  *
  * @param   {object}    peer      Peer Object
  */
-function xows_gui_preload_done(peer)
+function xows_gui_preload_onload(peer)
 {
-  if(xows_gui_peer_doc_cls_has(peer,"chat_load","LOADING")) {
+  if(!xows_gui_preload_done(peer)) {
 
     // Put the chat history scroll DOWN
     xows_gui_peer_scroll_down(peer);
 
-    // Remove loading mask
+    // Remove loading overlay
     xows_gui_peer_doc_cls_rem(peer,"chat_load","LOADING");
+
+    // Show chat_main element, meaning preload done
+    xows_gui_peer_doc(peer,"chat_main").hidden = false;
   }
 
   // Show or Hide Occupant list if Room or not
@@ -1339,7 +1375,10 @@ function xows_gui_preload_peer(peer)
 {
   let load_mask = 0;
 
-  if(xows_gui_peer_doc_cls_has(peer,"chat_load","LOADING")) {
+  if(!xows_gui_preload_done(peer)) {
+
+    // Add loading overlay
+    xows_gui_peer_doc_cls_add(peer,"chat_load","LOADING");
 
     // Close right panel
     xows_doc_cls_add("main_colr","COL-HIDE");
@@ -1347,11 +1386,11 @@ function xows_gui_preload_peer(peer)
     switch(peer.type)
     {
     case XOWS_PEER_CONT:
-      load_mask |= XOWS_LOAD_MAM;
+      load_mask |= XOWS_FETCH_HIST;
       break;
 
     case XOWS_PEER_ROOM:
-      load_mask |= XOWS_LOAD_MAM;
+      load_mask |= XOWS_FETCH_HIST;
       break;
 
     case XOWS_PEER_OCCU:
@@ -1361,7 +1400,7 @@ function xows_gui_preload_peer(peer)
     }
   }
 
-  xows_load_init(peer, load_mask, xows_gui_preload_done);
+  xows_load_task_push(peer, load_mask, xows_gui_preload_onload);
 }
 
 /**
@@ -1420,11 +1459,8 @@ function xows_gui_switch_peer(addr)
     // Bring back Peer document elements from offscreen
     xows_gui_peer_doc_import(next);
 
-    const is_room = (next.type === XOWS_PEER_ROOM);
-
-    // Set proper chat frame style
-    chat_fram.classList.toggle("CHAT-ROOM", is_room);
-    chat_fram.classList.toggle("CHAT-CONT",!is_room);
+    // Update chat head call buttons according buzy state
+    xows_gui_peer_buzy_update(next);
 
     // Check whether peer need loading, start it or bypass
     xows_gui_preload_peer(next);
@@ -2743,7 +2779,7 @@ function xows_gui_room_list_reload()
   xows_doc("room_publ").innerHTML = "";
 
   // Query to get public room list with delay
-  setTimeout(xows_cli_muc_roomlist_query, 500);
+  setTimeout(xows_cli_muc_list_query, 500);
 }
 
 /**
@@ -3149,9 +3185,9 @@ function xows_gui_chat_noti_update(peer)
  */
 function xows_gui_cli_onsubject(peer, subj)
 {
-  const meta_inpt = xows_gui_peer_doc(peer, "meta_inpt");
-  meta_inpt.innerText = subj ? subj : "";
-  meta_inpt.className = subj ? "" : "PLACEHOLD";
+  const chat_meta = xows_gui_peer_doc(peer, "chat_meta");
+  chat_meta.innerText = subj ? subj : "";
+  chat_meta.className = subj ? "" : "PLACEHOLD";
 }
 
 /* -------------------------------------------------------------------
@@ -3669,7 +3705,7 @@ function xows_gui_call_ring_onclick(event)
   case "ring_bt_deny":
     // Reject or abort call
     let reason;
-    if(call_ring.classList.contains("CALL-INBD")) {
+    if(call_ring.classList.contains("RING-INBD")) {
       xows_gui_call_hangup(xows_gui_peer, "decline");
     } else {
       xows_gui_call_onabort(xows_gui_peer);
@@ -3724,7 +3760,7 @@ function xows_gui_call_ring_show(peer, type, reason)
     break;
 
   case XOWS_RING_NEGO:
-    text = "Establishing relay...";
+    text = "Network negotiation...";
     break;
 
   case XOWS_RING_TERM:
@@ -3741,15 +3777,27 @@ function xows_gui_call_ring_show(peer, type, reason)
       case "success":    //< peer hung up call
         text = xows_cli_call_sess_cntd(peer) ? "The other party hung up" : "You missed a call";
         break;
+
+      // The common Jingle errors
+      case "failed-transport":
+      case "failed-application":
+      case "unsupported-applications":
+      case "unsupported-transports":
+      case "incompatible-parameters":
+        text = "The other party encountered error";
+        break;
+
+      default:
+        text = xows_l10n_get("Call failure") + ": " + xows_xml_beatify_tag(reason);
       }
     break;
   }
 
-  call_ring.classList.toggle("CALL-VISI", is_video);
-  call_ring.classList.toggle("CALL-RING", (type === XOWS_RING_RING));
-  call_ring.classList.toggle("CALL-NEGO", (type === XOWS_RING_NEGO));
-  call_ring.classList.toggle("CALL-TERM", (type === XOWS_RING_TERM));
-  call_ring.classList.toggle("CALL-INBD", inbound);
+  call_ring.classList.toggle("RING-VDEO", is_video);
+  call_ring.classList.toggle("RING-RING", (type === XOWS_RING_RING));
+  call_ring.classList.toggle("RING-NEGO", (type === XOWS_RING_NEGO));
+  call_ring.classList.toggle("RING-TERM", (type === XOWS_RING_TERM));
+  call_ring.classList.toggle("RING-INBD", inbound);
 
   call_ring.querySelector("RING-TEXT").innerText = xows_l10n_get(text);
 
@@ -3885,6 +3933,7 @@ function xows_gui_media_fail_open()
 /* -------------------------------------------------------------------
  * Multimedia-Call - GUI management functions
  * -------------------------------------------------------------------*/
+
 /**
  * Hangup and clear all active or pending call sessions
  */
@@ -3914,6 +3963,9 @@ function xows_gui_call_exit(peer)
 
   // Close any potentially opened Call view frame
   xows_gui_call_view_close(peer);
+
+  // Enable chat header call buttons
+  xows_gui_peer_buzy_update(peer);
 
   // If no more call sessions, stop VU-Meter animation
   if(!xows_cli_call_sess_count())
@@ -3987,6 +4039,9 @@ function xows_gui_call_accept_onstream(peer, stream)
   // Answer call
   xows_cli_call_accept(peer, stream);
 
+  // Dsiable chat header call buttons
+  xows_gui_peer_buzy_update(peer);
+
   // Open Ring dialog in Negotiation mode
   xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
 
@@ -4028,6 +4083,9 @@ function xows_gui_call_invite_onstream(peer, stream)
 {
   // Initiate call (create session)
   xows_cli_call_invite(peer, stream);
+
+  // Dsiable chat header call buttons
+  xows_gui_peer_buzy_update(peer);
 
   // Open Ring dialog in Negotiation mode
   xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
@@ -4144,17 +4202,41 @@ function xows_gui_cli_oncalltermd(peer, reason)
 /**
  * Callback for Multimedia-Call received call error
  *
- * @param   {object}     peer     Related Peer object
- * @param   {object}     error    Error data (DOMException)
+ * An internal parameter set to true mean error was generated by local
+ * WebRTC/Transport processing, otherwise, this is a remote XMPP/Jingle
+ * query error response.
+ *
+ * @param   {object}     peer       Related Peer object
+ * @param   {boolean}    internal   Indicate internal RTC process error
+ * @param   {string}     message    Error message
  */
-function xows_gui_cli_oncallerror(peer, error)
+function xows_gui_cli_oncallerror(peer, internal, error)
 {
-  const text = xows_l10n_get("Call session error") + ": ";
-  // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_ERR,text+error.message);
+  // Close and reset GUI elements
+  xows_gui_call_exit(peer);
 
-  // Hangup with peer
-  xows_gui_call_hangup(peer, "failed-application");
+  let reason;
+  if(internal) {
+
+    // Presence of errorCode property mean error come from ICE gathering
+    // process, typically STUN or TURN server is unreachable or returned
+    // error.
+    //
+    // Otherwise, error is a DOMEception from the WebRTC API possibly caused
+    // by (too) many different things.
+
+    if(error.errorCode) { //< ICE Gathering error
+      reason = "Network Error ("+error.errorCode+")";
+    } else {              //< WebRTC API DOMException
+      reason = "Internal Error ("+error.name+")";
+    }
+  } else {
+    // This is an error replied by Jingle peer
+    reason = "Remote Peer Error ("+error.name+")";
+  }
+
+  // Open the Call dialog
+  xows_gui_call_ring_show(peer, XOWS_RING_TERM, reason);
 }
 
 /* -------------------------------------------------------------------
@@ -4956,7 +5038,7 @@ function xows_gui_mam_parse(peer, result, count, complete)
   xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
 
   // Inform MAM loaded
-  xows_load_task_done(peer, XOWS_LOAD_MAM);
+  xows_load_task_done(peer, XOWS_FETCH_HIST);
 }
 
 /* -------------------------------------------------------------------
@@ -5635,8 +5717,6 @@ function xows_gui_cli_onoccupush(occu, mucx)
 {
   // Get Occupant's Room
   const room = occu.room;
-
-  xows_log(2,"gui_cli_onoccupush","push occupant","room="+occu.room.addr);
 
   if(mucx) {
     // check for nicname change

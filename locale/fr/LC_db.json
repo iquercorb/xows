@@ -692,8 +692,8 @@
   "The other party hung up":
   "Le correspondant a raccroché",
 
-  "Establishing relay...":
-  "Établissement du relais...",
+  "Network negotiation...":
+  "Négociation réseau...",
 
   "Call in progress...":
   "Appel en cours...",
@@ -701,8 +701,11 @@
   "You missed a call":
   "Vous avez manqué un appel",
 
-  "Unexpected end of call":
-  "Fin d'appel innatendu",
+  "The other party encountered error":
+  "Le correspondant a rencontré une erreur",
+
+  "Call failure":
+  "Échec de l'appel",
 
   "modified":
   "modifié",

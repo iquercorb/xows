@@ -692,7 +692,7 @@
   "The other party hung up":
   "",
 
-  "Establishing relay...":
+  "Network negotiation...":
   "",
 
   "Call in progress...":
@@ -701,7 +701,10 @@
   "You missed a call":
   "",
 
-  "Unexpected end of call":
+  "The other party encountered error":
+  "",
+
+  "Call failure":
   "",
 
   "modified":
