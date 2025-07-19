@@ -32,6 +32,7 @@
  *
  * @licend
  */
+"use strict";
 /* ------------------------------------------------------------------
  *
  *                         XML API Module
@@ -265,4 +266,23 @@ function xows_xml_innertext(node) {
   }
 
   return xows_xml_unesc(str);
+}
+
+/**
+ * Beautify tagname adding capitals and replacing minus "-" by
+ * spaces.
+ * 
+ * @param   {string}    name      Tagname to beautify
+ *
+ * @return  {string}    Beautified tagname
+ */
+function xows_xml_beatify_tag(name)
+{
+  // Replace all '-' by spaces
+  const str = name.replace(/-/g, ' ');
+  // Capitalize first character and return (in the world of Javascript where
+  // it is normal to create a string from a character, extract substring of the
+  // rest, then concatenate strings back to a new string, to simply replace a
+  // single character... Is it better to cry or laugh ?)
+  return str[0].toUpperCase()+str.slice(1);
 }
