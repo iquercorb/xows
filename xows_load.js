@@ -32,6 +32,7 @@
  *
  * @licend
  */
+"use strict";
 /* ------------------------------------------------------------------
  *
  *                     Agnostic Loader Module
@@ -55,14 +56,131 @@ function xows_load_task_bit()
 /**
  * Map to store task callback functions
  */
-const xows_load_task_map = new Map();
+const xows_load_task_db = new Map();
 
 /**
  * Define function for task to perform
  */
 function xows_load_task_set(task, ontask)
 {
-  xows_load_task_map.set(task, ontask);
+  xows_load_task_db.set(task, ontask);
+}
+
+/**
+ * Loading process per-Item stack
+ */
+const xows_load_item_stk = new Map();
+
+/**
+ * Initialize loading process for item.
+ *
+ * @parma   {object}    item      Peer object to initialize Loading
+ * @param   {number}    mask      Bitmask for loading tasks to initialize
+ * @param   {function}  onload    Function to call once load finished
+ * @param   {*}        [param]    Optional parameter to pass to Onload
+ */
+function xows_load_task_push(item, mask, onload, param)
+{
+  if(mask === 0) {
+    onload(item, param);
+    return;
+  }
+
+  let stack;
+
+  // Check for double-init
+  if(xows_load_item_stk.has(item)) {
+
+    xows_log(2,"load_task_push","Updating tasks mask 0x"+item.load+"|0x"+mask, item.name);
+
+    // Get existing stack
+    stack = xows_load_item_stk.get(item);
+
+  } else {
+
+    xows_log(2,"load_task_push","Setting tasks mask 0x"+item.load+"|0x"+mask, item.name);
+
+    // Create new load stack for this item
+    stack = [];
+    xows_load_item_stk.set(item, stack);
+  }
+
+  // Apply loading mask
+  item.load |= mask;
+
+  // Add entry to item's loading stack
+  stack.push({"mask":mask,"onload":onload,"param":param});
+
+  // Check every mask bits to lauch proper configured task
+  let bit = 0x1;
+  do {
+
+    if(mask & bit) {
+
+      // Get task function for this bit
+      const ontask = xows_load_task_db.get(bit);
+
+      if(xows_isfunc(ontask)) {
+        ontask(item); //< Launch function
+      } else {
+        // Something is not correct, either provided mask is invalid
+        // or loading tasks functions were not properly pre-configured.
+        xows_log(1,"load_task_push","No task for bit 0x"+bit, item.name);
+        // Set task as done already to prevent waiting infinitely
+        xows_load_task_done(item, bit);
+      }
+    }
+
+    bit = bit << 1;
+
+  } while(bit != xows_load_next_bit);
+}
+
+/**
+ * Set item loading task as done, if all tasks are done
+ * trigger onload.
+ *
+ * @parma   {object}    item      Peer object to validate
+ * @param   {number}    task      Loading task bit to validate
+ */
+function xows_load_task_done(item, task)
+{
+  xows_log(2,"load_task_done","Task 0x"+task+" done",item.name);
+
+  // Remove load task bit
+  item.load &= ~task;
+
+  // Get item's loading stack
+  const stack = xows_load_item_stk.get(item);
+  if(!stack) {
+   xows_log(1,"load_task_done","No stack for item",item.name);
+   return;
+  }
+
+  let entry = null;
+
+  // Search for completed item's loading entry
+  for(let i = 0; i < stack.length; ++i) {
+    if((stack[i].mask & item.load) === 0) {
+      entry = stack[i];   //< Store stack entry
+      stack.splice(i, 1); //< Remove entry from stack
+      break;
+    }
+  }
+
+  // Check if item finished loading
+  if(entry !== null) {
+
+    // Check whether item's loading stack is empty
+    if(!stack.length)
+      xows_load_item_stk.delete(item);
+
+    // Call configured onload
+    entry.onload(item, entry.param);
+
+    // Check for firing of onempty function
+    xows_load_onempty_check();
+  }
 }
 
 /**
@@ -87,6 +205,7 @@ const xows_load_onempty_def = {onempty:null,toid:null,param:null};
 function xows_load_onempty_set(timeout, onempty, param)
 {
   if(xows_load_item_stk.size === 0) {
+    xows_log(2,"load_onempty_set","Stack already empty",onempty.name);
     // Loading stack allready empty, skip waiting
     onempty(param);
     return;
@@ -107,107 +226,37 @@ function xows_load_onempty_set(timeout, onempty, param)
   // Fire new timeout
   if(timeout > 0)
     def.toid = setTimeout(onempty, timeout, param);
+
+  xows_log(2,"load_onempty_set","Configured onempty",def.onempty.name);
 }
 
 /**
- * Loading process per-Item stack
- */
-const xows_load_item_stk = new Map();
-
-/**
- * Set item loading task as done, if all tasks are done
- * trigger onload.
+ * Check whether loading item stack is empty then fire the configured
+ * onempty function if any.
  *
- * @parma   {object}    item      Peer object to validate
- * @param   {number}    task      Loading task bit to validate
+ * This function is for internal "load Module" usage and should not be
+ * called
  */
-function xows_load_task_done(item, task)
+function xows_load_onempty_check()
 {
-  // Remove load task mask bit
-  item.load &= ~task;
+  // Check for empty stack to launch onempty
+  if(xows_load_onempty_def.onempty && xows_load_item_stk.size === 0) {
 
-  // Check if item finished loading
-  if(item.load === 0) {
+    const def = xows_load_onempty_def;
 
-     // Search for saved load parameters in stack
-     const entry = xows_load_item_stk.get(item);
-     if(!entry) {
-       xows_log(1,"load_task_done","entry not found for item","task=0x"+task);
-       return;
-     }
-
-    // Delete entry right now
-    xows_load_item_stk.delete(item);
-
-    // Call push function with supplied param
-    entry.onload(item, entry.param);
-
-    // Check for empty stack to launch onempty
-    if(xows_load_onempty_def.onempty && xows_load_item_stk.size === 0) {
-
-      const def = xows_load_onempty_def;
-
-      // Clear pending timeout
-      if(def.toid) {
-        clearTimeout(def.toid);
-        def.toid = null;
-      }
-
-      xows_log(1,"load_task_done","fireing onempty",def.onempty.name);
-
-      // Call defined callback
-      def.onempty(def.param);
-
-      // Reset parameters
-      def.onempty = null;
-      def.param = null;
-    }
-  }
-}
-
-/**
- * Initialize loading process for item.
- *
- * @parma   {object}    item      Peer object to initialize Loading
- * @param   {number}    mask      Bitmask for loading tasks to initialize
- * @param   {function}  onload    Function to call once load finished
- * @param   {*}        [param]    Optional parameter to pass to Onload
- */
-function xows_load_init(item, mask, onload, param)
-{
-  if(mask === 0) {
-    onload(item, param);
-    return;
-  }
-
-  // Check for double-init
-  if(xows_load_item_stk.has(item)) {
-
-    xows_log(1,"load_init","item already setup for load","mask=0x"+mask);
-    //return;
-
-    // Add loading mask
-    item.load |= mask;
-
-  } else {
-
-    // Set loading mask
-    item.load = mask;
-
-    // Create new load entry for this item
-    xows_load_item_stk.set(item,{"onload":onload,"param":param});
-  }
-
-  let bit = 0x1;
-  do {
-
-    if(mask & bit) {
-      const ontask = xows_load_task_map.get(bit);
-      ontask(item);
+    // Clear pending timeout
+    if(def.toid) {
+      clearTimeout(def.toid);
+      def.toid = null;
     }
 
-    bit = bit << 1;
+    xows_log(2,"load_onempty_check","Fireing onempty",def.onempty.name);
 
-  } while(bit != xows_load_next_bit);
+    // Call defined callback
+    def.onempty(def.param);
+
+    // Reset parameters
+    def.onempty = null;
+    def.param = null;
+  }
 }
-
