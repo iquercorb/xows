@@ -120,7 +120,8 @@
   <!-- Middle Collumn (Chat Window) -->
   <col-midd id="main_colc">
     <col-frame hidden id="chat_fram">
-      <col-load id="chat_load" class="LOADING"></col-load>
+      <!-- Chat Frame - Loading-Overlay frame -->
+      <load-fram id="chat_load" class="LOADING"></load-fram>
       <!-- Head Frame (Chat Title bar) -->
       <row-head id="chat_head">
         <head-info>
@@ -128,7 +129,7 @@
           <chat-addr id="chat_addr"></chat-addr>
           <badg-show id="chat_show" data-show=0></badg-show>
         </head-info>
-        <head-meta id="meta_inpt"></head-meta>
+        <head-meta id="chat_meta"></head-meta>
         <head-acts>
           <button id="chat_bt_calv" title="${'Video call'}"></button>
           <button id="chat_bt_cala" title="${'Audio call'}"></button>
@@ -141,7 +142,6 @@
           <button id="chat_bt_occu" title="${'Channel occupants list'}"></button>
         </head-acts>
       </row-head>
-      
       <!-- Half Frame (Chat Multimedia session) -->
       <div hidden id="call_view">
         <div id="call_grid">
@@ -163,9 +163,8 @@
           </div>
         </div>
       </div>
-      
       <!-- Main Frame (Chat Messages history) -->
-      <row-main id="chat_main">
+      <row-main hidden id="chat_main">
         <!-- Chat History  -->
         <div id="chat_hist">
           <!-- Chat History - Message list -->
@@ -176,7 +175,6 @@
           </ul>
           <!-- DEPRECATED <hist-bound hidden id="hist_end"></hist-bound> -->
         </div>
-        
         <!-- Chat History - Upload Progress -->
         <div hidden id="hist_upld">
           <section>
@@ -190,10 +188,9 @@
             <btn-close id="upld_exit"></btn-close>
           </fieldset>
         </div>
-        
         <!-- Chat History - Call Signaling Dialog -->
         <div hidden id="call_ring" data-type="">
-          <ring-icon class="CALL-RING"></ring-icon>
+          <ring-icon class="RING-RING"></ring-icon>
           <ring-text>${'Incoming call...'}</ring-text>
           <ring-acts>
             <button id="ring_bt_pkup" title="${'Accept call'}"></button>
@@ -201,7 +198,6 @@
             <btn-close id="ring_bt_clos" title="${'Close'}"></btn-close>
           </ring-acts>
         </div>
-        
       </row-main>
       <!-- Foot Frame (Chat Input Panel) -->
       <row-foot id="chat_foot">

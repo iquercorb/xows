@@ -830,6 +830,21 @@ badg-lock {
   z-index: 6;
 }
 /* ------------------------------------------------------------------ */
+/* Main Screen misc elements */
+/* ------------------------------------------------------------------ */
+load-fram {
+  display: none;
+}
+load-fram.LOADING,
+load-fram.LOADERR {
+  display: block;
+  position: absolute;
+  left: 0; right: 0;
+  top: 0; bottom: 0;
+  background-color: var(--base-tone4);
+  z-index: 5;
+}
+/* ------------------------------------------------------------------ */
 /* Main Screen flex layout */
 /* ------------------------------------------------------------------ */
 #main_wrap {
@@ -948,19 +963,6 @@ row-main {
   width: 100%; height: 100%;
   overflow-y: auto;
 }
-col-load {
-  display: none;
-}
-col-load.LOADING,
-col-load.LOADERR {
-  display: block;
-  position: absolute;
-  left: 0; right: 0;
-  top: 0; bottom: 0;
-  background-color: var(--base-tone4);
-  z-index: 5;
-}
-
 /* ------------------------------------------------------------------ */
 /* Pages Screen flex layout */
 /* ------------------------------------------------------------------ */
@@ -1507,7 +1509,6 @@ page-inner fieldset .rotext {
 /* ------------------------------------------------------------------ */
 row-head {
   margin: 0;
-  box-shadow: 0 1px 0 0 rgba(26,26,31,0.3);
   z-index: 0;
 }
 /* ------------------------------------------------------------------ */
@@ -1668,7 +1669,7 @@ head-acts button:hover {
 }
 head-acts button:disabled {
   opacity: .2;
-  background-color: transparent;
+  background-color: transparent !important;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Roster Frame commons */
@@ -1682,7 +1683,7 @@ row-page {
 }
 #rost_fram row-head {
   background-color: var(--base-tone4);
-  border-bottom: 1px solid var(--base-tone2);
+  border-bottom: 1px solid var(--base-tone1);
   list-style: none;
 }
 #rost_fram head-info {
@@ -2074,7 +2075,7 @@ li-peer.PEER-ROOM peer-avat {
   background-image: url("images/edit.svg");
 }
 /* ------------------------------------------------------------------ */
-/* Main Page - Center Col - Head Frame */
+/* Main Page - Center Col - Chat Frame */
 /* ------------------------------------------------------------------ */
 #chat_fram {
   min-width: 300px;
@@ -2082,13 +2083,13 @@ li-peer.PEER-ROOM peer-avat {
 }
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
-#chat_fram.CHAT-CONT #chat_bt_subj,
-#chat_fram.CHAT-CONT #chat_bt_nick,
+#chat_fram.CHAT-BUDY #chat_bt_subj,
+#chat_fram.CHAT-BUDY #chat_bt_nick,
 #chat_fram.CHAT-ROOM #chat_bt_calv,
 #chat_fram.CHAT-ROOM #chat_bt_cala,
-#chat_fram.CHAT-CONT #chat_bt_cnfg,
-#chat_fram.CHAT-CONT #chat_bt_bkmk,
-#chat_fram.CHAT-CONT #chat_bt_occu {
+#chat_fram.CHAT-BUDY #chat_bt_cnfg,
+#chat_fram.CHAT-BUDY #chat_bt_bkmk,
+#chat_fram.CHAT-BUDY #chat_bt_occu {
   display: none;
 }
 /*
@@ -2455,7 +2456,7 @@ hist-bound {
     background-color: var(--base-tone6);
   }
 }
-#call_ring.CALL-RING {
+#call_ring.RING-RING {
   animation: hist-ringing 1s ease-out infinite;
 }
 ring-icon {
@@ -2467,10 +2468,10 @@ ring-icon {
   background-repeat: no-repeat;
   background-image: url("images/call.svg");
 }
-.CALL-VISI ring-icon {
+.RING-VDEO ring-icon {
   background-image: url("images/cam.svg");
 }
-.CALL-TERM ring-icon {
+.RING-TERM ring-icon {
   background-image: url("images/call_end.svg");
 }
 ring-text {
@@ -2482,7 +2483,7 @@ ring-text {
   font-weight: bold;
   color: var(--text-tone1);
 }
-.CALL-NEGO ring-text::before {
+.RING-NEGO ring-text::before {
   display: inline-block;
   content: '\25CB';
   margin: 8px 0 0 0;
@@ -2549,10 +2550,10 @@ ring-acts button {
   display: none;
   margin: 0 10px 0 0;
 }
-.CALL-NEGO #ring_bt_deny,
-.CALL-RING #ring_bt_deny,
-.CALL-RING.CALL-INBD #ring_bt_pkup,
-.CALL-TERM btn-close {
+.RING-NEGO #ring_bt_deny,
+.RING-RING #ring_bt_deny,
+.RING-RING.RING-INBD #ring_bt_pkup,
+.RING-TERM btn-close {
   display: inline-block !important;
 }
 @media (max-width: 824px) {
@@ -3510,6 +3511,9 @@ chat-inpt {
 /* ------------------------------------------------------------------ */
 /* Main Page - Right Col - Head Frame - Room head */
 /* ------------------------------------------------------------------ */
+#room_fram row-head {
+  border-bottom: 1px solid var(--base-tone1);
+}
 #room_head {
   background-color: var(--base-tone4);
   border-bottom: 1px solid var(--base-tone2);
