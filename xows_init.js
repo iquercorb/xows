@@ -32,6 +32,7 @@
  *
  * @licend
  */
+"use strict";
 /* ------------------------------------------------------------------
  *
  *                         Main "Public" API
@@ -51,13 +52,14 @@ let xows_options = {
   uncache         : false,      //< Force uncache of loaded styles and templates
   mincss          : false,      //< Use theme minified CSS file (style.min.css)
   allow_register  : false,      //< Allow user to access to account register dialog
-  //legacy_vcard    : false,      //< Force usage of legacy XEP-0054 vcard-temp instead of XEP-0292 vCard4 Over XMPP
-  //vcard4_notify   : true,       //< Request for Vcard4 PubSub notifications
-  avatar_autopub  : true,       //< Auto-publish the default Avatar if none exists for user
-  avatar_notify   : true,       //< Request for User Avatar PubSub notifications
   login_delay     : 2000,       //< Delay (in milliseconds) between registration and failed attempts
   history_count   : 50,         //< Maximum count of history message to fetch each query
   history_delay   : 500,        //< Temporization delay for older message fetch
+  bookmks_notify  : true,       //< Request for Native Bookmarks (XEP-0402) PEP notifications
+  nick_notify     : true,       //< Request for User Nickname (XEP-0172) PEP notifications
+  //vcard4_notify   : true,       //< Request for Vcard4 (XEP-0292) PEP notifications
+  avatar_autopub  : true,       //< Auto-publish the default Avatar if none exists for user
+  avatar_notify   : true,       //< Request for User Avatar (XEP-0084) PEP notifications
   extern_services : []          //< Additionnal External Services (as XEP-0215 replacement with same fashion)
 };
 
@@ -178,13 +180,14 @@ function xows_init(options)
     if(options.hasOwnProperty("uncache"))          xows_options.uncache = options.uncache;
     if(options.hasOwnProperty("mincss"))           xows_options.mincss = options.mincss;
     if(options.hasOwnProperty("allow_register"))   xows_options.allow_register = options.allow_register;
-    //if(options.hasOwnProperty("legacy_vcard"))     xows_options.legacy_vcard = options.legacy_vcard;
-    //if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
-    if(options.hasOwnProperty("avatar_autopub"))   xows_options.avatar_autopub = options.avatar_autopub;
-    if(options.hasOwnProperty("avatar_notify"))    xows_options.avatar_notify = options.avatar_notify;
     if(options.hasOwnProperty("fail_delay"))       xows_options.fail_delay = options.fail_delay;
     if(options.hasOwnProperty("history_count"))    xows_options.history_count = options.history_count;
     if(options.hasOwnProperty("history_delay"))    xows_options.history_delay = options.history_delay;
+    if(options.hasOwnProperty("bookmks_notify"))    xows_options.bookmks_notify = options.bookmks_notify;
+    if(options.hasOwnProperty("nick_notify"))      xows_options.nick_notify = options.nick_notify;
+    //if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
+    if(options.hasOwnProperty("avatar_autopub"))   xows_options.avatar_autopub = options.avatar_autopub;
+    if(options.hasOwnProperty("avatar_notify"))    xows_options.avatar_notify = options.avatar_notify;
     if(options.hasOwnProperty("extern_services"))  xows_options.extern_services = options.extern_services;
   }
 
