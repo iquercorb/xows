@@ -103,7 +103,7 @@
   --ring-base:        #4FA16A;  /* Ringing elements background */
   --ring-line:        #3CC769;  /* Ringing elements outline */
   --ring-hover:       #46C26E;  /* Ringing elements background hover */
-  
+
   /* Presence 'show level' colors */
   --show-off:         #6E6E6E;  /* Offline */
   --show-dnd:         #C92B2B;  /* Do Not Disturb */
@@ -862,7 +862,7 @@ col-side {
   flex: none;
   display: flex;
   flex-direction: row;
-  width: 240px; 
+  width: 240px;
   height: 100%;
 }
 col-midd {
