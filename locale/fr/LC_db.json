@@ -656,6 +656,12 @@
   "Add":
   "Ajouter",
 
+  "Input devices access":
+  "Accès aux périphériques d'entrée",
+
+  "Getting access to input devices failed, would you like to retry ?":
+  "L'accès aux périphériques d'entrée a échoué, souhaitez-vous réessayer ?",
+
   "Enable or disable the camera":
   "Activer ou désactiver la caméra",
 
@@ -704,8 +710,17 @@
   "The other party encountered error":
   "Le correspondant a rencontré une erreur",
 
+  "The other party lacks suitable devices":
+  "Le correspondant n'a pas les périphériques adaptés",
+
+  "Input devices access failed":
+  "Echec d'accès aux périphériques d'entrée",
+
   "Call failure":
   "Échec de l'appel",
+
+  "Access to input devices is required for call session, configure your browser to allow it and try again.":
+  "L'accès aux périphériques d'entrée est requis pour la session d'appel, configurez votre navigateur pour l'autoriser et réessayez.",
 
   "modified":
   "modifié",

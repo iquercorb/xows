@@ -73,7 +73,7 @@ const xows_cli_services = new Map();
 
 /**
  * Array to store availables external services gathered either via
- * External Service Discovery (XEP-0215) or supplied 'extern_services' option.
+ * External Service Discovery (XEP-0215) or supplied 'cli_extern_services' option.
  */
 const xows_cli_extservs = [];
 
@@ -93,7 +93,7 @@ function xows_cli_external_has(type)
 
   let svcs;
 
-  svcs = xows_options.extern_services;
+  svcs = xows_options.cli_extern_services;
   for(let i = 0; i < svcs.length; ++i) {
     if(types.includes(svcs[i].type))
       return true;
@@ -126,7 +126,7 @@ function xows_cli_external_get(type)
 
   const result = [];
 
-  svcs = xows_options.extern_services;
+  svcs = xows_options.cli_extern_services;
   for(let i = 0; i < svcs.length; ++i) {
     if(types.includes(svcs[i].type))
       result.push(svcs[i]);
@@ -1229,16 +1229,16 @@ function xows_cli_warmup_config()
       xows_cli_services.get(XOWS_NS_HTTPUPLOAD).push(entity);
     }
   }
-  
+
   // If MUC service available, we take one more step to discover public
   // Rooms and fetching informations about all of them.
   if(xows_cli_services.has(XOWS_NS_MUC)) {
-  
+
     // Query for MUC room list
     xows_cli_muc_list_query(xows_cli_warmup_finish);
-    
+
   } else {
-        
+
     // We finished warmup
     xows_cli_warmup_finish();
   }
@@ -1456,7 +1456,7 @@ function xows_cli_disconnect()
   xows_cli_connect_loss = false;
 
   // Terminate call session if any
-  xows_cli_call_clear();
+  xows_cli_call_hangup_all();
 
   // Client is now Offline
   xows_cli_show_select(0);
@@ -1472,8 +1472,8 @@ function xows_cli_disconnect()
 function xows_cli_flyyoufools()
 {
   // Terminate any pending call
-  if(xows_cli_call_sess_db.size) {
-    for(const [peer, sess] of xows_cli_call_sess_db.entries())
+  if(xows_cli_call_db.size) {
+    for(const [peer, sess] of xows_cli_call_db.entries())
       xows_xmp_jing_terminate(peer.jrpc, sess.sid, "failed-application");
   }
 
@@ -1665,7 +1665,7 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
     // If user goes unavailable, reset chatstate
     cont.chat = 0;
   }
-  
+
   // Set default show level
   cont.show = XOWS_SHOW_OFF;
 
@@ -1696,14 +1696,14 @@ function xows_cli_xmp_onpresence(from, show, prio, stat, node, phot)
         cont.avat = null;
       }
     } else if(!cont.avat) { //< If contact have no avatar, try to get one
-      
+
       // Fetch for avatar only if PEP notify is disabled
-      if(!xows_options.avatar_notify)
+      if(!xows_options.cli_pepnotify_avat)
         load_mask |= XOWS_FETCH_AVAT;
     }
 
     // Fetch for nickname only if PEP notify is disabled
-    if(!xows_options.nick_notify)
+    if(!xows_options.cli_pepnotify_nick)
       load_mask |= XOWS_FETCH_NICK;
   }
 
@@ -2420,7 +2420,7 @@ function xows_cli_self_edit(name, url, access)
 function xows_cli_xmp_onpubsub(from, node, items)
 {
   xows_log(2,"cli_xmp_onpubsub","received notification",node);
-  
+
   // Checks for vcard notification
   if(node === XOWS_NS_VCARD4) {
     if(items.length) {
@@ -2653,7 +2653,7 @@ function xows_cli_avat_meta_parse(from, item, error)
 
     // If option is set and if missing Avatar is ours
     // Generate a temporary Avatar and publish it
-    if(xows_options.avatar_autopub && peer === xows_cli_self) {
+    if(xows_options.cli_avat_autopub && peer === xows_cli_self) {
 
       // Generate temporary avatar data
       const data = xows_cach_avat_temp_data(peer.addr, null);
@@ -3430,9 +3430,9 @@ function xows_cli_muc_list_parse(from, item)
     // Fetch infos and push Room
     xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_peer_push);
   }
-    
+
   const param = xows_cli_muc_list_param;
-    
+
   // Process ondisco job
   if(param.ondisco) {
 
@@ -3443,7 +3443,7 @@ function xows_cli_muc_list_parse(from, item)
         break;
       }
     }
-    
+
     // If all MUC services was discovered, fire ondisco
     if(!param.stack.length) {
       param.ondisco();
@@ -3455,7 +3455,7 @@ function xows_cli_muc_list_parse(from, item)
 /**
  * Query disco#items to MUC available services (if any) to gather list
  * of public Room (MUC Service's Items).
- * 
+ *
  * @param   {function}    ondisco   Optional callback for discovery finished
  */
 function xows_cli_muc_list_query(ondisco)
@@ -3465,12 +3465,12 @@ function xows_cli_muc_list_query(ondisco)
     xows_log(1,"cli_muc_discoitems_query","aborted","no MUC service available");
     return;
   }
-  
+
   const param = xows_cli_muc_list_param;
-  
-  if(xows_isfunc(ondisco)) 
+
+  if(xows_isfunc(ondisco))
     param.ondisco = ondisco;
-  
+
   // Get array of available MUC services
   const muc = xows_cli_services.get(XOWS_NS_MUC);
 
@@ -4072,7 +4072,7 @@ function xows_cli_xmp_onoccupant(from, show, stat, mucx, ocid, phot)
       occu.avat = null;
     }
   } else if(!occu.avat) { //< If occupant  have no avatar, try to get one
-    
+
     // PEP notify doesn't work in MUC context, so we fetch avatar anyway
     load_mask |= XOWS_FETCH_AVAT;
   }
@@ -4375,9 +4375,20 @@ function xows_cli_regi_remove_query(form, onparse)
 
 /* -------------------------------------------------------------------
  *
- * Client API - Multimedia Calls interface
+ * Client API - Multimedia Calls
  *
  * -------------------------------------------------------------------*/
+/* -------------------------------------------------------------------
+ * Client API - Multimedia Calls - Client interface
+ * -------------------------------------------------------------------*/
+const XOWS_CALL_INBD = true;  //< inbound call
+const XOWS_CALL_OUBD = false; //< outbound call
+
+const XOWS_CALL_HGUP = 0;     //< hung up call (initial or final state)
+const XOWS_CALL_RING = 1;     //< inbound ringing call
+const XOWS_CALL_PEND = 2;     //< pending negotation (initiated or answered)
+const XOWS_CALL_CNTD = 3;     //< connected
+
 /**
  * Callback function for Multimedia Call offer from Remote Peer
  */
@@ -4404,9 +4415,9 @@ let xows_cli_fw_oncalltermd = function() {};
 let xows_cli_fw_oncallerror = function() {};
 
 /**
- * Multimedia Call sessions data storage map
+ * Multimedia Call per-Peer sessions data storage map
  */
-const xows_cli_call_sess_db = new Map();
+const xows_cli_call_db = new Map();
 
 /**
  * Create new session data for Multimedia Call
@@ -4415,11 +4426,12 @@ const xows_cli_call_sess_db = new Map();
  * dedicated to that session.
  *
  * @param   {object}    peer    Peer object
- * @param   {boolean}   inb     Specify whether it is as inbound call
+ * @param   {number}    dir     Call direction (Inboud or Outbound)
+ * @param   {number}    ste     Initial call state
  *
  * @return  {object}    Session data object
  */
-function xows_cli_call_sess_new(peer, inb)
+function xows_cli_call_create(peer, dir, ste)
 {
   // Create new RTC Peer Connection object
   const rpc = xows_wrtc_new(xows_cli_external_get("stun","turn"),
@@ -4431,42 +4443,75 @@ function xows_cli_call_sess_new(peer, inb)
 
   // Create session data object
   const session =  {
-    "inb" : inb,
-    "rpc" : rpc,
-    "sid" : null,
-    "cnd" : false,
-    "loc" : {"sdp" : null, "str" : null},
-    "rmt" : {"sdp" : null, "str" : null}
+    "sid" : null,   //< Jingle SID
+    "ste" : ste     //< Call session state
   };
 
+  xows_def_readonly(session,"dir",dir);
+  xows_def_readonly(session,"rpc",rpc);
+  xows_def_readonly(session,"loc",{"pnd":false, "sdp": null, "str":null});
+  xows_def_readonly(session,"rmt",{"pnd":false, "sdp": null, "str":null});
+
+  Object.seal(session); //< prevet structure modification
+
   // Add session object to database
-  xows_cli_call_sess_db.set(peer, session);
+  xows_cli_call_db.set(peer, session);
 
   return session;
 }
 
 /**
- * Check whether Multimedia Call session data exists
- *
- * @param   {object}    peer    Peer object
+ * Returns whether call session with peer exists
  *
  * @return  {boolean}   True if session exists, false otherwise
  */
-function xows_cli_call_sess_has(peer)
+function xows_cli_call_exists(peer)
 {
-  return xows_cli_call_sess_db.has(peer);
+  return xows_cli_call_db.has(peer);
 }
 
 /**
- * Check whether Multimedia Call session data exists
+ * Returns count of existing call sessions (active or not)
  *
- * @param   {object}    peer    Peer object
- *
- * @return  {object}  Session data object
+ * @return  {number}    Count of call sessions
  */
-function xows_cli_call_sess_get(peer)
+function xows_cli_call_count()
 {
-  return xows_cli_call_sess_db.get(peer);
+  return xows_cli_call_db.size;
+}
+
+/**
+ * Returns whether a call session exists, meaning call buzy.
+ *
+ * @return  {boolean}    True if buzy, false otherwise
+ */
+function xows_cli_call_buzy()
+{
+  for(const sess of xows_cli_call_db.values()) {
+    if(sess.ste >= XOWS_CALL_PEND)
+      return true;
+  }
+
+  return false;
+}
+
+/**
+ * Returns whether a call session is a missed (not answered)
+ * incomming call.
+ *
+ * @return  {boolean}    True if missed, false otherwise
+ */
+function xows_cli_call_misd(peer)
+{
+  const sess = xows_cli_call_db.get(peer);
+
+  // Check for inbound terminated call
+  if(sess.dir === XOWS_CALL_INBD && sess.ste === XOWS_CALL_HGUP) {
+    // No local SDP mean we never answered the call
+    return !sess.loc.sdp;
+  }
+
+  return false;
 }
 
 /**
@@ -4488,9 +4533,9 @@ function xows_cli_call_sess_get(peer)
  *
  * @return  {object}  Minimalist constraint description object
  */
-function xows_cli_call_sess_meds(peer)
+function xows_cli_call_medias(peer)
 {
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
 
   let remot;
   if(sess.rmt.str) {
@@ -4510,8 +4555,8 @@ function xows_cli_call_sess_meds(peer)
     local = xows_sdp_get_medias(sess.loc.sdp);
   }
 
-  let offer = sess.inb ? remot : local;
-  let answe = sess.inb ? local : remot;
+  let offer = (sess.dir === XOWS_CALL_INBD) ? remot : local;
+  let answe = (sess.dir === XOWS_CALL_INBD) ? local : remot;
 
   // If answer is available, keep only the reciprocal.
   if(answe) {
@@ -4529,9 +4574,9 @@ function xows_cli_call_sess_meds(peer)
  *
  * @return  {object}  True if sessession is an inbound call, false otherwise
  */
-function xows_cli_call_sess_inbd(peer)
+function xows_cli_call_is_inbd(peer)
 {
-  return xows_cli_call_sess_db.get(peer).inb;
+  return (xows_cli_call_db.get(peer).dir === XOWS_CALL_INBD);
 }
 
 /**
@@ -4541,33 +4586,9 @@ function xows_cli_call_sess_inbd(peer)
  *
  * @return  {object}  True if sessession connected, false otherwise
  */
-function xows_cli_call_sess_cntd(peer)
+function xows_cli_call_is_cntd(peer)
 {
-  return xows_cli_call_sess_db.get(peer).cnd;
-}
-
-/**
- * Returns sessions local (self) stream.
- *
- * @param   {object}    peer    Peer object
- *
- * @return  {object}  Local (self) MediaStream object
- */
-function xows_cli_call_self_strm(peer)
-{
-  return xows_cli_call_sess_db.get(peer).loc.str;
-}
-
-/**
- * Returns sessions remote (peer) stream.
- *
- * @param   {object}    peer    Peer object
- *
- * @return  {object}  Remote (peer) MediaStream object
- */
-function xows_cli_call_peer_strm(peer)
-{
-  return xows_cli_call_sess_db.get(peer).rmt.str;
+  return (xows_cli_call_db.get(peer).ste === XOWS_CALL_CNTD);
 }
 
 /**
@@ -4577,27 +4598,7 @@ function xows_cli_call_peer_strm(peer)
  */
 function xows_cli_call_peer_list()
 {
-  return Array.from(xows_cli_call_sess_db.keys());
-}
-
-/**
- * Returns count of existing call sessions (active or not)
- *
- * @return  {number}    Count of call sessions
- */
-function xows_cli_call_sess_count()
-{
-  return xows_cli_call_sess_db.size;
-}
-
-/**
- * Returns whether a call session exists, meaning call buzy.
- *
- * @return  {boolean}    True if buzy, false otherwise
- */
-function xows_cli_call_sess_buzy()
-{
-  return xows_cli_call_sess_db.size > 0;
+  return Array.from(xows_cli_call_db.keys());
 }
 
 /**
@@ -4609,10 +4610,10 @@ function xows_cli_call_sess_buzy()
  */
 function xows_cli_call_self_mute(peer, media, mute)
 {
-  if(!xows_cli_call_sess_db.has(peer))
+  if(!xows_cli_call_db.has(peer))
     return;
 
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
 
   // get local stream
   const stream = sess.loc.str;
@@ -4632,7 +4633,7 @@ function xows_cli_call_self_mute(peer, media, mute)
 
   // Send "mute/unmute" session info to Peer
   const info = mute ? "mute" : "unmute";
-  xows_xmp_jing_info(peer.jrpc, sess.sid, info, {name:media});
+  xows_xmp_jing_info(peer.jrpc, sess.sid, info, {name:media}, xows_cli_jing_parse);
 }
 
 /**
@@ -4646,10 +4647,10 @@ function xows_cli_call_self_mute(peer, media, mute)
  */
 function xows_cli_call_peer_hold(peer, media, mute)
 {
-  if(!xows_cli_call_sess_db.has(peer))
+  if(!xows_cli_call_db.has(peer))
     return;
 
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
 
   // get local stream
   const stream = sess.rmt.str;
@@ -4661,7 +4662,7 @@ function xows_cli_call_peer_hold(peer, media, mute)
 
   // Send "mute/unmute" session info to Peer
   const info = mute ? "hold" : "unhold";
-  xows_xmp_jing_info(peer.jrpc, sess.sid, info);
+  xows_xmp_jing_info(peer.jrpc, sess.sid, info, xows_cli_jing_parse);
 }
 
 /**
@@ -4671,12 +4672,12 @@ function xows_cli_call_peer_hold(peer, media, mute)
  *
  * @param   {object}    peer    Peer object
  */
-function xows_cli_call_sess_clear(peer)
+function xows_cli_call_clear(peer)
 {
-  if(!xows_cli_call_sess_db.has(peer))
+  if(!xows_cli_call_db.has(peer))
     return;
 
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
 
   // Stop streams
   if(sess.loc.str) {
@@ -4697,25 +4698,26 @@ function xows_cli_call_sess_clear(peer)
     xows_wrtc_close(sess.rpc);
 
   // Delete sessions data
-  xows_cli_call_sess_db.delete(peer);
+  xows_cli_call_db.delete(peer);
 
   // Reset Peer Locked JID
   peer.jrpc = null;
 }
 
 /**
- * Initiate (invite) Multimedia Call to the specified Peer
+ *
+ * Offer (invite) Multimedia Call to the specified Peer
  *
  * @param   {object}    peer    Peer object
  * @param   {string}    stream  Local input media stream
  */
-function xows_cli_call_invite(peer, stream)
+function xows_cli_call_self_invite(peer, stream)
 {
   // Select most suitable full JID
   peer.jrpc = xows_cli_best_resource(peer);
 
   // Create new (outbound) session dataset for Peer
-  const sess = xows_cli_call_sess_new(peer, false);
+  const sess = xows_cli_call_create(peer, XOWS_CALL_OUBD, XOWS_CALL_PEND);
 
   // Set session RPC and local stream
   sess.loc.str = stream;
@@ -4731,15 +4733,18 @@ function xows_cli_call_invite(peer, stream)
  * @param   {object}    peer    Peer object
  * @param   {string}    stream  Local input media stream
  */
-function xows_cli_call_accept(peer, stream)
+function xows_cli_call_self_accept(peer, stream)
 {
-  if(!xows_cli_call_sess_db.has(peer)) {
+  if(!xows_cli_call_db.has(peer)) {
     xows_log(1,"cli_call_accept","No open session for",peer.addr);
     return;
   }
 
   // Get existing (inbound) session dataset for Peer
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
+
+  // Change call session state
+  sess.ste = XOWS_CALL_PEND;
 
   // Set session local stream
   sess.loc.str = stream;
@@ -4763,13 +4768,13 @@ function xows_cli_call_accept(peer, stream)
  * @param   {object}    peer      Peer object
  * @param   {string}   [reason]   Reason string for call termination
  */
-function xows_cli_call_hangup(peer, reason)
+function xows_cli_call_self_hangup(peer, reason)
 {
-  if(!xows_cli_call_sess_db.has(peer))
+  if(!xows_cli_call_db.has(peer))
     return;
 
   // Get session data
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
 
   // Send Jingle session terminate
   if(sess.sid) {
@@ -4778,24 +4783,224 @@ function xows_cli_call_hangup(peer, reason)
   }
 
   // Clear call session
-  xows_cli_call_sess_clear(peer);
+  xows_cli_call_clear(peer);
+}
+
+/**
+ * Handle received Multimedia Call offer (invite) from the specified Peer
+ *
+ * @param   {object}    peer    Peer object
+ * @param   {string}    from    Peer full JID used for session initiate
+ * @param   {string}    sid     Jingle session SID
+ * @param   {string}    sdp     Received (parsed) SDP string
+ */
+function xows_cli_call_peer_invite(peer, from, sid, sdp)
+{
+  peer.jrpc = from;
+
+  if(peer.type === XOWS_PEER_OCCU) {
+    // This is Room Occupant private message, if no PM session exist
+    // and was actually added in PM list, we Forward PM session creation
+    if(xows_cli_priv_add(peer))
+      xows_cli_fw_onprivpush(peer);
+  }
+
+  // Create new (inbound) session dataset for Peer
+  const sess = xows_cli_call_create(peer, XOWS_CALL_INBD, XOWS_CALL_RING);
+
+  // Set session SID and remote SDP
+  sess.sid = sid;
+  sess.rmt.sdp = sdp;
+
+  // Set RTC remote SDP, then wait for RTC to generate remote Stream
+  // that will be passed to 'xows_cli_wrtc_ontrack' callback
+  xows_wrtc_set_remote_sdp(sess.rpc, sdp);
+}
+
+/**
+ * Handle received Multimedia Call answer (accept) from the specified Peer
+ *
+ * @param   {object}    peer    Peer object
+ * @param   {string}    sdp     Received (parsed) SDP string
+ */
+function xows_cli_call_peer_accept(peer, sdp)
+{
+  // Get session data
+  const sess = xows_cli_call_db.get(peer);
+
+  // Set remote SDP
+  sess.rmt.sdp = sdp;
+
+  // Set RTC remote SDP, then wait for RTC to generate remote Stream
+  // that will be passed to 'xows_cli_wrtc_ontrack' callback
+  xows_wrtc_set_remote_sdp(sess.rpc, sdp);
+}
+
+/**
+ * Handle received Multimedia Call termination from the specified Peer
+ *
+ * @param   {object}    peer    Peer object
+ * @param   {string}    reason  Received termination reason
+ */
+function xows_cli_call_peer_hangup(peer, reason)
+{
+  // Set session as disconnected
+  xows_cli_call_db.get(peer).ste = XOWS_CALL_HGUP;
+
+  // Forward signaling (BEFORE destroying session)
+  xows_cli_fw_oncalltermd(peer, reason);
+
+  // Clear call session
+  xows_cli_call_clear(peer);
 }
 
 /**
  * Terminate all living Multimedia Call and clear all data
  */
-function xows_cli_call_clear()
+function xows_cli_call_hangup_all()
 {
-  for(const peer of xows_cli_call_sess_db.keys()) {
+  for(const peer of xows_cli_call_db.keys()) {
     // Terminate all session
-    xows_cli_call_hangup(peer, "success");
+    xows_cli_call_self_hangup(peer, "success");
   }
 }
 
 /* -------------------------------------------------------------------
+ * Client API - Multimedia Calls - Jingle routines
+ * -------------------------------------------------------------------*/
+/**
+ * Handles an incoming Jingle session signaling
  *
- * Client API - Multimedia Calls WebRTC routines
+ * The data parameter content depend on Jingle action type:
+ *  - session-initiate  : Parsed SDP Offer string
+ *  - session-accept    : Parsed SDP Answer string
+ *  - session-terminate : Termination reason payload
+ *  - session-info      : Information payload
  *
+ * @param   {string}    from      Sender JID
+ * @param   {string}    id        XMPP Request id
+ * @param   {string}    sid       Jingle session SID
+ * @param   {string}    action    Jingle session Action
+ * @param   {string}    data      Extracted data
+ */
+function xows_cli_xmp_onjingle(from, id, sid, action, data)
+{
+  // Retreive related Peer
+  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
+  if(!peer) {
+    xows_log(1,"cli_xmp_onjingle","refused "+action,"from unknow peer: "+from);
+    xows_xmp_iq_error_send(id, from, "cancel", "service-unavailable");
+    return;
+  }
+
+  // Check for existing Peer session
+  const sess = xows_cli_call_db.get(peer);
+
+  // Check for correct SID
+  if(sess && sess.sid && sess.sid !== sid) {
+    xows_log(1,"cli_xmp_onjingle","Invalid SID from",from);
+    xows_xmp_jing_error(id, from, "cancel", "unknown-session", "item-not-found");
+    return;
+  }
+
+  if(action === "session-initiate") {
+    if(sess && sess.dir === XOWS_CALL_OUBD) { //< We already send or preparing an offer
+      // FIXME : https://xmpp.org/extensions/xep-0166.html#def-action-ties
+      xows_log(1,"cli_xmp_onjingle","Unexpected offer from",from);
+      xows_xmp_jing_error(id, from, "cancel", "tie-break", "conflict");
+      return;
+    }
+  } else {
+    if(!sess) {
+      xows_log(1,"cli_xmp_onjingle","Unknow SID from",from);
+      xows_xmp_jing_error(id, from, "cancel", "unknown-session", "item-not-found");
+      return;
+    }
+    if(action === "session-accept") {
+      if(sess.rmt.sdp || sess.dir === XOWS_CALL_INBD) {  //< We alread got an answer or an offer
+        xows_log(1,"cli_xmp_onjingle","Unexpected offer from",from);
+        xows_xmp_jing_error(id, from, "cancel", "out-of-order", "unexpected-request");
+        return;
+      }
+    }
+  }
+
+  switch(action)
+  {
+  case "session-initiate": {
+      // Handle received call Offer
+      xows_cli_call_peer_invite(peer, from, sid, data);
+    } break;
+
+  case "session-accept": {
+      // Handle received call Answer
+      xows_cli_call_peer_accept(peer, data);
+    } break;
+
+  case "session-info": {
+      switch(data)
+      {
+      case "ringing":
+      //case "active":
+      //case "hold":
+      //case "unhold":
+      //case "mute":
+      //case "unmute":
+        // Do nothing, simply forward info
+        break;
+      default:
+        // If the party that receives an informational message does not understand
+        // the payload, it MUST return a <feature-not-implemented/> error with a
+        // Jingle-specific error condition of <unsupported-info/>.
+        xows_xmp_jing_error(id, from, "cancel", "unsupported-info", "feature-not-implemented");
+        return;
+      }
+      // Forward signaling as state
+      xows_cli_fw_oncallstate(peer, data);
+    } break;
+
+  case "session-terminate": {
+      // Handle received call Terminate
+      xows_cli_call_peer_hangup(peer, data);
+    } break;
+
+  default:
+    xows_xmp_iq_error_send(id, from, "cancel", "bad-request"); //< Send back iq error
+    break;
+  }
+
+  // Acknoledge reception (send back "result" type iq)
+  xows_xmp_iq_result_send(id, from);
+}
+
+/**
+ * Callback function for Jingle query result parsing
+ *
+ * @param   {string}    from      Sender JID
+ * @param   {string}    type      Result type
+ * @param   {object}    error     Error data if any
+ */
+function xows_cli_jing_parse(from, type, error)
+{
+  // Retreive related Peer
+  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
+  if(!peer) {
+    xows_log(1,"cli_jing_parse","unknown/unsubscribed JID",from);
+    return;
+  }
+
+  if(type === "error") {
+
+    // Forward error
+    xows_cli_fw_oncallerror(peer, false, error);
+
+    // Clear call session
+    xows_cli_call_clear(peer);
+  }
+}
+
+/* -------------------------------------------------------------------
+ * Client API - Multimedia Call - WebRTC routines
  * -------------------------------------------------------------------*/
 /**
  * Handle WebRTC available Session Description (SDP) for Multimedia Call
@@ -4807,13 +5012,13 @@ function xows_cli_call_clear()
 function xows_cli_wrtc_onsdesc(rpc, sdp, peer)
 {
   // Retreive Peer session
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
 
   // Set local SDP in session dataset
   sess.loc.sdp = sdp;
 
   // Check whether session is inbound or outbound
-  if(sess.inb) {
+  if(sess.dir === XOWS_CALL_INBD) {
     // SDP is an Answer for remote caller
     xows_log(2,"cli_wrtc_onsdesc","Sending SPD answer to",peer.addr);
 
@@ -4841,16 +5046,16 @@ function xows_cli_wrtc_onsdesc(rpc, sdp, peer)
 function xows_cli_wrtc_ontrack(rpc, stream, peer)
 {
   // Retreive Peer session
-  const sess = xows_cli_call_sess_db.get(peer);
+  const sess = xows_cli_call_db.get(peer);
 
   // Set remote Stream in session dataset
   sess.rmt.str = stream;
 
-  if(sess.inb) {
+  if(sess.dir === XOWS_CALL_INBD) {
     xows_log(2,"cli_wrtc_ontrack","Received offer stream from",peer.addr);
 
     // Send back "ringing" session info to Peer
-    xows_xmp_jing_info(peer.jrpc, sess.sid, "ringing");
+    xows_xmp_jing_info(peer.jrpc, sess.sid, "ringing", xows_cli_jing_parse);
 
     // Stream follows remote Offer for local callee
     xows_cli_fw_oncalloffer(peer, stream);
@@ -4880,8 +5085,8 @@ function xows_cli_wrtc_ontrack(rpc, stream, peer)
 function xows_cli_wrtc_onstate(rpc, state, peer)
 {
   if(state === "connected") {
-    // Retreive Peer session
-    xows_cli_call_sess_db.get(peer).cnd = true;
+    // Set session as connected
+    xows_cli_call_db.get(peer).ste = XOWS_CALL_CNTD;
   }
 
   xows_cli_fw_oncallstate(peer, state);
@@ -4897,141 +5102,28 @@ function xows_cli_wrtc_onstate(rpc, state, peer)
 function xows_cli_wrtc_onerror(rpc, error, peer)
 {
   // Presence of errorCode property mean error come from ICE gathering
-  // process, typically STUN or TURN server is unreachable or returned 
-  // error. 
+  // process, typically STUN or TURN server is unreachable or returned
+  // error.
   //
   // Otherwise, error is a DOMEception from the WebRTC API possibly caused
   // by (too) many different things.
-  
+
   let reason;
-  if(error.errorCode) { //< ICE Gathering error
+
+  if(error.errorCode) {   //< ICE Gathering error
+    // I am not sure failed-transport error is suitable in
+    // such context, this may be corrected later.
     reason = "failed-transport";
-  } else {              //< WebRTC API DOMException
+  } else {                //< WebRTC API DOMException
     reason = "failed-application";
   }
 
+  // Set session as disconnected
+  xows_cli_call_db.get(peer).ste = XOWS_CALL_HGUP;
+
   // Forward error
   xows_cli_fw_oncallerror(peer, true, error);
-    
+
   // Hang up with peer
-  xows_cli_call_hangup(peer, reason);
+  xows_cli_call_self_hangup(peer, reason);
 }
-
-/* -------------------------------------------------------------------
- *
- * Client API - Multimedia Calls Jingle routines
- *
- * -------------------------------------------------------------------*/
-/**
- * Handles an incoming Jingle session signaling
- *
- * The data parameter content depend on Jingle action type:
- *  - session-initiate  : Parsed SDP Offer string
- *  - session-accept    : Parsed SDP Answer string
- *  - session-terminate : Termination reason payload
- *  - session-info      : Information payload
- *
- * @param   {string}    from      Sender JID
- * @param   {string}    id        XMPP Request id
- * @param   {string}    sid       Jingle session SID
- * @param   {string}    action    Jingle session Action
- * @param   {string}    data      Extracted data
- */
-function xows_cli_xmp_onjingle(from, id, sid, action, data)
-{
-  // Retreive related Peer
-  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
-  if(!peer) {
-    xows_log(1,"cli_xmp_onjingle","refused "+action,"from unknow peer: "+from);
-    xows_xmp_iq_error_send(id, from, "cancel", "service-unavailable"); //< Send back iq error
-    return;
-  }
-
-  switch(action)
-  {
-  case "session-initiate": {
-      peer.jrpc = from;
-
-      if(peer.type === XOWS_PEER_OCCU) {
-        // This is Room Occupant private message, if no PM session exist
-        // and was actually added in PM list, we Forward PM session creation
-        if(xows_cli_priv_add(peer))
-          xows_cli_fw_onprivpush(peer);
-      }
-  
-      // Create new (inbound) session dataset for Peer
-      const sess = xows_cli_call_sess_new(peer, true);
-
-      // Set session SID and remote SDP
-      sess.sid = sid;
-      sess.rmt.sdp = data;
-
-      // Set RTC remote SDP, then wait for RTC to generate remote Stream
-      // that will be passed to 'xows_cli_wrtc_ontrack' callback
-      xows_wrtc_set_remote_sdp(sess.rpc, data);
-    } break;
-
-  case "session-accept": {
-      // Verify we have initiated call with this peer
-      if(!xows_cli_call_sess_db.has(peer)) {
-        xows_log(1,"cli_xmp_onjingle","Unexpected answer from",from);
-        xows_xmp_iq_error_send(id, from, "cancel", "bad-request");
-        return;
-      }
-
-      // Get session data
-      const sess = xows_cli_call_sess_db.get(peer);
-
-      // Set remote SDP
-      sess.rmt.sdp = data;
-
-      // Set RTC remote SDP, then wait for RTC to generate remote Stream
-      // that will be passed to 'xows_cli_wrtc_ontrack' callback
-      xows_wrtc_set_remote_sdp(sess.rpc, data);
-    } break;
-
-  case "session-info":
-    // Forward signaling as state
-    xows_cli_fw_oncallstate(peer, data);
-    break;
-
-  case "session-terminate": {
-      // Forward signaling (BEFORE destroying session)
-      xows_cli_fw_oncalltermd(peer, data);
-
-      // Clear call session
-      xows_cli_call_sess_clear(peer);
-    } break;
-    
-  default:
-    xows_xmp_iq_error_send(id, from, "cancel", "bad-request"); //< Send back iq error
-    break;
-  }
-}
-
-/**
- * Callback function for Jingle query result parsing
- *
- * @param   {string}    from      Sender JID
- * @param   {string}    type      Result type
- * @param   {object}    error     Error data if any
- */
-function xows_cli_jing_parse(from, type, error)
-{
-  // Retreive related Peer
-  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
-  if(!peer) {
-    xows_log(1,"cli_jing_parse","unknown/unsubscribed JID",from);
-    return;
-  }
-  
-  if(type === "error") {
-
-    // Forward error
-    xows_cli_fw_oncallerror(peer, false, error);
-
-    // Clear call session
-    xows_cli_call_sess_clear(peer);
-  }
-}
-

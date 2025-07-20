@@ -692,7 +692,7 @@ function xows_xmp_sasl_failure_recv(stanza)
   xows_log(0,"xmp_sasl_failure_recv", err_cde);
 
   // Close with error after delay
-  setTimeout(xows_xmp_fram_close_send,xows_options.login_delay,XOWS_SIG_ERR,err_msg);
+  setTimeout(xows_xmp_fram_close_send,xows_options.login_fail_delay,XOWS_SIG_ERR,err_msg);
 
   return true;
 }
@@ -933,13 +933,12 @@ function xows_xmp_iq_parse(stanza, onparse)
  * @parma   {string}    to          Destination JID
  * @parma   {string}    type        Error type (type attribute of <error> node)
  * @param   {string}    reason      Error reason (<error> child node tagname)
- * @param   {string}   [content]    Optionnal message to include within reason
  */
-function xows_xmp_iq_error_send(id, to, type, reason, content)
+function xows_xmp_iq_error_send(id, to, type, reason)
 {
   xows_xmp_send(  xows_xml_node("iq",{"id":id,"type":"error","to":to},
                     xows_xml_node("error",{"type":type},
-                      xows_xml_node(reason,{"xmlns":XOWS_NS_IETF_STANZAS},content))));
+                      xows_xml_node(reason,{"xmlns":XOWS_NS_IETF_STANZAS}))));
 }
 
 /**
@@ -969,11 +968,12 @@ function xows_xmp_error_log(stanza, level, scope, message)
   // Get inner <error> child and try to find <text>
   const error = stanza.querySelector("error");
   if(error) {
-    // get error tagname and beautify it
-    details = error.firstChild.tagName;
-    details = details.replace(/-/g, " ");
-    details = details[0].toUpperCase() + details.substring(1);
-    // if <text> is available, append it
+
+    // Check for <condition> child
+    const cond = error.querySelector("[xmlns='"+XOWS_NS_IETF_STANZAS+"']");
+    if(cond) details = xows_xml_beatify_tag(cond.tagName);
+
+    // Check for <text> child (error message)
     const text = error.querySelector("text");
     if(text) details += ": " + xows_xml_innertext(text);
   }
@@ -1014,10 +1014,12 @@ function xows_xmp_error_parse(stanza)
     // Check for "type" attribute
     if(error.hasAttribute("type"))
       data.type = error.getAttribute("type");
-    // Check for nested child node (more specific error type)
-    if(error.firstChild)
-      data.name = error.firstChild.tagName;
-    // Check for nested <text> node (error message)
+
+    // Check for <condition> child
+    const cond = error.querySelector("[xmlns='"+XOWS_NS_IETF_STANZAS+"']");
+    if(cond) data.name = cond.tagName;
+
+    // Check for <text> child (error message)
     const text = error.querySelector("text");
     if(text) data.text = xows_xml_innertext(text);
   }
@@ -2339,7 +2341,7 @@ function xows_xmp_regi_server_set_parse(from, type, error)
   if(err_msg !== null) {
     xows_log(0,"xmp_regi_server_set_parse",err_msg);
     // Close with error after delay
-    setTimeout(xows_xmp_fram_close_send, xows_options.login_delay, XOWS_SIG_ERR, err_msg);
+    setTimeout(xows_xmp_fram_close_send, xows_options.login_fail_delay, XOWS_SIG_ERR, err_msg);
   }
 }
 
@@ -3847,6 +3849,7 @@ function xows_xmp_muc_nick_query(to, onparse)
  * Jingle (XEP-0166) XMLNS constants
  */
 const XOWS_NS_JINGLE       = "urn:xmpp:jingle:1";                     //< XEP-0166
+const XOWS_NS_JINGLE_ERR   = "urn:xmpp:jingle:errors:1";              //< XEP-0166
 const XOWS_NS_JINGLE_RTP1  = "urn:xmpp:jingle:apps:rtp:1";            //< XEP-0166
 const XOWS_NS_JINGLE_RTPA  = "urn:xmpp:jingle:apps:rtp:audio";        //< XEP-0166
 const XOWS_NS_JINGLE_RTPV  = "urn:xmpp:jingle:apps:rtp:video";        //< XEP-0166
@@ -4223,52 +4226,72 @@ function xows_xmp_jing_recv(stanza)
 
   let data;
 
-  if(action === "session-terminate") {
+  switch(action)
+  {
+  case "session-terminate": {
+      // Get terminate reason
+      const reason = jingle.querySelector("reason");
+      if(reason && reason.childNodes[0])
+        data = reason.childNodes[0].tagName;
+    } break;
 
-    // Get terminate reason
-    const reason = jingle.querySelector("reason");
-    if(reason && reason.childNodes[0])
-      data = reason.childNodes[0].tagName;
+  case "session-initiate":
+  case "session-accept": {
+      // Convert jingle RTP Session description to SDP string
+      data = xows_xmp_jing_jingle2sdp(jingle);
+      if(data === null) {
+        xows_log(1,"xmp_recv_jingle","error","RTP to SDP conversion failed");
+        // Send back error
+        xows_xmp_iq_error_send(id, from, "cancel", "bad-request");
+        return;
+      }
+    } break;
 
-  } else
-  if(action === "session-info") {
-
-    // Get session info
-    data = jingle.childNodes[0].tagName;
-
-    switch(data)
-    {
-    case "ringing":
-      // Do nothing
-      break;
-    default:
-      // If the party that receives an informational message does not understand
-      // the payload, it MUST return a <feature-not-implemented/> error with a
-      // Jingle-specific error condition of <unsupported-info/>.
-      /*
-      xows_xmp_iq_error_send(id, from, "error", "feature-not-implemented",
-          xows_xml_node("unsupported-info"));*/
-      return;
-    }
-
-  } else {
-
-    // Convert jingle RTP Session description to SDP string
-    data = xows_xmp_jing_jingle2sdp(jingle);
-    if(data === null) {
-      xows_log(1,"xmp_recv_jingle","error","RTP to SDP conversion failed");
-      // Send back error
-      xows_xmp_iq_error_send(id, from, "cancel", "bad-request");
-      return;
-    }
-
+  case "session-info": {
+      // Check whether <jingle> node has some payload,
+      // otherwise this is a session ping
+      if(jingle.childNodes.length)
+        data = jingle.childNodes[0].tagName;
+    } break;
   }
-
-  // Acknoledge reception (sending back "result" type iq)
-  xows_xmp_iq_result_send(id, from);
 
   // Forward to client
   xows_xmp_fw_onjingle(from, id, jingle.getAttribute("sid"), action, data);
+}
+
+/**
+ * Function to parse an Jingle-Specific iq stanza, this is required
+ * to handle jingle-specific error conditions.
+ *
+ * @param   {object}    stanza    Received iq stanza
+ * @param   {function}  onparse   Callback to forward parse result
+ */
+function xows_xmp_jing_parse(stanza, onparse)
+{
+  const type = stanza.getAttribute("type");
+
+  if(xows_isfunc(onparse)) {
+
+    let error;
+
+    if(type === "error") {
+      // Parse standard error as usual
+      error = xows_xmp_error_parse(stanza);
+      // Check for Jingle <condition> child
+      const cond = error.querySelector("[xmlns='"+XOWS_NS_JINGLE_ERR+"']");
+      if(cond) error.jing = cond.tagName;
+    }
+
+    // Forward parse result
+    onparse(stanza.getAttribute("from"), type, error);
+
+  } else {
+    // Check for error
+    if(type === "error") {
+      // Forward error message
+      xows_xmp_fw_onerror(XOWS_SIG_ERR, xows_xmp_error_log(stanza,1,"xmp_iq_parse"));
+    }
+  }
 }
 
 /**
@@ -4294,8 +4317,8 @@ function xows_xmp_jing_initiate_sdp(to, sdp, onparse)
   // Send message
   const iq = xows_xml_node("iq",{"type":"set","to":to},jingle);
 
-  // Use generic iq parse function to forward  unhandled error
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+  // Use jingle-specific iq parse function to handle jingle errors
+  xows_xmp_send(iq, xows_xmp_jing_parse, onparse);
 
   return sid;
 }
@@ -4321,8 +4344,8 @@ function xows_xmp_jing_accept_sdp(to, sid, sdp, onparse)
   // Send message
   const iq = xows_xml_node("iq",{"type":"set","to":to},jingle);
 
-  // Use generic iq parse function to forward  unhandled error
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+  // Use jingle-specific iq parse function to handle jingle errors
+  xows_xmp_send(iq, xows_xmp_jing_parse, onparse);
 }
 
 /**
@@ -4340,13 +4363,13 @@ function xows_xmp_jing_info(to, sid, info, attr, onparse)
   let info_attr = {"xmlns":XOWS_NS_JINGLE_RTPI};
   if(attr) info_attr = Object.assign(info_attr, attr);
 
-  // Send message
+  // Create IQ stanza
   const iq =  xows_xml_node("iq",{"type":"set","to":to},
                 xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-info"},
                   xows_xml_node(info, info_attr, null)));
 
-  // Use generic iq parse function to forward  unhandled error
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+  // Use jingle-specific iq parse function to handle jingle errors
+  xows_xmp_send(iq, xows_xmp_jing_parse, onparse);
 }
 
 /**
@@ -4359,13 +4382,31 @@ function xows_xmp_jing_info(to, sid, info, attr, onparse)
  */
 function xows_xmp_jing_terminate(to, sid, reason, onparse)
 {
-  // Send message
+  // Create IQ stanza
   const iq =  xows_xml_node("iq",{"type":"set","to":to},
                 xows_xml_node("jingle",{"xmlns":XOWS_NS_JINGLE,"sid":sid,"action":"session-terminate"},
                   xows_xml_node("reason",null,xows_xml_node(reason))));
 
-  // Use generic iq parse function to forward  unhandled error
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+  // Use jingle-specific iq parse function to handle jingle errors
+  xows_xmp_send(iq, xows_xmp_jing_parse, onparse);
+}
+
+/**
+ * Send Jingle specific error
+ *
+ * @parma   {string}    id          Stanza id to reply
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    type        Error type attribute
+ * @parma   {string}    condjing    Jingle error condition
+ * @parma   {string}    condxmpp    XMPP error condition
+ */
+function xows_xmp_jing_error(id, to, type, condjing, condxmpp)
+{
+  // Send error stanza
+  xows_xmp_send(xows_xml_node("iq",{"id":id,"type":"error","to":to},
+                  xows_xml_node("error",{"type":type},
+                    [xows_xml_node(condxmpp,{"xmlns":XOWS_NS_IETF_STANZAS}),
+                     xows_xml_node(condjing,{"xmlns":XOWS_NS_JINGLE_ERR})])));
 }
 
 /* -------------------------------------------------------------------
@@ -4395,9 +4436,9 @@ function xows_xmp_caps_self_features()
 
   // Optional features (pubsub notify subscribtion)
   //if(xows_options.vcard4_notify) ns_vcard4 += "+notify";
-  if(xows_options.avatar_notify) ns_avatar_meta += "+notify";
-  if(xows_options.nick_notify) ns_nick += "+notify";
-  if(xows_options.bookmks_notify) ns_bookmarks += "+notify";
+  if(xows_options.cli_pepnotify_avat) ns_avatar_meta += "+notify";
+  if(xows_options.cli_pepnotify_nick) ns_nick += "+notify";
+  if(xows_options.cli_pepnotify_bkms) ns_bookmarks += "+notify";
 
   const caps = [
     xows_xml_node("identity",{"category":"client","name":XOWS_APP_NAME,"type":"web"}),

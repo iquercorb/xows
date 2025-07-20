@@ -656,6 +656,12 @@
   "Add":
   "",
 
+  "Input devices access":
+  "",
+
+  "Getting access to input devices failed, would you like to retry ?":
+  "",
+
   "Enable or disable the camera":
   "",
 
@@ -704,7 +710,16 @@
   "The other party encountered error":
   "",
 
+  "The other party lacks suitable devices":
+  "",
+
+  "Input devices access failed":
+  ""
+
   "Call failure":
+  "",
+
+  "Access to input devices is required for call session, configure your browser to allow it and try again.":
   "",
 
   "modified":

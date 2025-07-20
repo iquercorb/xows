@@ -105,7 +105,7 @@ function xows_gui_sound_load(name, file, loop)
   audio.loop = loop;  //< set loop option
 
   // Creating path to sound
-  const path = xows_options.root+"/sounds/"+file;
+  const path = xows_options.lib_path+"/sounds/"+file;
 
   xows_log(2,"gui_sound_load","loading '"+name+"' sound",path);
 
@@ -154,18 +154,29 @@ let xows_gui_connect_loss = false;
 /**
  * Currently available media devices (for multimedia calls)
  */
-let xows_gui_medias = null;
+let xows_gui_devices_data = null;
 
 /**
  * Callback function to query device enumeration from MediaDevices API
  */
-function xows_gui_medias_poll()
+function xows_gui_devices_poll()
 {
   // Query available devices for Multimedia features
   if(navigator.mediaDevices) {
-    navigator.mediaDevices.enumerateDevices().then(xows_gui_ondevicesinfos);
-    navigator.mediaDevices.ondevicechange = xows_gui_ondevicechange;
+    navigator.mediaDevices.enumerateDevices().then(xows_gui_devices_oninfos);
+    navigator.mediaDevices.ondevicechange = xows_gui_devices_onchange;
   }
+}
+
+/**
+ * Callback function to handle media devices changes event
+ *
+ * @param   {object}    event      Event object
+ */
+function xows_gui_devices_onchange(event)
+{
+  // Update medias list
+  navigator.mediaDevices.enumerateDevices().then(xows_gui_devices_oninfos);
 }
 
 /**
@@ -173,10 +184,10 @@ function xows_gui_medias_poll()
  *
  * @param   {object}    devinfo    Array of MediaDeviceInfo object
  */
-function xows_gui_ondevicesinfos(devinfo)
+function xows_gui_devices_oninfos(devinfo)
 {
   // Update media infos list
-  xows_gui_medias = devinfo;
+  xows_gui_devices_data = devinfo;
 
   xows_log(2,"gui_ondevicesinfos","received medias infos");
 
@@ -186,28 +197,17 @@ function xows_gui_ondevicesinfos(devinfo)
 }
 
 /**
- * Callback function to handle media devices changes event
- *
- * @param   {object}    event      Event object
- */
-function xows_gui_ondevicechange(event)
-{
-  // Update medias list
-  navigator.mediaDevices.enumerateDevices().then(xows_gui_ondevicesinfos);
-}
-
-/**
  * Check whether current medias list has the specified type
  *
  * @param   {string}    type      Media type to search for
  */
-function xows_gui_medias_has(type)
+function xows_gui_devices_has(type)
 {
-  if(!xows_gui_medias)
+  if(!xows_gui_devices_data)
     return false;
 
-  for(let i = 0; i < xows_gui_medias.length; ++i)
-    if(xows_gui_medias[i].kind === type)
+  for(let i = 0; i < xows_gui_devices_data.length; ++i)
+    if(xows_gui_devices_data[i].kind === type)
       return true;
 
   return false;
@@ -679,8 +679,8 @@ function xows_gui_peer_chat_update(peer)
     xows_gui_peer_doc(peer, "chat_show").dataset.show = peer.show;
     // Show or hide Call buttons
     const has_ices = xows_cli_external_has("stun", "turn");
-    xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_medias_has("audioinput") && has_ices);
-    xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_medias_has("videoinput") && has_ices);
+    xows_gui_peer_doc(peer, "chat_bt_cala").hidden = !(xows_gui_devices_has("audioinput") && has_ices);
+    xows_gui_peer_doc(peer, "chat_bt_calv").hidden = !(xows_gui_devices_has("videoinput") && has_ices);
     if(peer.type === XOWS_PEER_OCCU) {
       xows_gui_peer_doc(peer, "chat_bt_addc").hidden = (xows_gui_peer_subs_status(peer) !== 0);
       // Occupant may also change address (change nick)
@@ -710,7 +710,7 @@ function xows_gui_peer_chat_update(peer)
 function xows_gui_peer_buzy_update(peer)
 {
   // Enable or disable Multimedia Call buttons
-  const unavailable = xows_cli_call_sess_buzy() || (peer.show <= XOWS_SHOW_DND);
+  const unavailable = xows_cli_call_buzy() || (peer.show <= XOWS_SHOW_DND);
   xows_gui_peer_doc(peer, "chat_bt_cala").disabled = unavailable;
   xows_gui_peer_doc(peer, "chat_bt_calv").disabled = unavailable;
 }
@@ -754,7 +754,7 @@ function xows_gui_init()
   xows_gui_clean = true;
 
   // Poll for available devices for Multimedia features
-  xows_gui_medias_poll();
+  xows_gui_devices_poll();
 
   // Load sound effects
   xows_gui_sound_load("notify",   "notify.ogg");
@@ -847,7 +847,6 @@ function xows_gui_reset()
  * Client Interface - Connect / Dsiconnect
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Function to connect (try login)
  *
@@ -900,11 +899,11 @@ function xows_gui_connect(register = false)
 
   // Append domain if the option is set, otherwise it should be
   // set in the usename as typed by user.
-  if(xows_options.domain)
-    xows_gui_auth.user += "@"+xows_options.domain;
+  if(xows_options.login_force_domain)
+    xows_gui_auth.user += "@"+xows_options.login_force_domain;
 
   // Launch the client connection
-  xows_cli_connect( xows_options.url,
+  xows_cli_connect( xows_options.xmpp_url,
                     xows_gui_auth.user,
                     xows_gui_auth.pass,
                     register);
@@ -998,7 +997,7 @@ function xows_gui_disconnect()
     xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_GONE);
 
   // Hangup and clear any Media Call
-  xows_gui_call_clear();
+  xows_gui_call_exit_all();
 
   // Disconnect client
   xows_cli_disconnect();
@@ -1090,7 +1089,6 @@ function xows_gui_cli_onerror(code, text)
  * Browser Window - Browser navigation Back handle
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Process Browser navigation history back
  */
@@ -1109,7 +1107,6 @@ function xows_gui_nav_onpopstate(event)
  * Browser Window - Events Handling
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Handle the client/Web page focus change
  *
@@ -1140,7 +1137,6 @@ function xows_gui_wnd_onfocus(event)
  * Browser Window - Push Notification Management
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Store awaiting notification untile permission
  */
@@ -1214,7 +1210,7 @@ function xows_gui_notify_push(peer, body)
       // Retrieve the cached, actual or temporary, avatar dataUrl
       const icon = xows_cach_avat_get(peer.avat);
       // Push new notification
-      const notif = new Notification(peer.name,{"body":body,"icon":(icon?icon:("/"+xows_options.root+"/icon.svg"))});
+      const notif = new Notification(peer.name,{"body":body,"icon":(icon?icon:("/"+xows_options.lib_path+"/icon.svg"))});
       // Sound is slower than light...
       xows_gui_sound_play("notify");
     }
@@ -1234,7 +1230,6 @@ function xows_gui_notify_push(peer, body)
  * Browser Window - Document title management
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Stack for document title changes
  */
@@ -1261,10 +1256,109 @@ function xows_gui_title_pop()
 
 /* -------------------------------------------------------------------
  *
+ * Browser Window - User input devices access
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * User input devices access parameters
+ */
+const xows_gui_getmedia_param = {constr:null,onmedia:null,onabort:null,payload:null,error:null};
+
+/**
+ * Request user permissions to access input devices specified by constraints.
+ *
+ * @param   {object}     constr     Medias constraints to acquire
+ * @param   {function}   onmedia    Acquire success callback
+ * @param   {function}   onmedia    Acquire abort callback
+ * @param   {any}       [payload]   Optional payload to pass to callbacks
+ */
+function xows_gui_getmedia_try(constr, onmedia, onabort, payload)
+{
+  const param = xows_gui_getmedia_param;
+
+  // If constraints are not defined, reuse previous parameters
+  if(constr) {
+
+    // Save parameters
+    param.constr = constr;
+    param.onmedia = onmedia;
+    param.onabort = onabort;
+    param.payload = payload;
+    param.error = null;
+
+  } else {
+
+    if(!param.constr) {
+      xows_log(1,"gui_getmedia_try","invalid usage","constraints not defined");
+      return;
+    }
+  }
+
+  // Send media request to User
+  navigator.mediaDevices.getUserMedia(param.constr)
+    .then((stream) => param.onmedia(param.payload, stream),
+                      xows_gui_getmedia_onfail);
+}
+
+/**
+ * Callback for user access input devices faillure or deny.
+ *
+ * If received error is an explicit user access denied, the configured
+ * onabort callback is directly called with the received error.
+ *
+ * On the other hand, if it is not clear why access failed, a message dialog
+ * is displayed to ask user to abort or retry.
+ *
+ * @param   {object}    error   Error object (DOMException)
+ */
+function xows_gui_getmedia_onfail(error)
+{
+  // Save received error
+  xows_gui_getmedia_param.error = error;
+
+  if(error.name === "NotAllowedError") { //< User deny access
+
+    // It is not possible to "retry" after user deny (at least on firefox),
+    // the choice is saved until session end or being reset via explicit
+    // user action.
+    //
+    // So we simply forward the specific error to inform user choice was
+    // made.
+    xows_gui_getmedia_onabort();
+
+  } else {
+
+    // This may be a temporary hardware or system error, maybe we can retry
+    // to acquire and ask again to user.
+
+    xows_log(1,"gui_getmedia_onfail","input devices access failed",error.name);
+
+    // Opend message dialog
+    xows_doc_mbox_open(XOWS_STYL_ASK, "Input devices access",
+                       "Getting access to input devices failed, would you like to retry ?",
+                       xows_gui_getmedia_try, "Retry",
+                       xows_gui_getmedia_onabort, "Cancel");
+  }
+}
+
+/**
+ * Callback for user access input devices canceled or denied by user
+ */
+function xows_gui_getmedia_onabort()
+{
+  // Get saved parameters
+  const param = xows_gui_getmedia_param;
+
+  // Call on-abort callback
+  if(xows_isfunc(param.onabort))
+    param.onabort(param.payload, param.error);
+}
+
+/* -------------------------------------------------------------------
+ *
  * Browser Window - Input Handling
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Chat Editor table to store current pressed (down) key
  */
@@ -1317,13 +1411,11 @@ function xows_gui_wnd_onkey(event)
  * Main Interactive Elements
  *
  * -------------------------------------------------------------------*/
-
 /* -------------------------------------------------------------------
  *
  * Main Screen
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Returns whether Peer history preloaded was done
  *
@@ -1448,7 +1540,7 @@ function xows_gui_switch_peer(addr)
   if(next) {
 
     // Poll for available devices for Multimedia features
-    xows_gui_medias_poll();
+    xows_gui_devices_poll();
 
     // Set the current contact
     xows_gui_peer = next;
@@ -2112,16 +2204,16 @@ function xows_gui_cli_onroomexit(room, mucx)
   let text = null;
 
   if(mucx.code.includes(301))
-    text = xows_l10n_get("You were banned from the Channel");
+    text = "You were banned from the Channel";
 
   if(mucx.code.includes(307))
-    text = xows_l10n_get("You were kicked from the Channel");
+    text ="You were kicked from the Channel";
 
   if(mucx.code.includes(321))
-    text = xows_l10n_get("Rules changes caused you to leave the Channel");
+    text = "Rules changes caused you to leave the Channel";
 
   if(mucx.code.includes(321))
-    text = xows_l10n_get("Server error caused you to leave the Channel");
+    text = "Server error caused you to leave the Channel";
 
   if(text) {
     text += " <b>"+room.name+"</b>";
@@ -2150,7 +2242,9 @@ function xows_gui_mbox_join_fail_open(type, text)
   }
 
   // Open message dialog
-  xows_doc_mbox_open(XOWS_STYL_ERR, head, text, null, null, null, null);
+  xows_doc_mbox_open(XOWS_STYL_ERR, head, text,
+                     null, null,
+                     null, null);
 }
 
 /* -------------------------------------------------------------------
@@ -2227,12 +2321,12 @@ function xows_gui_ibox_join_regi_open(room)
   xows_gui_ibox_join_regi.room = room;
 
   // Open the input box dialog
-  xows_doc_ibox_open(xows_l10n_get("Channel registration"),
-    xows_l10n_get("The nickname will be associated with your XMPP address and being reserved for you in this Room."),
-    xows_l10n_get("Enter nickname to register..."), room.nick,
-    xows_gui_ibox_join_regi_onvalid, "Register",
-    null, null,
-    null, true);
+  xows_doc_ibox_open("Channel registration",
+                     "The nickname will be associated with your XMPP address and being reserved for you in this Room.",
+                     "Enter nickname to register...", room.nick,
+                     xows_gui_ibox_join_regi_onvalid, "Register",
+                     null, null,
+                     null, true);
 }
 
 /* -------------------------------------------------------------------
@@ -2267,12 +2361,12 @@ function xows_gui_ibox_join_pass_open(room)
   xows_gui_ibox_join_pass.room = room;
 
   // Open the input box dialog
-  xows_doc_ibox_open(xows_l10n_get("Channel password"),
-    xows_l10n_get("This Channel is password-protected, you must provide password in order to join it."),
-    xows_l10n_get("Enter a password..."), room.pass,
-    xows_gui_ibox_join_pass_onvalid, "Join",
-    null, null,
-    null, true);
+  xows_doc_ibox_open("Channel password",
+                     "This Channel is password-protected, you must provide password in order to join it.",
+                     "Enter a password...", room.pass,
+                     xows_gui_ibox_join_pass_onvalid, "Join",
+                     null, null,
+                     null, true);
 
   // If room password is not empty, this mean previous try failed
   if(room.pass) xows_doc_ibox_error("The password you entered is incorrect");
@@ -3251,7 +3345,7 @@ function xows_gui_chat_head_onclick(event)
   case "chat_bt_calv":
   case "chat_bt_cala":
     // Initiate call
-    xows_gui_call_invite(xows_gui_peer, {"audio":true,"video":(event.target.id === "chat_bt_calv")});
+    xows_gui_call_self_invite(xows_gui_peer, {"audio":true,"video":(event.target.id === "chat_bt_calv")});
     break;
   }
 }
@@ -3429,7 +3523,7 @@ function xows_gui_call_view_onclick(event)
 
     case "call_hgup": {
         // Hangup and clear data
-        xows_gui_call_hangup(xows_gui_peer,"success");
+        xows_gui_call_self_hangup(xows_gui_peer,"success");
       } break;
 
     case "call_expd": {
@@ -3496,7 +3590,7 @@ function xows_gui_call_view_open(peer)
 
   call_micr.className = "";
   call_came.className = "";
-  call_came.hidden = !xows_cli_call_sess_meds(peer).video;
+  call_came.hidden = !xows_cli_call_medias(peer).video;
 
   if(call_view.hidden) {
     if(peer === xows_gui_peer) {
@@ -3704,18 +3798,13 @@ function xows_gui_call_ring_onclick(event)
 
   case "ring_bt_deny":
     // Reject or abort call
-    let reason;
-    if(call_ring.classList.contains("RING-INBD")) {
-      xows_gui_call_hangup(xows_gui_peer, "decline");
-    } else {
-      xows_gui_call_onabort(xows_gui_peer);
-    }
+    xows_gui_call_self_cancel(xows_gui_peer);
     break;
 
-  case "ring_bt_pkup": {
-      // Ask user for input devices and send answer
-      xows_gui_call_accept(xows_gui_peer);
-    } return; //< do not close dialog, it will pass to Negotiation state
+  case "ring_bt_pkup":
+    // Ask user for input devices and send answer
+    xows_gui_call_self_accept(xows_gui_peer);
+    return; //< do not close dialog, it will pass to Negotiation state
 
   default:
     return; //< return without closing
@@ -3740,9 +3829,9 @@ function xows_gui_call_ring_show(peer, type, reason)
 
   if(type !== XOWS_RING_TERM) {
     // Check for inbound or outbound call
-    inbound = xows_cli_call_sess_inbd(peer);
+    inbound = xows_cli_call_is_inbd(peer);
     // Get session Medias/Constraints
-    is_video = xows_cli_call_sess_meds(peer).video;
+    is_video = xows_cli_call_medias(peer).video;
   }
 
   let text, tone, bell;
@@ -3775,7 +3864,16 @@ function xows_gui_call_ring_show(peer, type, reason)
         break;
 
       case "success":    //< peer hung up call
-        text = xows_cli_call_sess_cntd(peer) ? "The other party hung up" : "You missed a call";
+        text = xows_cli_call_misd(peer) ? "You missed a call" : "The other party hung up";
+        break;
+
+      case "incompatible-parameters": //< this may come after input devices access failure
+        if(xows_cli_call_is_inbd(peer)) {
+          // user denied access to input devices while answering a call
+          text = "Input devices access failed";
+        } else {
+          text = "The other party lacks suitable devices";
+        }
         break;
 
       // The common Jingle errors
@@ -3783,7 +3881,6 @@ function xows_gui_call_ring_show(peer, type, reason)
       case "failed-application":
       case "unsupported-applications":
       case "unsupported-transports":
-      case "incompatible-parameters":
         text = "The other party encountered error";
         break;
 
@@ -3850,101 +3947,24 @@ function xows_gui_call_ring_close(peer)
 
 /* -------------------------------------------------------------------
  *
- * User Media acquisition routines
- *
- * -------------------------------------------------------------------*/
-/**
- * User media acquisition routines parameters
- */
-const xows_gui_media_ask_param = {constr:null,onmedia:null,onabort:null,data:null};
-
-/**
- * Acquire user input media stream specified by constraints.
- *
- * @param   {object}     constr     Medias constraints to acquire
- * @param   {function}   onmedia    Acquire success callback
- * @param   {function}   onmedia    Acquire abort callback
- * @param   {any}       [data]      Optional extra param to pass to callbacks
- */
-function xows_gui_media_ask(constr, onmedia, onabort, data)
-{
-  const param = xows_gui_media_ask_param;
-
-  // Save parameters
-  param.constr = constr;
-  param.onmedia = onmedia;
-  param.onabort = onabort;
-  param.data = data;
-
-  // Send media request to User
-  navigator.mediaDevices.getUserMedia(param.constr)
-    .then((stream) => param.onmedia(param.data,stream),
-          xows_gui_media_fail_open);
-}
-
-/**
- * User media acquisition faillure Input-Box on-valid callback
- */
-function xows_gui_media_fail_onvalid()
-{
-  // Get saved parameters
-  const param = xows_gui_media_ask_param;
-
-  // Send again media request to User with saved parameters
-  navigator.mediaDevices.getUserMedia(param.constr)
-    .then((stream) => param.onmedia(param.data,stream),
-          xows_gui_media_fail_open);
-}
-
-/**
- * User media acquisition faillure Input-Box on-abort callback
- */
-function xows_gui_media_fail_onabort()
-{
-  // Get saved parameters
-  const param = xows_gui_media_ask_param;
-
-  // Call on-abort callback
-  if(xows_isfunc(param.onabort))
-    param.onabort(param.data);
-}
-
-/**
- * User media acquisition faillure Input-Box open
- *
- * This function is called as default fallback when user media acquisition
- * failed.
- */
-function xows_gui_media_fail_open()
-{
-  xows_log(1,"gui_media_fail_open","user media acquisition failed");
-
-  // Display popup error message
-  xows_doc_popu_open(XOWS_SIG_WRN, "Unable to get device stream for media call session",
-                     xows_gui_media_fail_onvalid, "Retry",
-                     xows_gui_media_fail_onabort, "Cancel");
-}
-
-/* -------------------------------------------------------------------
- *
- * Multimedia-Call management
+ * Multimedia Calls management
  *
  * -------------------------------------------------------------------*/
 /* -------------------------------------------------------------------
- * Multimedia-Call - GUI management functions
+ * Multimedia Calls - General functions
  * -------------------------------------------------------------------*/
-
 /**
- * Hangup and clear all active or pending call sessions
+ * Multimedia Calls hang up and clear all active or pending
+ * call sessions
  */
-function xows_gui_call_clear()
+function xows_gui_call_exit_all()
 {
   let peers = xows_cli_call_peer_list();
 
   for(let i = 0; i < peers.length; ++i) {
 
     // Hang up with peer
-    xows_cli_call_hangup(peers[i], "failed-application");
+    xows_cli_call_self_hangup(peers[i], "failed-application");
 
     // Close and reset GUI elements
     xows_gui_call_exit(peers[i]);
@@ -3952,7 +3972,7 @@ function xows_gui_call_clear()
 }
 
 /**
- * Multimedia-Call clear and reset GUI element for the specified Peer
+ * Multimedia Calls clear and reset GUI element for the specified Peer
  *
  * @param   {object}     peer       Related Peer object
  */
@@ -3968,41 +3988,58 @@ function xows_gui_call_exit(peer)
   xows_gui_peer_buzy_update(peer);
 
   // If no more call sessions, stop VU-Meter animation
-  if(!xows_cli_call_sess_count())
+  if(!xows_cli_call_count())
     xows_gui_call_view_vumet_stop();
 }
 
 /* -------------------------------------------------------------------
- * Multimedia-Call - Call interactions functions
+ * Multimedia Calls - User actions (Outbound)
  * -------------------------------------------------------------------*/
 /**
- * Multimedia-Call terminate call for the specified Peer. This function is
- * called when user takes the initiative to hang-up.
+ * User invite (outbound Offer) the specified Peer for a call
  *
- * If not 'reason' is provided, data for the specified Remote peer is cleared
- * without sending session terminate signaling.
+ * This function is a transition function that only starts user input devices
+ * access permissions request. Once user authorized devices and stream acquired,
+ * 'xows_gui_call_invite_onstream' is called to launch proper routines for
+ * call initiation (Offer).
  *
- * @param   {object}     peer       Related Peer object
- * @param   {string}    [reason]    Optionnal reason to HangUp
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     constr       Constraints for media aquisition
  */
-function xows_gui_call_hangup(peer, reason)
+function xows_gui_call_self_invite(peer, constr)
 {
-  // Hang up with peer
-  xows_cli_call_hangup(peer, reason);
-
-  // Close and reset GUI elements
-  xows_gui_call_exit(peer);
-
-  // Play Hangup sound
-  xows_gui_sound_play("hangup");
+  // Send media request to User, on success call 'xows_cli_call_self_invite'
+  xows_gui_getmedia_try(constr, xows_gui_call_invite_onstream, xows_gui_call_self_cancel, peer);
 }
 
 /**
- * Multimedia-Call accept (Answer) incomping call from the specified Peer
+ * Callback for User invite (outbound Offer) Peer for a call, once local
+ * stream acquired (after getUserMedia).
  *
- * This function is a transition function that only starts user Media
- * Acquisition process. Once user authorized media and stream acquired, the
- * xows_gui_call_accept_onstream is called to launch proper routines for
+ * @param   {object}     peer         Related Peer object
+ * @param   {object}     stream       Acquired local input Stream
+ */
+function xows_gui_call_invite_onstream(peer, stream)
+{
+  // Initiate call (create session)
+  xows_cli_call_self_invite(peer, stream);
+
+  // Dsiable chat header call buttons
+  xows_gui_peer_buzy_update(peer);
+
+  // Open Ring dialog in Negotiation mode
+  xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
+
+  // Add local participant (ourself) to Call View
+  xows_gui_call_view_part_add(peer, xows_cli_self, stream);
+}
+
+/**
+ * User accept (outbound Answer) an inbound call from the specified Peer
+ *
+ * This function is a transition function that only starts user input devices
+ * access permissions request. Once user authorized devices and stream acquired,
+ * 'xows_gui_call_accept_onstream' is called to launch proper routines for
  * call accept (Answer).
  *
  * If the constr parameter is set to null, the function automatically
@@ -4012,24 +4049,25 @@ function xows_gui_call_hangup(peer, reason)
  * @param   {object}     peer         Related Peer object
  * @param   {object}     constr       Constraints for media aquisition
  */
-function xows_gui_call_accept(peer, constr)
+function xows_gui_call_self_accept(peer, constr)
 {
   if(!constr) {
 
     // Get session medias (remote medias, at this stage)
-    constr = xows_cli_call_sess_meds(peer);
+    constr = xows_cli_call_medias(peer);
 
     // keep only the full-duplex ables medias.
-    constr.audio = constr.audio && xows_gui_medias_has("audioinput");
-    constr.video = constr.video && xows_gui_medias_has("videoinput");
+    constr.audio = constr.audio && xows_gui_devices_has("audioinput");
+    constr.video = constr.video && xows_gui_devices_has("videoinput");
   }
 
   // Send media request to User
-  xows_gui_media_ask(constr, xows_gui_call_accept_onstream, xows_gui_call_onabort, peer);
+  xows_gui_getmedia_try(constr, xows_gui_call_accept_onstream, xows_gui_call_self_cancel, peer);
 }
 
 /**
- * Callback for Multimedia-Call accept (Answer) local stream acquired
+ * Callback for User accept (outbound Answer) an inbound call, once local
+ * stream acquired (after getUserMedia).
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Acquired local input Stream
@@ -4037,7 +4075,7 @@ function xows_gui_call_accept(peer, constr)
 function xows_gui_call_accept_onstream(peer, stream)
 {
   // Answer call
-  xows_cli_call_accept(peer, stream);
+  xows_cli_call_self_accept(peer, stream);
 
   // Dsiable chat header call buttons
   xows_gui_peer_buzy_update(peer);
@@ -4046,73 +4084,88 @@ function xows_gui_call_accept_onstream(peer, stream)
   xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
 
   // Get session medias (remote medias, at this stage)
-  const constr = xows_cli_call_sess_meds(peer);
+  const constr = xows_cli_call_medias(peer);
 
   // keep only medias that are reciprocal
-  constr.audio = constr.audio && xows_gui_medias_has("audioinput");
-  constr.video = constr.video && xows_gui_medias_has("videoinput");
+  constr.audio = constr.audio && xows_gui_devices_has("audioinput");
+  constr.video = constr.video && xows_gui_devices_has("videoinput");
 
   // Add local participant (ourself) to Call View
   xows_gui_call_view_part_add(peer, xows_cli_self, stream);
 }
 
 /**
- * Multimedia-Call invite (Offer) the specified Peer for a call
+ * User cancel call, either directly or indirectly.
  *
- * This function is a transition function that only starts user Media
- * Acquisition process. Once user authorized media and stream acquired, the
- * xows_gui_call_invite_onstream is called to launch proper routines for
- * call initiation (Offer).
+ * This function is called:
+ * - Directly if user explicitely canceled or declined call from Ring dialog.
+ * - As Callback if user input devices access ahs failed or was denied.
  *
  * @param   {object}     peer         Related Peer object
- * @param   {object}     constr       Constraints for media aquisition
+ * @param   {object}    [error]       Optional forwarded error (DOMException)
  */
-function xows_gui_call_invite(peer, constr)
+function xows_gui_call_self_cancel(peer, error)
 {
-  // Send media request to User, on success call 'xows_cli_call_invite'
-  xows_gui_media_ask(constr, xows_gui_call_invite_onstream, xows_gui_call_onabort, peer);
+  let reason;
+
+  if(error) {
+    // This is an abort due to failled or denied input media access
+    xows_doc_mbox_open(XOWS_STYL_ERR, "Input devices access failed",
+                       "Access to input devices is required for call session, configure your browser to allow it and try again.",
+                       null, null,
+                       null, null);
+
+    reason = "incompatible-parameters";
+
+  } else {
+    // This is abort due to user cancel outbound or reject inbound call
+    if(xows_cli_call_is_inbd(peer)) {
+      // User declined inbound call invite
+      reason = "decline";
+    } else {
+      // User canceled outboud call invite
+      reason = "success";
+    }
+  }
+
+  if(xows_cli_call_exists(peer)) {
+
+    // Set Ring dialog in Terminate mode
+    xows_gui_call_ring_show(peer, XOWS_RING_TERM, reason);
+
+    // Hang up with Peer
+    xows_gui_call_self_hangup(peer, reason);
+
+  }
 }
 
 /**
- * Callback for Multimedia-Call invite (Offer) local stream acquired
+ * User terminate call for the specified Peer. This function is
+ * called when user takes the initiative to hang-up.
  *
- * @param   {object}     peer         Related Peer object
- * @param   {object}     stream       Acquired local input Stream
- */
-function xows_gui_call_invite_onstream(peer, stream)
-{
-  // Initiate call (create session)
-  xows_cli_call_invite(peer, stream);
-
-  // Dsiable chat header call buttons
-  xows_gui_peer_buzy_update(peer);
-
-  // Open Ring dialog in Negotiation mode
-  xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
-
-  // Add local participant (ourself) to Call View
-  xows_gui_call_view_part_add(peer, xows_cli_self, stream);
-}
-
-/**
- * Callback for Multimedia-Call invite/accept media acquisition aborted
+ * If not 'reason' is provided, data for the specified Remote peer is cleared
+ * without sending session terminate signaling.
  *
- * @param   {object}     peer         Related Peer object
+ * @param   {object}     peer       Related Peer object
+ * @param   {string}    [reason]    Optionnal reason to HangUp
  */
-function xows_gui_call_onabort(peer)
+function xows_gui_call_self_hangup(peer, reason)
 {
-  // Set Ring dialog in Negotiation mode
-  xows_gui_call_ring_close(peer);
+  // Hang up with peer
+  xows_cli_call_self_hangup(peer, reason);
 
-  // Hang up (this will clear call stuff)
-  xows_gui_call_hangup(peer, null);
+  // Close and reset GUI elements
+  xows_gui_call_exit(peer);
+
+  // Play Hangup sound
+  xows_gui_sound_play("hangup");
 }
 
 /* -------------------------------------------------------------------
- * Multimedia-Call - Client interface callbacks
+ * Multimedia-Call - Remote events (Inbound)
  * -------------------------------------------------------------------*/
 /**
- * Callback for Multimedia-Call received call invite (inbound Offer)
+ * Callback for received call invite (inbound Offer) from a Peer
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Remote media stream
@@ -4134,7 +4187,7 @@ function xows_gui_cli_oncalloffer(peer, stream)
 }
 
 /**
- * Callback for Multimedia-Call received call accept (inbound Answer)
+ * Callback for received call accept (inbound Answer) from a Peer
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Remote media stream
@@ -4212,10 +4265,8 @@ function xows_gui_cli_oncalltermd(peer, reason)
  */
 function xows_gui_cli_oncallerror(peer, internal, error)
 {
-  // Close and reset GUI elements
-  xows_gui_call_exit(peer);
-
   let reason;
+
   if(internal) {
 
     // Presence of errorCode property mean error come from ICE gathering
@@ -4230,10 +4281,21 @@ function xows_gui_cli_oncallerror(peer, internal, error)
     } else {              //< WebRTC API DOMException
       reason = "Internal Error ("+error.name+")";
     }
+
   } else {
+
+    // Ignore unsuported-info error since it is not critital
+    if(error.jing === "unsupported-info") {
+      xows_log(1,"cli_jing_parse","received unsuported info from",from);
+      return;
+    }
+
     // This is an error replied by Jingle peer
     reason = "Remote Peer Error ("+error.name+")";
   }
+
+  // Close and reset GUI elements
+  xows_gui_call_exit(peer);
 
   // Open the Call dialog
   xows_gui_call_ring_show(peer, XOWS_RING_TERM, reason);
@@ -4914,7 +4976,7 @@ function xows_gui_mam_query(peer, delay, after)
 
   // To prevent flood and increase ergonomy the archive query is temporised
   xows_gui_mam_query_to.set(peer, setTimeout(xows_cli_mam_fetch, delay,
-                                             peer, xows_options.history_count,
+                                             peer, xows_options.cli_archive_count,
                                              start, end,
                                              xows_gui_mam_parse));
 }
@@ -4936,7 +4998,7 @@ function xows_gui_mam_fetch_newer(peer)
  */
 function xows_gui_mam_fetch_older(peer)
 {
-  xows_gui_mam_query(peer, xows_options.history_delay, false);
+  xows_gui_mam_query(peer, xows_options.cli_archive_delay, false);
 }
 
 /**
@@ -5667,7 +5729,6 @@ function xows_gui_room_head_onclick(event)
  * Main Screen - Room Occupants - List
  *
  * -------------------------------------------------------------------*/
-
 /**
  * Find occupant <li-peer> element corresponding to specified Occupant
  *
@@ -5858,7 +5919,6 @@ function xows_gui_occu_list_onclick(event)
 /* -------------------------------------------------------------------
  * Main screen - Room Occupants - List - Occupant Contextual Menu
  * -------------------------------------------------------------------*/
-
 /**
  * Occupant drop menu on-close Callback function
  */
@@ -7203,9 +7263,9 @@ function xows_gui_mbox_conf_open(room)
 
   // Open new Message Box to confirm Room initial config process
   xows_doc_mbox_open(XOWS_STYL_ASK, "Channel initialization",
-                                    "A new Channel was created and you are its owner, do you want to configure it right now ?",
-                                    xows_gui_mbox_conf_onvalid, "Configure",
-                                    xows_gui_mbox_conf_onabort, "Ignore");
+                     "A new Channel was created and you are its owner, do you want to configure it right now ?",
+                     xows_gui_mbox_conf_onvalid, "Configure",
+                     xows_gui_mbox_conf_onabort, "Ignore");
 }
 
 /* -------------------------------------------------------------------
