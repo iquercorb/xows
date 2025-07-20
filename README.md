@@ -11,26 +11,26 @@ Version: 0.9.8 (beta with bugs)
 
 Presentation
 ----------------------------------------------------------------------------------------
-X.O.W.S (or XoWS) stands for "XMPP Over WebSocket" and is a Javascript XMPP web client 
+X.O.W.S (or XoWS) stands for "XMPP Over WebSocket" and is a Javascript XMPP web client
 that use the WebSocket protocole.
 
-The main idea of the project is initially to create a XMPP client with the following 
+The main idea of the project is initially to create a XMPP client with the following
 caracteristics:
 - Free from thirdparty library, lightweight and quick to load.
 - Performant with low memory footprint.
 - Allowing easy customisation and creation of graphical theme / web interface.
-- Implementing features closer to modern chat clients like a one with name 
+- Implementing features closer to modern chat clients like a one with name
   beginning by "D".
 
-The application is written in plain Javascript, in old-fashion (C-style) using many 
-fcallbacks functions. The main code avoids as most as possible Javascript's false 
-friends like the "this" keyword, anonymous functions, modern syntactic sugar and 
+The application is written in plain Javascript, in old-fashion (C-style) using many
+fcallbacks functions. The main code avoids as most as possible Javascript's false
+friends like the "this" keyword, anonymous functions, modern syntactic sugar and
 confusing (to me) paradigms such as Promises, "sync" and "async" mechanism.
 
-The current code state is judged by myself as "terribly messy", as the MUC 
-features and graphical interface had lead me to massive code rewrite along the 
-development process, with a lot of ad-hoc things. **Therefore, it is highly 
-probable that it remain a lot of small (or less small) bugs.** 
+The current code state is judged by myself as "terribly messy", as the MUC
+features and graphical interface had lead me to massive code rewrite along the
+development process, with a lot of ad-hoc things. **Therefore, it is highly
+probable that it remain a lot of small (or less small) bugs.**
 
 Things that still to be Implemented/Fixed/Tested
 ----------------------------------------------------------------------------------------
@@ -55,8 +55,8 @@ Screenshots
 Library architecture
 ----------------------------------------------------------------------------------------
 
-The application is divided into several "API Modules" with one file per "module", each 
-"module" is dedicated to a specific aspect of the program and have a dedicated function 
+The application is divided into several "API Modules" with one file per "module", each
+"module" is dedicated to a specific aspect of the program and have a dedicated function
 name prefix except the "base API". Here is module list and their quick description:
 
 #### Low-Level API / "Back end" (Algorithms and protocole implemenation)
@@ -76,7 +76,7 @@ name prefix except the "base API". Here is module list and their quick descripti
 
 ####  High-Level Program / "Front end" (GUI and "public" functions)
 
-- `xows_l10n.js` **l10n Module**: Localization mechanisms and translation functions 
+- `xows_l10n.js` **l10n Module**: Localization mechanisms and translation functions
 - `xows_tpl.js`  **HTML Templates Module**: HTML templates download and parsing mechanism
 - `xows_doc.js`  **DOM Managment Module**: Browser DOM document management and GUI base tools
 - `xows_gui.js`  **GUI Module**: GUI related functions and mechanisms
