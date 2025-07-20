@@ -588,7 +588,7 @@ function xows_doc_sel_rng(index)
 function xows_doc_init(onready)
 {
   // Check whether Registering option is enabled
-  if(xows_options.allow_register)
+  if(xows_options.gui_allow_register)
     xows_doc_show("auth_regi"); //< The link in Login Page
 
   // Page screen "scr_page" event listener

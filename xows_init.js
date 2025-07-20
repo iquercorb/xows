@@ -43,24 +43,29 @@
  * Stored default application options
  */
 let xows_options = {
-  root            : "/xows",    //< Default application root folder
-  url             : "ws://localhost/xmpp-websocket/", //< XMPP Websocket URL
-  domain          : "localhost",                      //< XMPP server domain
-  locale          : "en-US",    //< Default Locales
-  theme           : "dark",     //< Them to load
-  verbose         : 1,          //< Verbosity level
-  uncache         : false,      //< Force uncache of loaded styles and templates
-  mincss          : false,      //< Use theme minified CSS file (style.min.css)
-  allow_register  : false,      //< Allow user to access to account register dialog
-  login_delay     : 2000,       //< Delay (in milliseconds) between registration and failed attempts
-  history_count   : 50,         //< Maximum count of history message to fetch each query
-  history_delay   : 500,        //< Temporization delay for older message fetch
-  bookmks_notify  : true,       //< Request for Native Bookmarks (XEP-0402) PEP notifications
-  nick_notify     : true,       //< Request for User Nickname (XEP-0172) PEP notifications
+  lib_path        : "/xows",    //< Path to XOWS files (relative to HTTP base URL)
+  lib_verbose     : 1,          //< Verbosity level
+
+  tpl_load_mincss      : false,      //< Load minified CSS theme file (disable for theme edit or debug purpose)
+  tpl_force_uncache     : false,      //< Prevent browser cache (force reload assets by appending URL suffix)
+
+  xmpp_url        : "ws://localhost/xmpp-websocket/", //< XMPP server Websocket address
+
+  login_force_domain    : "",         //< Optional domain to append to XMPP login username
+  login_fail_delay     : 2000,       //< Delay (in milliseconds) between registration and failed attempts
+
+  gui_locale      : "en-US",    //< GUI Localization
+  gui_theme       : "dark",     //< GUI theme (folder within /theme subdirectory)
+  gui_allow_register  : false,      //< Enable XMPP account register (show proper link and dialog)
+
+  cli_archive_count   : 50,         //< Maximum count of history message to fetch each query
+  cli_archive_delay   : 500,        //< Temporization delay for older message fetch
+  cli_pepnotify_bkms : true,       //< Request for Native Bookmarks (XEP-0402) PEP notifications
+  cli_pepnotify_nick : true,       //< Request for User Nickname (XEP-0172) PEP notifications
   //vcard4_notify   : true,       //< Request for Vcard4 (XEP-0292) PEP notifications
-  avatar_autopub  : true,       //< Auto-publish the default Avatar if none exists for user
-  avatar_notify   : true,       //< Request for User Avatar (XEP-0084) PEP notifications
-  extern_services : []          //< Additionnal External Services (as XEP-0215 replacement with same fashion)
+  cli_avat_autopub: true,       //< Auto-publish the default Avatar if none exists for user
+  cli_pepnotify_avat : true,       //< Request for User Avatar (XEP-0084) PEP notifications
+  cli_extern_services : []          //< Additionnal External Services (as XEP-0215 replacement with same fashion)
 };
 
 /**
@@ -171,35 +176,40 @@ function xows_init(options)
 {
   // Store options
   if(options) {
-    if(options.hasOwnProperty("root"))             xows_options.root = options.root;
-    if(options.hasOwnProperty("url"))              xows_options.url = options.url;
-    if(options.hasOwnProperty("domain"))           xows_options.domain = options.domain;
-    if(options.hasOwnProperty("locale"))           xows_options.locale = options.locale;
-    if(options.hasOwnProperty("theme"))            xows_options.theme = options.theme;
-    if(options.hasOwnProperty("verbose"))          xows_options.verbose = options.verbose;
-    if(options.hasOwnProperty("uncache"))          xows_options.uncache = options.uncache;
-    if(options.hasOwnProperty("mincss"))           xows_options.mincss = options.mincss;
-    if(options.hasOwnProperty("allow_register"))   xows_options.allow_register = options.allow_register;
-    if(options.hasOwnProperty("fail_delay"))       xows_options.fail_delay = options.fail_delay;
-    if(options.hasOwnProperty("history_count"))    xows_options.history_count = options.history_count;
-    if(options.hasOwnProperty("history_delay"))    xows_options.history_delay = options.history_delay;
-    if(options.hasOwnProperty("bookmks_notify"))    xows_options.bookmks_notify = options.bookmks_notify;
-    if(options.hasOwnProperty("nick_notify"))      xows_options.nick_notify = options.nick_notify;
+    if(options.hasOwnProperty("lib_path"))         xows_options.lib_path = options.lib_path;
+    if(options.hasOwnProperty("lib_verbose"))      xows_options.lib_verbose = options.lib_verbose;
+
+    if(options.hasOwnProperty("tpl_force_uncache"))      xows_options.tpl_force_uncache = options.tpl_force_uncache;
+    if(options.hasOwnProperty("tpl_load_mincss"))       xows_options.tpl_load_mincss = options.tpl_load_mincss;
+
+    if(options.hasOwnProperty("xmpp_url"))         xows_options.xmpp_url = options.xmpp_url;
+
+    if(options.hasOwnProperty("login_force_domain"))     xows_options.login_force_domain = options.login_force_domain;
+    if(options.hasOwnProperty("login_fail_delay"))      xows_options.login_fail_delay = options.login_fail_delay;
+
+    if(options.hasOwnProperty("gui_locale"))       xows_options.gui_locale = options.gui_locale;
+    if(options.hasOwnProperty("gui_theme"))        xows_options.gui_theme = options.gui_theme;
+    if(options.hasOwnProperty("gui_allow_register"))   xows_options.gui_allow_register = options.gui_allow_register;
+
+    if(options.hasOwnProperty("cli_archive_count"))    xows_options.cli_archive_count = options.cli_archive_count;
+    if(options.hasOwnProperty("cli_archive_delay"))    xows_options.cli_archive_delay = options.cli_archive_delay;
+    if(options.hasOwnProperty("cli_pepnotify_bkms"))  xows_options.cli_pepnotify_bkms = options.cli_pepnotify_bkms;
+    if(options.hasOwnProperty("cli_pepnotify_nick"))  xows_options.cli_pepnotify_nick = options.cli_pepnotify_nick;
     //if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
-    if(options.hasOwnProperty("avatar_autopub"))   xows_options.avatar_autopub = options.avatar_autopub;
-    if(options.hasOwnProperty("avatar_notify"))    xows_options.avatar_notify = options.avatar_notify;
-    if(options.hasOwnProperty("extern_services"))  xows_options.extern_services = options.extern_services;
+    if(options.hasOwnProperty("cli_avat_autopub")) xows_options.cli_avat_autopub = options.cli_avat_autopub;
+    if(options.hasOwnProperty("cli_pepnotify_avat"))  xows_options.cli_pepnotify_avat = options.cli_pepnotify_avat;
+    if(options.hasOwnProperty("cli_extern_services"))  xows_options.cli_extern_services = options.cli_extern_services;
   }
 
   // If missing, add  a leading slash to root path to make it
   // absolute (i.e. relative to URL root)
-  if(xows_options.root.charAt(0) != "/")
-    xows_options.root = "/"+xows_options.root;
+  if(xows_options.lib_path.charAt(0) != "/")
+    xows_options.lib_path = "/"+xows_options.lib_path;
 
   xows_log(2,"init","xows init start");
 
   // Start init by the l10n module, other init will follow
-  xows_l10n_select(xows_options.locale, xows_init_onl10n);
+  xows_l10n_select(xows_options.gui_locale, xows_init_onl10n);
 }
 
 /**

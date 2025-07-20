@@ -223,7 +223,7 @@ function xows_tpl_emer(event) {xows_tpl_fw_onemberror(event);};
 function xows_tpl_template_load(name, type)
 {
   // build download path URL
-  let path = xows_options.root+"/themes/"+xows_tpl_theme;
+  let path = xows_options.lib_path+"/themes/"+xows_tpl_theme;
 
   // Select proper subfolder according template type
   switch(type)
@@ -242,7 +242,7 @@ function xows_tpl_template_load(name, type)
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
-  if(xows_options.uncache) {
+  if(xows_options.tpl_force_uncache) {
     path += "?" + xows_gen_nonce_asc(4);
   }
   // Launch request to download template file
@@ -408,11 +408,11 @@ function xows_tpl_init(onready)
   if(onready) xows_tpl_fw_onready = onready;
 
   // Change default root and theme folder if requested
-  if(xows_options.root)
-    xows_options.root = xows_options.root;
+  if(xows_options.lib_path)
+    xows_options.lib_path = xows_options.lib_path;
 
-  if(xows_options.theme)
-    xows_tpl_theme = xows_options.theme;
+  if(xows_options.gui_theme)
+    xows_tpl_theme = xows_options.gui_theme;
 
   // Load the theme CSS
   const css = document.createElement('link');
@@ -420,16 +420,16 @@ function xows_tpl_init(onready)
   css.type = "text/css";
   // Select normal or minified style file
   let css_file;
-  if(xows_options.mincss) {
+  if(xows_options.tpl_load_mincss) {
     css_file = "/style.min.css";
   } else {
     css_file = "/style.css";
   }
-  css.href = xows_options.root+"/themes/"+xows_tpl_theme+css_file;
+  css.href = xows_options.lib_path+"/themes/"+xows_tpl_theme+css_file;
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
-  if(xows_options.uncache)
+  if(xows_options.tpl_force_uncache)
     css.href += "?" + xows_gen_nonce_asc(4);
 
   // Add the CSS <link to head

@@ -147,7 +147,7 @@ function xows_random(seed)
  */
 function xows_log(level, scope, message, details, color)
 {
-  if(level > xows_options.verbose)
+  if(level > xows_options.lib_verbose)
     return;
 
   let style, body = "";
