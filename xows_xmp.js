@@ -2297,10 +2297,10 @@ function xows_xmp_regi_get_parse(stanza, onparse)
     const password = stanza.querySelector("password");
     const email = stanza.querySelector("email");
     // Get common registration elements
-    const data = {"registered": stanza.querySelector("registered") ? true : false,
-                  "username":   username ? xows_xml_innertext(username) : null,
-                  "password":   password ? xows_xml_innertext(password) : null,
-                  "email":      email ? xows_xml_innertext(email) : null};
+    data = {"registered": stanza.querySelector("registered") ? true : false,
+            "username":   username ? xows_xml_innertext(username) : null,
+            "password":   password ? xows_xml_innertext(password) : null,
+            "email":      email ? xows_xml_innertext(email) : null};
 
     // Check whether we have <x> element
     const x = stanza.querySelector("x");
@@ -2375,7 +2375,7 @@ function xows_xmp_regi_server_set_parse(from, type, error)
   // Check whether we got an error as submit response
   if(type === "error") {
 
-    xows_xmp_error_log(0,"xmp_regi_server_set_parse",stanza);
+    xows_log(0,"xmp_regi_server_set_parse",error.name);
 
     let text = null;
     // Set error message string as possible
@@ -2419,7 +2419,7 @@ function xows_xmp_regi_server_get_parse(from, data, xform, error)
   // we handle both cases.
   if(xform) {
     // For each fied of form, find know var name and fulfill
-    let i = form.length;
+    let i = xform.length;
     while(i--) {
       if(xform[i]["var"] === "username") xform[i].value = [xows_xmp_auth.user];
       if(xform[i]["var"] === "password") xform[i].value = [xows_xmp_auth.pass];

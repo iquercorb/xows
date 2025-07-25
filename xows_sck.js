@@ -94,7 +94,6 @@ function xows_sck_set_callback(type, callback)
     case "open":  xows_sck_fw_onopen = callback; break;
     case "recv":  xows_sck_fw_onrecv = callback; break;
     case "close": xows_sck_fw_onclose = callback; break;
-    case "error": xows_sck_fw_onerror = callback; break;
   }
 }
 

@@ -144,13 +144,13 @@ function xows_wrtc_oniceerror(event)
 {
   const rpc = event.target;
 
-  xows_log(1,"wrtc_oniceerror",error.name);
+  xows_log(1,"wrtc_oniceerror",event.name);
 
   const db = xows_wrtc_db.get(rpc);
 
   // Forward error
   if(xows_isfunc(db.onerror))
-    db.onerror(rpc, error, db.param);
+    db.onerror(rpc, event, db.param);
 }
 
 /**

@@ -3372,9 +3372,6 @@ function xows_cli_upld_onstate(peer, xhr)
  */
 function xows_cli_upld_onerror(peer, event)
 {
-  // Get Peer stack entry
-  const param = xows_cli_upld_stk.get(peer);
-
   // This would have been nice if the onerror's event embeds some actual error
   // clue, but our world is cruel and XMLHttpRequest was created in the image
   // of our world.
@@ -3397,9 +3394,6 @@ function xows_cli_upld_onerror(peer, event)
  */
 function xows_cli_upld_onabort(peer, event)
 {
-  // Get Peer stack entry
-  const param = xows_cli_upld_stk.get(peer);
-
   xows_cli_fw_upldload(peer, XOWS_UPLD_ABRT, null);
 
   // Delete stack entry
