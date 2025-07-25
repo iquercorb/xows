@@ -269,6 +269,49 @@ function xows_xml_innertext(node) {
 }
 
 /**
+ * Find first child node with the specified namespace URI withn
+ * the specified root node.
+ *
+ * @param   {element}   node      XML root node to search in
+ * @param   {string}    uri       XML namespace URI to search for
+ *
+ * @return  {element}   XML node or null if not found
+ */
+function xows_xml_ns_select(root, uri)
+{
+  const nodes = root.querySelectorAll('*');
+
+  for(let i = 0; i < nodes.length; ++i)
+    if(nodes[i].namespaceURI === uri)
+      return nodes[i];
+
+  return null;
+}
+
+/**
+ * Find all child nodes with the specified namespace URI withn
+ * the specified root node.
+ *
+ * @param   {element}   node      XML root node to search in
+ * @param   {string}    uri       XML namespace URI to search for
+ *
+ * @return  {element[]}   Array of XML nodes (may be empty)
+ */
+function xows_xml_ns_select_all(root, uri)
+{
+  const result = [];
+
+  const nodes = root.querySelectorAll('*');
+
+  for(let i = 0; i < nodes.length; ++i)
+    if(nodes[i].namespaceURI === uri)
+      result.push(nodes[i]);
+
+  return result;
+}
+
+
+/**
  * Beautify tagname adding capitals and replacing minus "-" by
  * spaces.
  *

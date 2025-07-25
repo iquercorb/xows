@@ -1,45 +1,66 @@
 {
-  "Unsername already exists":
-  "Ce nom d'utilisateur existe déjà",
+  "unsername already exists":
+  "ce nom d'utilisateur existe déjà",
 
-  "Username contains illegal characters":
-  "Le nom d'utilisateur contient des caractères non autorisés",
+  "username contains illegal characters":
+  "le nom d'utilisateur contient des caractères non autorisés",
 
-  "Socket connection error":
-  "Erreur de connexion du socket",
+  "unable to register":
+  "impossible de s'inscrire",
 
-  "Incomplete JID (undefined domain)":
-  "JID incomplet (domaine non défini)",
+  "invalid username (JID domain missing)":
+  "nom d'utilisateur invalide (domaine JID manquant)",
 
-  "Invalid server framing":
-  "Cadrage de serveur non valide",
+  "invalid server framing":
+  "cadrage de serveur non valide",
 
-  "Server closed the stream":
-  "Le serveur a fermé le flux",
+  "the server closed the stream":
+  "le serveur a fermé le flux",
 
-  "Server thrown a stream error":
-  "Le serveur a renvoyé une erreur de flux",
+  "the server reported stream error":
+  "le serveur a signalé une erreur de flux",
 
-  "Unable to find a suitable authentication mechanism":
-  "Impossible de trouver un mécanisme d'authentification approprié",
+  "account registration is not allowed by the server":
+  "la création de compte n'est pas autorisé par le serveur",
+
+  "unable to find a suitable authentication mechanism":
+  "impossible de trouver un mécanisme d'authentification approprié",
 
   "Server does not provide required stream features":
   "Le serveur ne fournit pas les fonctionnalités de flux requises",
 
-  "Wrong username or password":
-  "Nom d'utilisateur ou mot de passe incorrect",
+  "wrong username or password":
+  "nom d'utilisateur ou mot de passe incorrect",
+
+  "authentication error":
+  "erreur d'authentification",
+
+  "server integrity check failed":
+  "échec de la vérification de l'intégrité du serveur",
+
+  "bind resource error":
+  "erreur de liaison de ressource",
+
+  "session establishment failure":
+  "échec d'établissement de session",
+
+  "unable to connect to remote server":
+  "impossible de se connecter au serveur distant",
+
+  "Connection lost (recovery failed)":
+  "Connexion perdue (échec de récupération)",
+
+  "Network error":
+  "Erreur réseau",
 
   "Authentication failure":
   "Échec d'authentification",
 
-  "Server integrity check failed":
-  "Échec de la vérification de l'intégrité du serveur",
+  "Registration failure":
+  "Échec d'inscription",
 
-  "Resource bind failure":
-  "Échec de liaison de ressource",
-
-  "Session establishment failure":
-  "Échec d'établissement de session",
+  "Connection failure":
+  "Échec de connexion",
 
   "Login":
   "Connexion",
@@ -72,7 +93,7 @@
   "Je ne suis pas un robot",
 
   "Register":
-  "S'enregistrer",
+  "S'inscrire",
 
   "Login with an existing account":
   "Se connecter avec un compte existant",
@@ -353,8 +374,8 @@
   "Channel initialization":
   "Initialization du Salon",
 
-  "A new Channel was created and you are its owner, do you want to configure it right now ?":
-  "Un nouveau Salon a été créé et vous en êtes le propriétaire, souhaitez-vous le configurer dès maintenant ?",
+  "You just created a new Channel, would you want to configure it right now ?":
+  "Vous venez de créer un nouveau Salon, souhaitez-vous le configurer dès maintenant ?",
 
   "Ignore":
   "Ignorer",
@@ -635,8 +656,20 @@
   "Uploading file":
   "Envoi du fichier",
 
+  "Upload denied":
+  "Téléchargement refusé",
+
+  "Upload failed":
+  "Échec du téléchargement",
+
+  "HTTP server unreachable":
+  "Serveur HTTP inaccessible",
+
   "Error":
   "Erreur",
+
+  "Unhandled error":
+  "Erreur non gérée",
 
   "Apply":
   "Appliquer",

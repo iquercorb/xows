@@ -750,7 +750,20 @@ function xows_tpl_parse_styling(raw)
 }
 
 /**
- * Function to create HTML embeding wrapper element
+ * Create iframe HTML sample with the specified url as sources and common
+ * attributes.
+ *
+ * @param   {string}    href      Media original URL
+ *
+ * @return  {string}    Iframe HTML sample
+ */
+function xows_tpl_as_iframe(href)
+{
+  return "<iframe sandbox=\"allow-scripts allow-same-origin\" src=\""+href+"\"/>";
+}
+
+/**
+ * Function to create HTML sample for embeding wrapper element
  *
  * If the href parameter is not null, an HTML hyperlink is prepended to
  * the embeded media. If the element parameter is null, it is simply
@@ -835,9 +848,8 @@ function xows_tpl_embed_youtube(href, domain)
   let ref = match[1];
   // add options and replace the potential t= by start=
   if(match[2]) ref += match[2].replace(/t=/,"start=");
-  return xows_tpl_embed_wrap(href,
-              "<iframe src=\"https://www.youtube.com/embed/"+ref+"\"/>",
-              "EMBD-IFR LOADING","YouTube");
+  return xows_tpl_embed_wrap(href, xows_tpl_as_iframe("https://www.youtube.com/embed/"+ref),
+                             "EMBD-IFR LOADING","YouTube");
 }
 
 /**
@@ -852,9 +864,8 @@ function xows_tpl_embed_dailymo(href, domain)
 {
   const match = href.match(/(?:video|dai\.ly)\/([\w\d]+)/);
   if(!match) return null;
-  return xows_tpl_embed_wrap(href,
-              "<iframe src=\"https://www.dailymotion.com/embed/video/"+match[1]+"\"/>",
-              "EMBD-IFR LOADING","Dailymotion");
+  return xows_tpl_embed_wrap(href, xows_tpl_as_iframe("https://www.dailymotion.com/embed/video/"+match[1]),
+                             "EMBD-IFR LOADING","Dailymotion");
 }
 
 /**
@@ -869,9 +880,8 @@ function xows_tpl_embed_vimeo(href, domain)
 {
   const match = href.match(/\/([\d]+)/);
   if(!match) return null;
-  return xows_tpl_embed_wrap(href,
-              "<iframe src=\"https://player.vimeo.com/video/"+match[1]+"\"></iframe>",
-              "EMBD-IFR LOADING","Vimeo");
+  return xows_tpl_embed_wrap(href, xows_tpl_as_iframe("https://player.vimeo.com/video/"+match[1]),
+                             "EMBD-IFR LOADING","Vimeo");
 }
 
 /**
@@ -886,9 +896,8 @@ function xows_tpl_embed_odysee(href, domain)
 {
   const match = href.match(/.com\/(.*)/);
   if(!match) return null;
-  return xows_tpl_embed_wrap(href,
-              "<iframe src=\"https://odysee.com/$/embed/"+match[1]+"\"></iframe>",
-              "EMBD-IFR LOADING","Odysee");
+  return xows_tpl_embed_wrap(href, xows_tpl_as_iframe("https://odysee.com/$/embed/"+match[1]),
+                             "EMBD-IFR LOADING","Odysee");
 }
 
 /**
@@ -1084,7 +1093,7 @@ function xows_tpl_spawn_rost_subs(cont)
   const inst = xows_tpl_model["peer-pend"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.id = cont.addr;
+  inst.dataset.id = cont.addr;
   inst.title = cont.addr;
   inst.querySelector("PEER-NAME").innerText = cont.addr;
 
@@ -1119,13 +1128,13 @@ function xows_tpl_spawn_rost_cont(cont, text)
   const inst = xows_tpl_model["peer-cont"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.id = cont.addr;
-  const badg_show = inst.querySelector("BADG-SHOW");
+  inst.dataset.id = cont.addr;
+
   if(cont.subs & XOWS_SUBS_TO) {
     inst.title = cont.name+" ("+cont.addr+")";
     inst.querySelector("PEER-NAME").innerText = cont.name;
     inst.querySelector("PEER-META").innerText = cont.stat ? cont.stat:"";
-    badg_show.dataset.show = cont.show || 0;
+    inst.querySelector("BADG-SHOW").dataset.show = cont.show || 0;
     // Set proper class for avatar
     inst.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
   } else {
@@ -1135,7 +1144,7 @@ function xows_tpl_spawn_rost_cont(cont, text)
     inst.querySelector("PEER-NAME").innerText = cont.addr;
     inst.querySelector("PEER-META").innerText = text ? xows_l10n_get(text)
                                                      : xows_l10n_get("Authorization pending");
-    badg_show.hidden = true;
+    inst.querySelector("BADG-SHOW").hidden = true;
     inst.querySelector("[name='cont_bt_rtry']").disabled = false;
   }
 
@@ -1152,7 +1161,7 @@ function xows_tpl_spawn_rost_cont(cont, text)
 function xows_tpl_update_rost_cont(li, cont, text)
 {
   const badg_show = li.querySelector("BADG-SHOW");
-  const cont_bt_rtry = li.querySelector("[name='cont_bt_rtry']");
+  const bttn_subs = li.querySelector("[name='cont_bt_rtry']");
 
   // Update content
   if(cont.subs & XOWS_SUBS_TO) {
@@ -1162,7 +1171,7 @@ function xows_tpl_update_rost_cont(li, cont, text)
     li.querySelector("PEER-META").innerText = cont.stat ? cont.stat : "";
     badg_show.hidden = false;
     badg_show.dataset.show = cont.show || 0;
-    cont_bt_rtry.disabled = true;
+    bttn_subs.disabled = true;
     // Set proper class for avatar
     li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
   } else {
@@ -1173,7 +1182,7 @@ function xows_tpl_update_rost_cont(li, cont, text)
     li.querySelector("PEER-META").innerText = text ? xows_l10n_get(text)
                                                    : xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
-    cont_bt_rtry.disabled = false;
+    bttn_subs.disabled = false;
   }
 }
 
@@ -1191,7 +1200,7 @@ function xows_tpl_spawn_rost_room(room)
   const inst = xows_tpl_model["peer-room"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.id = room.addr;
+  inst.dataset.id = room.addr;
   inst.title = room.name+" ("+room.addr+")";
   inst.querySelector("PEER-NAME").innerText = room.name;
   inst.querySelector("PEER-META").innerText = room.desc;
@@ -1210,7 +1219,7 @@ function xows_tpl_spawn_rost_room(room)
 function xows_tpl_update_rost_room(li, room)
 {
   // Update content
-  li.title = room.name+" ("+li.id+")";
+  li.title = room.name+" ("+room.addr+")";
   li.querySelector("PEER-NAME").innerText = room.name;
   li.querySelector("PEER-META").innerText = room.desc;
   li.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
@@ -1222,26 +1231,21 @@ function xows_tpl_update_rost_room(li, room)
  * from existing template.
  *
  * @param   {object}    occu      Occupant Object
- * @param   {boolean}   priv      Indicate to create element for Private Messages
+ * @param   {boolean}   rost      Configure for Roster rather than MUC List
  *
  * @return  {element}   Occupant <li-peer> Element
  */
-function xows_tpl_spawn_room_occu(occu, priv = false)
+function xows_tpl_spawn_room_occu(occu, rost = false)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-occu"].firstChild.cloneNode(true);
 
-  // Occupant <li-peer> may be also created for Private Message which
-  // may create two element with the same id. To prevent conflict, elements
-  // for Private Messages use dataset variable instead.
-  if(priv) {
-    inst.dataset.id = occu.addr;
-    // Hide menu button
-    inst.querySelector("PEER-ACTS").hidden = true;
-  } else {
-    inst.id = occu.addr;
-  }
+  inst.dataset.id = occu.addr;
   inst.dataset.ocid = occu.ocid;
+
+  if(rost)
+    inst.querySelector("PEER-ACTS").hidden = true;
+
   // Set content to proper elements
   inst.title = occu.name+" ("+occu.addr+")";
   inst.querySelector("PEER-NAME").innerText = occu.name;
@@ -1262,7 +1266,7 @@ function xows_tpl_spawn_room_occu(occu, priv = false)
 function xows_tpl_update_room_occu(li, occu)
 {
   // Update content
-  li.title = occu.name+" ("+li.id+")";
+  li.title = occu.name+" ("+occu.addr+")";
   li.querySelector("PEER-NAME").innerText = occu.name;
   li.querySelector("PEER-META").innerText = occu.stat ? occu.stat : "";
   li.querySelector("BADG-SHOW").dataset.show = occu.show || 0;

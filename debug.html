@@ -34,7 +34,7 @@
   const options = {
     // Base configuration
     "lib_path"            : "/xows",                              //< Path to XOWS files (relative to HTTP base URL)
-    "lib_verbose"         : 4,                                    //< Console log verbosity level from 0 (nothing) to 4 (too much)
+    "lib_verbose"         : 3,                                    //< Console log verbosity level from 0 (nothing) to 3 (too much)
 
     // HTML Template loader options
     "tpl_load_mincss"     : false,                                //< Load minified CSS theme file (disable it for theme edit/debug purpose)
@@ -45,7 +45,9 @@
 
     // User Login options
     "login_force_domain"  : "",                                   //< Optional domain to append (enforce) to XMPP login username
-    "login_fail_delay"    : 2000,                                 //< Anti-bruteforce temporization delay after each failed login attempts
+    "login_fail_delay"    : 2,                                    //< Anti-bruteforce temporization delay (seconds) after each failed login attempts
+    "resume_timeout"      : 3,                                    //< Delay (minutes) before definitive abortion of connection recovery
+    "resume_try_delay"    : 10,                                   //< Connection recovery delay (seconds) to wait between each attempts
 
     // GUI options
     "gui_theme"           : "dark",                               //< Interface theme (folder within /xows/theme subdirectory)
@@ -54,7 +56,7 @@
 
     // Client behavior
     "cli_archive_count"   : 50,                                   //< Maximum count of history message to fetch each iteration (MAM query)
-    "cli_archive_delay"   : 500,                                  //< Temporization delay for each iteration of older message fetch
+    "cli_archive_delay"   : 500,                                  //< Temporization delay (miliseconds) for each iteration of older message fetch
     "cli_avat_autopub"    : true,                                 //< Auto-publish the default generated Avatar if none exists for user
 
     // Client features

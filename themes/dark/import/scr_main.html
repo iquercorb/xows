@@ -1,6 +1,6 @@
-<div id="main_wrap">
+<div id="main_wrap" class="ROST-WIDE">
   <!-- App Collumn -->
-  <div id="main_tabs">
+  <div id="app_fram">
     <col-frame>
       <!-- Head Frame (App Menu button) -->
       <row-head id="app_head">
@@ -17,7 +17,7 @@
           <badg-noti id="room_noti" data-ring=0 data-call=0 data-mesg=0 data-subs=0></badg-noti>
           <badg-call hidden id="room_call"></badg-call>
         </rost-tab>
-        <rost-tab hidden id="tab_priv" data-page="rost_priv" title="${'Private messages'}">
+        <rost-tab hidden id="tab_occu" data-page="rost_occu" title="${'Private messages'}">
           <badg-noti id="priv_noti" data-ring=0 data-call=0 data-mesg=0 data-subs=0></badg-noti>
           <badg-call hidden id="priv_call"></badg-call>
         </rost-tab>
@@ -28,7 +28,7 @@
     </col-frame>
   </div>
   <!-- Left Collumn (User Roster) -->
-  <col-side id="main_coll">
+  <col-side id="rost_col">
     <!-- Left Panel -->
     <col-frame id="rost_fram">
       <!-- Frame page (Head + Main) : Roster Contacts List -->
@@ -78,17 +78,17 @@
         </row-main>
       </row-page>
       <!-- Frame page (Head + Main) : Roster Private Chat List -->
-      <row-page hidden id="rost_priv" data-tab="tab_priv">
+      <row-page hidden id="rost_occu" data-tab="tab_occu">
         <!-- Head Frame (Roster Title bar) -->
         <row-head>
           <head-info>${'Private messages'}</head-info>
           <head-meta></head-meta>
-          <head-acts id="priv_acts">
+          <head-acts id="occu_acts">
           </head-acts>
         </row-head>
         <!-- Main Frame (Roster Lists) -->
         <row-main>
-          <peer-list id="priv_list">
+          <peer-list id="occu_list">
             <ul id="priv_occu" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Room occupant'}">
             </ul>
           </peer-list>
@@ -115,150 +115,154 @@
       </row-foot>
     </col-frame>
     <!-- Left Handle -->
-    <col-handle id="main_hndl"></col-handle>
+    <col-handle id="rost_hand"></col-handle>
   </col-side>
-  <!-- Middle Collumn (Chat Window) -->
-  <col-midd id="main_colc">
-    <col-frame hidden id="chat_fram">
-      <!-- Chat Frame - Loading-Overlay frame -->
-      <load-fram id="chat_load" class="LOADING"></load-fram>
-      <!-- Head Frame (Chat Title bar) -->
-      <row-head id="chat_head">
-        <head-info>
-          <chat-titl id="chat_titl"></chat-titl>
-          <chat-addr id="chat_addr"></chat-addr>
-          <badg-show id="chat_show" data-show=0></badg-show>
-        </head-info>
-        <head-meta id="chat_meta"></head-meta>
-        <head-acts>
-          <button id="chat_bt_calv" title="${'Video call'}"></button>
-          <button id="chat_bt_cala" title="${'Audio call'}"></button>
-          <button id="chat_bt_bkmk" title="${'Add Channel to Bookmarks'}"></button>
-          <button id="chat_bt_nick" title="${'Change nickname'}"></button>
-          <button id="chat_bt_subj" title="${'Edit Channel topic'}"></button>
-          <button id="chat_bt_cnfg" title="${'Channel configuration'}"></button>
-          <button hidden id="chat_bt_addc" title="${'Add Contact'}"></button>
-          <button id="chat_bt_noti" title="${'Disable notifications'}"></button>
-          <button id="chat_bt_occu" title="${'Channel occupants list'}"></button>
-        </head-acts>
-      </row-head>
-      <!-- Half Frame (Chat Multimedia session) -->
-      <div hidden id="call_view">
-        <div id="call_grid">
-          <strm-audio id="strm-audio" XOWS_TPL_INSTANCED></strm-audio>
-          <strm-video id="strm-video" XOWS_TPL_INSTANCED></strm-video>
-        </div>
-        <div id="call_menu">
-          <div class="call-volum">
-            <button id="call_spkr" title="${'Mute or unmute sound'}"></button>
-            <input id="call_volu" type="range" min="0" max="100" value="50" title="${'Volume'}">
+  <div id="peer_col">
+    <!-- Peer Collumn -->
+    <load-fram id="peer_load" class="LOADING"></load-fram>
+    <!-- Middle Collumn (Chat Window) -->
+    <col-midd id="chat_col">
+      <col-frame id="chat_fram">
+        <!-- Head Frame (Chat Title bar) -->
+        <row-head id="chat_head">
+          <head-info>
+            <chat-titl id="chat_titl"></chat-titl>
+            <chat-addr id="chat_addr"></chat-addr>
+            <badg-show id="chat_show" data-show=0></badg-show>
+          </head-info>
+          <head-meta id="chat_meta"></head-meta>
+          <head-acts>
+            <button id="chat_calv" title="${'Video call'}"></button>
+            <button id="chat_cala" title="${'Audio call'}"></button>
+            <button id="chat_bkmk" title="${'Add Channel to Bookmarks'}"></button>
+            <button id="chat_nick" title="${'Change nickname'}"></button>
+            <button id="chat_subj" title="${'Edit Channel topic'}"></button>
+            <button id="chat_cnfg" title="${'Channel configuration'}"></button>
+            <button hidden id="chat_addc" title="${'Add Contact'}"></button>
+            <button id="chat_noti" title="${'Disable notifications'}"></button>
+            <button id="chat_mucl" title="${'Channel occupants list'}"></button>
+          </head-acts>
+        </row-head>
+        <!-- Half Frame (Chat Multimedia session) -->
+        <div hidden id="call_view">
+          <div id="call_grid">
+            <strm-audio id="strm-audio" XOWS_TPL_INSTANCED></strm-audio>
+            <strm-video id="strm-video" XOWS_TPL_INSTANCED></strm-video>
           </div>
-          <div class="call-acts">
-            <button id="call_came" title="${'Enable or disable the camera'}"></button>
-            <button id="call_micr" title="${'Mute or unmute the microphone'}"></button>
-            <button id="call_hgup" title="${'Hang up'}"></button>
-          </div>
-          <div class="call-geom">
-            <button id="call_expd" title="${'Expand/Reduce'}"></button>
-          </div>
-        </div>
-      </div>
-      <!-- Main Frame (Chat Messages history) -->
-      <row-main hidden id="chat_main">
-        <!-- Chat History  -->
-        <div id="chat_hist">
-          <!-- Chat History - Message list -->
-          <hist-bound id="hist_beg" class="" data-text="${'Start of history'}"></hist-bound>
-          <ul id="hist_ul">
-            <li-mesg id="hist-mesg" XOWS_TPL_INSTANCED></li-mesg>
-            <li-mesg id="hist-null" XOWS_TPL_INSTANCED></li-mesg> <!-- Special Null dummy message -->
-          </ul>
-          <!-- DEPRECATED <hist-bound hidden id="hist_end"></hist-bound> -->
-        </div>
-        <!-- Chat History - Upload Progress -->
-        <div hidden id="hist_upld">
-          <section>
-            <h3>${'Uploading file'}</h3>
-            <p id="upld_text"></p>
-            <div class="progress">
-              <div id="upld_pbar" class="progress-bar" ></div>
+          <div id="call_menu">
+            <div class="call-volum">
+              <button id="call_spkr" title="${'Mute or unmute sound'}"></button>
+              <input id="call_volu" type="range" min="0" max="100" value="50" title="${'Volume'}">
             </div>
-          </section>
-          <fieldset>
-            <btn-close id="upld_exit"></btn-close>
-          </fieldset>
+            <div class="call-acts">
+              <button id="call_came" title="${'Enable or disable the camera'}"></button>
+              <button id="call_micr" title="${'Mute or unmute the microphone'}"></button>
+              <button id="call_hgup" title="${'Hang up'}"></button>
+            </div>
+            <div class="call-geom">
+              <button id="call_expd" title="${'Expand/Reduce'}"></button>
+            </div>
+          </div>
         </div>
-        <!-- Chat History - Call Signaling Dialog -->
-        <div hidden id="call_ring" data-type="">
-          <ring-icon class="RING-RING"></ring-icon>
-          <ring-text>${'Incoming call...'}</ring-text>
-          <ring-acts>
-            <button id="ring_bt_pkup" title="${'Accept call'}"></button>
-            <button id="ring_bt_deny" title="${'Reject call'}"></button>
-            <btn-close id="ring_bt_clos" title="${'Close'}"></btn-close>
-          </ring-acts>
-        </div>
-      </row-main>
-      <!-- Foot Frame (Chat Input Panel) -->
-      <row-foot id="chat_foot">
-        <aside>
-          <input id="chat_file" type="file"></input>
-          <div hidden id="drop_emoj" XOWS_TPL_IMPORT></div>
-        </aside>
-        <div id="chat_panl">
+        <!-- Main Frame (Chat Messages history) -->
+        <row-main id="chat_main">
+          <!-- Chat History  -->
+          <div id="chat_hist">
+            <!-- Chat History - Message list -->
+            <hist-bound id="hist_beg" class="" data-text="${'Start of history'}"></hist-bound>
+            <ul id="hist_ul">
+              <li-mesg id="hist-mesg" XOWS_TPL_INSTANCED></li-mesg>
+              <li-mesg id="hist-null" XOWS_TPL_INSTANCED></li-mesg> <!-- Special Null dummy message -->
+            </ul>
+            <!-- DEPRECATED <hist-bound hidden id="hist_end"></hist-bound> -->
+          </div>
+          <!-- Chat History - Upload Progress -->
+          <div hidden id="hist_upld">
+            <section>
+              <h3>${'Uploading file'}</h3>
+              <div class="progress">
+                <div id="upld_pbar" class="progress-bar" ></div>
+              </div>
+              <p id="upld_text"></p>
+            </section>
+            <fieldset>
+              <btn-close id="upld_exit"></btn-close>
+            </fieldset>
+          </div>
+          <!-- Chat History - Call Signaling Dialog -->
+          <div hidden id="call_ring" data-type="">
+            <ring-icon class="RING-RING"></ring-icon>
+            <ring-text>${'Incoming call...'}</ring-text>
+            <ring-acts>
+              <button id="ring_bt_pkup" title="${'Accept call'}"></button>
+              <button id="ring_bt_deny" title="${'Reject call'}"></button>
+              <btn-close id="ring_bt_clos" title="${'Close'}"></btn-close>
+            </ring-acts>
+          </div>
+        </row-main>
+        <!-- Foot Frame (Message Edit/Input Panel) -->
+        <row-foot id="chat_foot">
+          <!-- Chat History - Navigation/Notification banner -->
           <div hidden id="chat_nav">
             <span id="nav_text" data-back="${'Back to recent messages'}" data-unrd="${'New unread messages'}" data-ring="${'New incomming call'}"></span>
           </div>
-          <div hidden id="chat_rply" data-id="" data-to="">
-            ${'Reply to'}<span id="rply_name"></span>
-            <button id="rply_clos" title="${'Cancel reply'}"></button>
-          </div>
+          <aside>
+            <input id="edit_file" type="file"></input>
+            <div hidden id="drop_emoj" XOWS_TPL_IMPORT></div>
+          </aside>
           <div id="chat_edit">
-            <button id="edit_bt_upld" title="${'Upload a file'}"></button>
-            <chat-inpt id="chat_inpt" class="PLACEHOLD" placeholder="${'Send a message ...'}" contenteditable=true spellcheck=true></chat-inpt>
-            <button id="edit_bt_emoj" title="${'Add an emoji'}"> </button>
+            <div hidden id="edit_rply" data-id="" data-to="">
+              ${'Reply to'}<span id="rply_name"></span>
+              <button id="rply_clos" title="${'Cancel reply'}"></button>
+            </div>
+            <div id="edit_area">
+              <button id="edit_upld" title="${'Upload a file'}"></button>
+              <chat-inpt id="edit_inpt" class="PLACEHOLD" placeholder="${'Send a message ...'}" contenteditable=true spellcheck=true></chat-inpt>
+              <button id="edit_emoj" title="${'Add an emoji'}"> </button>
+            </div>
+            <div id="edit_info">
+              <div hidden id="edit_stat"></div>
+            </div>
           </div>
-          <div id="chat_info">
-            <div hidden id="chat_stat"></div>
-          </div>
-        </div>
-      </row-foot>
-    </col-frame>
-  </col-midd>
-  <!-- Right Collumn (Room Roster) -->
-  <col-side id="main_colr" class="COL-HIDE">
-    <!-- Right Handle -->
-    <col-handle id="main_hndr"></col-handle>
-    <!-- Right Panel -->
-    <col-frame id="room_fram">
-      <!-- Head Frame (Room Title bar) -->
-      <row-head id="room_head">
-        <head-info>${'Occupants'}</head-info>
-        <head-meta></head-meta>
-        <head-acts>
-          <button hidden id="occu_bt_cnfg" title="${'Channel administration'}"></button>
-          <!-- <button hidden disabled id="occu_bt_kick" title="${'Kick occupant'}"></button> -->
-          <!-- <button hidden id="occu_kban" title="${'Ban occupant'}"></button> -->
-        </head-acts>
-      </row-head>
-      <!-- Main Frame (Room Occupants List) -->
-      <row-main id="room_rost">
-        <peer-list id="occu_list">
-          <ul hidden id="ownr_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Owner'}">
-          </ul>
-          <ul hidden id="admn_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Administrator'}">
-          </ul>
-          <ul hidden id="modo_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Moderator'}">
-          </ul>
-          <ul hidden id="part_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Participant'}">
-          </ul>
-          <ul hidden id="vist_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Visitor'}">
-            <li-peer id="peer-occu" XOWS_TPL_INSTANCED></li-peer>
-          </ul>
-        </peer-list>
-        <menu-drop hidden id="drop_occu" XOWS_TPL_IMPORT></menu-drop>
-      </row-main>
-    </col-frame>
-  </col-side>
+        </row-foot>
+      </col-frame>
+    </col-midd>
+    <!-- Right Collumn (Room Roster) -->
+    <col-side id="mucl_col">
+      <!-- Right Handle -->
+      <col-handle id="mucl_hand"></col-handle>
+      <!-- Right Panel -->
+      <col-frame id="mucl_fram">
+        <!-- Head Frame (Room Title bar) -->
+        <row-head id="mucl_head">
+          <head-info>${'Occupants'}</head-info>
+          <head-meta></head-meta>
+          <head-acts>
+            <button hidden id="muc_bt_admn" title="${'Channel administration'}"></button>
+            <!-- <button hidden disabled id="occu_bt_kick" title="${'Kick occupant'}"></button> -->
+            <!-- <button hidden id="occu_kban" title="${'Ban occupant'}"></button> -->
+          </head-acts>
+        </row-head>
+        <!-- Main Frame (Room Occupants List) -->
+        <row-main id="mucl_rost">
+          <peer-list id="mucl_list">
+            <ul hidden id="ownr_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Owner'}">
+            </ul>
+            <ul hidden id="admn_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Administrator'}">
+            </ul>
+            <ul hidden id="modo_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Moderator'}">
+            </ul>
+            <ul hidden id="part_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Participant'}">
+            </ul>
+            <ul hidden id="vist_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Visitor'}">
+              <li-peer id="peer-occu" XOWS_TPL_INSTANCED></li-peer>
+            </ul>
+          </peer-list>
+          <menu-drop hidden id="drop_occu" XOWS_TPL_IMPORT></menu-drop>
+        </row-main>
+      </col-frame>
+    </col-side>
+  </div>
+
 </div>
 

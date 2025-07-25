@@ -50,31 +50,6 @@ function xows_doc(id)
 }
 
 /**
- * Object that stores offscreen Documents Fragments
- */
-const xows_doc_frag_db = new Map();
-
-/**
- * Object that stores offscreen Scroll Parameters
- */
-const xows_doc_scrl_db = new Map();
-
-/**
- * Flag to signal scroll was programatically edited
- */
-let xows_doc_scrl_edit = false;
-
-/**
- * Global reference to document's Selection object
- */
-const xows_doc_sel = document.getSelection();
-
-/**
- * Global reference to temporary selection Range object
- */
-const xows_doc_rng = document.createRange();
-
-/**
  * Add an event listener to the specified object with proper options
  *
  * @param   {element}   element   Element to add event listener to
@@ -179,6 +154,11 @@ function xows_doc_hidden(id)
 {
   return document.getElementById(id).hidden;
 }
+
+/**
+ * Object that stores offscreen Documents Fragments
+ */
+const xows_doc_frag_db = new Map();
 
 /**
  * Clone specified element from source offscreen slot to
@@ -353,6 +333,16 @@ function xows_doc_frag_element_find(slot, element, id)
 
   return null;
 }
+
+/**
+ * Object that stores offscreen Scroll Parameters
+ */
+const xows_doc_scrl_db = new Map();
+
+/**
+ * Flag to signal scroll was programatically edited
+ */
+let xows_doc_scrl_edit = false;
 
 /**
  * Create new offscreen scroll parameters.
@@ -536,6 +526,16 @@ function xows_doc_scrl_edited()
     return false;
   }
 }
+
+/**
+ * Global reference to document's Selection object
+ */
+const xows_doc_sel = document.getSelection();
+
+/**
+ * Global reference to temporary selection Range object
+ */
+const xows_doc_rng = document.createRange();
 
 /**
  * Set edition caret either before or after the specified node
@@ -773,8 +773,8 @@ function xows_doc_popu_open(style, text, onvalid, valid, onabort, abort, modal)
 
   switch(style)
   {
-  case XOWS_STYL_ERR: cls = "STYL-ERR"; break; //< same as XOWS_SIG_ERR
-  case XOWS_STYL_WRN: cls = "STYL-WRN"; break; //< same as XOWS_SIG_WRN
+  case XOWS_STYL_ERR: cls = "STYL-ERR"; break;
+  case XOWS_STYL_WRN: cls = "STYL-WRN"; break;
   case XOWS_STYL_SCS: cls = "STYL-SCS"; break;
   case XOWS_STYL_ASK: cls = "STYL-ASK"; break;
   }
@@ -1157,8 +1157,8 @@ function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, m
   let cls;
   switch(style)
   {
-  case XOWS_STYL_ERR: cls = "STYL-ERR"; break; //< same as XOWS_SIG_ERR
-  case XOWS_STYL_WRN: cls = "STYL-WRN"; break; //< same as XOWS_SIG_WRN
+  case XOWS_STYL_ERR: cls = "STYL-ERR"; break;
+  case XOWS_STYL_WRN: cls = "STYL-WRN"; break;
   case XOWS_STYL_SCS: cls = "STYL-SCS"; break;
   case XOWS_STYL_ASK: cls = "STYL-ASK"; break;
   }
@@ -1285,7 +1285,7 @@ function xows_doc_page_close()
   const page = xows_doc(xows_doc_page_param.pageid);
 
   // Revert window title to previous one
-  if(page.title) xows_gui_title_pop();
+  if(page.title) xows_gui_wnd_title_pop();
 
   // remove "input" event listener
   if(xows_doc_page_param.oninput) {
@@ -1363,7 +1363,7 @@ function xows_doc_page_open(id, close, onclose, oninput, onclick)
 
   // Change window title accorging page title
   if(page.title)
-    xows_gui_title_push(xows_l10n_get(page.title)+" - XOWS");
+    xows_gui_wnd_title_set(xows_l10n_get(page.title)+" - XOWS");
 
   // also exit potentially opened message box
   xows_doc_popu_close();
@@ -1701,7 +1701,7 @@ function xows_doc_prof_update()
       }
       subs_lvl = cont.subs;
     } else {
-      const subs_stat = xows_gui_peer_subs_status(peer);
+      const subs_stat = xows_gui_rost_subs_eval(peer);
       prof_subs.hidden = (subs_stat < 1); //< Show/hide subscription level
       prof_addc.hidden = (subs_stat > 0); //< Show/hide subscribe button
       switch(subs_stat)

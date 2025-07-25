@@ -1,31 +1,31 @@
 <header>
   <h1>${'User profile'}</h1>
-  <span id="edit_addr"></span>
+  <span id="user_addr"></span>
 </header>
 <section>
   <h2>${'Display name'}</h2>
   <fieldset>
-    <input id="edit_name" placeholder="${'My Nickname'}" type="text"/>
+    <input id="user_name" placeholder="${'My Nickname'}" type="text"/>
     <p>${'The nickname associated with your account to interact with other users, if none is defined, your account username is used.'}</p>
   </fieldset>
 </section>
 <section>
   <h2>${'Avatar image'}</h2>
   <fieldset>
-    <div class="edit-icon">
-      <div id="edit_avat"></div>
+    <div class="user-icon">
+      <div id="user_avat"></div>
     </div>
-    <button id="edit_bt_avch" class="btn-valid">${'Change'}</button>
-    <button id="edit_bt_avrm" class="btn-abort">${'Remove'}</button>
+    <button id="user_bt_avch" class="btn-valid">${'Change'}</button>
+    <button id="user_bt_avrm" class="btn-abort">${'Remove'}</button>
     <p>${'Your account's profile picture displayed to other users, if none is defined, a default image will be shown.'}</p>
-    <input id="edit_file" type="file" accept="image/*"/>
+    <input id="user_file" type="file" accept="image/*"/>
   </fieldset>
 </section>
 <section>
   <h2>${'Profile access'}</h2>
   <fieldset>
-    <label class="switch"><input id="edit_open" type="checkbox" checked><span></span></label>
-    <label for="edit_open">${'Profile data in open access'}</label>
+    <label class="switch"><input id="user_accs" type="checkbox" checked><span></span></label>
+    <label for="user_accs">${'Profile data in open access'}</label>
     <p>${'Set access rules for your profile data, if restricted, only subscribed users can see your avatar and access profile data.'}</p>
   </fieldset>
 </section>

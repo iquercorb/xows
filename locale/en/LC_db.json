@@ -1,44 +1,65 @@
 {
-  "Unsername already exists":
+  "unsername already exists":
   "",
 
-  "Username contains illegal characters":
+  "username contains illegal characters":
   "",
 
-  "Socket connection error":
+  "unable to register":
   "",
 
-  "Incomplete JID (undefined domain)":
+  "invalid username (JID domain missing)":
   "",
 
-  "Invalid server framing":
+  "invalid server framing":
   "",
 
-  "Server closed the stream":
+  "the server closed the stream":
   "",
 
-  "Server thrown a stream error":
+  "the server reported stream error":
   "",
 
-  "Unable to find a suitable authentication mechanism":
+  "account registration is not allowed by the server":
+  "",
+
+  "unable to find a suitable authentication mechanism":
   "",
 
   "Server does not provide required stream features":
   "",
 
-  "Wrong username or password":
+  "wrong username or password":
+  "",
+
+  "authentication error":
+  "",
+
+  "server integrity check failed":
+  "",
+
+  "bind resource error":
+  "",
+
+  "session establishment failure":
+  "",
+
+  "unable to connect to remote server":
+  "",
+
+  "Connection lost (recovery failed)":
+  "",
+
+  "Network error":
   "",
 
   "Authentication failure":
   "",
 
-  "Server integrity check failed":
+  "Registration failure":
   "",
 
-  "Resource bind failure":
-  "",
-
-  "Session establishment failure":
+  "Connection failure":
   "",
 
   "Login":
@@ -353,7 +374,7 @@
   "Channel initialization":
   "",
 
-  "A new Channel was created and you are its owner, do you want to configure it right now ?":
+  "You just created a new Channel, would you want to configure it right now ?":
   "",
 
   "Ignore":
@@ -635,7 +656,19 @@
   "Uploading file":
   "",
 
+  "Upload denied":
+  "",
+
+  "Upload failed":
+  "",
+
+  "HTTP server unreachable":
+  "",
+
   "Error":
+  "",
+
+  "Unhandled error":
   "",
 
   "Apply":

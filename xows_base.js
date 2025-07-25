@@ -51,12 +51,11 @@ const XOWS_APP_VERS = "0.9.8";
 const XOWS_APP_NODE = "https://github.com/iquercorb/xows";
 
 /**
- * Global status signal
+ * Global session connection signals
  */
-const XOWS_SIG_ERR = -1;
-const XOWS_SIG_HUP = -2; //< used for connect loss
-const XOWS_SIG_WRN =  0;
-const XOWS_SIG_OK  =  1;
+const XOWS_SESS_EXIT = 0x000;
+const XOWS_SESS_LOST = 0x001;
+const XOWS_SESS_FAIL = 0x002;
 
 /**
  * Xows Logo SVG path (24 x 19.4 mm)
