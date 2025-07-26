@@ -50,7 +50,7 @@
  */
 function xows_gui_rost_head_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   switch(event.target.id)
   {
@@ -76,7 +76,7 @@ function xows_gui_rost_head_onclick(event)
  */
 function xows_gui_rost_list_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Search for <li-peer> parent element
   const li_peer = event.target.closest("LI-PEER");
@@ -453,7 +453,7 @@ function xows_gui_rost_contlst_reload()
   xows_doc_cls_add("cont_list","LOADING");
 
   // Query for roster content
-  xows_cli_rost_get_query();
+  xows_cli_rost_fetch();
 }
 
 /**
@@ -496,7 +496,7 @@ function xows_gui_rost_roomlst_reload()
   xows_doc("room_publ").innerHTML = "";
 
   // Query to get public room list with delay
-  setTimeout(xows_cli_mucl_list_query, 500);
+  setTimeout(xows_cli_muc_list_query, 500);
 }
 
 /**
@@ -520,33 +520,6 @@ function xows_gui_rost_roomlst_update()
 /* -------------------------------------------------------------------
  * Roster Interactions - Subscriptions routines
  * -------------------------------------------------------------------*/
-/**
- * Check for Peer subscription status, either None (0), Pending (1)
- * or Subscribed/Unavailable (2)
- *
- * @param   {string}     addr     Contact JID to subscribes
- *
- * @return  {number}    Peer subscription status.
- */
-function xows_gui_rost_subs_eval(peer)
-{
-  // First check whether contact can be subscribed
-  if(xows_cli_can_subscribe(peer)) {
-
-    // Check for <li-peer> with contact address
-    const li_peer = xows_gui_rost_list_find(peer.jbar);
-
-    // This mean we are waiting for subscription authoriaztion
-    if(li_peer && li_peer.classList.contains("PEER-CONT"))
-      return 1;
-
-    // Can subscribe and no pending
-    return 0;
-  }
-
-  // Already subscribed or subscription unavailable
-  return 2;
-}
 
 /**
  * Send new subscription authorization request and show popup

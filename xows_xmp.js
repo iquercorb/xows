@@ -92,7 +92,7 @@ function xows_xmp_sck_onclose(code, text)
 
 /* -------------------------------------------------------------------
  *
- * XMPP API - Client interface
+ * XMPP API - Client-side setup
  *
  * -------------------------------------------------------------------*/
 /**
@@ -164,146 +164,6 @@ function xows_xmp_set_callback(type, callback)
     case "error":     xows_xmp_fw_onerror = callback; break;
   }
 }
-
-/**
- * Open a new XMPP client session to the specified WebSocket URL
- *
- * @param   {string}    url       URL to WebSocket service
- * @param   {string}    jid       Authentication JID (user@domain)
- * @param   {string}    password  Authentication password
- * @param   {boolean}   register  If true proceed to register new account
- */
-function xows_xmp_connect(url, jid, password, register)
-{
-  // if socket already openned, close it
-  xows_sck_close();
-
-  // Set callbacks for socket events
-  xows_sck_set_callback("open", xows_xmp_sck_onopen);
-  xows_sck_set_callback("recv", xows_xmp_sck_onrecv);
-  xows_sck_set_callback("close", xows_xmp_sck_onclose);
-
-  // store connexion url
-  xows_xmp_addr = url;
-
-  // Reset bind data from previous session
-  xows_xmp_bind.jbar = null;
-  xows_xmp_bind.jful = null;
-  xows_xmp_bind.node = null;
-  xows_xmp_bind.resc = null;
-
-  // Split JID into user and domain parts
-  const jid_split = jid.split("@");
-
-  // Verify we got a well formed JID
-  xows_xmp_host = null;
-  if(jid_split[1] !== undefined)
-    if(jid_split[1].length !== 0)
-      xows_xmp_host = jid_split[1];
-
-  if(xows_xmp_host === null) {
-    xows_log(0,"xmp_connect","wrong JID format");
-    xows_xmp_exit(XOWS_XMPP_AUTH, "invalid username (JID domain missing)");
-    return;
-  }
-
-  // store authentication data
-  xows_xmp_auth.jbar = jid;
-  xows_xmp_auth.user = jid_split[0];
-  xows_xmp_auth.pass = password;
-
-  // Is there a registration connexion
-  xows_xmp_auth.regi = register;
-
-  // Setup new WebSocket connection
-  xows_sck_setup(url, "xmpp");
-
-  // Open connection
-  xows_sck_connect();
-}
-
-/**
- * Try to resume XMPP session to the specified WebSocket URL
- * using previousely defined connexion parameter.
- *
- * @param   {number}    attempt   Resumt attempt to make before aborting
- */
-function xows_xmp_resume(attempt)
-{
-  // Output log
-  xows_log(2,"xmp_resume","try reconnect");
-
-  // Verify we have connexion parameters
-  if(!xows_xmp_addr || !xows_xmp_auth.jbar || !xows_xmp_auth.user || !xows_xmp_auth.pass) {
-    xows_log(1,"xmp_resume","unable to resume","parameters lost");
-    return;
-  }
-
-  // close socket
-  xows_sck_close();
-
-  // Open connection
-  xows_sck_connect();
-}
-
-/**
- * Closes the XMPP session
- *
- * @parma   {number}    code      Exit code
- * @param   {string}   [text]     Optional information or error message
- */
-function xows_xmp_exit(code, text)
-{
-  if(code) { //< Exit code mean error
-
-    // If session resources exists, this mean error or close during
-    // living session.
-    if(xows_xmp_bind.resc) {
-      code |= XOWS_SESS_LOST;
-    } else {
-      code |= XOWS_SESS_FAIL;
-    }
-
-    // This is an unexpected error
-    xows_xmp_fw_sess_onclose(code, text);
-
-  } else { //< No exit code (or 0) mean close by client
-
-    // Reset auth data only if close is initiated by user
-    xows_xmp_auth.jbar = null;
-    xows_xmp_auth.user = null;
-    xows_xmp_auth.pass = null;
-  }
-
-  // Session is over
-  xows_xmp_bind.resc = null;
-
-  // Close session with server
-  xows_xmp_fram_close_send();
-}
-
-/**
- * Special function to close session and exit the quickest way
- * possible, used to terminate session when browser exit page
- */
-function xows_xmp_flyyoufools()
-{
-  // Ignore if no socket available
-  if(!xows_sck_sock)
-    return;
-
-  // Session is over
-  xows_xmp_bind.resc = null;
-
-  // Send unavailable <presence> stanza
-  xows_sck_sock.send("<presence xmlns='jabber:client' type='unavailable'/>");
-
-  // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
-
-  // Send the <close> stanza to close stream
-  xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
-}
-
 
 /* -------------------------------------------------------------------
  *
@@ -409,6 +269,172 @@ function xows_xmp_error_parse(stanza)
 
 /* -------------------------------------------------------------------
  *
+ * XMPP API - Connect / Disconnect routines
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Open a new XMPP client session to the specified WebSocket URL
+ *
+ * @param   {string}    url       URL to WebSocket service
+ * @param   {string}    jid       Authentication JID (user@domain)
+ * @param   {string}    password  Authentication password
+ * @param   {boolean}   register  If true proceed to register new account
+ */
+function xows_xmp_connect(url, jid, password, register)
+{
+  // if socket already openned, close it
+  xows_sck_close();
+
+  // Set callbacks for socket events
+  xows_sck_set_callback("open",  xows_xmp_sck_onopen);
+  xows_sck_set_callback("recv",  xows_xmp_sck_onrecv);
+  xows_sck_set_callback("close", xows_xmp_sck_onclose);
+
+  // store connexion url
+  xows_xmp_addr = url;
+
+  // Reset bind data from previous session
+  xows_xmp_bind.jbar = null;
+  xows_xmp_bind.jful = null;
+  xows_xmp_bind.node = null;
+  xows_xmp_bind.resc = null;
+
+  // Split JID into user and domain parts
+  const jid_split = jid.split("@");
+
+  // Verify we got a well formed JID
+  xows_xmp_host = null;
+  if(jid_split[1] !== undefined)
+    if(jid_split[1].length !== 0)
+      xows_xmp_host = jid_split[1];
+
+  if(xows_xmp_host === null) {
+    xows_log(0,"xmp_connect","wrong JID format");
+    xows_xmp_failure(XOWS_XMPP_AUTH, "invalid username (JID domain missing)");
+    return;
+  }
+
+  // store authentication data
+  xows_xmp_auth.jbar = jid;
+  xows_xmp_auth.user = jid_split[0];
+  xows_xmp_auth.pass = password;
+
+  // Is there a registration connexion
+  xows_xmp_auth.regi = register;
+
+  // Setup new WebSocket connection
+  xows_sck_setup(url, "xmpp");
+
+  // Open connection
+  xows_sck_connect();
+}
+
+/**
+ * Try to resume XMPP session to the specified WebSocket URL
+ * using previousely defined connexion parameter.
+ */
+function xows_xmp_resume()
+{
+  // Output log
+  xows_log(2,"xmp_resume","try reconnect");
+
+  // Verify we have connexion parameters
+  if(!xows_xmp_addr || !xows_xmp_auth.jbar || !xows_xmp_auth.user || !xows_xmp_auth.pass) {
+    xows_log(1,"xmp_resume","unable to resume","parameters lost");
+    return;
+  }
+
+  // close socket
+  xows_sck_close();
+
+  // Open connection
+  xows_sck_connect();
+}
+
+/**
+ * Closes XMPP session with failure
+ *
+ * @parma   {number}    code      Exit code
+ * @param   {string}   [text]     Optional information or error message
+ */
+function xows_xmp_failure(code, text)
+{
+  // This is a session lost
+  xows_log(2,"xmp_failure","connection failure",text);
+
+  // Session is over
+  xows_xmp_bind.jbar = null;
+  xows_xmp_bind.jful = null;
+  xows_xmp_bind.node = null;
+  xows_xmp_bind.resc = null;
+
+  // Close session with server
+  xows_xmp_fram_close_send();
+
+  // Forward close with failure
+  xows_xmp_fw_sess_onclose(code, text);
+}
+
+/**
+ * Closes the XMPP session
+ */
+function xows_xmp_disconnect()
+{
+  // This is a session lost
+  xows_log(2,"xmp_disconnect","user disconnect");
+
+  // Reset auth data
+  xows_xmp_auth.jbar = null;
+  xows_xmp_auth.user = null;
+  xows_xmp_auth.pass = null;
+
+  // Reset session data
+  xows_xmp_bind.jbar = null;
+  xows_xmp_bind.jful = null;
+  xows_xmp_bind.node = null;
+  xows_xmp_bind.resc = null;
+
+  // Close session with server
+  xows_xmp_fram_close_send();
+
+  // Forward session cloded
+  xows_xmp_fw_sess_onclose(0);
+}
+
+/**
+ * Special function to close session and exit the quickest way
+ * possible, used to terminate session when browser exit page
+ */
+function xows_xmp_flush()
+{
+  // Ignore if no socket available
+  if(!xows_sck_sock)
+    return;
+
+  // Session is over
+  xows_xmp_bind.resc = null;
+
+  // Send unavailable <presence> stanza
+  xows_sck_sock.send("<presence xmlns='jabber:client' type='unavailable'/>");
+
+  // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
+
+  // Send the <close> stanza to close stream
+  xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
+}
+
+/**
+ * Returns whether XMPP session is currently connected
+ *
+ * @return  {boolean}   True if session connected, false otherwise
+ */
+function xows_xmp_connected()
+{
+  return (xows_xmp_bind.resc !== null);
+}
+
+/* -------------------------------------------------------------------
+ *
  * XMPP API - Basic stanza Send and Receive routines
  *
  * -------------------------------------------------------------------*/
@@ -509,7 +535,7 @@ function xows_xmp_fram_open_recv(stanza)
   // Check for proper version & XMLNS
   if(stanza.getAttribute("version") != "1.0" || stanza.namespaceURI != XOWS_NS_IETF_FRAMING) {
     xows_log(0,"xmp_fram_open_recv", "invalid server framing");
-    xows_xmp_exit(XOWS_XMPP_FAIL, "invalid server framing");
+    xows_xmp_failure(XOWS_XMPP_FAIL, "invalid server framing");
   }
 
   return true;
@@ -520,7 +546,7 @@ function xows_xmp_fram_open_recv(stanza)
  */
 function xows_xmp_fram_open_send()
 {
-  xows_log(2,"xmp_fram_open_send","open framed stream");
+  xows_log(2,"xmp_fram_open_send","open stream");
 
   // https://datatracker.ietf.org/doc/html/rfc7395#section-3.3
 
@@ -535,13 +561,20 @@ function xows_xmp_fram_open_send()
  */
 function xows_xmp_fram_close_recv(stanza)
 {
+  let code = 0, text = null;
+
   if(xows_xmp_bind.resc) {
-    // If resource is bound, this mean the closing is server
-    // initiative which should not happen
+
+    // Bound resource mean unexpected close from server
     xows_log(1,"xmp_fram_close_recv","unexpected stream close");
-    xows_xmp_exit(XOWS_XMPP_HGUP, "the server closed the stream");
+
+    xows_xmp_failure(XOWS_XMPP_HGUP, "the server closed the stream");
+
   } else {
+
+    // Normal close reponse from server
     xows_log(2,"xmp_fram_close_recv","stream closed");
+
     // Close socket
     xows_sck_close();
   }
@@ -558,12 +591,10 @@ function xows_xmp_fram_close_send()
   // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
 
   // Some log output
-  xows_log(2,"xmp_fram_close_send","close framed stream");
+  xows_log(2,"xmp_fram_close_send","closes stream");
 
   // Send the <close> stanza to close stream
-  xows_xmp_send(xows_xml_node("close",{"xmlns":XOWS_NS_IETF_FRAMING}));
-
-  // After that we should receive a <close> from server
+  xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }
 
 /* -------------------------------------------------------------------
@@ -612,7 +643,7 @@ function xows_xmp_stream_error_recv(stanza)
   xows_log(0,"xmp_stream_error_recv",cond.tagName);
 
   // Exit session (forward session close)
-  xows_xmp_exit(XOWS_XMPP_FAIL, "the server reported stream error");
+  xows_xmp_failure(XOWS_XMPP_FAIL, "the server reported stream error");
 
   return true;
 }
@@ -651,7 +682,7 @@ function xows_xmp_stream_features_recv(stanza)
       } else {
         xows_log(0,"xmp_stream_features_recv","registration not allowed");
         // Exit session (forward session close)
-        xows_xmp_exit(XOWS_XMPP_REGI,"account registration is not allowed by the server");
+        xows_xmp_failure(XOWS_XMPP_REGI,"account registration is not allowed by the server");
       }
     } else {
       // Start SASL negotiation
@@ -699,7 +730,7 @@ function xows_xmp_sasl_auth_send()
   if(!xows_sasl_init(xows_xmp_sasl_mechanisms, xows_xmp_auth.jbar, xows_xmp_auth.user, xows_xmp_auth.pass)) {
     xows_log(0,"xmp_sasl_auth_send","no suitable SASL mechanism");
     // Exit session (forward session close)
-    xows_xmp_exit(XOWS_XMPP_FAIL, "unable to find a suitable authentication mechanism");
+    xows_xmp_failure(XOWS_XMPP_FAIL, "unable to find a suitable authentication mechanism");
     return;
   }
 
@@ -775,7 +806,7 @@ function xows_xmp_sasl_failure_recv(stanza)
   xows_log(0,"xmp_sasl_failure_recv",cond.tagName);
 
   // Exit session (forward session close)
-  setTimeout(xows_xmp_exit, xows_options.login_fail_delay*1000, XOWS_XMPP_AUTH, text);
+  setTimeout(xows_xmp_failure, xows_options.login_fail_delay*1000, XOWS_XMPP_AUTH, text);
 
   return true;
 }
@@ -800,7 +831,7 @@ function xows_xmp_sasl_success_recv(stanza)
     // Output log
     xows_log(0,"xmp_sasl_success_recv","SASL integrity error");
     // Exit session (forward session close)
-    xows_xmp_exit(XOWS_XMPP_FAIL, "server integrity check failed");
+    xows_xmp_failure(XOWS_XMPP_FAIL, "server integrity check failed");
     return true;
   }
 
@@ -830,7 +861,7 @@ function xows_xmp_bind_parse(stanza)
   if(stanza.getAttribute("type") === "error") {
     xows_xmp_error_log(stanza,0,"xmp_bind_parse");
     // Exit session (forward session close)
-    xows_xmp_exit(XOWS_XMPP_FAIL, "bind resource error");
+    xows_xmp_failure(XOWS_XMPP_FAIL, "bind resource error");
     return;
   }
 
@@ -890,7 +921,7 @@ function xows_xmp_session_parse(stanza)
   if(stanza.getAttribute("type") === "error") {
     xows_xmp_error_log(stanza,0,"xmp_session_parse");
     // Exit session (forward session close)
-    xows_xmp_exit(XOWS_XMPP_FAIL, "session establishment failure");
+    xows_xmp_failure(XOWS_XMPP_FAIL, "session establishment failure");
     return;
   }
 
@@ -2388,7 +2419,7 @@ function xows_xmp_regi_server_set_parse(from, type, error)
     }
 
     // Exit session (forward session close)
-    setTimeout(xows_xmp_exit, xows_options.login_fail_delay*1000, XOWS_XMPP_REGI, text);
+    setTimeout(xows_xmp_failure, xows_options.login_fail_delay*1000, XOWS_XMPP_REGI, text);
 
   } else {
 

@@ -50,7 +50,7 @@
  */
 function xows_gui_call_view_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   if(event.target.tagName !== "BUTTON")
     return;
@@ -515,24 +515,6 @@ function xows_gui_call_ring_close(peer)
 /* -------------------------------------------------------------------
  * Calls Interactions - General functions
  * -------------------------------------------------------------------*/
-/**
- * Multimedia Calls hang up and clear all active or pending
- * call sessions
- */
-function xows_gui_call_exit_all()
-{
-  let peers = xows_cli_call_peer_list();
-
-  for(let i = 0; i < peers.length; ++i) {
-
-    // Hang up with peer
-    xows_cli_call_self_hangup(peers[i], "failed-application");
-
-    // Close and reset GUI elements
-    xows_gui_call_exit(peers[i]);
-  }
-}
-
 /**
  * Multimedia Calls clear and reset GUI element for the specified Peer
  *

@@ -60,7 +60,7 @@ let xows_options = {
   gui_theme           : "dark",     //< GUI theme (folder within /theme subdirectory)
   gui_allow_register  : false,      //< Enable XMPP account register (show proper link and dialog)
 
-  cli_archive_count   : 50,         //< Maximum count of history message to fetch each query
+  cli_archive_count   : 50,         //< Minimum count of history message to fetch each query
   cli_archive_delay   : 500,        //< Temporization delay for older message fetch
   cli_pepnotify_bkms  : true,       //< Request for Native Bookmarks (XEP-0402) PEP notifications
   cli_pepnotify_nick  : true,       //< Request for User Nickname (XEP-0172) PEP notifications

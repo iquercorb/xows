@@ -47,7 +47,7 @@
  */
 function xows_gui_hist_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Check for click on embeded image
   if(event.target.tagName === "IMG") {
@@ -671,7 +671,7 @@ function xows_gui_mesg_repl_dlg_valid(inpt)
     // Get message reply
     const rply = li_msg.querySelector("MESG-RPLY");
     // Send message correction
-    xows_cli_send_message(xows_gui_peer, inpt_text, li_msg.dataset.id, rply.dataset.id, rply.dataset.to);
+    xows_cli_msg_send(xows_gui_peer, inpt_text, li_msg.dataset.id, rply.dataset.id, rply.dataset.to);
   }
 
   // Close editor
@@ -724,6 +724,6 @@ function xows_gui_mesg_retr_dlg_valid(li_msg)
   const usid = xows_tpl_mesg_bestref(xows_gui_peer, li_msg);
 
   // Send message retraction
-  if(usid) xows_cli_retract_send(xows_gui_peer, usid);
+  if(usid) xows_cli_msg_retr(xows_gui_peer, usid);
 }
 

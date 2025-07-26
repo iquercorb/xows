@@ -50,7 +50,7 @@
  */
 function xows_gui_edit_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Check whether click occure within input area
   if(event.target.closest("CHAT-INPT")) {
@@ -223,7 +223,7 @@ function xows_gui_edit_inpt_onenter(input)
       const rply = xows_doc("edit_rply");
 
       // Send message
-      xows_cli_send_message(xows_gui_peer, input.innerText.trimEnd(), null, rply.dataset.id, rply.dataset.to);
+      xows_cli_msg_send(xows_gui_peer, input.innerText.trimEnd(), null, rply.dataset.id, rply.dataset.to);
       input.innerText = ""; //< Empty any residual <br>
 
       // Reset Reply data
@@ -235,7 +235,7 @@ function xows_gui_edit_inpt_onenter(input)
     }
 
     // Reset chatsate to active
-    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_ACTI);
+    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_ACTI);
   }
 }
 
@@ -247,7 +247,7 @@ function xows_gui_edit_inpt_onenter(input)
  */
 function xows_gui_edit_inpt_onpaste(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Get clipboard raw text
   let text = event.clipboardData.getData("text");
@@ -259,7 +259,7 @@ function xows_gui_edit_inpt_onpaste(event)
 
   // Set composing
   if(xows_gui_peer)
-    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_COMP);
+    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
 
   // Hide the placeholder text
   xows_doc("edit_inpt").className = "";
@@ -285,11 +285,11 @@ let xows_gui_edit_inpt_rng = null;
  */
 function xows_gui_edit_inpt_oninput(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Set composing
   if(xows_gui_peer)
-    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_COMP);
+    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
 
   // Store selection range
   xows_gui_edit_inpt_rng = xows_doc_sel_rng(0);
@@ -372,7 +372,7 @@ function xows_gui_edit_inpt_insert(text, tagname)
  */
 function xows_gui_edit_emoj_menu_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Retreive the parent <li> element of the event target
   const li = event.target.closest("LI");

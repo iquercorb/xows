@@ -298,7 +298,7 @@ function xows_gui_muc_init_mbox_onvalid()
 
   // Send Room config form request, XMPP server will reply which
   // will automatically opens the Room Configuration page.
-  xows_cli_muc_getcfg_query(room, xows_gui_page_mucc_open);
+  xows_cli_muc_cfg_get(room, xows_gui_page_mucc_open);
 }
 
 /**
@@ -307,7 +307,7 @@ function xows_gui_muc_init_mbox_onvalid()
 function xows_gui_muc_init_mbox_onabort()
 {
   // If we are in Room creation process, we accept the default config
-  xows_cli_muc_setcfg_query(xows_gui_muc_init_mbox.room, null);
+  xows_cli_muc_cfg_set(xows_gui_muc_init_mbox.room, null);
 }
 
 /**
@@ -390,7 +390,7 @@ function xows_gui_muc_regi_ibox_onvalid(value)
   const room = xows_gui_muc_regi_ibox.room;
 
   // Try register again
-  xows_cli_muc_regi_query(room, value, xows_gui_muc_regi_ibox_onresult);
+  xows_cli_muc_regi_get_query(room, value, xows_gui_muc_regi_ibox_onresult);
 }
 
 /**
@@ -507,6 +507,16 @@ const xows_gui_muc_subj_ibox = {room:null};
  *
  * @param   {string}    value     Input content
  */
+function xows_gui_muc_subj_ibox_oninput(value)
+{
+  // Dummy to prevent default behavior
+}
+
+/**
+ * Room subject/topic input box on-valid callback
+ *
+ * @param   {string}    value     Input content
+ */
 function xows_gui_muc_subj_ibox_onvalid(value)
 {
   const room = xows_gui_muc_subj_ibox.room;
@@ -516,7 +526,7 @@ function xows_gui_muc_subj_ibox_onvalid(value)
 
   // If changed, inform of the new room topic
   if(subj != room.subj)
-    xows_cli_muc_set_subject(room, subj);
+    xows_cli_muc_subj_set(room, subj);
 }
 
 /**
@@ -533,7 +543,9 @@ function xows_gui_muc_subj_ibox_open(room)
   xows_doc_ibox_open(xows_l10n_get("Set topic of")+" #"+room.name,
     "Set the message of the day, a welcome message or the discussion subject.",
     "Enter a topic...", room.subj,
-    xows_gui_muc_subj_ibox_onvalid, null, null, null, null, true);
+    xows_gui_muc_subj_ibox_onvalid, null,
+    null, null,
+    xows_gui_muc_subj_ibox_oninput, true);
 }
 
 /* -------------------------------------------------------------------
@@ -558,7 +570,7 @@ function xows_gui_muc_nick_ibox_onvalid(value)
 
   // If changed, inform of the new room topic
   if(nick != xows_jid_resc(room.join))
-    xows_cli_muc_set_nick(room, nick);
+    xows_cli_muc_nick_set(room, nick);
 }
 
 /**
@@ -602,7 +614,7 @@ function xows_gui_muc_book_popu_onvalid()
 {
   const param = xows_gui_muc_book_popu;
   // add bookmark
-  xows_cli_book_publish(param.room);
+  xows_cli_pep_book_publ(param.room);
   param.room = null;
 }
 
@@ -644,7 +656,7 @@ function xows_gui_muc_affi_mbox_onvalid()
   const param = xows_gui_muc_affi_mbox_param;
 
   // query change affiliation for occupant
-  xows_cli_muc_set_affi(param.occu, param.affi);
+  xows_cli_muc_affi_set(param.occu, param.affi);
 }
 
 /**
@@ -708,7 +720,7 @@ function xows_gui_muc_role_mbox_onvalid()
   const param = xows_gui_muc_role_mbox_param;
 
   // query change affiliation for occupant
-  xows_cli_muc_set_role(param.occu, param.role);
+  xows_cli_muc_role_set(param.occu, param.role);
 }
 
 /**
@@ -874,7 +886,7 @@ function xows_gui_muc_onpull(occu)
  */
 function xows_gui_mucl_head_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   if(xows_gui_peer.type != XOWS_PEER_ROOM)
     return;
@@ -890,7 +902,7 @@ function xows_gui_mucl_head_onclick(event)
  */
 function xows_gui_mucl_list_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // get related <li-peer> element where click occurred
   const li_peer = event.target.closest("LI-PEER");
@@ -1061,7 +1073,7 @@ function xows_gui_muc_occu_menu_onshow(button, drop)
  */
 function xows_gui_muc_occu_menu_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Get related room occupant <li-peer> element
   const li_peer = xows_doc("mucl_list").querySelector(".SELECTED");
@@ -1107,7 +1119,7 @@ function xows_gui_muc_occu_menu_onclick(event)
     if((affi > XOWS_AFFI_MEMB && affi > occu.affi)|| affi === XOWS_AFFI_OUTC) {
       xows_gui_muc_affi_mbox_open(occu, affi);
     } else {
-      xows_cli_muc_set_affi(occu, affi);
+      xows_cli_muc_affi_set(occu, affi);
     }
   }
 
@@ -1116,7 +1128,7 @@ function xows_gui_muc_occu_menu_onclick(event)
     if(role === XOWS_ROLE_NONE) {
       xows_gui_muc_role_mbox_open(occu, role);
     } else {
-      xows_cli_muc_set_role(occu, role);
+      xows_cli_muc_role_set(occu, role);
     }
   }
 }
@@ -1198,7 +1210,7 @@ function xows_gui_page_mucc_onvalid()
   }
 
   // Submit fulfilled configuration form
-  xows_cli_muc_setcfg_query(room, form, xows_gui_page_mucc_onresult);
+  xows_cli_muc_cfg_set(room, form, xows_gui_page_mucc_onresult);
 }
 
 /**
@@ -1329,13 +1341,13 @@ function xows_gui_page_mucc_onclose()
   if(param.room.init) {
 
     // Accept default config
-    xows_cli_muc_setcfg_query(param.room, null, null);
+    xows_cli_muc_cfg_set(param.room, null, null);
 
   } else {
 
     // Cancel Chatoom configuration
     if(param.cancel)
-      xows_cli_muc_setcfg_cancel(param.room, null);
+      xows_cli_muc_cfg_set_cancel(param.room, null);
   }
 
   // unreference data

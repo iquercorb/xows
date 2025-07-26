@@ -142,11 +142,6 @@ function xows_gui_sound_stop(name)
 let xows_gui_has_focus = true;
 
 /**
- * Indicate the DOM is in its default state
- */
-let xows_gui_clean = true;
-
-/**
  * Flag for client connexion loss
  */
 let xows_gui_resume_pnd = false;
@@ -216,189 +211,7 @@ function xows_gui_devices_has(type)
 /**
  * Constant for initial offscreen slot identifier
  */
-const XOWS_GUI_FRAG_INIT = "NULL";
-
-/**
- * Get Peer related element by id, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- *
- * @return  {object}    Element or null if not found
- */
-function xows_gui_doc(peer, id)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id);
-  } else {
-    return xows_doc_frag_find(peer.addr, id);
-  }
-}
-
-/**
- * Toggle class of Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- * @param   {boolean}   force     Force enable or disable
- */
-function xows_gui_doc_cls_tog(peer, id, cls, force)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.toggle(cls,force);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.toggle(cls,force);
-  }
-}
-
-/**
- * Add class to Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- */
-function xows_gui_doc_cls_add(peer, id, cls)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.add(cls);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.add(cls);
-  }
-}
-
-/**
- * Remove class to Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- */
-function xows_gui_doc_cls_rem(peer, id, cls)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.remove(cls);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.remove(cls);
-  }
-}
-
-/**
- * Check for class in Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- */
-function xows_gui_doc_cls_has(peer, id, cls)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.contains(cls);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.contains(cls);
-  }
-}
-
-/**
- * Save the main chat scroll position for the specified peer in the
- * ad-hoc 'scrollBottom' property.
- *
- * If the specified Peer history is offscreen, the function operate on
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to save scroll value
- */
-function xows_gui_doc_scrl_save(peer)
-{
-  if(peer === xows_gui_peer) {
-    xows_doc_scrl_save(document.getElementById("chat_main"));
-  } else {
-    xows_doc_scrl_save(xows_doc_scrl_db.get(peer.addr));
-  }
-}
-
-/**
- * Get the main chat last saved scroll position (relative to bottom)
- * corresponding to the specified peer.
- *
- * If the specified Peer history is offscreen, it returns value from
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to get scroll value
- */
-function xows_gui_doc_scrl_get(peer)
-{
-  // Returns current DOM element or offscreen dummy object ad-hoc propery
-  if(peer === xows_gui_peer) {
-    return document.getElementById("chat_main").scrollBottom;
-  } else {
-    return xows_doc_scrl_db.get(peer.addr).scrollBottom;
-  }
-}
-
-/**
- * Move to bottom the main chat scroll corresponding to the specified peer
- *
- * If the specified Peer history is offscreen, the function operate on
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to get scroll value
- * @param   {boolean}  [smooth]   Perform smooth scroll
- */
-function xows_gui_doc_scrl_down(peer, smooth = true)
-{
-  // Force update navigation bar
-  xows_gui_chat_nav_update(xows_gui_peer, 0, 0);
-
-  if(peer === xows_gui_peer) {
-    xows_doc_scrl_down(document.getElementById("chat_main"), smooth);
-  } else {
-    xows_doc_scrl_down(xows_doc_scrl_db.get(peer.addr));
-  }
-}
-
-/**
- * Compensate (to keept at position) the main chat scroll corresponding
- * to the specified peer.
- *
- * If the specified Peer history is offscree, the function operate on
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to get scroll value
- */
-function xows_gui_doc_scrl_keep(peer)
-{
-  if(peer === xows_gui_peer) {
-    xows_doc_scrl_keep(document.getElementById("chat_main"));
-  } else {
-    xows_doc_scrl_keep(xows_doc_scrl_db.get(peer.addr));
-  }
-}
-
-/**
- * Common function to clone current DOM elements to initial offscreen
- * Document Fragment.
- *
- * Clones the current DOM elements to a new Document Fragment used to be
- * initial content to be cloned for any new Peer's Document Fragment.
- *
- * This function should be called only ONCE right after DOM finished to
- * load, when at its initial state.
- */
-function xows_gui_frag_init()
-{
-  // Export scroll parameters to offscreen
-  xows_doc_scrl_export(XOWS_GUI_FRAG_INIT, "chat_main");
-
-  // Create intial offscreen slot from current document
-  xows_doc_frag_export(XOWS_GUI_FRAG_INIT, "peer_col", false);
-}
+const XOWS_GUI_FRAG_VOID = "void";
 
 /**
  * Common function to create new set of Peer's offscreen DocumentFragment.
@@ -416,10 +229,10 @@ function xows_gui_frag_init()
 function xows_gui_frag_new(slot, source)
 {
   if(!source)
-    source = XOWS_GUI_FRAG_INIT;
+    source = XOWS_GUI_FRAG_VOID;
 
   if(!xows_doc_frag_db.has(source)) {
-    xows_log(1,"gui_peer_frag_new","source fragment doesn't exist",slot);
+    xows_log(1,"gui_frag_new","source fragment doesn't exist",source);
     return;
   }
 
@@ -470,7 +283,7 @@ function xows_gui_frag_import(slot)
 {
   let clone = false;
   if(!slot) {
-    slot = XOWS_GUI_FRAG_INIT;
+    slot = XOWS_GUI_FRAG_VOID;
     clone = true;
   }
 
@@ -500,6 +313,17 @@ function xows_gui_frag_discard(slot)
   xows_doc_scrl_delete(slot);
 }
 
+/**
+ * Clear all Peer's related offscreen elements.
+ */
+function xows_gui_frag_clear()
+{
+  for(const slot of xows_doc_frag_db.keys()) {
+    if(slot !== XOWS_GUI_FRAG_VOID) {
+      xows_gui_frag_discard(slot);
+    }
+  }
+}
 
 /* -------------------------------------------------------------------
  *
@@ -511,8 +335,9 @@ function xows_gui_frag_discard(slot)
  */
 function xows_gui_init()
 {
-  // Create intial offscreen slot from current document
-  xows_gui_frag_init();
+  // Create intial offscreen data from current document
+  xows_doc_scrl_export(XOWS_GUI_FRAG_VOID, "chat_main");
+  xows_doc_frag_export(XOWS_GUI_FRAG_VOID, "peer_col", false);
 
   // Poll for available devices for Multimedia features
   xows_gui_devices_poll();
@@ -525,6 +350,7 @@ function xows_gui_init()
   xows_doc_listener_add(window, "pagehide", xows_gui_wnd_onfocus);
   xows_doc_listener_add(window, "focus", xows_gui_wnd_onfocus);
   xows_doc_listener_add(window, "blur", xows_gui_wnd_onfocus);
+  xows_doc_listener_add(window, "beforeunload", xows_gui_wnd_unload);
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window, "popstate", xows_gui_wnd_onback);
   // Set event listener to handle chat scroll moving on resize
@@ -545,9 +371,6 @@ function xows_gui_init()
   // Self panel listerner
   xows_doc_listener_add(xows_doc("self_panl"), "click", xows_gui_self_fram_onclick);
 
-  // The DOM is now to its default state
-  xows_gui_clean = true;
-
   // Load sound effects
   xows_gui_sound_load("notify",   "notify.ogg");
   xows_gui_sound_load("disable",  "disable.ogg");
@@ -558,59 +381,47 @@ function xows_gui_init()
   xows_gui_sound_load("ringbell", "ringbell.ogg", true);
   xows_gui_sound_load("hangup",   "hangup.ogg");
 
-  // Set loader functions
-  xows_load_task_set(XOWS_FETCH_HIST, xows_gui_mam_fetch_newer);
-
   // Configure client callbacks
-  xows_cli_set_callback("connect",    xows_gui_cli_onconnect);
+  xows_cli_set_callback("ready",      xows_gui_cli_onready);
   xows_cli_set_callback("error",      xows_gui_cli_onerror);
   xows_cli_set_callback("close",      xows_gui_cli_onclose);
-  xows_cli_set_callback("timeout",    xows_gui_cli_ontimeout);
-
   xows_cli_set_callback("selfpush",   xows_gui_self_onpush);
-
   xows_cli_set_callback("subspush",   xows_gui_rost_subs_onpush);
   xows_cli_set_callback("contpush",   xows_gui_rost_cont_onpush);
   xows_cli_set_callback("contpull",   xows_gui_rost_cont_onpull);
-
   xows_cli_set_callback("roompush",   xows_gui_rost_room_onpush);
   xows_cli_set_callback("roompull",   xows_gui_rost_room_onpull);
-
   xows_cli_set_callback("occupush",   xows_gui_rost_occu_onpush);
   xows_cli_set_callback("occupull",   xows_gui_rost_occu_onpull);
-
   xows_cli_set_callback("mucjoin",    xows_gui_muc_onjoin);
   xows_cli_set_callback("mucexit",    xows_gui_muc_onexit);
   xows_cli_set_callback("mucpush",    xows_gui_muc_onpush);
   xows_cli_set_callback("mucpull",    xows_gui_muc_onpull);
   xows_cli_set_callback("mucsubj",    xows_gui_muc_onsubj);
-
   xows_cli_set_callback("msgrecv",    xows_gui_hist_onrecv);
   xows_cli_set_callback("msgrecp",    xows_gui_hist_onrecp);
   xows_cli_set_callback("msgretr",    xows_gui_hist_onretr);
   xows_cli_set_callback("msgchst",    xows_gui_edit_onchst);
-
   xows_cli_set_callback("upldprog",   xows_gui_upld_onporg);
   xows_cli_set_callback("upldload",   xows_gui_upld_onload);
-
   xows_cli_set_callback("calloffer",  xows_gui_call_onoffer);
   xows_cli_set_callback("callanwse",  xows_gui_call_onanwse);
   xows_cli_set_callback("callstate",  xows_gui_call_onstate);
   xows_cli_set_callback("calltermd",  xows_gui_call_ontermd);
   xows_cli_set_callback("callerror",  xows_gui_call_onerror);
+
+  // Set loader functions
+  xows_load_task_set(XOWS_FETCH_HIST, xows_gui_mam_fetch_newer);
 }
 
 /**
- * Reset the GUI to its initial state
+ * Clean the GUI to its session-start state
+ *
+ * This function keeps the sessions and Peer's related elements and simply
+ * close any opened dialog, menu or page.
  */
-function xows_gui_reset()
+function xows_gui_clean()
 {
-  xows_log(2,"gui_reset","reset DOM states");
-
-  // hide all screens
-  xows_doc_hide("scr_page");
-  xows_doc_hide("scr_main");
-
   // close any opened page or overlay element
   xows_doc_page_close();
   xows_doc_menu_close();
@@ -619,10 +430,32 @@ function xows_gui_reset()
   xows_doc_ibox_close();
   xows_doc_mbox_close();
   xows_doc_prof_close();
+}
+
+/**
+ * Hard-reset all GUI to its initial loading state
+ *
+ * This function reset and empty all GUI element to their initial
+ * loading state and delete all Peer related elements.
+ */
+function xows_gui_reset()
+{
+  xows_log(2,"gui_reset","set GUI to initial state");
+
+  // Clean GUI (close any opened page, dialog, etc)
+  xows_gui_clean();
+
+  // Remove Peer related elements
+  if(xows_gui_peer)
+    xows_gui_doc_export(xows_gui_peer);
 
   // Reset columns setup
   xows_doc_cls_rem("main_wrap", "MUCL-WIDE");
   xows_doc_cls_add("main_wrap", "ROST-WIDE");
+
+  // hide all screens
+  xows_doc_hide("scr_page");
+  xows_doc_hide("scr_main");
 
   // clean roster lists
   xows_doc("cont_pend").innerHTML = "";
@@ -653,15 +486,8 @@ function xows_gui_reset()
   xows_doc("self_meta").innerText = "";
   xows_doc("self_avat").className = "";
 
-  // Reset Peer related elements
-  xows_gui_peer_switch_to(null);
-
-  // Clear all offscreen elements
-  xows_doc_frag_clear();
-  xows_doc_scrl_clear();
-
-  // The DOM is now to its default state
-  xows_gui_clean = true;
+  // Clear all Peer's offscreen elements
+  xows_gui_frag_clear();
 }
 
 /* -------------------------------------------------------------------
@@ -692,9 +518,6 @@ function xows_gui_connect(user, pass, cred, regi = false)
   // Close any popup-box
   xows_doc_popu_close();
 
-  // From now the DOM is no longer in its default state
-  xows_gui_clean = false;
-
   // Create Audio context (must be done after user interaction)
   if(!xows_gui_audio.ctx) {
     xows_gui_audio.ctx = new AudioContext();
@@ -711,7 +534,7 @@ function xows_gui_connect(user, pass, cred, regi = false)
     jid += "@"+xows_options.login_force_domain;
 
   // Launch the client connection
-  xows_cli_connect( xows_options.xmpp_url,
+  xows_cli_cnx_login( xows_options.xmpp_url,
                     jid,
                     xows_gui_auth.pass,
                     regi);
@@ -722,7 +545,7 @@ function xows_gui_connect(user, pass, cred, regi = false)
  *
  * @param   {object}    user      User object
  */
-function xows_gui_cli_onconnect(user)
+function xows_gui_cli_onready(user)
 {
   // Check whether user asked to remember
   if(xows_gui_auth) {
@@ -730,7 +553,7 @@ function xows_gui_cli_onconnect(user)
     if(xows_gui_auth.cred) {
 
       // Output log
-      xows_log(2,"gui_cli_onconnect","Saving credential");
+      xows_log(2,"gui_cli_onready","Saving credential");
 
       // Store credentials
       if(window.PasswordCredential) {
@@ -744,7 +567,7 @@ function xows_gui_cli_onconnect(user)
   // Check whether we recover from connexion loss
   if(xows_gui_resume_pnd) {
 
-    xows_log(1,"gui_cli_onconnect","resume session");
+    xows_log(1,"gui_cli_onready","resume session");
 
     // Reset connection loss
     xows_gui_resume_pnd = false;
@@ -768,7 +591,7 @@ function xows_gui_cli_onconnect(user)
 
   } else {
 
-    xows_log(2,"gui_cli_onconnect","initial session");
+    xows_log(2,"gui_cli_onready","open session");
 
     // Push history to allow message box if user click Back
     window.history.pushState({},"",window.location.pathname);
@@ -787,17 +610,11 @@ function xows_gui_cli_onconnect(user)
       xows_tpl_embed_add_upld(upld_svc[0]);
   }
 
-  // show main 'screen'
-  xows_doc_show("scr_main");
-  // Close any opened menu
-  xows_doc_menu_close();
-  // Close any opened media view
-  xows_doc_view_close();
-  // Close any opened page
+  // Close wait page
   xows_doc_page_close();
 
-  // Widen user roster column (only in narrow-screen)
-  xows_gui_layout_rost_view();
+  // show main 'screen'
+  xows_doc_show("scr_main");
 }
 
 /**
@@ -805,46 +622,14 @@ function xows_gui_cli_onconnect(user)
  */
 function xows_gui_disconnect()
 {
-  // Send chat state to notify current user
-  if(xows_gui_peer)
-    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_GONE);
-
-  // Hangup and clear any Media Call
-  xows_gui_call_exit_all();
+  // This is a session lost
+  xows_log(2,"gui_disconnect","prepare disconnect");
 
   // Reset auth data
   //xows_gui_auth = null;
 
   // Disconnect client
-  xows_cli_disconnect();
-
-  xows_gui_cli_onclose(XOWS_SESS_EXIT, "");
-}
-
-/**
- * Handle client connexion/reconnect time out
- */
-function xows_gui_cli_ontimeout()
-{
-  // If documment is hidden we do nothing, once document visible
-  // this will trigger event to try to reconnect from connection loss
-  if(!document.hidden) {
-
-    // Output log
-    xows_log(2,"gui_cli_ontimeout","connection recovery timed out");
-
-    // Disconnect definitively
-    xows_gui_disconnect();
-
-    // reset GUI
-    xows_gui_reset();
-
-    // Display Login page
-    xows_gui_page_auth_open();
-
-    // Display popup message
-    xows_doc_popu_open(XOWS_STYL_ERR, "Connection lost (recovery failed)");
-  }
+  xows_cli_cnx_close();
 }
 
 /**
@@ -855,58 +640,58 @@ function xows_gui_cli_ontimeout()
  */
 function xows_gui_cli_onclose(code, text)
 {
-  // Check whether this is a connexion loss
-  if(code & XOWS_SESS_LOST) {
+  let failure;
 
-    // Output log
-    xows_log(2,"gui_cli_onclose","connection loss",text);
+  // Do we have an error code ?
+  if(code) {
 
-    // This is a connection loss
-    xows_gui_resume_pnd = true;
+    if(code & XOWS_SESS_LOST) {
 
-    // Close any message, popup or dialog box
-    xows_doc_popu_close();
-    xows_doc_mbox_close();
-    xows_doc_ibox_close();
-    xows_doc_prof_close();
+      // This is a session lost
+      xows_log(2,"gui_cli_onclose","session lost",text);
 
-    // Display wait screen
-    xows_gui_page_wait_open("Connecting...");
+      xows_gui_resume_pnd = true;
 
-  } else {
+      // Clean GUI
+      xows_gui_clean();
 
-    // Output log
-    xows_log(2,"gui_cli_onclose","connection closed",text);
+      // Display wait screen
+      xows_gui_page_wait_open("Connecting...");
 
-    // Prevent reset GUI multiple times
-    if(!xows_gui_clean) {
+      return; //< do not reset everything
 
-      // reset GUI
-      xows_gui_reset();
+    } else {
 
-      // Display Login page
-      xows_gui_page_auth_open();
-    }
+      xows_log(2,"gui_cli_onclose","session failure",text);
 
-    // Display popup message
-    if(code) {
+      xows_gui_resume_pnd = false;
 
-      let titl;
-
-      if(code & XOWS_SOCK_FAIL) {
-        titl = "Network error";
+      // This is a session failure or abort after unsuccessful recover
+      if(code & XOWS_SESS_ABRT) {
+        failure = "Connection lost";
+      } else if(code & XOWS_SOCK_FAIL) {
+        failure = "Network error";
       } else if(code & XOWS_XMPP_AUTH) {
-        titl = "Authentication failure";
+        failure = "Authentication failure";
       } else  if(code & XOWS_XMPP_REGI) {
-        titl = "Registration failure";
+        failure = "Registration failure";
       } else {
-        titl = "Connection failure";
+        failure = "Connection failure";
       }
-
-      xows_doc_popu_open(XOWS_STYL_ERR, xows_l10n_get(titl)+": "+xows_l10n_get(text));
     }
+  } else {
+    xows_log(2,"gui_cli_onclose","session closed by user");
   }
 
+  // reset GUI
+  xows_gui_reset();
+
+  // Display Login page
+  xows_gui_page_auth_open();
+
+  // display error message
+  if(failure)
+    xows_doc_popu_open(XOWS_STYL_ERR, xows_l10n_get(failure)+": "+xows_l10n_get(text));
 }
 
 /**
@@ -1119,6 +904,173 @@ function xows_gui_doc_reassign(peer, slot)
     // Bring back Peer documents with new reference
     xows_gui_doc_import(peer);
 }
+
+/* -------------------------------------------------------------------
+ * Peer Documents - Fetch and Actions routines
+ * -------------------------------------------------------------------*/
+/**
+ * Get Peer related element by id, either in current document or in
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ *
+ * @return  {object}    Element or null if not found
+ */
+function xows_gui_doc(peer, id)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id);
+  } else {
+    return xows_doc_frag_find(peer.addr, id);
+  }
+}
+
+/**
+ * Toggle class of Peer element, either in current document or in
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ * @param   {boolean}   force     Force enable or disable
+ */
+function xows_gui_doc_cls_tog(peer, id, cls, force)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.toggle(cls,force);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.toggle(cls,force);
+  }
+}
+
+/**
+ * Add class to Peer element, either in current document or in
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ */
+function xows_gui_doc_cls_add(peer, id, cls)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.add(cls);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.add(cls);
+  }
+}
+
+/**
+ * Remove class to Peer element, either in current document or in
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ */
+function xows_gui_doc_cls_rem(peer, id, cls)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.remove(cls);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.remove(cls);
+  }
+}
+
+/**
+ * Check for class in Peer element, either in current document or in
+ * offscreen fragment
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    id        Element id
+ * @param   {string}    cls       Class name
+ */
+function xows_gui_doc_cls_has(peer, id, cls)
+{
+  if(peer === xows_gui_peer) {
+    return document.getElementById(id).classList.contains(cls);
+  } else {
+    return xows_doc_frag_find(peer.addr, id).classList.contains(cls);
+  }
+}
+
+/**
+ * Save the main chat scroll position for the specified peer in the
+ * ad-hoc 'scrollBottom' property.
+ *
+ * If the specified Peer history is offscreen, the function operate on
+ * the offscreen dummy object.
+ *
+ * @param   {object}    peer      Peer object to save scroll value
+ */
+function xows_gui_doc_scrl_save(peer)
+{
+  if(peer === xows_gui_peer) {
+    xows_doc_scrl_save(document.getElementById("chat_main"));
+  } else {
+    xows_doc_scrl_save(xows_doc_scrl_db.get(peer.addr));
+  }
+}
+
+/**
+ * Get the main chat last saved scroll position (relative to bottom)
+ * corresponding to the specified peer.
+ *
+ * If the specified Peer history is offscreen, it returns value from
+ * the offscreen dummy object.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ */
+function xows_gui_doc_scrl_get(peer)
+{
+  // Returns current DOM element or offscreen dummy object ad-hoc propery
+  if(peer === xows_gui_peer) {
+    return document.getElementById("chat_main").scrollBottom;
+  } else {
+    return xows_doc_scrl_db.get(peer.addr).scrollBottom;
+  }
+}
+
+/**
+ * Move to bottom the main chat scroll corresponding to the specified peer
+ *
+ * If the specified Peer history is offscreen, the function operate on
+ * the offscreen dummy object.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ * @param   {boolean}  [smooth]   Perform smooth scroll
+ */
+function xows_gui_doc_scrl_down(peer, smooth = true)
+{
+  // Force update navigation bar
+  xows_gui_chat_nav_update(xows_gui_peer, 0, 0);
+
+  if(peer === xows_gui_peer) {
+    xows_doc_scrl_down(document.getElementById("chat_main"), smooth);
+  } else {
+    xows_doc_scrl_down(xows_doc_scrl_db.get(peer.addr));
+  }
+}
+
+/**
+ * Compensate (to keept at position) the main chat scroll corresponding
+ * to the specified peer.
+ *
+ * If the specified Peer history is offscree, the function operate on
+ * the offscreen dummy object.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ */
+function xows_gui_doc_scrl_keep(peer)
+{
+  if(peer === xows_gui_peer) {
+    xows_doc_scrl_keep(document.getElementById("chat_main"));
+  } else {
+    xows_doc_scrl_keep(xows_doc_scrl_db.get(peer.addr));
+  }
+}
+
 /* -------------------------------------------------------------------
  * Peer Documents - Update routines
  * -------------------------------------------------------------------*/
@@ -1192,13 +1144,13 @@ function xows_gui_doc_update(peer, mask = 0xff)
       // Contact or Occupant (Private Message) variations
       if(peer.type === XOWS_PEER_OCCU) {
         xows_gui_doc(peer,"chat_addr").innerText = "(# "+peer.room.name +")";
-        xows_gui_doc(peer,"chat_addc").hidden = (xows_gui_rost_subs_eval(peer) !== 0);
+        xows_gui_doc(peer,"chat_addc").hidden = (xows_cli_peer_subsste(peer) !== 0);
       } else {
         xows_gui_doc(peer,"chat_addr").innerText = "("+peer.addr+")";
       }
 
       // Show or hide call buttons
-      const has_ices = xows_cli_external_has("stun","turn");
+      const has_ices = xows_cli_extsvc_has("stun","turn");
       xows_gui_doc(peer,"chat_cala").hidden = !(xows_gui_devices_has("audioinput") && has_ices);
       xows_gui_doc(peer,"chat_calv").hidden = !(xows_gui_devices_has("videoinput") && has_ices);
     }
@@ -1270,7 +1222,7 @@ function xows_gui_peer_switch_to(addr)
     }
 
     // Send chat state to notify current user
-    xows_cli_chatstate_define(xows_gui_peer, XOWS_CHAT_GONE);
+    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_GONE);
 
     // export document elements to offscreen fragment
     xows_gui_doc_export(xows_gui_peer);
@@ -1278,9 +1230,6 @@ function xows_gui_peer_switch_to(addr)
     // Revert window title
     xows_gui_wnd_title_pop();
   }
-
-  // If next contact is valid, show the chat <div>
-  //xows_doc_show("chat_fram", (peer !== null));
 
   if(peer) {
 
@@ -1330,7 +1279,7 @@ function xows_gui_peer_switch_to(addr)
  */
 function xows_gui_layout_hand_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   xows_gui_layout_chat_view();
 }
@@ -1340,7 +1289,7 @@ function xows_gui_layout_hand_onclick(event)
  */
 function xows_gui_layout_chat_view()
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Remove any widened panel
   xows_doc_cls_rem("main_wrap", "MUCL-WIDE");
@@ -1418,7 +1367,7 @@ function xows_gui_wnd_title_pop()
  */
 function xows_gui_wnd_onback(event)
 {
-  if(xows_cli_connected() && !xows_doc_popu_modal()) {
+  if(xows_cli_cnx_cntd() && !xows_doc_popu_modal()) {
 
     // prevent to go back
     history.forward();
@@ -1443,17 +1392,30 @@ function xows_gui_wnd_onfocus(event)
   case "focus":
   case "blur":
     if(!xows_gui_has_focus)
-      xows_cli_activity_wakeup();
+      xows_cli_pres_show_back();
     break;
 
   case "visibilitychange":
     // I am not sure this is usefull at all...
-    if(xows_cli_resume_pnd && !document.hidden)
-      xows_cli_resume(10);
+    if(xows_cli_cnx_resume_pnd && !document.hidden)
+      xows_cli_cnx_resume(10);
     break;
   }
 
   xows_gui_has_focus = document.hasFocus();
+}
+
+/**
+ * Handles the client/Web page unload
+ *
+ * @param   {object}    event     Event object
+ */
+function xows_gui_wnd_unload(event)
+{
+  // Disconnect
+  xows_cli_flush();
+
+  return undefined; //< prevent prompting dialog to user
 }
 
 /* -------------------------------------------------------------------
@@ -1645,7 +1607,7 @@ const xows_gui_wnd_keydn = new Array(256);
  */
 function xows_gui_wnd_onkey(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Enable key down according received event
   xows_gui_wnd_keydn[event.keyCode] = (event.type === "keydown");
@@ -1702,7 +1664,7 @@ function xows_gui_wnd_exit_popu_onabort()
 function xows_gui_wnd_exit_popu_onvalid()
 {
   // Disconnect
-  xows_cli_flyyoufools();
+  xows_cli_flush();
 
   // Back nav history
   history.back();
@@ -1915,7 +1877,7 @@ function xows_gui_badg_buzy(peer, enable)
  */
 function xows_gui_app_fram_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Widen user roster column (only in narrow-screen)
   xows_gui_layout_rost_view();
@@ -1989,7 +1951,7 @@ function xows_gui_app_tab_select(tab_id)
  */
 function xows_gui_self_fram_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   if(event.target.id === "self_bt_acct")
     // Open user porfile page
@@ -2062,7 +2024,7 @@ function xows_gui_self_menu_onshow(button, drop)
  */
 function xows_gui_self_menu_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Close menu and unfocus button
   xows_doc_menu_toggle(xows_doc("self_bttn"), "drop_self");
@@ -2079,7 +2041,7 @@ function xows_gui_self_menu_onclick(event)
     // Set presence as selected level
     const show = parseInt(li.value);
     if(show > 0) {
-      xows_cli_show_select(show);
+      xows_cli_pres_show_set(show);
     } else {
       // Reset login page
       //xows_doc("auth_user").value = ""; //< FIXE : ?
@@ -2108,7 +2070,7 @@ function xows_gui_self_stat_ibox_onvalid(value)
 {
   // If changed, inform of the new status
   if(value != xows_cli_self.stat)
-    xows_cli_status_define(value);
+    xows_cli_pres_stat_set(value);
 }
 
 /**
@@ -2151,7 +2113,7 @@ function xows_gui_self_stat_ibox_open()
  */
 function xows_gui_chat_head_onclick(event)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   switch(event.target.id)
   {
@@ -2181,7 +2143,7 @@ function xows_gui_chat_head_onclick(event)
     break;
   case "chat_cnfg":
     // Query for Chatoom configuration, will open Room config page
-    xows_cli_muc_getcfg_query(xows_gui_peer, xows_gui_page_mucc_open);
+    xows_cli_muc_cfg_get(xows_gui_peer, xows_gui_page_mucc_open);
     break;
   case "chat_mucl":
     xows_gui_layout_muc_toggle();
@@ -2477,7 +2439,7 @@ function xows_gui_upld_onload(peer, stat, data)
 
   case XOWS_UPLD_SUCC:
     // Send a message to current selected contact with URL to download
-    xows_cli_send_message(peer, data);
+    xows_cli_msg_send(peer, data);
     break;
 
   default: //< XOWS_UPLD_ABRT
@@ -2527,9 +2489,6 @@ function xows_gui_page_wait_open(text)
 {
   // Set wait message
   xows_doc("wait_text").innerText = xows_l10n_get(text);
-
-  // Open wait page
-  xows_doc_page_open("page_wait");
 
   // Open dialog page
   xows_doc_page_open("page_wait",false,null,null,xows_gui_page_wait_onclick);
@@ -2934,7 +2893,7 @@ function xows_gui_page_acct_onclick(target)
     }
 
     // Send password change query
-    xows_cli_regi_chpas_query(acct_pnew.value, xows_gui_page_acct_onchpas);
+    xows_cli_regi_chpas(acct_pnew.value, xows_gui_page_acct_onchpas);
   }
 
   if(target.id === "acct_bt_unrg") {
@@ -3028,7 +2987,7 @@ function xows_gui_acct_unrg_mbox_onabort()
  */
 function xows_gui_acct_unrg_mbox_onvalid()
 {
-  xows_cli_regi_remove_query(null, null);
+  xows_cli_regi_remove(null, null);
 }
 
 /**

@@ -984,7 +984,7 @@ function xows_doc_ibox_onkey(event)
  */
 function xows_doc_ibox_open(head, hint, phold, value, onvalid, valid, onabort, abort, oninput, modal = true)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Checks for already opened Input Box
   if(xows_doc_ibox_modal()) {
@@ -1145,7 +1145,7 @@ function xows_doc_mbox_onabort()
  */
 function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, modal = true)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   // Checks for already opened Input Box
   if(xows_doc_mbox_modal()) {
@@ -1330,7 +1330,7 @@ function xows_doc_page_close()
  */
 function xows_doc_page_open(id, close, onclose, oninput, onclick)
 {
-  xows_cli_activity_wakeup(); //< Wakeup presence
+  xows_cli_pres_show_back(); //< Wakeup presence
 
   xows_doc_page_close(); //< close any opened dialog
 
@@ -1701,7 +1701,7 @@ function xows_doc_prof_update()
       }
       subs_lvl = cont.subs;
     } else {
-      const subs_stat = xows_gui_rost_subs_eval(peer);
+      const subs_stat = xows_cli_peer_subsste(peer);
       prof_subs.hidden = (subs_stat < 1); //< Show/hide subscription level
       prof_addc.hidden = (subs_stat > 0); //< Show/hide subscribe button
       switch(subs_stat)
