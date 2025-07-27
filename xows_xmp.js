@@ -561,8 +561,6 @@ function xows_xmp_fram_open_send()
  */
 function xows_xmp_fram_close_recv(stanza)
 {
-  let code = 0, text = null;
-
   if(xows_xmp_bind.resc) {
 
     // Bound resource mean unexpected close from server
@@ -583,8 +581,7 @@ function xows_xmp_fram_close_recv(stanza)
 }
 
 /**
- * Close the current a new XMPP client session and WebSocket
- * connection
+ * Closes the current XMPP session and WebSocket connection
  */
 function xows_xmp_fram_close_send()
 {
