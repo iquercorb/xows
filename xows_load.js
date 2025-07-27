@@ -88,8 +88,13 @@ function xows_load_task_push(item, mask, onload, param)
 
   let stack;
 
-  // Check for double-init
   if(xows_load_item_stk.has(item)) {
+
+    // Check for alrady planed task
+    if(item.load & mask) {
+      xows_log(2,"load_task_push","Ignoring already planed tasks 0x"+item.load, item.name);
+      return;
+    }
 
     xows_log(2,"load_task_push","Updating tasks mask 0x"+item.load+"|0x"+mask, item.name);
 
@@ -186,7 +191,7 @@ function xows_load_task_done(item, task)
 /**
  * On-Empty trigger mechanism parameters
  */
-const xows_load_onempty_def = {onempty:null,toid:null,param:null};
+const xows_load_onempty_def = {onempty:null,hto:null,param:null};
 
 /**
  * Set an On-Empty trigger function to be called once load stack is
@@ -202,21 +207,21 @@ const xows_load_onempty_def = {onempty:null,toid:null,param:null};
  * @param   {function}  onempty   Callback function to call
  * @param   {*}        [param]    Optional parameter to pass to callback
  */
-function xows_load_onempty_set(timeout, onempty, param)
+function xows_load_onempty_set(timeout, onempty, ...param)
 {
   if(xows_load_item_stk.size === 0) {
     xows_log(2,"load_onempty_set","Stack already empty",onempty.name);
     // Loading stack allready empty, skip waiting
-    onempty(param);
+    onempty(...param);
     return;
   }
 
   const def = xows_load_onempty_def;
 
   // Clear any pending timeout
-  if(def.toid) {
-    clearTimeout(def.toid);
-    def.toid = null;
+  if(def.hto) {
+    clearTimeout(def.hto);
+    def.hto = null;
   }
 
   // Set callback and custom parameter
@@ -225,7 +230,8 @@ function xows_load_onempty_set(timeout, onempty, param)
 
   // Fire new timeout
   if(timeout > 0)
-    def.toid = setTimeout(onempty, timeout, param);
+    //def.hto = setTimeout(onempty, timeout, ...param);
+    def.hto = setTimeout(xows_load_onempty_check, timeout, true);
 
   xows_log(2,"load_onempty_set","Configured onempty",def.onempty.name);
 }
@@ -236,27 +242,45 @@ function xows_load_onempty_set(timeout, onempty, param)
  *
  * This function is for internal "load Module" usage and should not be
  * called
+ *
+ * @param   {boolean}   timeout   Indicate call come from timeout
  */
-function xows_load_onempty_check()
+function xows_load_onempty_check(timeout)
 {
+  if(!xows_load_onempty_def.onempty)
+    return;
+
+  xows_log(2,"load_onempty_check","remain",xows_load_item_stk.size);
+
   // Check for empty stack to launch onempty
-  if(xows_load_onempty_def.onempty && xows_load_item_stk.size === 0) {
+  if(timeout || xows_load_item_stk.size === 0) {
 
     const def = xows_load_onempty_def;
 
     // Clear pending timeout
-    if(def.toid) {
-      clearTimeout(def.toid);
-      def.toid = null;
+    if(def.hto) {
+      clearTimeout(def.hto);
+      def.hto = null;
     }
+
+    if(timeout)
+      xows_log(1,"load_onempty_check","Timed out");
 
     xows_log(2,"load_onempty_check","Fireing onempty",def.onempty.name);
 
     // Call defined callback
-    def.onempty(def.param);
+    def.onempty(...def.param);
 
     // Reset parameters
     def.onempty = null;
     def.param = null;
   }
 }
+
+/**
+ * Dummy function for empty loading task
+ *
+ * This function cas be used as dummy task function for cases where
+ * there is no loading task but wait for an event.
+ */
+function xows_load_await_task(item) { }

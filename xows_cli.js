@@ -783,9 +783,10 @@ function xows_cli_author_get(peer, addr, ocid)
 /**
  * Loading process tasks bits
  */
-const XOWS_FETCH_AVAT  =  xows_load_task_bit();
-const XOWS_FETCH_NICK  =  xows_load_task_bit();
-const XOWS_FETCH_INFO  =  xows_load_task_bit();
+const XOWS_FETCH_AVAT = xows_load_task_bit();
+const XOWS_FETCH_NICK = xows_load_task_bit();
+const XOWS_FETCH_INFO = xows_load_task_bit();
+const XOWS_AWAIT_SUBJ = xows_load_task_bit();
 
 /**
  * Initializes module
@@ -813,13 +814,14 @@ function xows_cli_init()
   xows_xmp_set_callback("jingrecv",   xows_cli_call_jing_onrecv);
 
   // Set event listener to handle page quit or reload
-  xows_doc_listener_add(window, "beforeunload", xows_cli_flush);
-  xows_doc_listener_add(window, "unload",       xows_cli_flush);
+  xows_doc_listener_add(window, "beforeunload", xows_cli_onuload);
+  xows_doc_listener_add(window, "unload",       xows_cli_onuload);
 
   // Setup Load taks callback functions
   xows_load_task_set(XOWS_FETCH_AVAT, xows_cli_pep_avat_fetch);
   xows_load_task_set(XOWS_FETCH_NICK, xows_cli_pep_nick_fetch);
   xows_load_task_set(XOWS_FETCH_INFO, xows_cli_muc_info_query);
+  xows_load_task_set(XOWS_AWAIT_SUBJ, xows_load_await_task);
 }
 
 /**
@@ -1134,14 +1136,14 @@ function xows_cli_cnx_close()
  * Special function to close session and exit the quickest way
  * possible, used to terminate session when browser exit page
  */
-function xows_cli_flush()
+function xows_cli_onuload()
 {
   // Terminate any pending call
   for(const [peer, sess] of xows_cli_call_db.entries())
     xows_xmp_jing_terminate(peer.jrpc, sess.sid, "failed-application");
 
   // Disconnect XMPP session
-  xows_xmp_flush();
+  xows_xmp_onuload();
 }
 
 /**
@@ -1487,6 +1489,9 @@ function xows_cli_session_start(resume)
       while(i--) {
         if(xows_cli_room[i].live) {
           xows_cli_room[i].join = null; //< need to join room again
+          // Await for Room subject to be received
+          xows_load_task_push(xows_cli_room[i], XOWS_AWAIT_SUBJ, xows_cli_fw_mucjoin);
+          // Start join process
           xows_cli_muc_join(xows_cli_room[i]);
         }
       }
@@ -1504,7 +1509,10 @@ function xows_cli_session_start(resume)
     xows_cli_pres_show_set(XOWS_SHOW_ON);
 
   // Call the configured callback (forward signal to GUI)
-  xows_cli_fw_onready(xows_cli_self);
+  //xows_cli_fw_onready(xows_cli_self, resume);
+
+  // Wait for Room Join to finish and Show Up !
+  xows_load_onempty_set(3000, xows_cli_fw_onready, xows_cli_self, resume);
 }
 
 /* -------------------------------------------------------------------
@@ -3829,8 +3837,8 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
         } else {
 
-          // Fetch latest Room info and forward joined
-          //xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_fw_mucjoin);
+          // Await for Room subject to be received
+          xows_load_task_push(room, XOWS_AWAIT_SUBJ, xows_cli_fw_mucjoin);
         }
 
       }
@@ -4041,8 +4049,7 @@ function xows_cli_muc_onsubj(id, from, subj)
   // Subject is the last thing sent after room join, we use it as
   // signal that we received all presences and history messages
   // following a newly joined room.
-  if(!room.live)
-    xows_cli_fw_mucjoin(room);
+  xows_load_task_done(room, XOWS_AWAIT_SUBJ);
 }
 
 /**

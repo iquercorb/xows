@@ -492,6 +492,47 @@ function xows_gui_reset()
   xows_gui_frag_clear();
 }
 
+/**
+ * GUI hang timeout handle
+ */
+let xows_gui_hang_hto = null;
+
+/**
+ * Set GUI to paused mode with Wait screen
+ */
+function xows_gui_hang_timeout(text)
+{
+  // Clean GUI
+  xows_gui_clean();
+
+  // Display wait screen
+  xows_gui_page_wait_open(text);
+}
+
+/**
+ * Abort pending GUI hang
+ */
+function xows_gui_hang_abort()
+{
+  if(xows_gui_hang_hto) {
+    clearTimeout(xows_gui_hang_hto);
+    xows_gui_hang_hto = null;
+  }
+}
+
+/**
+ * Prepare to enter GUI in paused mode with Wait screen
+ *
+ * @param   {number}  delay   Delay before displaying wait page
+ * @param   {string}  text    Text for the wait page
+ */
+function xows_gui_hang(delay, text)
+{
+  // Abort any pending timeout
+  xows_gui_hang_abort();
+  xows_gui_hang_hto = setTimeout(xows_gui_hang_timeout, delay, text);
+}
+
 /* -------------------------------------------------------------------
  *
  * Client Interface - Connect / Dsiconnect
@@ -546,8 +587,9 @@ function xows_gui_connect(user, pass, cred, regi = false)
  * Function to handle client login success and ready
  *
  * @param   {object}    user      User object
+ * @param   {boolean}   resume    Indicate XMPP stream resume
  */
-function xows_gui_cli_onready(user)
+function xows_gui_cli_onready(user, resume)
 {
   // Check whether user asked to remember
   if(xows_gui_auth) {
@@ -574,22 +616,32 @@ function xows_gui_cli_onready(user)
     // Reset connection loss
     xows_gui_resume_pnd = false;
 
-    // Update history for openned chat
-    let i = xows_cli_cont.length;
-    while(i--) {
-      const cont = xows_cli_cont[i];
-      // Update only if history already preloaded
-      if(xows_gui_doc_has(cont))
-        xows_gui_mam_fetch_newer(cont);
+    // If XMPP stream resumed, no need to fetch newer history
+    if(!resume) {
+
+      // Update history for openned chat
+      let i = xows_cli_cont.length;
+      while(i--) {
+        const cont = xows_cli_cont[i];
+        // Update only if history already preloaded
+        if(xows_gui_doc_has(cont))
+          xows_load_task_push(cont, XOWS_FETCH_NEWR, xows_gui_hist_resume);
+      }
+
+      i = xows_cli_room.length;
+      while(i--) {
+        const room = xows_cli_room[i];
+        // Update only if history already preloaded
+        if(xows_gui_doc_has(room))
+          xows_load_task_push(room, XOWS_FETCH_NEWR, xows_gui_hist_resume);
+      }
     }
 
-    i = xows_cli_room.length;
-    while(i--) {
-      const room = xows_cli_room[i];
-      // Update only if history already preloaded
-      if(xows_gui_doc_has(room))
-        xows_gui_mam_fetch_newer(room);
-    }
+    // Abort any pending "GUI hang"
+    xows_gui_hang_abort();
+
+    // Flush stanza queue
+    xows_xmp_flush();
 
   } else {
 
@@ -654,11 +706,13 @@ function xows_gui_cli_onclose(code, text)
 
       xows_gui_resume_pnd = true;
 
-      // Clean GUI
-      xows_gui_clean();
-
-      // Display wait screen
-      xows_gui_page_wait_open("Connecting...");
+      // From this point, sent messages are queued waiting for connection
+      // recover or stream resume. We do not display the "connecting" page
+      // immediately to let recover a short disconnect almost-transparently.
+      //
+      // If connection loss become longer, we pause the GUI and display the
+      // wait page.
+      xows_gui_hang(xows_options.resume_try_delay*2100, "Connecting...");
 
       return; //< do not reset everything
 
@@ -1418,7 +1472,7 @@ function xows_gui_wnd_onfocus(event)
 function xows_gui_wnd_unload(event)
 {
   // Disconnect
-  xows_cli_flush();
+  xows_cli_onuload();
 
   return undefined; //< prevent prompting dialog to user
 }
@@ -1669,7 +1723,7 @@ function xows_gui_wnd_exit_popu_onabort()
 function xows_gui_wnd_exit_popu_onvalid()
 {
   // Disconnect
-  xows_cli_flush();
+  xows_cli_onuload();
 
   // Back nav history
   history.back();

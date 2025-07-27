@@ -157,6 +157,28 @@ function xows_gui_hist_update(peer, author)
 }
 
 /**
+ * Update chat history messages after connection resume to mark
+ * messages as failed.
+ *
+ * @param   {object}    peer      Chat history Peer, Room or Contact
+ */
+function xows_gui_hist_resume(peer)
+{
+  // If incoming message is off-screen we get history <div> and <ul> of
+  // fragment history corresponding to contact
+  const hist_ul = xows_gui_doc(peer, "hist_ul");
+
+  if(!hist_ul || !hist_ul.children.length)
+    return;
+
+  const sent = hist_ul.querySelectorAll(".MESG-SENT");
+  for(let i = 0; i < sent.length; ++i) {
+    if(!sent[i].classList.contains("MESG-RECP"))
+      sent[i].classList.add("MESG-FAIL");
+  }
+}
+
+/**
  * Find history message <li-mesg> element corresponding to specified ID
  *
  * If tomb parameter is set to true and the specified messae was not found,
@@ -575,7 +597,7 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
     if(!mesg.body) continue;
 
     // If message with id alread exists, skip to prevent double
-    if(xows_gui_hist_mesg_find(peer, mesg.id))
+    if(xows_gui_hist_mesg_find(peer, (mesg.orid ? mesg.orid : mesg.id)))
       continue;
 
     // Search for corrected message to be discarded
@@ -622,7 +644,8 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
 
   // Back scroll to proper position from bottom. Keep that here
   // unless you enable resize observer for "chat_hist"
-  xows_gui_doc_scrl_keep(peer);
+  if(added > 0)
+    xows_gui_doc_scrl_keep(peer);
 
   xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
 
