@@ -157,8 +157,7 @@ function xows_sck_onclose(event)
     text = "socket closed";
   }
 
-  // Output log
-  xows_log(code ? 0 : 2,"sck_onclose", text);
+  xows_log(code ? 0 : 2,"sck_onclose",text);
 
   // destroy socket object
   xows_sck_sock = null;
