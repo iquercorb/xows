@@ -75,7 +75,7 @@ function xows_xmp_sck_onclose(code, text)
 
     // If socket close is on error and resource is bound, this
     // mean the socket close occurred during a valid session
-    if(xows_xmp_bind.resc) {
+    if(xows_xmp_sess) {
       xows_log(1,"xmp_sck_onclose","connection lost");
       code |= XOWS_XMPP_HGUP;
     } else {
@@ -83,10 +83,7 @@ function xows_xmp_sck_onclose(code, text)
       code |= XOWS_XMPP_FAIL;
     }
 
-    // we lost XMPP connection
-    xows_xmp_bind.resc = null;
-
-    xows_xmp_fw_sess_onclose(code, "unable to connect to remote server");
+    xows_xmp_failure(code, "unable to connect to remote server");
   }
 }
 
@@ -111,9 +108,14 @@ let xows_xmp_host = null;
 const xows_xmp_auth = {"bare":null,"user":null,"pass":null,"regi":false};
 
 /**
- * XMPP Session data
+ * XMPP resource/bind data
  */
 const xows_xmp_bind = {"full":null,"bare":null,"node":null,"resc":null};
+
+/**
+ * XMPP session/connection status
+ */
+let xows_xmp_sess = false;
 
 /**
  * XMPP interface error event client callback
@@ -273,6 +275,37 @@ function xows_xmp_error_parse(stanza)
  *
  * -------------------------------------------------------------------*/
 /**
+ * Resets all session and connection parameters to initial state
+ *
+ * @param   {boolean}   auth    Indicate to reset auth data
+ */
+function xows_xmp_reset(auth = true)
+{
+  // Session disconnected
+  xows_xmp_sess = false;
+
+  // Reset server parameters
+  xows_xmp_addr = null;
+  xows_xmp_host = null;
+
+  // Reset stream-management data
+  xows_xmp_sm3_reset();
+
+  if(auth) {
+    // Reset auth data
+    xows_xmp_auth.jbar = null;
+    xows_xmp_auth.user = null;
+    xows_xmp_auth.pass = null;
+  }
+
+  // Reset session data
+  xows_xmp_bind.jbar = null;
+  xows_xmp_bind.jful = null;
+  xows_xmp_bind.node = null;
+  xows_xmp_bind.resc = null;
+}
+
+/**
  * Open a new XMPP client session to the specified WebSocket URL
  *
  * @param   {string}    url       URL to WebSocket service
@@ -285,6 +318,9 @@ function xows_xmp_connect(url, jid, password, register)
   // if socket already openned, close it
   xows_sck_close();
 
+  // Reset to initial state
+  xows_xmp_reset();
+
   // Set callbacks for socket events
   xows_sck_set_callback("open",  xows_xmp_sck_onopen);
   xows_sck_set_callback("recv",  xows_xmp_sck_onrecv);
@@ -292,12 +328,6 @@ function xows_xmp_connect(url, jid, password, register)
 
   // store connexion url
   xows_xmp_addr = url;
-
-  // Reset bind data from previous session
-  xows_xmp_bind.jbar = null;
-  xows_xmp_bind.jful = null;
-  xows_xmp_bind.node = null;
-  xows_xmp_bind.resc = null;
 
   // Split JID into user and domain parts
   const jid_split = jid.split("@");
@@ -329,6 +359,8 @@ function xows_xmp_connect(url, jid, password, register)
   xows_sck_connect();
 }
 
+let xows_xmp_resume_pnd = false;
+
 /**
  * Try to resume XMPP session to the specified WebSocket URL
  * using previousely defined connexion parameter.
@@ -359,17 +391,27 @@ function xows_xmp_resume()
  */
 function xows_xmp_failure(code, text)
 {
-  // This is a session lost
   xows_log(2,"xmp_failure","connection failure",text);
 
-  // Session is over
-  xows_xmp_bind.jbar = null;
-  xows_xmp_bind.jful = null;
-  xows_xmp_bind.node = null;
-  xows_xmp_bind.resc = null;
+  // Check for valid session running
+  if(xows_xmp_sess) {
 
-  // Close session with server
-  xows_xmp_fram_close_send();
+    // Session is over
+    xows_xmp_sess = false;
+
+    xows_xmp_resume_pnd = true;
+
+  } else {
+
+    if(!xows_xmp_resume_pnd) {
+
+      // Reset to initial state
+      xows_xmp_reset();
+
+      // Close session with server
+      xows_xmp_fram_close_send();
+    }
+  }
 
   // Forward close with failure
   xows_xmp_fw_sess_onclose(code, text);
@@ -383,16 +425,8 @@ function xows_xmp_disconnect()
   // This is a session lost
   xows_log(2,"xmp_disconnect","user disconnect");
 
-  // Reset auth data
-  xows_xmp_auth.jbar = null;
-  xows_xmp_auth.user = null;
-  xows_xmp_auth.pass = null;
-
-  // Reset session data
-  xows_xmp_bind.jbar = null;
-  xows_xmp_bind.jful = null;
-  xows_xmp_bind.node = null;
-  xows_xmp_bind.resc = null;
+  // Reset to initial state
+  xows_xmp_reset();
 
   // Close session with server
   xows_xmp_fram_close_send();
@@ -412,7 +446,7 @@ function xows_xmp_flush()
     return;
 
   // Session is over
-  xows_xmp_bind.resc = null;
+  xows_xmp_sess = false;
 
   // Send unavailable <presence> stanza
   xows_sck_sock.send("<presence xmlns='jabber:client' type='unavailable'/>");
@@ -430,7 +464,7 @@ function xows_xmp_flush()
  */
 function xows_xmp_connected()
 {
-  return (xows_xmp_bind.resc !== null);
+  return xows_xmp_sess;
 }
 
 /* -------------------------------------------------------------------
@@ -456,6 +490,11 @@ function xows_xmp_sck_onrecv(data)
   const stanza = xows_xml_parse(data).firstChild;
   const name = stanza.tagName;
 
+  // Session management ack
+  if(name === "a") return xows_xmp_sm3_a_recv(stanza);
+  if(name === "r") return xows_xmp_sm3_r_recv(stanza);
+  xows_xmp_sm3_track_recv(); //< increase stream-management received counter
+
   // Session common stanzas
   if(name === "iq") return xows_xmp_iq_recv(stanza);
   if(name === "message") return xows_xmp_message_recv(stanza);
@@ -471,6 +510,9 @@ function xows_xmp_sck_onrecv(data)
   if(name === "close") return xows_xmp_fram_close_recv(stanza);
   if(name === "stream:error") return xows_xmp_stream_error_recv(stanza);
   if(name === "stream:features") return xows_xmp_stream_features_recv(stanza);
+  if(name === "enabled") return xows_xmp_sm3_enabled_recv(stanza);
+  if(name === "failed") return xows_xmp_sm3_failed_recv(stanza);
+  if(name === "resumed") return xows_xmp_sm3_resumed_recv(stanza);
 
   xows_log(1,"xmp_recv","unprocessed stanza",event.data);
 }
@@ -513,6 +555,9 @@ function xows_xmp_send(stanza, onresult, onparse)
 
   // Send serialized data to socket
   xows_sck_send(xows_xml_serialize(stanza));
+
+  // Stream management ack request
+  xows_xmp_sm3_track_sent();
 }
 
 /* -------------------------------------------------------------------
@@ -561,7 +606,7 @@ function xows_xmp_fram_open_send()
  */
 function xows_xmp_fram_close_recv(stanza)
 {
-  if(xows_xmp_bind.resc) {
+  if(xows_xmp_sess) {
 
     // Bound resource mean unexpected close from server
     xows_log(1,"xmp_fram_close_recv","unexpected stream close");
@@ -585,6 +630,9 @@ function xows_xmp_fram_close_recv(stanza)
  */
 function xows_xmp_fram_close_send()
 {
+  if(!xows_sck_sock)
+    return;
+
   // https://datatracker.ietf.org/doc/html/rfc7395#section-3.6
 
   // Some log output
@@ -593,6 +641,241 @@ function xows_xmp_fram_close_send()
   // Send the <close> stanza to close stream
   xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }
+
+/* -------------------------------------------------------------------
+ *
+ * XMPP API - XMPP Stream Management (XEP-0198)
+ *
+ * -------------------------------------------------------------------*/
+const XOWS_NS_SM3 = "urn:xmpp:sm:3";
+
+/**
+ * Data for Stream Management and resume processing
+ */
+const xows_xmp_sm3_data = {id:null,max:null,hr:0,hs:0};
+
+/**
+ * Counter for Stream Management sent stanza tracking process
+ */
+const xows_xmp_sm3_track_cnt = {s:0,r:0};
+
+/**
+ * Reset Stream Management data
+ */
+function xows_xmp_sm3_reset()
+{
+  // Reset Stream Management data
+  xows_xmp_sm3_data.id = null;
+  xows_xmp_sm3_data.max = null;
+  xows_xmp_sm3_data.hr = 0;
+  xows_xmp_sm3_data.hs = 0;
+
+  // Reset tracking timeout and counters
+  if(xows_xmp_sm3_track_hto.r) {
+    clearTimeout(xows_xmp_sm3_track_hto.r);
+    xows_xmp_sm3_track_hto.r = null;
+  }
+
+  if(xows_xmp_sm3_track_hto.s) {
+    clearTimeout(xows_xmp_sm3_track_hto.s);
+    xows_xmp_sm3_track_hto.s = null;
+  }
+
+  xows_xmp_sm3_track_cnt.r = 0;
+  xows_xmp_sm3_track_cnt.s = 0;
+}
+
+/**
+ * setTimeout Handle for stream-management sent stanza tracking process
+ */
+const xows_xmp_sm3_track_hto = {s:null,r:null};
+
+/**
+ * Keep track of handled stanza count for Stream Management processing
+ *
+ * It automatically increase count of received (handled) stanza
+ * starting from received sStream Management <enabled>
+ *
+ * @param   {boolean}   force     Bypass counter and force send request
+ */
+function xows_xmp_sm3_track_recv(force)
+{
+  if(xows_xmp_sm3_track_hto.r) {
+    clearTimeout(xows_xmp_sm3_track_hto.r);
+    xows_xmp_sm3_track_hto.r = null;
+  }
+
+  if(xows_xmp_sess && xows_xmp_sm3_data.id) {
+
+    xows_xmp_sm3_data.hr++;
+
+    if(force || xows_xmp_sm3_track_cnt.r >= 10) {
+      // Reset counter and send a request
+      xows_xmp_sm3_track_cnt.r = 0;
+      xows_sck_send("<a xmlns='urn:xmpp:sm:3' h='"+xows_xmp_sm3_data.hr+"'/>");
+    } else {
+      // Increase counter
+      xows_xmp_sm3_track_cnt.r++;
+      // Set timeout to force send a request after 60 seconds
+      xows_xmp_sm3_track_hto.r = setTimeout(xows_xmp_sm3_track_sent, 60000, true);
+    }
+  }
+}
+
+/**
+ * Keep track of sent stanza count for Stream Management processing
+ *
+ * It automatically send ack request <r/> every five stanza sent or
+ * 60 seconds after the last sent stanza.
+ *
+ * @param   {boolean}   force     Bypass counter and force send request
+ */
+function xows_xmp_sm3_track_sent(force)
+{
+  if(xows_xmp_sm3_track_hto.s) {
+    clearTimeout(xows_xmp_sm3_track_hto.s);
+    xows_xmp_sm3_track_hto.s = null;
+  }
+
+  if(xows_xmp_sess && xows_xmp_sm3_data.id) {
+    if(force || xows_xmp_sm3_track_cnt.s >= 10) {
+      // Reset counter and send a request
+      xows_xmp_sm3_track_cnt.s = 0;
+      xows_sck_send("<r xmlns='urn:xmpp:sm:3'/>");
+    } else {
+      // Increase counter
+      xows_xmp_sm3_track_cnt.s++;
+      // Set timeout to force send a request after 60 seconds
+      xows_xmp_sm3_track_hto.s = setTimeout(xows_xmp_sm3_track_sent, 60000, true);
+    }
+  }
+}
+
+/**
+ * Function to proceed an received <enabled> stanza
+ *
+ * @param   {object}    stanza    Received <stream:error> stanza
+ */
+function xows_xmp_sm3_enabled_recv(stanza)
+{
+  // Check for Stream Management support
+  const xmlns = stanza.namespaceURI;
+
+  if(xmlns === XOWS_NS_SM3) {
+
+    if(stanza.hasAttribute("resume")) {
+
+      xows_xmp_sm3_data.id = stanza.getAttribute("id");
+
+      if(stanza.hasAttribute("max"))
+        xows_xmp_sm3_data.max = stanza.getAttribute("max");
+
+      xows_log(2,"xmp_sm3_enabled_recv","server enabled resume",xows_xmp_sm3_data.id);
+    }
+  }
+}
+
+/**
+ * Function to proceed an received <resumed> stanza
+ *
+ * @param   {object}    stanza    Received <stream:error> stanza
+ */
+function xows_xmp_sm3_resumed_recv(stanza)
+{
+  // Session connected
+  xows_xmp_sess = true;
+
+  // No longer in resume scenario
+  xows_xmp_resume_pnd = false;
+
+  const hs = parseInt(stanza.getAttribute("h"));
+
+  xows_log(2,"xmp_sm3_resumed_recv","session resumed",hs);
+
+  // Session resumed, forward to client
+  xows_xmp_fw_sess_onready(xows_xmp_bind, true);
+}
+
+/**
+ * Function to proceed an received Stream Management <failed> stanza
+ *
+ * @param   {object}    stanza    Received <stream:error> stanza
+ */
+function xows_xmp_sm3_failed_recv(stanza)
+{
+  if(xows_xmp_resume_pnd) {
+
+    xows_log(1,"xmp_sm3_failed_recv","session resume failed");
+
+    // Abort resume scenario
+    xows_xmp_resume_pnd = false;
+
+    // Reset session-management data
+    xows_xmp_sm3_reset();
+
+    // Query for resource bind
+    xows_xmp_bind_query();
+  }
+}
+
+/**
+ * Function to proceed an received Stream Management <a/> stanza
+ *
+ * @param   {object}    stanza    Received <stream:error> stanza
+ */
+function xows_xmp_sm3_a_recv(stanza)
+{
+  // Set tracking as "Up to date" to prevent flooding for Ack
+  if(xows_xmp_sm3_track_hto.s) {
+    clearTimeout(xows_xmp_sm3_track_hto.s);
+    xows_xmp_sm3_track_hto.s = null;
+  }
+  xows_xmp_sm3_track_cnt.s = 0;
+
+  // Server send us its count of handled (received) stanza
+  xows_xmp_sm3_data.hs = parseInt(stanza.getAttribute("h"));
+  return true;
+}
+
+/**
+ * Function to proceed an received Stream Management <r/> stanza
+ *
+ * @param   {object}    stanza    Received <stream:error> stanza
+ */
+function xows_xmp_sm3_r_recv(stanza)
+{
+  // Set tracking as "Up to date" to prevent flooding for Ack
+  if(xows_xmp_sm3_track_hto.r) {
+    clearTimeout(xows_xmp_sm3_track_hto.r);
+    xows_xmp_sm3_track_hto.r = null;
+  }
+  xows_xmp_sm3_track_cnt.r = 0;
+
+  // Send to server our count of handled (received) stanza
+  xows_sck_send("<a xmlns='urn:xmpp:sm:3' h='"+xows_xmp_sm3_data.hr+"'/>");
+  return true;
+}
+
+/**
+ * Function to send an <enable> stanza for Stream Management (3) support
+ */
+function xows_xmp_sm3_enable_query()
+{
+  xows_sck_send("<enable xmlns='urn:xmpp:sm:3' resume='true'/>");
+}
+
+/**
+ * Send a Stream Management resume query to server
+ *
+ * @param   {object}    stanza    Received <stream:error> stanza
+ */
+function xows_xmp_sm3_resume_query()
+{
+  xows_log(2,"xmp_sm3_resume_query","request stream resume");
+  xows_sck_send("<resume xmlns='urn:xmpp:sm:3' previd='"+xows_xmp_sm3_data.id+
+                                                 "' h='"+xows_xmp_sm3_data.hr+"'/>");
+}
+
 
 /* -------------------------------------------------------------------
  *
@@ -695,15 +978,23 @@ function xows_xmp_stream_features_recv(stanza)
     xows_xmp_stream_feat.length = 0;
 
     // Store list of stream features XMLNS
-    let i = stanza.childNodes.length;
-    while(i--) xows_xmp_stream_feat.push(stanza.childNodes[i].namespaceURI);
+    for(let i = 0; i < stanza.childNodes.length; ++i) {
+      xows_xmp_stream_feat.push(stanza.childNodes[i].namespaceURI);
+    }
 
     // Output log
     xows_log(2,"xmp_stream_features_recv","received features",xows_xmp_stream_feat.join(", "));
 
-    // Query for resource bind
-    xows_xmp_bind_query();
+    // Is it possible to resume stream ?
+    if(xows_xmp_resume_pnd && xows_xmp_sm3_data.id) {
+      // Query to resume session
+      xows_xmp_sm3_resume_query();
+    } else {
+      // Query for resource bind
+      xows_xmp_bind_query();
+    }
   }
+
   return false;
 }
 
@@ -858,7 +1149,7 @@ function xows_xmp_bind_parse(stanza)
   if(stanza.getAttribute("type") === "error") {
     xows_xmp_error_log(stanza,0,"xmp_bind_parse");
     // Exit session (forward session close)
-    xows_xmp_failure(XOWS_XMPP_FAIL, "bind resource error");
+    xows_xmp_failure(XOWS_XMPP_FAIL, "resource bind error");
     return;
   }
 
@@ -869,10 +1160,22 @@ function xows_xmp_bind_parse(stanza)
   xows_xmp_bind.node = xows_jid_node(full_jid);
   xows_xmp_bind.resc = xows_jid_resc(full_jid);
 
-  xows_log(2,"xmp_bind_parse","binded resource",xows_xmp_bind.jful);
+  xows_log(2,"xmp_bind_parse","resource bind",xows_xmp_bind.jful);
+
+  // Session connected
+  xows_xmp_sess = true;
+
+  // Check for stream management feature
+  for(let i = 0; i < xows_xmp_stream_feat.length; ++i) {
+    if(xows_xmp_stream_feat[i] === XOWS_NS_SM3) {
+      // Enable stream resume
+      xows_xmp_sm3_enable_query();
+      break;
+    }
+  }
 
   // Session ready, forward to client
-  xows_xmp_fw_sess_onready(xows_xmp_bind);
+  xows_xmp_fw_sess_onready(xows_xmp_bind, false);
 
   // FIXME: The following code is obsoleted by RFC-6120
   /*
@@ -913,6 +1216,7 @@ function xows_xmp_bind_query(resource = null)
  *
  * @param   {object}    stanza    Received query response stanza
  */
+/*
 function xows_xmp_session_parse(stanza)
 {
   if(stanza.getAttribute("type") === "error") {
@@ -927,10 +1231,11 @@ function xows_xmp_session_parse(stanza)
   // Session ready, forward to client
   xows_xmp_fw_sess_onready(xows_xmp_bind);
 }
-
+*/
 /**
  * DEPRECATED - Query Session Establishment (RFC-3921)
  */
+/*
 function xows_xmp_session_query()
 {
   xows_log(2,"xmp_session_query","query for session");
@@ -941,6 +1246,7 @@ function xows_xmp_session_query()
 
   xows_xmp_send(iq, xows_xmp_session_parse);
 }
+*/
 
 /* -------------------------------------------------------------------
  *
