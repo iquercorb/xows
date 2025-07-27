@@ -1001,33 +1001,34 @@ function xows_cli_cnx_login(url, jid, pass, regi)
  * services and items discovery is completed.
  *
  * @param   {object}    bind      XMPP Session bind object
+ * @param   {boolean}   resume    Indicate XMPP stream resumed
  */
-function xows_cli_xmp_onready(bind)
+function xows_cli_xmp_onready(bind, resume)
 {
-  // Store the full JID for this session
-  xows_cli_self.addr = bind.jbar;
-  xows_cli_self.jbar = bind.jbar;
-  xows_cli_self.jful = bind.jful;
-
-  // Fetch available own data from cache
-  xows_cach_peer_fetch(xows_cli_self);
-
-  // If required set own default nickname
-  if(!xows_cli_self.name) {
-    const userid = bind.node;
-    xows_cli_self.name = userid.charAt(0).toUpperCase()+userid.slice(1);
-  }
-
-  // Set empty own status if null or undefined
-  if(xows_cli_self.stat === null || xows_cli_self.stat === undefined)
-    xows_cli_self.stat = "";
-
   if(xows_cli_cnx_resume_pnd) {
 
     // Recovery from connection loss, skip features & services discovery
-    xows_cli_session_start();
+    xows_cli_session_start(resume);
 
   } else {
+
+    // Store the full JID for this session
+    xows_cli_self.addr = bind.jbar;
+    xows_cli_self.jbar = bind.jbar;
+    xows_cli_self.jful = bind.jful;
+
+    // Fetch available own data from cache
+    xows_cach_peer_fetch(xows_cli_self);
+
+    // If required set own default nickname
+    if(!xows_cli_self.name) {
+      const userid = bind.node;
+      xows_cli_self.name = userid.charAt(0).toUpperCase()+userid.slice(1);
+    }
+
+    // Set empty own status if null or undefined
+    if(xows_cli_self.stat === null || xows_cli_self.stat === undefined)
+      xows_cli_self.stat = "";
 
     // Start features & services discovery
     xows_cli_warmup_start();
@@ -1464,10 +1465,11 @@ function xows_cli_warmup_finish()
  *
  * This function is called once per connection to send the initial presence
  * and send user updated data (avatar, nickname, etc..) to GUI module.
+ *
+ * @param   {boolean}   resume    Indicate XMPP stream resume
  */
-function xows_cli_session_start()
+function xows_cli_session_start(resume)
 {
-
   // Initialization can be normal or following connection loss
   if(xows_cli_cnx_resume_pnd) {
 
@@ -1477,13 +1479,18 @@ function xows_cli_session_start()
     // Stop resume process
     xows_cli_cnx_resume(false);
 
-    // We must re-join joigned rooms after reconnect
-    let i = xows_cli_room.length;
-    while(i--) {
-      if(xows_cli_room[i].live) {
-        xows_cli_room[i].join = null; //< need to join room again
-        xows_cli_muc_join(xows_cli_room[i]);
+    // If XMPP stream resumed, don't need to rejoin
+    if(!resume) {
+
+      // We must re-join joigned rooms after reconnect
+      let i = xows_cli_room.length;
+      while(i--) {
+        if(xows_cli_room[i].live) {
+          xows_cli_room[i].join = null; //< need to join room again
+          xows_cli_muc_join(xows_cli_room[i]);
+        }
       }
+
     }
 
   } else {
@@ -1493,9 +1500,10 @@ function xows_cli_session_start()
 
   // Send initial own presence (after Room rejoin on resume to prevent
   // sending invalid presence to non-joined room)
-  xows_cli_pres_show_set(XOWS_SHOW_ON);
+  if(!resume) //< If XMPP stream resumed, nothing to do
+    xows_cli_pres_show_set(XOWS_SHOW_ON);
 
-  // Call the configured onconnect callback (forward signal to GUI)
+  // Call the configured callback (forward signal to GUI)
   xows_cli_fw_onready(xows_cli_self);
 }
 
@@ -2144,7 +2152,7 @@ function xows_cli_chst_onrecv(id, from, type, state, ocid)
 /**
  *  Composing chatsate setTimeout handle/reference
  */
-let xows_cli_msg_chst_hto = null;
+let xows_cli_chst_hto = null;
 
 /**
  * Set chat state to and send the proper notification to peer
@@ -2163,22 +2171,22 @@ function xows_cli_chst_set(peer, stat)
 
   if(stat > XOWS_CHAT_PAUS) { //< composing
 
-    if(xows_cli_msg_chst_hto) {
+    if(xows_cli_chst_hto) {
       // Pending timeout running mean "composing" state already send
-      clearTimeout(xows_cli_msg_chst_hto);
+      clearTimeout(xows_cli_chst_hto);
     } else {
       // Send new "composing" state
       xows_xmp_message_chatstate_send(peer.jlck, type, stat);
     }
 
     // Create/reset a timeout to end typing state after delay
-    xows_cli_msg_chst_hto = setTimeout(xows_cli_msg_chst,4000,peer,XOWS_CHAT_PAUS);
+    xows_cli_chst_hto = setTimeout(xows_cli_chst_set,4000,peer,XOWS_CHAT_PAUS);
 
   } else {
 
     // Reset pending timeout
-    clearTimeout(xows_cli_msg_chst_hto);
-    xows_cli_msg_chst_hto = null;
+    clearTimeout(xows_cli_chst_hto);
+    xows_cli_chst_hto = null;
 
     // Send new chat state
     xows_xmp_message_chatstate_send(peer.jlck, type, stat);
