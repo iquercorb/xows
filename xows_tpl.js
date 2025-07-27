@@ -1724,10 +1724,9 @@ function xows_tpl_spawn_stream_audio(peer)
   const inst = xows_tpl_model["strm-audio"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.dataset.peer = xows_cli_peer_iden(peer);
   inst.title = peer.name;
-  const strm_avat = inst.querySelector("STRM-AVAT");
-  strm_avat.className = xows_tpl_spawn_avat_cls(peer);
+  inst.querySelector("STRM-AVAT").className = xows_tpl_spawn_avat_cls(peer);
+  inst.querySelector("AUDIO").dataset.peer = xows_cli_peer_iden(peer);
 
   return inst;
 }
@@ -1746,8 +1745,8 @@ function xows_tpl_spawn_stream_video(peer)
   const inst = xows_tpl_model["strm-video"].firstChild.cloneNode(true);
 
   // Set content to proper elements
-  inst.dataset.peer = xows_cli_peer_iden(peer);
   inst.title = peer.name;
+  inst.querySelector("VIDEO").dataset.peer = xows_cli_peer_iden(peer);
 
   return inst;
 }
