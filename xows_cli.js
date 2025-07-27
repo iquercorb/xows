@@ -3937,13 +3937,8 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
     load_mask |= XOWS_FETCH_AVAT;
   }
 
-  if(room.join) {
-    // Fetch data and push Occupant
-    xows_load_task_push(occu, load_mask, xows_cli_peer_push, mucx);
-  } else {
-    // Fetch data and push Occupant
-    xows_load_task_push(occu, load_mask, xows_cli_muc_warmup, mucx);
-  }
+  // Fetch data and push Occupant
+  xows_load_task_push(occu, load_mask, xows_cli_peer_push, mucx);
 }
 
 /**
