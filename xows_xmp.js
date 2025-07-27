@@ -439,7 +439,7 @@ function xows_xmp_disconnect()
  * Special function to close session and exit the quickest way
  * possible, used to terminate session when browser exit page
  */
-function xows_xmp_flush()
+function xows_xmp_onuload()
 {
   // Ignore if no socket available
   if(!xows_sck_sock)
@@ -518,6 +518,11 @@ function xows_xmp_sck_onrecv(data)
 }
 
 /**
+ * Queue for temporarily unable to send stanzas
+ */
+const xows_xmp_send_que = [];
+
+/**
  * Send an XMPP stanza with optional callbacks function to handle
  * received result or response for server
  *
@@ -531,9 +536,6 @@ function xows_xmp_sck_onrecv(data)
  */
 function xows_xmp_send(stanza, onresult, onparse)
 {
-  if(!xows_sck_sock)
-    return;
-
   // Add jabber:client namespace
   if(stanza.tagName === "presence" ||
       stanza.tagName === "message" ||
@@ -553,11 +555,84 @@ function xows_xmp_send(stanza, onresult, onparse)
   if(xows_isfunc(onresult))
     xows_xmp_iq_stack.set(id,{"onresult":onresult,"onparse":onparse});
 
+  if(xows_sck_sock && xows_xmp_sess) {
+
+    // Send serialized data to socket
+    xows_sck_send(xows_xml_serialize(stanza));
+
+    // Stream management ack request
+    xows_xmp_sm3_track_sent();
+
+  } else {
+
+    xows_log(2,"xows_xmp_send","enqueue stanza");
+
+    // Add timestamp for delayed delivery
+    const stamp = new Date().toISOString();
+    xows_xml_parent(stanza,
+      xows_xml_node("delay",{"xmlns":XOWS_NS_DELAY,"stamp":stamp}));
+
+    // Add stanza to queue
+    xows_xmp_send_que.push(xows_xml_serialize(stanza));
+  }
+}
+
+/**
+ * Send an XMPP stanza without additionnal check
+ *
+ * This function is used to send XMPP low-level stanza to allow to
+ * communicate with server while stream is not established yet.
+ *
+ * This is required since the common send function queue stanza untile
+ * socket open and stream established to allow resume stream
+ *
+ * @param   {object}    stanza    Stanza XML Element object
+ * @param   {function} [onresult] Callback for received query result
+ */
+function xows_xmp_send_raw(stanza, onresult)
+{
+  if(!xows_sck_sock) {
+    xows_log(0,"xmp_send_raw","socket is closed");
+    return;
+  }
+
+  if(stanza.tagName === "iq") {
+
+    if(!stanza.namespaceURI)
+      stanza.setAttribute("xmlns", XOWS_NS_CLIENT);
+
+    // Add id to stanza
+    let id = stanza.getAttribute("id");
+    if(!id) {
+      id = xows_gen_uuid();
+      stanza.setAttribute("id", id);
+    }
+
+    // If callaback is supplied, add request to stack
+    if(xows_isfunc(onresult))
+      xows_xmp_iq_stack.set(id,{"onresult":onresult,"onparse":null});
+  }
+
   // Send serialized data to socket
   xows_sck_send(xows_xml_serialize(stanza));
+}
 
-  // Stream management ack request
-  xows_xmp_sm3_track_sent();
+/**
+ * Flush stanza queue, sending all pending stanzas stored
+ * during connection loss.
+ */
+function xows_xmp_flush()
+{
+  if(!xows_sck_sock) {
+    xows_log(0,"xmp_send_raw","socket is closed");
+    return;
+  }
+
+  xows_log(1,"xows_xmp_flush","flushing stanzas queue");
+
+  while(xows_xmp_send_que.length)
+    // Send serialized data to socket
+    xows_sck_send(xows_xmp_send_que.shift());
 }
 
 /* -------------------------------------------------------------------
@@ -596,7 +671,7 @@ function xows_xmp_fram_open_send()
   // https://datatracker.ietf.org/doc/html/rfc7395#section-3.3
 
   // Send the first <open> stanza to init stream
-  xows_xmp_send(xows_xml_node("open",{"to":xows_xmp_host,"version":"1.0","xmlns":XOWS_NS_IETF_FRAMING}));
+  xows_sck_send("<open to='"+xows_xmp_host+"' version='1.0' xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }
 
 /**
@@ -639,7 +714,7 @@ function xows_xmp_fram_close_send()
   xows_log(2,"xmp_fram_close_send","closes stream");
 
   // Send the <close> stanza to close stream
-  xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
+  xows_sck_send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }
 
 /* -------------------------------------------------------------------
@@ -1032,7 +1107,7 @@ function xows_xmp_sasl_auth_send()
 
   if(sasl_request.length !== 0) {
     xows_log(2,"xmp_sasl_auth_send","sending authentication request",sasl_request);
-    xows_xmp_send(xows_xml_node("auth",{"xmlns":XOWS_NS_IETF_SASL,"mechanism":sasl_mechanism},btoa(sasl_request)));
+    xows_xmp_send_raw(xows_xml_node("auth",{"xmlns":XOWS_NS_IETF_SASL,"mechanism":sasl_mechanism},btoa(sasl_request)));
   }
 }
 
@@ -1054,7 +1129,7 @@ function xows_xmp_sasl_challenge_recv(stanza)
   xows_log(2,"xmp_sasl_challenge_recv","sending challenge response",sasl_response);
 
   // Create and send SASL challenge response stanza
-  xows_xmp_send(xows_xml_node("response",{"xmlns":XOWS_NS_IETF_SASL},btoa(sasl_response)));
+  xows_xmp_send_raw(xows_xml_node("response",{"xmlns":XOWS_NS_IETF_SASL},btoa(sasl_response)));
 
   // We should now receive an <faillure> or <success> stanza...
   return true; //< stanza processed
@@ -1206,7 +1281,7 @@ function xows_xmp_bind_query(resource = null)
   if(resource)
     xows_xml_parent(bind, xows_xml_node("resource", null, resource));
 
-  xows_xmp_send(xows_xml_node("iq",{"type":"set"},bind), xows_xmp_bind_parse);
+  xows_xmp_send_raw(xows_xml_node("iq",{"type":"set"},bind), xows_xmp_bind_parse);
 }
 /* -------------------------------------------------------------------
  * XMPP API - DEPRECATED - XMPP Core (RFC-3921) - Session Establishment
