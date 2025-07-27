@@ -58,6 +58,7 @@
   --text-tone4:       #4D4D59;  /* Darker text (block quote border) */
   --text-hligh:       #FFE9B7;  /* Highlight text (emphasis, highlighted text) */
   --text-error:       #FC8484;  /* Error text (forbiden and error text) */
+  --text-faild:       #B36262;  /* Fail text (failed message) */
 
   --link-base :       #FFB000;  /* Link & Highlight Button background */
   --link-hover :      #FFCC17;  /* Link & Highlight Button background hover */
@@ -2805,7 +2806,7 @@ li-mesg.MESG-SENT.MESG-RECP.MESG-TRASH mesg-body {
   opacity: .3;
 }
 li-mesg.MESG-FAIL mesg-body {
-  color: var(--text-error);
+  color: var(--text-faild);
 }
 li-mesg.MESG-NULL {
   font-style: italic;
