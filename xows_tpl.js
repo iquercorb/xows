@@ -1496,7 +1496,8 @@ function xows_tpl_mesg_update(li_msg, peer, mesg, recp, li_rpl)
   }
 
   // Marks message à receipt received
-  if(recp) li_msg.classList.add("MESG-RECP");
+  if(recp && li_msg.classList.contains("MESG-SENT") && !li_msg.classList.contains("MESG-RECP"))
+    li_msg.classList.add("MESG-RECP");
 
   if(li_rpl) {
 
