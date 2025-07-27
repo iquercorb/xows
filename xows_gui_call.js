@@ -103,10 +103,15 @@ function xows_gui_call_view_onclick(event)
  */
 function xows_gui_call_view_oninput(event)
 {
+  // Search for participant media element, either <audio> or <video>
+  const media = xows_doc("call_grid").querySelector("[data-peer='"+xows_cli_peer_iden(xows_gui_peer)+"']");
+  if(!media) return;
+
   const gain = parseInt(event.target.value) / 100;
 
   // Set volume
-  xows_gui_audio.vol.gain.value = gain;
+  //xows_gui_audio.vol.gain.value = gain;
+  media.volume = gain;
   xows_log(2, "gui_call_volu_oninput", "volume", gain);
 
   // Change volume slider icon according current level
@@ -206,19 +211,19 @@ function xows_gui_call_view_close(peer)
  */
 function xows_gui_call_view_part_add(peer, part, stream)
 {
-  const call_grid = xows_gui_doc(peer, "call_grid");
+  const call_grid = xows_gui_doc(peer,"call_grid");
 
   const is_video = stream.getVideoTracks().length;
   if(is_video && part.self) return; //< No local video loopback
 
+  const peer_iden = xows_cli_peer_iden(part);
+
   // Search for already existing stream for this peer
-  let element = call_grid.querySelector("div[data-peer='"+xows_cli_peer_iden(part)+"']");
-
-  let media;
-
-  if(element) {
+  let element;
+  let media = call_grid.querySelector("[data-peer='"+xows_cli_peer_iden(part)+"']");
+  if(media) {
     // Simply update stream
-    element.firstChild.srcObject = stream;
+    media.srcObject = stream;
     return;
   } else {
     // Create <strm-audio> or <strm-video> element from template
@@ -239,7 +244,7 @@ function xows_gui_call_view_part_add(peer, part, stream)
 
   // If stream is Audio we create required stuff for VU-Meter animation
   if(!is_video) {
-    // Create Analyser node dans Buffer node stored within the Media
+    // Create Analyser node and Buffer node stored within the Media
     // objecy to perform audio peek analysis for visual effects
     media.fftNode = xows_gui_audio.ctx.createAnalyser();
     media.fftNode.fftSize = 2048;
@@ -256,7 +261,7 @@ function xows_gui_call_view_part_add(peer, part, stream)
 
   // Add Stream element to layout
   if(part.self) {
-    call_grid.insertBefore(element, call_grid.firstChild);
+    call_grid.insertBefore(element, call_grid.firstElementChild);
   } else {
     call_grid.appendChild(element);
   }
