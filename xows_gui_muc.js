@@ -40,32 +40,6 @@
  *                Multi-User-Chat Management Sub-Module
  *
  * ------------------------------------------------------------------ */
- /* -------------------------------------------------------------------
- * MUC interactions - Base functions
- * -------------------------------------------------------------------*/
-/**
- * Joins a MUC Room, either already discovered, or using room name.
- *
- * If 'room' parameter is not null the 'name' parameter is ignored. The 'name'
- * parameter can be either a Room ID to join or create on the current
- * default MUC service, or a full JID address to join a Room on a custom
- * MUC service.
- *
- * @param   {object}   [room]     Room object
- * @param   {string}   [name]     Optional room ID or address to join or create
- */
-function xows_gui_muc_join(room, name)
-{
-  // This is the important part, it is necessary to create
-  // the Room documents before we attempt to join Room to be
-  // able to properly add incoming occupants list and messages
-  if(room)
-    xows_gui_doc_init(room);
-
-  // Join or create room
-  xows_cli_muc_join_atempt(room, name);
-}
-
 /* -------------------------------------------------------------------
  * MUC interactions - Room Join conditions Handling
  * -------------------------------------------------------------------*/
@@ -132,15 +106,8 @@ function xows_gui_muc_onjoin(room, code, error)
     return;
   }
 
-  xows_gui_doc_init(room);
-
   // check if this is a re-join after connection loss
-  if(room.rcon) {
-
-    // We do NOT switch to room automatically
-    room.rcon = false; //< reset flag
-
-  } else {
+  if(!room.live) {
     // Switch peer to newly joined room
     xows_gui_peer_switch_to(room.addr);
   }
@@ -235,7 +202,7 @@ function xows_gui_muc_join_ibox_oninput(value)
 function xows_gui_muc_join_ibox_onvalid(value)
 {
   // Join or create room
-  xows_gui_muc_join(null, value);
+  xows_cli_muc_join(value);
 }
 
 /**
@@ -427,10 +394,12 @@ const xows_gui_muc_pswd_ibox = {room:null};
 function xows_gui_muc_pswd_ibox_onvalid(value)
 {
   const room = xows_gui_muc_pswd_ibox.room;
+
   // Update Room password
   room.pass = value;
+
   // Try join again
-  xows_cli_muc_join_retry(room);
+  xows_cli_muc_join(room);
 }
 
 /**
@@ -470,10 +439,12 @@ const xows_gui_muc_cflt_ibox = {room:null};
 function xows_gui_muc_cflt_ibox_onvalid(value)
 {
   const room = xows_gui_muc_cflt_ibox.room;
+
   // Update Room password
   room.nick = value;
+
   // Try to join again
-  xows_cli_muc_join_retry(room);
+  xows_cli_muc_join(room);
 }
 
 /**

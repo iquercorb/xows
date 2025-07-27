@@ -249,9 +249,14 @@ const xows_gui_rost_room_qeu = [];
 /**
  * Function to add or update item of the roster Room list
  *
+ * The 'join' parameter indicate whether Room is about to be joined, meaning
+ * that offscreen documents must be created to be updated and fulfilled during
+ * join process.
+ *
  * @param   {object}    room      Room object to add or update
+ * @param   {boolean}   join      Indicate Room is about to be joined
  */
-function xows_gui_rost_room_onpush(room)
+function xows_gui_rost_room_onpush(room, join)
 {
   // Check for null object, meaning previous public room query response
   if(!room) {
@@ -266,6 +271,10 @@ function xows_gui_rost_room_onpush(room)
   const dst_ul = (room.publ) ? xows_doc("room_publ") :
                               (room.book) ? xows_doc("room_book") :
                                             xows_doc("room_priv");
+
+  // The room is about to be joined, we create offscreen document
+  if(join)
+    xows_gui_doc_init(room);
 
   //let li_peer = document.getElementById(room.addr);
   let li_peer = xows_gui_rost_list_find(room.addr);

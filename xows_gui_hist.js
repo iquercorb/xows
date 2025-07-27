@@ -131,7 +131,7 @@ function xows_gui_hist_update(peer, author)
   // fragment history corresponding to contact
   const hist_ul = xows_gui_doc(peer, "hist_ul");
 
-  if(!hist_ul || !hist_ul.childNodes.length)
+  if(!hist_ul || !hist_ul.children.length)
     return;
 
   // Get peer ID
@@ -354,7 +354,7 @@ function xows_gui_hist_onrecv(peer, mesg, wait, self, error)
   const hist_ul = xows_gui_doc(peer, "hist_ul");
 
   // Get last valid (non discarded) previous message
-  let li_prv = hist_ul.lastChild;
+  let li_prv = hist_ul.lastElementChild;
   while(li_prv && li_prv.hidden) li_prv = li_prv.previousSibling;
 
   // Create new message element
@@ -445,25 +445,25 @@ const xows_gui_mam_query_to = new Map();
  *
  * @param   {object}    peer      Peer object
  * @param   {number}    delay     Delay to temporize query
- * @param   {boolean}   after     If true, fetch newer message instead of older
+ * @param   {boolean}   newer     If true, fetch newer message instead of older
+ * @param   {number}   [count]    Count of visible message to get
  */
-function xows_gui_mam_query(peer, delay, after)
+function xows_gui_mam_query(peer, delay, newer, count = 0)
 {
   if(xows_gui_mam_query_to.has(peer))  //< Query already pending
     return;
 
   const hist_ul = xows_gui_doc(peer, "hist_ul");
-  //if(!hist_ul) return;
 
-  let start, end;
+  let end, start = null; //< IMPORTANT, set null for logic purposes
 
   // Get start or end time depending after parameter, we get time
   // always 25 ms after or before to prevent received the last or
   // first message already in history.
-  if(after) {
+  if(newer) {
 
-    if(hist_ul.childNodes.length)
-      start = parseInt(hist_ul.lastChild.dataset.time) + 25;
+    if(hist_ul.children.length)
+      start = parseInt(hist_ul.lastElementChild.dataset.time) + 25;
 
   } else {
 
@@ -473,15 +473,17 @@ function xows_gui_mam_query(peer, delay, after)
     if(hist_beg.className.length)
       return;
 
-    if(hist_ul.childNodes.length)
-      end = parseInt(hist_ul.firstChild.dataset.time) - 25;
-
-    //hist_beg.className = "LOADING";
+    if(hist_ul.children.length)
+      end = parseInt(hist_ul.firstElementChild.dataset.time) - 25;
   }
+
+  // If no count specified, set default
+  if(count === 0)
+    count = xows_options.cli_archive_count;
 
   // To prevent flood and increase ergonomy the archive query is temporised
   xows_gui_mam_query_to.set(peer, setTimeout(xows_cli_mam_fetch, delay,
-                                             peer, xows_options.cli_archive_count,
+                                             peer, count,
                                              start, end,
                                              xows_gui_mam_parse));
 }
@@ -490,46 +492,66 @@ function xows_gui_mam_query(peer, delay, after)
  * Fetch the newer available archived messages for the specified Peer
  *
  * @param   {object}    peer      Peer object
+ * @param   {number}    delay     Temporization delay (in miliseconds)
  */
-function xows_gui_mam_fetch_newer(peer)
+function xows_gui_mam_fetch_newer(peer, delay = 0)
 {
-  xows_gui_mam_query(peer, 0, true);
+  xows_gui_mam_query(peer, delay, true);
 }
 
 /**
  * Fetch older available archived messages for the specified Peer
  *
  * @param   {object}    peer      Peer object
+ * @param   {number}    delay     Temporization delay (in miliseconds)
  */
-function xows_gui_mam_fetch_older(peer)
+function xows_gui_mam_fetch_older(peer, delay = 0)
 {
-  xows_gui_mam_query(peer, xows_options.cli_archive_delay, false);
+  let count = xows_options.cli_archive_count;
+
+  // Check whether this is a fetch for newly joined Room
+  if(peer.type === XOWS_PEER_ROOM && !peer.live) {
+
+    // We need to subtract required count of history message by
+    // those we already got from the server
+    let count = xows_options.cli_archive_count;
+    count -= xows_gui_doc(peer,"hist_ul").children.length;
+  }
+
+  if(count > 0)
+    xows_gui_mam_query(peer, delay, false, count);
 }
 
 /**
  * Callback function to handle the received archives for a contacts
  *
  * @param   {object}    peer      Archive related peer (Contact or Room)
+ * @param   {boolean}   newer     Result are newer rather than older
  * @param   {object[]}  result    Received archived messages
  * @param   {number}    count     Count of gathered true (visible) messages
  * @param   {boolean}   complete  Indicate results are complete (no remain)
  */
-function xows_gui_mam_parse(peer, result, count, complete)
+function xows_gui_mam_parse(peer, newer, result, count, complete)
 {
   const hist_ul = xows_gui_doc(peer, "hist_ul");
 
-  let li_ref = null, older = true;
+  let li_ref = null;
 
+  /*
   // Check whether we must append or prepend received archived messages
-  if(result.length && hist_ul.childNodes.length) {
+  if(result.length && hist_ul.children.length) {
     // We compare time (unix epoch) to ensure last archived message is
     // older (or equal) than the current oldest history message.
-    if(hist_ul.firstChild.dataset.time >= result[result.length-1].time) {
-      li_ref = hist_ul.firstChild; //< node to insert messages before
+    if(hist_ul.firstElementChild.dataset.time >= result[result.length-1].time) {
+      li_ref = hist_ul.firstElementChild; //< node to insert messages before
     } else {
       older = false;
     }
   }
+  */
+
+  if(!newer)
+    li_ref = hist_ul.firstElementChild; //< node to insert messages before
 
   const hist_beg = xows_gui_doc(peer, "hist_beg");
 
@@ -605,7 +627,11 @@ function xows_gui_mam_parse(peer, result, count, complete)
   xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
 
   // Inform MAM loaded
-  xows_load_task_done(peer, XOWS_FETCH_HIST);
+  if(newer) {
+    xows_load_task_done(peer, XOWS_FETCH_NEWR);
+  } else {
+    xows_load_task_done(peer, XOWS_FETCH_OLDR);
+  }
 }
 
 /* -------------------------------------------------------------------

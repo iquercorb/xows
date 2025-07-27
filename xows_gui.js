@@ -47,7 +47,8 @@ const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
 /**
  * History loading process tasks bit (see xows_load* )
  */
-const XOWS_FETCH_HIST = xows_load_task_bit();
+const XOWS_FETCH_NEWR = xows_load_task_bit();
+const XOWS_FETCH_OLDR = xows_load_task_bit();
 
 /**
  * Current selected GUI locale code
@@ -411,7 +412,8 @@ function xows_gui_init()
   xows_cli_set_callback("callerror",  xows_gui_call_onerror);
 
   // Set loader functions
-  xows_load_task_set(XOWS_FETCH_HIST, xows_gui_mam_fetch_newer);
+  xows_load_task_set(XOWS_FETCH_NEWR, xows_gui_mam_fetch_newer);
+  xows_load_task_set(XOWS_FETCH_OLDR, xows_gui_mam_fetch_older);
 }
 
 /**
@@ -805,9 +807,8 @@ function xows_gui_doc_import(peer)
   }
 
   // If no document fragment exists for Peer, create it
-  if(!xows_doc_frag_db.has(peer.addr)) {
+  if(!xows_doc_frag_db.has(peer.addr))
     xows_gui_doc_init(peer);
-  }
 
   // import document elements from offscreen fragment
   xows_gui_frag_import(peer.addr);
@@ -871,7 +872,7 @@ function xows_gui_doc_import(peer)
       xows_doc_cls_add("hist_beg","HIST-START");
       break;
     default:
-      load_mask |= XOWS_FETCH_HIST;
+      load_mask |= XOWS_FETCH_OLDR;
       break;
     }
 
@@ -1168,6 +1169,10 @@ function xows_gui_doc_update(peer, mask = 0xff)
   if(mask & XOWS_UPDT_LOAD) {
     const peer_load = xows_gui_doc(peer,"peer_load");
     if(!peer_load.hidden) peer_load.hidden = true;
+
+    // Set peer as "live", indicating it now has
+    // open and ready chat window
+    peer.live = true;
   }
 }
 
@@ -1201,7 +1206,7 @@ function xows_gui_peer_switch_to(addr)
     if(peer.type === XOWS_PEER_ROOM && !peer.join) {
 
       // Attempt to join room first
-      xows_gui_muc_join(peer);
+      xows_cli_muc_join(peer);
 
       // Peer not ready yet
       peer = null;
@@ -2206,7 +2211,7 @@ function xows_gui_chat_onscroll(event)
   // If scroll near of top, fetch older history
   if(chat_main.scrollTop < xows_doc("hist_beg").offsetHeight * 0.8) {
     // Query archive for current chat contact
-    xows_gui_mam_fetch_older(xows_gui_peer);
+    xows_gui_mam_fetch_older(xows_gui_peer, xows_options.cli_archive_delay);
   }
 
   // Update Chat navigation banner according user scroll relative to bottom.
