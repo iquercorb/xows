@@ -1467,8 +1467,6 @@ function xows_cli_warmup_finish()
  */
 function xows_cli_session_start()
 {
-  // Push self to GUI
-  xows_cli_pres_show_set(XOWS_SHOW_ON);
 
   // Initialization can be normal or following connection loss
   if(xows_cli_cnx_resume_pnd) {
@@ -1493,9 +1491,9 @@ function xows_cli_session_start()
     xows_log(2,"cli_session_start","takeoff");
   }
 
-  // Send initial own presence (after Room rejoin on connect loss to prevent
+  // Send initial own presence (after Room rejoin on resume to prevent
   // sending invalid presence to non-joined room)
-  xows_cli_pres_update();
+  xows_cli_pres_show_set(XOWS_SHOW_ON);
 
   // Call the configured onconnect callback (forward signal to GUI)
   xows_cli_fw_onready(xows_cli_self);
