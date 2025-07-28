@@ -474,10 +474,6 @@ function xows_gui_call_exit(peer)
 
   // Enable chat header call buttons
   xows_gui_doc_update(peer, XOWS_UPDT_BUZY);
-
-  // If no more call sessions, stop VU-Meter animation
-  if(!xows_cli_call_count())
-    xows_gui_call_view_vumet_stop();
 }
 
 /* -------------------------------------------------------------------
@@ -670,9 +666,6 @@ function xows_gui_call_onoffer(peer, stream)
   if(!peer.live)
     xows_gui_doc_init(peer);
 
-  // Start the VU-Meter animation for Call View
-  //xows_gui_call_view_vumet_run(50);
-
   // Add remote participant to Call View
   xows_gui_call_view_part_add(peer, peer, stream);
 
@@ -692,9 +685,6 @@ function xows_gui_call_onoffer(peer, stream)
  */
 function xows_gui_call_onanwse(peer, stream)
 {
-  // Start the VU-Meter animation for Call View
-  //xows_gui_call_view_vumet_run(50);
-
   // Add remote participant to Call View
   xows_gui_call_view_part_add(peer, peer, stream);
 }
