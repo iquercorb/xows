@@ -909,7 +909,6 @@ let xows_cli_fw_onclose = function() {};
  *  - callstate : Multimedia call Session Established
  *  - calltermd : Multimedia call Session Terminated
  *  - callerror : Multimedia call Session errror
-
  *
  * @param   {string}    type      Callback slot
  * @param   {function}  callback  Callback function to set
@@ -4635,21 +4634,19 @@ function xows_cli_call_medias(peer)
 {
   const sess = xows_cli_call_db.get(peer);
 
-  let remot;
+  let remot = null;
   if(sess.rmt.str) {
     remot = { audio : sess.rmt.str.getAudioTracks().length > 0,
               video : sess.rmt.str.getVideoTracks().length > 0 };
-  } else
-  if(sess.rmt.sdp) {
+  } else if(sess.rmt.sdp) {
     remot = xows_sdp_get_medias(sess.rmt.sdp);
   }
 
-  let local;
+  let local = null;
   if(sess.loc.str) {
     local = { audio : sess.loc.str.getAudioTracks().length > 0,
               video : sess.loc.str.getVideoTracks().length > 0 };
-  } else
-  if(sess.loc.sdp) {
+  } else if(sess.loc.sdp) {
     local = xows_sdp_get_medias(sess.loc.sdp);
   }
 
@@ -4661,6 +4658,8 @@ function xows_cli_call_medias(peer)
     offer.audio = offer.audio && answe.audio;
     offer.video = offer.video && answe.video;
   }
+
+  xows_log(2,"xows_cli_call_medias","selected medias","audio="+offer.audio+" video="+offer.video);
 
   return offer;
 }
@@ -4777,18 +4776,16 @@ function xows_cli_call_clear(peer)
 
   const sess = xows_cli_call_db.get(peer);
 
-  // Stop streams
+  // Stop local tracks
   if(sess.loc.str) {
-    const tracks = sess.loc.str.getTracks();
-    for(let i = 0; i < tracks.length; ++i)
-      tracks[i].stop();
+    for(const track of sess.loc.str.getTracks())
+      track.stop();
   }
 
-  // Stop streams
+  // Stop remote tracks
   if(sess.rmt.str) {
-    const tracks = sess.rmt.str.getTracks();
-    for(let i = 0; i < tracks.length; ++i)
-      tracks[i].stop();
+    for(const track of sess.rmt.str.getTracks())
+      track.stop();
   }
 
   // Close RTC connection
@@ -4807,15 +4804,28 @@ function xows_cli_call_clear(peer)
  * Offer (invite) Multimedia Call to the specified Peer
  *
  * @param   {object}    peer    Peer object
- * @param   {string}    stream  Local input media stream
+ * @param   {string}    audio   Local input stream to use for audio track
+ * @param   {string}   [video]  Local input stream to use for video track
  */
-function xows_cli_call_self_invite(peer, stream)
+function xows_cli_call_self_invite(peer, audio, video)
 {
   // Select most suitable full JID
   peer.jrpc = xows_cli_best_resource(peer);
 
   // Create new (outbound) session dataset for Peer
   const sess = xows_cli_call_create(peer, XOWS_CALL_OUBD, XOWS_CALL_PEND);
+
+  // Create new Stream object to combine audio and video tracks
+  const stream = new MediaStream();
+
+  // Compose new combined stream from separate sources
+  for(const track of audio.getAudioTracks())
+    stream.addTrack(track);
+
+  if(video) {
+    for(const track of video.getVideoTracks())
+      stream.addTrack(track);
+  }
 
   // Set session RPC and local stream
   sess.loc.str = stream;
@@ -4829,9 +4839,10 @@ function xows_cli_call_self_invite(peer, stream)
  * Answer (accept) Multimedia Call from the specified Peer
  *
  * @param   {object}    peer    Peer object
- * @param   {string}    stream  Local input media stream
+ * @param   {string}    audio   Local input stream to use for audio track
+ * @param   {string}   [video]  Local input stream to use for video track
  */
-function xows_cli_call_self_accept(peer, stream)
+function xows_cli_call_self_accept(peer, audio, video)
 {
   if(!xows_cli_call_db.has(peer)) {
     xows_log(1,"cli_call_accept","No open session for",peer.addr);
@@ -4843,6 +4854,18 @@ function xows_cli_call_self_accept(peer, stream)
 
   // Change call session state
   sess.ste = XOWS_CALL_PEND;
+
+  // Create new Stream object to combine audio and video tracks
+  const stream = new MediaStream();
+
+  // Compose new combined stream from separate sources
+  for(const track of audio.getAudioTracks())
+    stream.addTrack(track);
+
+  if(video) {
+    for(const track of video.getVideoTracks())
+      stream.addTrack(track);
+  }
 
   // Set session local stream
   sess.loc.str = stream;

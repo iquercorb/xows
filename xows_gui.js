@@ -66,78 +66,6 @@ let xows_gui_auth = null;
 let xows_gui_peer = null;
 
 /**
- * Main browser audio API
- */
-const xows_gui_audio = {ctx:null,vol:null};
-
-/**
- * Sound library for audio effects
- */
-const xows_gui_sound_lib = new Map();
-
-/**
- * Load sound file to sound library at specified slot
- *
- * @param   {string}    name    Sound slot name
- * @param   {string}    file    Sound file name
- * @param   {boolean}   loop    Optionnal boolean to enable loop
- */
-function xows_gui_sound_error(event)
-{
-  const audio = event.target;
-  xows_log(1,"gui_sound_error","'"+audio.title+"' sound load failed",audio.src);
-  xows_gui_sound_lib.delete(audio.title);
-}
-
-/**
- * Load sound file to sound library at specified slot
- *
- * @param   {string}    name    Sound slot name
- * @param   {string}    file    Sound file name
- * @param   {boolean}   loop    Optionnal boolean to enable loop
- */
-function xows_gui_sound_load(name, file, loop)
-{
-  // Create new Audio object
-  const audio = new Audio();
-  xows_gui_sound_lib.set(name, audio);
-
-  audio.title = name; //< custom property to keep refrence
-  audio.loop = loop;  //< set loop option
-
-  // Creating path to sound
-  const path = xows_options.lib_path+"/sounds/"+file;
-
-  xows_log(2,"gui_sound_load","loading '"+name+"' sound",path);
-
-  // Set error callback and start loading
-  audio.onerror = xows_gui_sound_error;
-  audio.src = path;
-}
-
-/**
- * Play the specified sound from sound library
- *
- * @param   {string}    name    Sound slot name
- */
-function xows_gui_sound_play(name)
-{
-  if(xows_gui_sound_lib.has(name))
-    xows_gui_sound_lib.get(name).play();
-}
-
-/**
- * Stop the specified sound from sound library
- *
- * @param   {string}    name    Sound slot name
- */
-function xows_gui_sound_stop(name)
-{
-  if(xows_gui_sound_lib.has(name))
-    xows_gui_sound_lib.get(name).pause();
-}
-
-/**
  * Current state of browser focus
  */
 let xows_gui_has_focus = true;
@@ -373,14 +301,14 @@ function xows_gui_init()
   xows_doc_listener_add(xows_doc("self_panl"), "click", xows_gui_self_fram_onclick);
 
   // Load sound effects
-  xows_gui_sound_load("notify",   "notify.ogg");
-  xows_gui_sound_load("disable",  "disable.ogg");
-  xows_gui_sound_load("enable",   "enable.ogg");
-  xows_gui_sound_load("mute",     "mute.ogg");
-  xows_gui_sound_load("unmute",   "unmute.ogg");
-  xows_gui_sound_load("ringtone", "ringtone.ogg", true);
-  xows_gui_sound_load("ringbell", "ringbell.ogg", true);
-  xows_gui_sound_load("hangup",   "hangup.ogg");
+  xows_snd_sample_load("notify",   "notify.ogg");
+  xows_snd_sample_load("disable",  "disable.ogg");
+  xows_snd_sample_load("enable",   "enable.ogg");
+  xows_snd_sample_load("mute",     "mute.ogg");
+  xows_snd_sample_load("unmute",   "unmute.ogg");
+  xows_snd_sample_load("ringtone", "ringtone.ogg");
+  xows_snd_sample_load("ringbell", "ringbell.ogg");
+  xows_snd_sample_load("hangup",   "hangup.ogg");
 
   // Configure client callbacks
   xows_cli_set_callback("ready",      xows_gui_cli_onready);
@@ -410,6 +338,9 @@ function xows_gui_init()
   xows_cli_set_callback("callstate",  xows_gui_call_onstate);
   xows_cli_set_callback("calltermd",  xows_gui_call_ontermd);
   xows_cli_set_callback("callerror",  xows_gui_call_onerror);
+
+  // Configure sound callbacks
+  xows_snd_set_callback("onvmtr",     xows_gui_snd_onvmtr);
 
   // Set loader functions
   xows_load_task_set(XOWS_FETCH_NEWR, xows_gui_mam_fetch_newer);
@@ -562,13 +493,7 @@ function xows_gui_connect(user, pass, cred, regi = false)
   xows_doc_popu_close();
 
   // Create Audio context (must be done after user interaction)
-  if(!xows_gui_audio.ctx) {
-    xows_gui_audio.ctx = new AudioContext();
-    xows_gui_audio.vol = xows_gui_audio.ctx.createGain();
-    xows_gui_audio.vol.connect(xows_gui_audio.ctx.destination);
-    // Volume is muted by default
-    xows_gui_audio.vol.gain.value = 0;
-  }
+  xows_snd_init();
 
   // Append domain if the option is set, otherwise it should be
   // set in the usename as typed by user.
@@ -1538,7 +1463,7 @@ function xows_gui_wnd_noti_emit(peer, body)
       // Push new notification
       const notif = new Notification(peer.name,{"body":body,"icon":(icon?icon:("/"+xows_options.lib_path+"/icon.svg"))});
       // Sound is slower than light...
-      xows_gui_sound_play("notify");
+      xows_snd_sample_play("notify");
     }
     break;
 

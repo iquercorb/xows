@@ -1727,7 +1727,13 @@ function xows_tpl_spawn_stream_audio(peer)
   // Set content to proper elements
   inst.title = peer.name;
   inst.querySelector("STRM-AVAT").className = xows_tpl_spawn_avat_cls(peer);
-  inst.querySelector("AUDIO").dataset.peer = xows_cli_peer_iden(peer);
+  const audio = inst.querySelector("AUDIO");
+  audio.dataset.part = peer.addr;
+  if(peer.self) {
+    audio.dataset.input = 1;
+  } else {
+    audio.dataset.outpt = 1;
+  }
 
   return inst;
 }
@@ -1747,7 +1753,13 @@ function xows_tpl_spawn_stream_video(peer)
 
   // Set content to proper elements
   inst.title = peer.name;
-  inst.querySelector("VIDEO").dataset.peer = xows_cli_peer_iden(peer);
+  const video = inst.querySelector("VIDEO");
+  video.dataset.part = peer.addr;
+  if(peer.self) {
+    video.dataset.input = 1;
+  } else {
+    video.dataset.outpt = 1;
+  }
 
   return inst;
 }

@@ -40,6 +40,22 @@
  *                       Media Call Sub-Module
  *
  * ------------------------------------------------------------------ */
+/**
+ * Handles VU-Meter data from audio sources
+ *
+ * @param   {number}    peek      Valume peak for last audio sample
+ * @param   {element}   element   HTML element to change style
+ */
+function xows_gui_snd_onvmtr(peak, element)
+{
+  // If peak value is greater than threshold, change color
+  const color = peak > 0.01 ? "var(--link-base)" : "var(--text-tone4)";
+
+  if(element.style.borderColor !== color) {
+    element.style.borderColor = color;
+  }
+}
+
 /* -------------------------------------------------------------------
  * Calls Interactions - Call View
  * -------------------------------------------------------------------*/
@@ -62,23 +78,24 @@ function xows_gui_call_view_onclick(event)
     case "call_spkr": {
         const call_volu = xows_doc("call_volu");
         mutted = event.target.classList.toggle("MUTTED");
-        xows_gui_audio.vol.gain.value = mutted ? 0 : parseInt(call_volu.value) / 100;
+        const gain = mutted ? 0 : parseInt(call_volu.value) / 100;
+        xows_snd_outpt_gain_set(xows_gui_peer, gain);
         call_volu.disabled = mutted;
-        xows_gui_sound_play(mutted ? "mute" : "unmute"); //< Play sound
+        xows_snd_sample_play(mutted ? "mute" : "unmute"); //< Play sound
       } break;
 
     case "call_came": {
         mutted = event.target.classList.toggle("MUTTED");
         // Enable/Disable local video tracks
         xows_cli_call_self_mute(xows_gui_peer, "video", mutted);
-        xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
+        xows_snd_sample_play(mutted ? "disable" : "enable"); //< Play sound
       } break;
 
     case "call_micr": {
         mutted = event.target.classList.toggle("MUTTED");
         // Enable/Disable local video tracks
         xows_cli_call_self_mute(xows_gui_peer, "audio", mutted);
-        xows_gui_sound_play(mutted ? "disable" : "enable"); //< Play sound
+        xows_snd_sample_play(mutted ? "disable" : "enable"); //< Play sound
       } break;
 
     case "call_hgup": {
@@ -103,16 +120,10 @@ function xows_gui_call_view_onclick(event)
  */
 function xows_gui_call_view_oninput(event)
 {
-  // Search for participant media element, either <audio> or <video>
-  const media = xows_doc("call_grid").querySelector("[data-peer='"+xows_cli_peer_iden(xows_gui_peer)+"']");
-  if(!media) return;
-
   const gain = parseInt(event.target.value) / 100;
 
   // Set volume
-  //xows_gui_audio.vol.gain.value = gain;
-  media.volume = gain;
-  xows_log(2, "gui_call_volu_oninput", "volume", gain);
+  xows_snd_outpt_gain_set(xows_gui_peer, gain);
 
   // Change volume slider icon according current level
   let cls = "";
@@ -146,9 +157,6 @@ function xows_gui_call_view_open(peer)
   call_volu.disabled = false;
   call_volu.value = 50;
 
-  // Set gain to current volume slider position
-  xows_gui_audio.vol.gain.value = parseInt(call_volu.value) / 100;
-
   // Reset Microphone and camera button to intial state
   const call_came = xows_gui_doc(peer,"call_came");
   const call_micr = xows_gui_doc(peer,"call_micr");
@@ -158,11 +166,22 @@ function xows_gui_call_view_open(peer)
   call_came.hidden = !xows_cli_call_medias(peer).video;
 
   if(call_view.hidden) {
+
     if(peer === xows_gui_peer) {
       // Add event listeners
       xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_view_onclick);
       xows_doc_listener_add(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
     }
+
+    const self_media = call_view.querySelector("[data-input]");
+    const peer_media = call_view.querySelector("[data-outpt]");
+
+    // Enable VU-Meter for audio streams
+    if(self_media.tagName === "AUDIO")
+      xows_snd_input_vumtr(peer, true, self_media.parentNode);
+
+    if(peer_media.tagName === "AUDIO")
+      xows_snd_outpt_vumtr(peer, true, peer_media.parentNode);
 
     // Show Call view
     call_view.hidden = false;
@@ -182,14 +201,15 @@ function xows_gui_call_view_close(peer)
 {
   const call_view = xows_gui_doc(peer,"call_view");
 
-  // Mute sound
-  xows_gui_audio.vol.gain.value = 0;
-
   if(peer === xows_gui_peer) {
     // Remove event listeners
     xows_doc_listener_rem(xows_doc("call_menu"),"click",xows_gui_call_view_onclick);
     xows_doc_listener_rem(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
   }
+
+  // Disable VU-Meter for audio streams
+  xows_snd_input_vumtr(peer, false);
+  xows_snd_outpt_vumtr(peer, false);
 
   // Hide Call view
   call_view.hidden = true;
@@ -216,11 +236,9 @@ function xows_gui_call_view_part_add(peer, part, stream)
   const is_video = stream.getVideoTracks().length;
   if(is_video && part.self) return; //< No local video loopback
 
-  const peer_iden = xows_cli_peer_iden(part);
-
   // Search for already existing stream for this peer
   let element;
-  let media = call_grid.querySelector("[data-peer='"+xows_cli_peer_iden(part)+"']");
+  let media = call_grid.querySelector("[data-part='"+part.addr+"']");
   if(media) {
     // Simply update stream
     media.srcObject = stream;
@@ -239,103 +257,20 @@ function xows_gui_call_view_part_add(peer, part, stream)
   // Mute audio output since it will be managed through AudioContext
   media.muted = true;
 
-  // Creates AudioSource node and store it within Media object
-  media.srcNode = xows_gui_audio.ctx.createMediaStreamSource(stream);
-
-  // If stream is Audio we create required stuff for VU-Meter animation
-  if(!is_video) {
-    // Create Analyser node and Buffer node stored within the Media
-    // objecy to perform audio peek analysis for visual effects
-    media.fftNode = xows_gui_audio.ctx.createAnalyser();
-    media.fftNode.fftSize = 2048;
-    media.fftBuff = new Float32Array(media.fftNode.frequencyBinCount);
-    media.srcNode.connect(media.fftNode);
-  }
-
-  // Connect AudioSource -> Analyser [-> GainNode]
-  if(!part.self) media.srcNode.connect(xows_gui_audio.vol);
-
   // Set stream to Media element
-  media.srcObject = stream;
-  media.autoplay = true;
+  if(!part.self) {
+    // Plug media element to 'master' output
+    xows_snd_outpt_new(peer, stream);
+    xows_snd_outpt_gain_set(peer, parseInt(xows_gui_doc(peer,"call_volu").value) / 100);
+    media.srcObject = stream;
+    media.autoplay = true;
+  }
 
   // Add Stream element to layout
   if(part.self) {
     call_grid.insertBefore(element, call_grid.firstElementChild);
   } else {
     call_grid.appendChild(element);
-  }
-}
-/* -------------------------------------------------------------------
- * Calls Interactions - Call View - VU-Meter animation
- * -------------------------------------------------------------------*/
-/**
- * Call View VU-Meter animation interval handle.
- */
-let xows_gui_call_view_vumet_hnd = null;
-
-/**
- * Start the Call View VU-Meter animation
- *
- * The VU-Meter animation (which is not strictly a VU-Meter) is used to
- * show visual feedback according audio volume arround Chat Call frame
- * participants.
- *
- * @param   {number}    rate    Animation refresh rate in miliseconds
- */
-function xows_gui_call_view_vumet_run(rate)
-{
-  if(!xows_gui_call_view_vumet_hnd)
-    xows_gui_call_view_vumet_hnd = setInterval(xows_gui_call_view_vumet_anim, rate);
-}
-
-/**
- * Stop the Call View VU-Meter animation
- */
-function xows_gui_call_view_vumet_stop()
-{
-  clearInterval(xows_gui_call_view_vumet_hnd);
-  xows_gui_call_view_vumet_hnd = null;
-}
-
-/**
- * Call View VU-Meter animation function.
- *
- * The VU-Meter animation (which is not strictly a VU-Meter) is used to
- * show visual feedback according audio volume arround Chat Call frame
- * participants.
- *
- * This function is used within a loop (using requestAnimationFrame) to
- * perform real-time audio analysis of input audio stream to change the
- * proper HTML element color according silence or speaking.
- */
-function xows_gui_call_view_vumet_anim()
-{
-  // Avoid useless calculations
-  if(xows_doc("call_view").hidden)
-    return;
-
-  // Get list of Audio Media objects
-  const audio = xows_doc("call_grid").querySelectorAll("audio");
-
-  // For each Audio object
-  for(let i = 0; i < audio.length; ++i) {
-
-    // Get Analyzer time domain (PCM samples)
-    audio[i].fftNode.getFloatTimeDomainData(audio[i].fftBuff);
-
-    // Get peek value for window
-    let data, peek = 0.0;
-    for(let j = 0; j < audio[i].fftBuff.length; j++) {
-      data = Math.abs(audio[i].fftBuff[j]); // raw data are between 1.0 and -1.0
-      if(data > peek) peek = data;
-    }
-
-    // If peek value is greater than threshold, change color
-    const color = peek > 0.08 ? "var(--link-base)" : "var(--text-tone4)";
-    if(audio[i].parentNode.style.borderColor !== color) {
-      audio[i].parentNode.style.borderColor = color;
-    }
   }
 }
 
@@ -465,15 +400,15 @@ function xows_gui_call_ring_show(peer, type, reason)
   call_ring.querySelector("RING-TEXT").innerText = xows_l10n_get(text);
 
   if(bell) {
-    xows_gui_sound_play("ringbell"); //< Play Ring Bell sound
+    xows_snd_sample_loop("ringbell"); //< Play Ring Bell sound
   } else {
-    xows_gui_sound_stop("ringbell"); //< Stop Ring Bell sound
+    xows_snd_sample_stop("ringbell"); //< Stop Ring Bell sound
   }
 
   if(tone) {
-    xows_gui_sound_play("ringtone"); //< Play Ring Bell sound
+    xows_snd_sample_loop("ringtone"); //< Play Ring Bell sound
   } else {
-    xows_gui_sound_stop("ringtone"); //< Stop Ring Bell sound
+    xows_snd_sample_stop("ringtone"); //< Stop Ring Bell sound
   }
 
   if(call_ring.hidden) {
@@ -501,8 +436,8 @@ function xows_gui_call_ring_show(peer, type, reason)
 function xows_gui_call_ring_close(peer)
 {
   // Stop Ring Tone & Bell sound
-  xows_gui_sound_stop("ringtone");
-  xows_gui_sound_stop("ringbell");
+  xows_snd_sample_stop("ringtone");
+  xows_snd_sample_stop("ringbell");
 
   const call_ring = xows_gui_doc(peer,"call_ring");
 
@@ -529,6 +464,10 @@ function xows_gui_call_exit(peer)
 {
   // Remove in call (buzy) badge from tabs/roster/contact
   xows_gui_badg_buzy(peer, false);
+
+  // Disconnect and stop streams
+  xows_snd_input_delete(peer, true);
+  xows_snd_outpt_delete(peer, true);
 
   // Close any potentially opened Call view frame
   xows_gui_call_view_close(peer);
@@ -570,8 +509,11 @@ function xows_gui_call_self_invite(peer, constr)
  */
 function xows_gui_call_self_invite_onmedia(peer, stream)
 {
+  // TODO: Let explain what happen here...
+  const audio = xows_snd_input_new(peer, stream);
+
   // Initiate call (create session)
-  xows_cli_call_self_invite(peer, stream);
+  xows_cli_call_self_invite(peer, audio, stream);
 
   // Dsiable chat header call buttons
   xows_gui_doc_update(peer, XOWS_UPDT_BUZY);
@@ -623,8 +565,11 @@ function xows_gui_call_self_accept(peer, constr)
  */
 function xows_gui_call_self_accept_onmedia(peer, stream)
 {
+  // TODO: Let explain what happen here...
+  const audio = xows_snd_input_new(peer, stream);
+
   // Answer call
-  xows_cli_call_self_accept(peer, stream);
+  xows_cli_call_self_accept(peer, audio, stream);
 
   // Dsiable chat header call buttons
   xows_gui_doc_update(peer, XOWS_UPDT_BUZY);
@@ -707,7 +652,7 @@ function xows_gui_call_self_hangup(peer, reason)
   xows_gui_call_exit(peer);
 
   // Play Hangup sound
-  xows_gui_sound_play("hangup");
+  xows_snd_sample_play("hangup");
 }
 
 /* -------------------------------------------------------------------
@@ -721,8 +666,12 @@ function xows_gui_call_self_hangup(peer, reason)
  */
 function xows_gui_call_onoffer(peer, stream)
 {
+  // Create document set for peer
+  if(!peer.live)
+    xows_gui_doc_init(peer);
+
   // Start the VU-Meter animation for Call View
-  xows_gui_call_view_vumet_run(50);
+  //xows_gui_call_view_vumet_run(50);
 
   // Add remote participant to Call View
   xows_gui_call_view_part_add(peer, peer, stream);
@@ -744,7 +693,7 @@ function xows_gui_call_onoffer(peer, stream)
 function xows_gui_call_onanwse(peer, stream)
 {
   // Start the VU-Meter animation for Call View
-  xows_gui_call_view_vumet_run(50);
+  //xows_gui_call_view_vumet_run(50);
 
   // Add remote participant to Call View
   xows_gui_call_view_part_add(peer, peer, stream);
@@ -798,7 +747,7 @@ function xows_gui_call_ontermd(peer, reason)
   xows_gui_call_exit(peer);
 
   // Play Hangup sound
-  xows_gui_sound_play("hangup");
+  xows_snd_sample_play("hangup");
 }
 
 /**
