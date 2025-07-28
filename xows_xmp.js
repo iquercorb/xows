@@ -628,7 +628,7 @@ function xows_xmp_flush()
     return;
   }
 
-  xows_log(1,"xows_xmp_flush","flushing stanzas queue");
+  xows_log(2,"xows_xmp_flush","flushing stanzas queue");
 
   while(xows_xmp_send_que.length)
     // Send serialized data to socket
@@ -4835,6 +4835,9 @@ function xows_xmp_jing_parse(stanza, onparse)
 
   // Check for unhandled error
   if(xows_xmp_iq_unhandled(stanza,type,onparse))
+    return;
+
+  if(!xows_isfunc(onparse))
     return;
 
   let error;
