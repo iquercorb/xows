@@ -71,13 +71,17 @@ const xows_cach_avat_db = new Map();
 function xows_cach_avat_save(data, hash, temp)
 {
   // Use the supplied ID or compute SHA-1 hash of data
-  const k = hash ? hash : xows_bytes_to_hex(xows_hash_sha1(xows_url_to_bytes(data)));
+  if(!hash) {
+    const base64 = xows_url_to_data(data);
+    const binary = xows_b64_to_bytes(base64); //< This is REQUIRED to get proper Hash value
+    hash = xows_bytes_to_hex(xows_hash_sha1(binary));
+  }
 
   // Store in live DB and localStorage
-  xows_cach_avat_db.set(k, data);
-  if(!temp) localStorage.setItem(k, data);
+  xows_cach_avat_db.set(hash, data);
+  if(!temp) localStorage.setItem(hash, data);
 
-  return k;
+  return hash;
 }
 
 /**

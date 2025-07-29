@@ -336,6 +336,25 @@ function xows_bytes_to_b64(uint8)
 }
 
 /**
+ * Decodes base64 string bytes data
+ *
+ * @param   {string}    base64   Input Base64 string
+ *
+ * @return  {Uint8Array}  Resulting bytes data
+ */
+function xows_b64_to_bytes(base64)
+{
+  const bstr = atob(base64);
+  const bytes = new Uint8Array(bstr.length);
+
+  for(let i = 0; i < bstr.length; i++) {
+    bytes[i] = bstr.charCodeAt(i);
+  }
+
+  return bytes;
+}
+
+/**
  * Get the hexadecimal representation of the given bytes data
  *
  * @param   {Uint8Array}  uint8  Input bytes data

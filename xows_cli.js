@@ -1392,6 +1392,9 @@ function xows_cli_warmup_roster(items, error)
  */
 function xows_cli_warmup_config()
 {
+  // Push self to update own data on GUI
+  xows_cli_peer_push(xows_cli_self);
+
   // Check for main XMPP server features
   const serv_infos = xows_cli_entities.get(xows_xmp_host);
 
@@ -1506,9 +1509,6 @@ function xows_cli_session_start(resume)
   // sending invalid presence to non-joined room)
   if(!resume) //< If XMPP stream resumed, nothing to do
     xows_cli_pres_show_set(XOWS_SHOW_ON);
-
-  // Call the configured callback (forward signal to GUI)
-  //xows_cli_fw_onready(xows_cli_self, resume);
 
   // Wait for Room Join to finish and Show Up !
   xows_load_onempty_set(3000, xows_cli_fw_onready, xows_cli_self, resume);
@@ -2468,7 +2468,7 @@ function xows_cli_vcardt_publish()
                                            xows_xml_node("BINVAL",null,bin_data)]));
   }
 
-  xows_log(2,"cli_vcard_publish","publish own vCard-temp");
+  xows_log(2,"cli_vcardt_publish","publish own vCard-temp");
 
   // Send query
   xows_xmp_vcardt_set_query(vcard);
@@ -2499,19 +2499,30 @@ function xows_cli_vcardt_parse(from, vcard, error)
 
   } else {
 
+    let data = null;
+
     // We are only interested in avatar
     const photo = vcard.querySelector("PHOTO");
     if(photo) {
+      // It happen that PHOTO node is empty...
+      const type = photo.querySelector("TYPE");
+      const binval = photo.querySelector("BINVAL");
+      if(type && binval) {
+        // create proper data-url string
+        data = "data:"+xows_xml_innertext(type)+";base64,"+xows_xml_innertext(binval);
+      }
+    }
 
-      const type = xows_xml_innertext(photo.querySelector("TYPE"));
-      const binval = xows_xml_innertext(photo.querySelector("BINVAL"));
-      // create proper data-url string
-      const data = "data:"+type+";base64,"+binval;
+    if(data) {
 
       // Save image in cache
       peer.avat = xows_cach_avat_save(data);
 
+      xows_log(2,"cli_vcardt_parse","set avatar from photo",peer.avat);
+
     } else {
+
+      xows_log(2,"cli_vcardt_parse","no photo");
 
       // No avatar available
       peer.avat = null;
@@ -2720,7 +2731,7 @@ const xows_cli_avat_parse_stk = new Map();
  *
  * @param   {string}    from      Avatar Contact JID.
  * @param   {object}    hash      Avtar ID (data SHA-1 hash)
- * @param   {object}    data      Avtar data or null to get cached
+ * @param   {object}    data      Avtar data
  * @param   {object}   [error]    Error data if any
  */
 function xows_cli_pep_avat_data_parse(from, hash, data, error)
@@ -2732,24 +2743,36 @@ function xows_cli_pep_avat_data_parse(from, hash, data, error)
     return;
   }
 
+  let fallback = false;
+
   // get stack entry for this peer
-  const info = xows_cli_avat_parse_stk.get(peer);
+  if(!xows_cli_avat_parse_stk.has(hash)) {
+    xows_log(1,"cli_pep_avat_data_parse","invalid data",from);
+    fallback = true;
+  }
 
-  // we can delete saved meta data from stack
-  xows_cli_avat_parse_stk.delete(peer);
+  // Get metadata info (file type) and delete entry
+  const type = xows_cli_avat_parse_stk.get(hash);
+  xows_cli_avat_parse_stk.delete(hash);
 
-  // In case of error, DO NOT update Avatar
   if(error) {
+    xows_log(1,"cli_pep_avat_data_parse","error result",from);
+    fallback = true;
+  }
+
+  if(fallback) {
     // As fallback, try to get avatar from Vcard
     xows_cli_vcardt_query(peer);
     return;
   }
 
   // Compose data-URL and add data to cache
-  xows_cach_avat_save("data:"+info.type+";base64,"+ data, hash);
+  xows_cach_avat_save("data:"+type+";base64,"+data, hash);
 
   // Set new avatar
   peer.avat = hash;
+
+  xows_log(2,"cli_pep_avat_data_parse","data fetched",from);
 
   if(peer.load) {
     xows_load_task_done(peer, XOWS_FETCH_AVAT);
@@ -2773,7 +2796,7 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
   if(!peer) {
-    xows_log(1,"cli_avat_meta_parse","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_pep_avat_meta_parse","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -2782,7 +2805,19 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
     // Notice, the <info> node may be missing if no Avatar available
     info = item.querySelector("info");
 
-  if(error || !info) {
+  let fallback = false;
+
+  if(!info) {
+    xows_log(1,"cli_pep_avat_meta_parse","avatar unavailable",peer.addr);
+    fallback = true;
+  }
+
+  if(error) {
+    xows_log(1,"cli_pep_avat_meta_parse","error result",peer.addr);
+    fallback = true;
+  }
+
+  if(fallback) {
 
     // If option is set and if missing Avatar is ours
     // Generate a temporary Avatar and publish it
@@ -2793,6 +2828,8 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
 
       // Save temp avatar as real avatar and get proper hash value
       peer.avat = xows_cach_avat_save(data);
+
+      xows_log(1,"cli_pep_avat_meta_parse","publish own default (generated) avatar");
 
       // Publish this avatar
       xows_cli_pep_avat_publ("open");
@@ -2819,20 +2856,25 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
   // Check whether we need to donwload data
   if(xows_cach_avat_has(hash)) {
 
+    xows_log(2,"cli_pep_avat_meta_parse","cached data",peer.addr);
+
     // Set Peer avatar
     peer.avat = hash;
 
-    if(peer.load) {
+    if(peer.load & XOWS_FETCH_AVAT) {
       xows_load_task_done(peer, XOWS_FETCH_AVAT);
     } else {
       xows_cli_peer_push(peer);
     }
 
   } else {
+
+    xows_log(2,"cli_pep_avat_meta_parse","fetch data",peer.addr);
+
     // add new stack entry for this peer
-    xows_cli_avat_parse_stk.set(peer, {"hash":hash,"type":type});
+    xows_cli_avat_parse_stk.set(hash, type);
     // Query for Avatar Data
-    xows_xmp_avat_data_get_query(from, hash, xows_cli_pep_avat_data_parse);
+    xows_xmp_avat_data_get_query(peer.addr, hash, xows_cli_pep_avat_data_parse);
   }
 }
 
@@ -2901,41 +2943,21 @@ function xows_cli_pep_avat_publ(access)
   xows_cli_pep_avat_publ_param.access = access;
 
   // Get avatar Base64 data and create binary hash value
-  const data = xows_url_to_data(datauri);
-  const hash = xows_bytes_to_hex(xows_hash_sha1(atob(data)));
+  const base64 = xows_url_to_data(datauri);
+  const binary = xows_b64_to_bytes(base64); //< This is REQUIRED to get proper Hash value
+  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
 
   // Publish data, the onparse function is set to send metadata
-  xows_xmp_avat_data_publish(hash, data, null, xows_cli_pep_avat_meta_publ);
+  xows_xmp_avat_data_publish(hash, base64, access, xows_cli_pep_avat_meta_publ);
 
+  /*
   // If requested, change access model Avatar-Metadata
   if(access)
     xows_cli_pep_chmod(XOWS_NS_AVATAR_DATA, access);
+  */
 
   // Keep complient with XEP-0153, also publish vcard-temp
   xows_cli_vcardt_publish();
-}
-
-/**
- * Retract XEP-0084 Avatar data and metadata items from PubSub.
- *
- * This function has effect only if a avalid avatar hash is
- * available.
- */
-function xows_cli_pep_avat_retr()
-{
-  if(xows_cli_self.avat !== null) {
-
-    // We must retract data before metadata or we got item-not-found
-    // error once it's time to retract data
-    //xows_xmp_pubsub_retract(XOWS_NS_AVATAR_DATA, xows_cli_self.avat, null);
-    xows_xmp_pubsub_retract(XOWS_NS_AVATAR_META, xows_cli_self.avat, null);
-
-    // Annnd... it's gone.
-    xows_cli_self.avat = null;
-
-  } else {
-    xows_log(1,"cli_avat_retract","No avatar Hash-ID to retract");
-  }
 }
 
 /**
@@ -2958,18 +2980,32 @@ function xows_cli_pep_avat_meta_publ(from, type, error)
   if(!datauri)
     return;
 
-  // Get image binary data and create hash value
-  const data = atob(xows_url_to_data(datauri));
-  const hash = xows_bytes_to_hex(xows_hash_sha1(data));
-
-  xows_xmp_avat_meta_publish(hash, xows_url_to_type(datauri), data.length,
-                             XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, null, null);
-
   const access = xows_cli_pep_avat_publ_param.access;
 
+  // Get image binary data and create hash value
+  const base64 = xows_url_to_data(datauri);
+  const binary = xows_b64_to_bytes(base64); //< This is REQUIRED to get proper Hash value
+  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
+
+  xows_xmp_avat_meta_publish(hash, xows_url_to_type(datauri), binary.length,
+                             XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, access, null);
+  /*
   // If requested, change access model Avatar-Data and Avatar-Metadata
   if(access)
     xows_cli_pep_chmod(XOWS_NS_AVATAR_META, access);
+  */
+}
+
+/**
+ * Retract XEP-0084 Avatar data and metadata items from PubSub.
+ *
+ * This function has effect only if a avalid avatar hash is
+ * available.
+ */
+function xows_cli_pep_avat_retr()
+{
+  xows_xmp_avat_meta_publish(null);
+  xows_cli_self.avat = null;
 }
 
 /* -------------------------------------------------------------------
