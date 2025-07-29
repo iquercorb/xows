@@ -146,6 +146,10 @@ function xows_gui_call_view_open(peer)
 {
   const call_view = xows_gui_doc(peer,"call_view");
 
+  const is_video = xows_cli_call_medias(peer).video;
+
+  call_view.classList.toggle("CALL-VIDEO", is_video);
+
   // Reset expand/reduce button title
   xows_gui_doc(peer,"call_expd").title = xows_l10n_get("Expand");
 
@@ -173,15 +177,18 @@ function xows_gui_call_view_open(peer)
       xows_doc_listener_add(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
     }
 
-    const self_media = call_view.querySelector("[data-input]");
-    const peer_media = call_view.querySelector("[data-outpt]");
+    if(is_video) {
 
-    // Enable VU-Meter for audio streams
-    if(self_media.tagName === "AUDIO")
-      xows_snd_input_vumtr(peer, true, self_media.parentNode);
+      const self_media = call_view.querySelector("[data-input]");
+      const peer_media = call_view.querySelector("[data-outpt]");
 
-    if(peer_media.tagName === "AUDIO")
-      xows_snd_outpt_vumtr(peer, true, peer_media.parentNode);
+      // Enable VU-Meter for audio streams
+      if(self_media.tagName === "AUDIO")
+        xows_snd_input_vumtr(peer, true, self_media.parentNode);
+
+      if(peer_media.tagName === "AUDIO")
+        xows_snd_outpt_vumtr(peer, true, peer_media.parentNode);
+    }
 
     // Show Call view
     call_view.hidden = false;
@@ -234,7 +241,7 @@ function xows_gui_call_view_part_add(peer, part, stream)
   const call_grid = xows_gui_doc(peer,"call_grid");
 
   const is_video = stream.getVideoTracks().length;
-  if(is_video && part.self) return; //< No local video loopback
+  //if(is_video && part.self) return; //< No local video loopback
 
   // Search for already existing stream for this peer
   let element;
@@ -264,6 +271,8 @@ function xows_gui_call_view_part_add(peer, part, stream)
     xows_snd_outpt_gain_set(peer, parseInt(xows_gui_doc(peer,"call_volu").value) / 100);
     media.srcObject = stream;
     media.autoplay = true;
+  } else {
+    if(is_video) element.hidden = true;
   }
 
   // Add Stream element to layout
