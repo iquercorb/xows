@@ -139,6 +139,24 @@ function xows_snd_mastr_gain_set(value)
 }
 
 /**
+ * Set global input volume
+ *
+ * @param   {number}    value   Volume to set (0.0 to 1.0)
+ */
+function xows_snd_input_gain_set(value)
+{
+  // It is not very convenient to use one gain node that gather all
+  // possible input tracks to control volume of altogether.
+  //
+  // Instead, one gain node is created per-input stream and set gain
+  // value for all at once.
+
+  for(const input of xows_snd_inp_src_db.values()) {
+    input.gain.gain.value = value;
+  }
+}
+
+/**
  * Create new output slot and connect audio source to master output
  * with intermediary volume control.
  *
