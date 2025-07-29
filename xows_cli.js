@@ -2944,7 +2944,12 @@ function xows_cli_pep_avat_publ(access)
 
   // Get avatar Base64 data and create binary hash value
   const base64 = xows_url_to_data(datauri);
-  const binary = xows_b64_to_bytes(base64); //< This is REQUIRED to get proper Hash value
+  // The 'xows_hash_sha1' function takes strings as UTF-16 (2-bytes) encoded
+  // to be converted to UTF-8, then to Uint8Array. On the other hand, atob()
+  // produces an bytes array **ersatz** where each character is to be taken as
+  // an unsigned byte. Of course, decoding this as an UTF-16 string results in
+  // caca boudin. Thanks to the JavaScript nonsense typing for the journey...
+  const binary = xows_b64_to_bytes(base64);
   const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
 
   // Publish data, the onparse function is set to send metadata
@@ -2984,7 +2989,12 @@ function xows_cli_pep_avat_meta_publ(from, type, error)
 
   // Get image binary data and create hash value
   const base64 = xows_url_to_data(datauri);
-  const binary = xows_b64_to_bytes(base64); //< This is REQUIRED to get proper Hash value
+  // The 'xows_hash_sha1' function takes strings as UTF-16 (2-bytes) encoded
+  // to be converted to UTF-8, then to Uint8Array. On the other hand, atob()
+  // produces an bytes array **ersatz** where each character is to be taken as
+  // an unsigned byte. Of course, decoding this as an UTF-16 string results in
+  // caca boudin. Thanks to the JavaScript nonsense typing for the journey...
+  const binary = xows_b64_to_bytes(base64);
   const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
 
   xows_xmp_avat_meta_publish(hash, xows_url_to_type(datauri), binary.length,

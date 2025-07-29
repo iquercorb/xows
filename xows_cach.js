@@ -73,6 +73,11 @@ function xows_cach_avat_save(data, hash, temp)
   // Use the supplied ID or compute SHA-1 hash of data
   if(!hash) {
     const base64 = xows_url_to_data(data);
+    // The 'xows_hash_sha1' function takes strings as UTF-16 (2-bytes) encoded
+    // to be converted to UTF-8, then to Uint8Array. On the other hand, atob()
+    // produces an bytes array **ersatz** where each character is to be taken as
+    // an unsigned byte. Of course, decoding this as an UTF-16 string results in
+    // caca boudin. Thanks to the JavaScript nonsense typing for the journey...
     const binary = xows_b64_to_bytes(base64); //< This is REQUIRED to get proper Hash value
     hash = xows_bytes_to_hex(xows_hash_sha1(binary));
   }
