@@ -302,10 +302,11 @@ pre {
   background-color: var(--base-tone3);
 }
 /* ------------------------------------------------------------------ */
-/* Global WebKit scroll style to mimic Gecko
+/* Global WebKit scroll style
 /* ------------------------------------------------------------------ */
 * {
-  scrollbar-width: thin;
+  scrollbar-width: auto;
+  scrollbar-color: var(--text-tone4) transparent;
 }
 ::-webkit-scrollbar {
   width: 12px; height: 12px;
@@ -356,8 +357,9 @@ peer-list {
   width: 100%; height: 100%;
   overflow-x: hidden;
   overflow-y: scroll;
-  scrollbar-color: var(--base-tone0) transparent;
+  /*scrollbar-color: var(--text-tone4) transparent;*/
   padding: 0 5px;
+  /*! background-color: var(--base-tone3); */
 }
 peer-list::-webkit-scrollbar-thumb {
   background-color: var(--base-tone0);
@@ -800,6 +802,7 @@ badg-lock {
   flex-direction: column;
   width: 100vw; height: 100vh;
   overflow:hidden;
+  background-color: var(--base-tone0);
 }
 /* ------------------------------------------------------------------ */
 /* Top-Level Menu Screen */
@@ -850,11 +853,12 @@ load-fram {
   top: 0; left: 0; bottom: 0; right: 0;
   display: flex;
   overflow: hidden;
+  padding: 7px 0 0 0;
 }
 #app_fram {
   flex: none;
   width: 44px;
-  background-color: var(--base-tone0);
+  /*! background-color: var(--base-tone0); */
 }
 #peer_col {
   flex: auto;
@@ -872,6 +876,7 @@ col-side {
   flex-direction: row;
   width: 240px;
   height: 100%;
+  /*! background-color: var(--base-tone4); */
 }
 col-midd {
   flex: auto;
@@ -939,19 +944,21 @@ col-frame {
 }
 row-head {
   flex: none;
-  width: 100%; height: 44px;
+  width: 100%; height: 40px;
   display: flex;
   align-items: center;
   padding: 0 5px 0 12px;
 }
 row-foot {
   flex: none;
-  width: 100%; height: 85px;
+  width: 100%; height: 80px;
 }
 row-main {
   flex: auto;
   width: 100%; height: 100%;
   overflow-y: auto;
+  /*! background-color: var(--base-tone3); */
+  display: block;
 }
 /* ------------------------------------------------------------------ */
 /* Pages Screen flex layout */
@@ -1617,7 +1624,7 @@ head-info {
 head-meta {
   flex: auto;
   display: inline-block;
-  margin: 0 5px;
+  margin: 0 3px;
   padding: 3px 5px;
   font-size: 0.8em;
   border-radius: 3px;
@@ -1644,11 +1651,11 @@ head-acts {
 }
 head-acts button {
   display: inline-block;
-  width: 32px; height: 18px;
-  padding: 0;
-  border: 0;
+  width: 30px; height: 30px;
+  /*! padding: 0; */
+  /*! border: 0; */
   background-color: transparent;
-  background-size: 18px;
+  background-size: 17px;
   background-position: center;
   background-repeat: no-repeat;
   opacity: .7;
@@ -1669,11 +1676,13 @@ row-page {
   overflow-y: hidden;
 }
 #rost_fram {
-  box-shadow: -1px 0 0 0 rgba(0,0,0,0.2);
+  /*! box-shadow: -1px 0 0 0 rgba(0,0,0,0.2); */
+  background-color: var(--base-tone4);
+  border-radius: 12px 12px 0 0;
 }
 #rost_fram row-head {
-  background-color: var(--base-tone4);
-  border-bottom: 1px solid var(--base-tone1);
+  /*! background-color: var(--base-tone4); */
+  /*! border-bottom: 1px solid var(--base-tone1); */
   list-style: none;
 }
 #rost_fram head-info {
@@ -1681,10 +1690,13 @@ row-page {
   font-weight: bold;
   text-transform: uppercase;
   color: var(--text-tone3);
-  margin-top: 3px;
+  margin-top: 2px;
 }
 #rost_fram row-main {
-  text-align: center;
+  /*! text-align: center; */
+  background-color: var(--base-tone3);
+  /*! height: 100%; */
+  /*! display: block; */
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Main frame - Contact List */
@@ -1906,7 +1918,8 @@ li-peer.PEER-ROOM peer-avat {
 #self_panl {
   background-color: var(--base-tone2);
   padding: 4px;
-  height: 78px;
+  height: 80px;
+  /*! border-radius: 12px 12px 0 0; */
 }
 #self_name {
   font-weight: normal;
@@ -1921,11 +1934,16 @@ li-peer.PEER-ROOM peer-avat {
   flex-direction: row;
   align-items: center;
   width: 100%;
+  /*! background-color: var(--base-tone1); */
+  /*! padding: 2px 0; */
+  /*! border-radius: 6px; */
 }
 #self_acts {
   visibility: visible;
   margin: 0;
-  width: 32px;
+  /*! width: 40px; */
+  /*! height: 46px; */
+  flex: auto;
 }
 #self_acts button {
   display: block;
@@ -1949,11 +1967,12 @@ li-peer.PEER-ROOM peer-avat {
 #self_bttn {
   display: flex;
   flex-direction: row;
-  height: 44px; width: 200px;
+  height: 40px; width: 200px;
   border-radius: 3px;
   align-items: center;
   cursor: pointer;
-  padding-right: 4px;
+  /*! padding-right: 4px; */
+  flex: none;
 }
 #self_bttn:hover {
   background-color: var(--base-tone4);
@@ -2069,7 +2088,8 @@ li-peer.PEER-ROOM peer-avat {
 /* ------------------------------------------------------------------ */
 #chat_fram {
   min-width: 300px;
-  background-color: var(--base-tone4);
+  background-color: var(--base-tone5);
+  border-radius: 12px 0 0 0;
 }
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
@@ -2090,7 +2110,8 @@ li-peer.PEER-ROOM peer-avat {
 }
 */
 #chat_fram.CALL-FULL #call_view {
-  width: 100%; height: 100%;
+  height: 100%;
+  max-height: 100%;
 }
 #chat_fram.CALL-FULL #chat_main,
 #chat_fram.CALL-FULL #chat_foot {
@@ -2103,8 +2124,8 @@ li-peer.PEER-ROOM peer-avat {
 /* Main Page - Center Col - Head Frame - Chat Title */
 /* ------------------------------------------------------------------ */
 #chat_head {
-  background-color: var(--base-tone5);
-  border-bottom: 1px solid var(--base-tone4);
+  /*! background-color: var(--base-tone5); */
+  /*border-bottom: 1px solid var(--base-tone4);*/
   justify-content: space-between;
   overflow-x: hidden;
 }
@@ -2177,7 +2198,7 @@ head-info badg-show {
 #chat_main {
   padding: 0;
   background-color: var(--base-tone4);
-  scrollbar-color: var(--base-tone1) transparent;
+  /*scrollbar-color: var(--base-tone1) transparent;*/
   /*scroll-snap-type: y mandatory;*/
   position: relative;
 }
@@ -2192,15 +2213,16 @@ head-info badg-show {
 /* Main Page - Center Col - Main Frame - Chat Call */
 /* ------------------------------------------------------------------ */
 #call_view {
-  display: flex;
-  width: 100%; height: 33%;
+  /*display: flex;*/
+  /*width: 100%;*/
+  max-height: 33%;
   min-height: 200px;
-  flex: auto;
-  flex-direction: column;
+  /*flex: auto;*/
+  /*flex-direction: column;*/
   position: relative;
-  background-color: var(--base-tone0);
+  background-color: var(--base-tone1);
   padding: 5px;
-  border-bottom: 3px solid var(--base-tone3);
+  border-bottom: 1px solid var(--base-tone5);
 }
 #call_menu {
   position: absolute;
@@ -2225,8 +2247,9 @@ head-info badg-show {
   flex-wrap: nowrap;
   justify-content: center;
   grid-gap: 5px;
+  /*
   position: absolute;
-  left: 0; right: 0;
+  left: 0; right: 0;*/
   height: 100%;
 }
 strm-audio {
@@ -3213,7 +3236,7 @@ button.trsh-bt-abort {
 }
 #chat_nav[hidden] {
   display: flex !important;
-  top: 2px;
+  top: 5px;
 }
 #chat_nav::before,
 #chat_nav::after {
@@ -3317,7 +3340,7 @@ button.trsh-bt-abort {
   margin: 0 16px 0 16px;
   border-radius: 6px;
   background-color: var(--base-tone5);
-  border: 1px solid var(--base-tone6);
+  /*! border: 1px solid var(--base-tone6); */
   cursor: text;
   z-index: 2;
 }
@@ -3512,18 +3535,15 @@ chat-inpt {
 /* Main Page - Right Col - Head Frame - Room head */
 /* ------------------------------------------------------------------ */
 #mucl_fram row-head {
-  border-bottom: 1px solid var(--base-tone1);
-}
-#mucl_head {
   background-color: var(--base-tone4);
-  border-bottom: 1px solid var(--base-tone2);
+  /*border-bottom: 1px solid var(--base-tone1);*/
 }
 #mucl_head head-info {
   font-size: 0.9em;
   font-weight: bold;
   text-transform: uppercase;
   color: var(--text-tone3);
-  margin-top: 3px;
+  margin-top: 2px;
 }
 @media (max-width: 824px) {
   #mucl_head head-info,
@@ -3656,6 +3676,14 @@ chat-inpt {
 }
 #page_auth input {
   display: block;
+}
+#auth_save {
+  padding: 0;
+}
+#auth_cred {
+  display: inline !important;
+  margin-right: 10px;
+  vertical-align: middle;
 }
 #page_auth fieldset {
   margin: 5px 0;
