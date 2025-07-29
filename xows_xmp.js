@@ -3450,13 +3450,23 @@ function xows_xmp_avat_data_publish(hash, data, access, onparse)
  */
 function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, onparse)
 {
-  // Create the <info> node
-  const info = xows_xml_node("info",{"id":hash,"type":type,"bytes":bytes,"width":width,"height":height});
+  let publish;
 
-  // The <publish> child
-  const publish = xows_xml_node("publish",{"node":XOWS_NS_AVATAR_META},
-                    xows_xml_node("item",{"id":hash},
-                      xows_xml_node("metadata",{"xmlns":XOWS_NS_AVATAR_META},info)));
+  if(hash) {
+
+    // Create the <info> node
+    const info = xows_xml_node("info",{"id":hash,"type":type,"bytes":bytes,"width":width,"height":height});
+
+    // The <publish> child
+    publish = xows_xml_node("publish",{"node":XOWS_NS_AVATAR_META},
+                xows_xml_node("item",{"id":hash},
+                  xows_xml_node("metadata",{"xmlns":XOWS_NS_AVATAR_META},info)));
+  } else {
+
+    // The <publish> child
+    publish = xows_xml_node("publish",{"node":XOWS_NS_AVATAR_META},
+                xows_xml_node("item",null,xows_xml_node("metadata",{"xmlns":XOWS_NS_AVATAR_META})));
+  }
 
   // Publish PEP node
   xows_xmp_pubsub_publish(XOWS_NS_AVATAR_META, publish, access, onparse);
@@ -5032,6 +5042,11 @@ function xows_xmp_caps_self_features()
 }
 
 /**
+ * Cached own capabilities verification string
+ */
+let xows_xmp_caps_self_cach = null;
+
+/**
  * Get own entity capabilities verification hash
  *
  * This build the verification hash from data returned by the
@@ -5041,24 +5056,48 @@ function xows_xmp_caps_self_features()
  */
 function xows_xmp_caps_self_verif()
 {
+  if(xows_xmp_caps_self_cach)
+    return xows_xmp_caps_self_cach;
+
   const caps = xows_xmp_caps_self_features();
 
-  let i, n = caps.length, S = "";
+  let S = "";
 
-  // Concatenate indentities
-  for(i = 0; i < n; ++i) {
+  // List for identity
+  const identiy = [];
+  for(let i = 0; i < caps.length; ++i) {
     if(caps[i].tagName === "identity") {
-      S += caps[i].getAttribute("category") + "/";
-      S += caps[i].getAttribute("type") + "/";
-      S += (caps[i].hasAttribute("xml:lang")?caps[i].getAttribute("xml:lang"):"") + "/";
-      S += caps[i].getAttribute("name") + "<";
+      let iden = "";
+      iden += caps[i].getAttribute("category") + "/";
+      iden += caps[i].getAttribute("type") + "/";
+      if(caps[i].hasAttribute("xml:lang"))
+        iden += caps[i].getAttribute("xml:lang");
+      iden += "/";
+      iden += caps[i].getAttribute("name");
+      identiy.push(iden);
     }
   }
-  // Concatenate features
-  for(i = 0; i < n; ++i) {
-    if(caps[i].tagName === "feature")
-      S += caps[i].getAttribute("var") + "<";
-  }
 
-  return xows_bytes_to_b64(xows_hash_sha1(S));
+  // Sort identity list
+  identiy.sort();
+
+  for(let i = 0; i < identiy.length; ++i)
+    S += identiy[i] + "<";
+
+  // List for feature
+  const feature = [];
+  for(let i = 0; i < caps.length; ++i)
+    if(caps[i].tagName === "feature")
+      feature.push(caps[i].getAttribute("var"));
+
+  // Sort feature list
+  feature.sort();
+
+  for(let i = 0; i < feature.length; ++i)
+    S += feature[i] + "<";
+
+  // Save generated string
+  xows_xmp_caps_self_cach = xows_bytes_to_b64(xows_hash_sha1(xows_str_to_utf8(S)));
+
+  return xows_xmp_caps_self_cach;
 }
