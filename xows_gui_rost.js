@@ -171,6 +171,8 @@ function xows_gui_rost_cont_onpush(cont, text)
   if(!li_peer) {
     // This is a roster contact (with or without pending authorization)
     li_peer = xows_tpl_spawn_rost_cont(cont, text);
+    // Initialize offscreen documents
+    xows_gui_doc_init(cont);
   }
 
   // Parent to proper <ul>
@@ -272,10 +274,6 @@ function xows_gui_rost_room_onpush(room, join)
                               (room.book) ? xows_doc("room_book") :
                                             xows_doc("room_priv");
 
-  // The room is about to be joined, we create offscreen document
-  if(join)
-    xows_gui_doc_init(room);
-
   //let li_peer = document.getElementById(room.addr);
   let li_peer = xows_gui_rost_list_find(room.addr);
   if(li_peer) {
@@ -286,6 +284,8 @@ function xows_gui_rost_room_onpush(room, join)
   } else {
     // Append new instance of room <li_peer> from template to roster <ul>
     li_peer = xows_tpl_spawn_rost_room(room);
+    // Initialize offscreen documents
+    xows_gui_doc_init(room);
   }
 
   // Parent to proper <ul>
@@ -409,6 +409,8 @@ function xows_gui_rost_occu_onpush(occu, mucx)
   } else {
     // Append new instance of occupant <li_peer> from template to roster <ul>
     li_peer = xows_tpl_spawn_room_occu(occu, true); //< Special for Private Message
+    // Initialize offscreen documents
+    xows_gui_doc_init(occu);
   }
 
   // Parent to proper <ul>

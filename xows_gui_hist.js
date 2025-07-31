@@ -281,15 +281,12 @@ function xows_gui_hist_resume(peer)
 function xows_gui_hist_mesg_find(peer, id, from, tomb = false)
 {
   // Get Peer's history <ul> element in fast way
-  /*
   let hist_ul;
   if(peer === xows_gui_peer) {
     hist_ul = document.getElementById("hist_ul");
   } else {
-    hist_ul = xows_doc_frag_element_find(peer.addr,"chat_fram","hist_ul");
+    hist_ul = xows_doc_frag_element_find(peer.addr,"peer_col","hist_ul");
   }
-  */
-  const hist_ul = xows_gui_doc(peer,"hist_ul");
 
   // First search by id attribute
   let li_msg = hist_ul.querySelector("LI-MESG[data-id='"+id+"']");

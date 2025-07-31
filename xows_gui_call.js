@@ -667,10 +667,6 @@ function xows_gui_call_self_hangup(peer, reason)
  */
 function xows_gui_call_onoffer(peer, stream)
 {
-  // Create document set for peer
-  if(!peer.live)
-    xows_gui_doc_init(peer);
-
   // Add remote participant to Call View
   xows_gui_call_view_part_add(peer, peer, stream);
 
