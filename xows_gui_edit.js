@@ -94,7 +94,8 @@ function xows_gui_edit_onclick(event)
     case "edit_emoj": {
       // Open Emoji menu
       xows_doc_menu_toggle(xows_doc("edit_emoj"), "drop_emoj",
-                           xows_gui_edit_emoj_menu_onclick);
+                           xows_gui_emoj_menu_onclick,
+                           xows_gui_emoj_menu_onshow);
       break;
     }
 
@@ -118,6 +119,118 @@ function xows_gui_edit_onfile(event)
   if(xows_gui_peer && file)
     xows_gui_upld_start(xows_gui_peer, file);
 }
+
+/* -------------------------------------------------------------------
+ * Edition Panel - Alert banner routines
+ * -------------------------------------------------------------------*/
+/**
+ * Handles click on chat navigation banner.
+ *
+ * @param   {object}    event      Event object
+ */
+function xows_gui_edit_alrt_onclick(event)
+{
+  // Scroll history down, this will also update navigation bar
+  // status (and hide it) since scrolling down imply an update
+  xows_gui_hist_scrl_down(xows_gui_peer, true);
+}
+
+/**
+ * Update chat navigation state and visibility according given
+ * scroll position relative to client.
+ *
+ * @param   {object}    peer        Peer object
+ * @param   {number}    scroll      Chat Scroll relative to client bottom
+ * @param   {number}    client      Chat client height
+ */
+function xows_gui_edit_alrt_update(peer, scroll, client)
+{
+  // Get element
+  const edit_alrt = xows_gui_doc(peer,"edit_alrt");
+
+  if(scroll >= 50) {
+
+    // If scroll is greater than client height we set the "Old-Message" status
+    // which is not formely an alert.
+    if(scroll > client)
+      edit_alrt.classList.add("OLDMSG");
+
+    // Scroll is pretty far from chat history bottom, if any alter is
+    // present we show the navigation bar
+
+    if(edit_alrt.hidden && edit_alrt.classList.length) {
+      // Add event listener
+      if(peer === xows_gui_peer)
+        xows_doc_listener_add(edit_alrt, "click", xows_gui_edit_alrt_onclick);
+      edit_alrt.hidden = false;
+    }
+
+  } else {
+
+    // Scroll is near bottom of chat history, we reset common alerts
+    // and hide navigation bar
+
+    if(!edit_alrt.hidden) {
+      // Remove event listener
+      if(peer === xows_gui_peer)
+        xows_doc_listener_rem(edit_alrt, "click", xows_gui_edit_alrt_onclick);
+      edit_alrt.hidden = true;
+    }
+
+    // Unset "Old-Message" status, since user is new reading last messages
+    edit_alrt.classList.remove("OLDMSG");
+
+    // Reset UNREAD alert, we assume user actualy read the new message
+    edit_alrt.classList.remove("UNREAD");
+  }
+}
+
+/**
+ * Adds alert status to navigation bar.
+ *
+ * Depending current scroll position, the navigation bar may be not shown
+ * and UNREAD alert may be completely ignored.
+ *
+ * @param   {object}    peer        Peer object
+ * @param   {string}    alert       Alert to apply (RINGING or UNREAD)
+ */
+function xows_gui_edit_alrt_set(peer, alert)
+{
+  // Get element
+  const edit_alrt = xows_gui_doc(peer,"edit_alrt");
+
+  const scroll = xows_gui_hist_scrl_get(peer);
+
+  // If scroll is already almost at bottom we ignore the "UNREAD" alert
+  if(scroll < 50 && alert === "UNREAD")
+    return;
+
+  // Add class
+  edit_alrt.classList.add(alert);
+
+  // Update status according scroll
+  xows_gui_edit_alrt_update(peer, scroll, scroll);
+}
+
+/**
+ * Removes alert status from the navigation bar.
+ *
+ * @param   {object}    peer        Peer object
+ * @param   {string}    alert       Alert to reset (RINGING or UNREAD)
+ */
+function xows_gui_edit_alrt_reset(peer, alert)
+{
+  // Get element
+  const edit_alrt = xows_gui_doc(peer,"edit_alrt");
+
+  // Add class
+  edit_alrt.classList.remove(alert);
+
+  // Update status according scroll
+  const scroll = xows_gui_hist_scrl_get(peer);
+  xows_gui_edit_alrt_update(peer, scroll, scroll);
+}
+
 /* -------------------------------------------------------------------
  * Edition Panel - Reply banner routines
  * -------------------------------------------------------------------*/
@@ -363,28 +476,6 @@ function xows_gui_edit_inpt_insert(text, tagname)
 }
 
 /* -------------------------------------------------------------------
- * Edition Panel - Emoji menu
- * -------------------------------------------------------------------*/
-/**
- * Chat Emoji menu button/drop on-click callback
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_edit_emoj_menu_onclick(event)
-{
-  xows_cli_pres_show_back(); //< Wakeup presence
-
-  // Retreive the parent <li> element of the event target
-  const li = event.target.closest("LI");
-
-  // Check whether we got click from drop or button
-  if(li) xows_gui_edit_inpt_insert(li.childNodes[0].nodeValue, "EMO-JI"); //< Insert selected Emoji
-
-  // Close menu
-  xows_doc_menu_close();
-}
-
-/* -------------------------------------------------------------------
  * Edition Panel - Peer writing notifications
  * -------------------------------------------------------------------*/
 /**
@@ -461,4 +552,45 @@ function xows_gui_edit_onchst(peer, chat)
 
   // Show the writing mention
   edit_stat.hidden = false;
+}
+
+/* -------------------------------------------------------------------
+ * Emoji menu
+ * -------------------------------------------------------------------*/
+/**
+ * Emojis Insertion Menu placement callback function
+ *
+ * @param   {element}    button   Menu button element
+ * @param   {element}    menu     Menu (itself) element
+ */
+function xows_gui_emoj_menu_onshow(button, menu)
+{
+  // Calculate menu position next to button
+  const rect = button.getBoundingClientRect();
+
+  const style = window.getComputedStyle(menu);
+  const marginBottom = parseInt(style.getPropertyValue("margin-bottom"));
+  const marginLeft = parseInt(style.getPropertyValue("margin-left"));
+
+  menu.style.left = (rect.right - (menu.offsetWidth - marginLeft)) + "px";
+  menu.style.top = (rect.top - (menu.offsetHeight + marginBottom)) + "px";
+}
+
+/**
+ * Emojis Insertion Menu on-click callback function
+ *
+ * @param   {object}    event     Event object
+ */
+function xows_gui_emoj_menu_onclick(event)
+{
+  xows_cli_pres_show_back(); //< Wakeup presence
+
+  // Retreive the parent <li> element of the event target
+  const li = event.target.closest("LI");
+
+  // Check whether we got click from drop or button
+  if(li) xows_gui_edit_inpt_insert(li.childNodes[0].nodeValue, "EMO-JI"); //< Insert selected Emoji
+
+  // Close menu
+  xows_doc_menu_close();
 }
