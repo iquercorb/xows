@@ -40,6 +40,93 @@
  *                  Chat Histor Management Sub-Module
  *
  * ------------------------------------------------------------------ */
+/* -------------------------------------------------------------------
+ * Chat History - Scroll routines
+ * -------------------------------------------------------------------*/
+/**
+ * Get the main chat last saved scroll position (relative to bottom)
+ * corresponding to the specified peer.
+ *
+ * If the specified Peer history is offscreen, it returns value from
+ * the offscreen dummy object.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ */
+function xows_gui_hist_scrl_get(peer)
+{
+  // Returns current DOM element or offscreen dummy object ad-hoc propery
+  if(peer === xows_gui_peer) {
+    return document.getElementById("chat_hist").scrollBottom;
+  } else {
+    return parseInt(xows_doc_frag_find(peer.addr,"chat_hist").dataset.scrollbottom);
+  }
+}
+
+/**
+ * Move to bottom the main chat scroll corresponding to the specified peer
+ *
+ * If the specified Peer history is offscreen, the function operate on
+ * the offscreen dummy object.
+ *
+ * @param   {object}    peer      Peer object to get scroll value
+ * @param   {boolean}  [smooth]   Perform smooth scroll
+ */
+function xows_gui_hist_scrl_down(peer, smooth = true)
+{
+  // Force update navigation bar
+  xows_gui_edit_alrt_update(xows_gui_peer, 0, 0);
+
+  if(peer === xows_gui_peer) {
+    xows_doc_scroll_todown(document.getElementById("chat_hist"), smooth);
+  } else {
+    xows_doc_frag_find(peer.addr,"chat_hist").dataset.scrollbottom = 0;
+  }
+}
+
+/* -------------------------------------------------------------------
+ * Chat History - Scroll and resize handling
+ * -------------------------------------------------------------------*/
+/**
+ * setTimeout handle for history fetch temporization
+ */
+let xows_gui_hist_fetch_hto = null;
+
+/**
+ * Callback function to handle user scroll the chat history window
+ *
+ * @param   {object}    event     Event object associated with trigger
+ */
+function xows_gui_hist_onscroll(event)
+{
+  if(!xows_gui_peer)
+    return;
+
+  const chat_hist = xows_doc("chat_hist");
+
+  // If scroll near of top, set timeout to fetch history
+  if(chat_hist.scrollTop <= 100) {
+
+    // Set timeout to fetch older history
+    if(!xows_gui_hist_fetch_hto)
+      xows_gui_hist_fetch_hto = setTimeout(xows_gui_mam_fetch_older, xows_options.cli_archive_delay, xows_gui_peer);
+
+  } else if(chat_hist.scrollTop > 100) {
+
+    // Clear the fetch history timeout
+    if(xows_gui_hist_fetch_hto) {
+      clearTimeout(xows_gui_hist_fetch_hto);
+      xows_gui_hist_fetch_hto = null;
+    }
+  }
+
+  // Update Chat navigation banner according user scroll relative to bottom.
+  // If scroll is far enough from bottom, show the "Back to recent" banner
+  xows_gui_edit_alrt_update(xows_gui_peer, chat_hist.scrollBottom, chat_hist.clientHeight);
+}
+
+/* -------------------------------------------------------------------
+ * Chat History - Interactions
+ * -------------------------------------------------------------------*/
 /**
  * Callback function to handle user click in chat history
  *
@@ -117,7 +204,9 @@ function xows_gui_hist_onclick(event)
     }
   }
 }
-
+/* -------------------------------------------------------------------
+ * Chat History - Management routines
+ * -------------------------------------------------------------------*/
 /**
  * Update chat history messages avatar and nickname of the specified
  * author.
@@ -222,7 +311,7 @@ function xows_gui_hist_mesg_find(peer, id, from, tomb = false)
 }
 
 /* -------------------------------------------------------------------
- * Chat History - Update and Modifications
+ * Chat History - Content (messages) management
  * -------------------------------------------------------------------*/
 /**
  * Perform corrected message replacement with proper references update
@@ -409,18 +498,14 @@ function xows_gui_hist_onrecv(peer, mesg, wait, self, error)
       xows_gui_wnd_noti_emit(peer, mesg.body);
   }
 
-  // Keep scroll to proper position from bottom. Calling this
-  // manually allow us to get rid of ResizeObserver
-  xows_gui_doc_scrl_keep(peer);
-
   // Signals something new appending to chat
-  if(xows_gui_doc_scrl_get(peer) > 50) {
+  if(xows_gui_hist_scrl_get(peer) > 50) {
     if(self) {
       // Force scroll down
-      xows_gui_doc_scrl_down(peer, false);
+      xows_gui_hist_scrl_down(peer, false);
     } else {
       // Show the "unread" chat navigation signal
-      xows_gui_chat_nav_alert(peer, "UNREAD");
+      xows_gui_edit_alrt_set(peer, "UNREAD");
     }
   }
 }
@@ -642,11 +727,6 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
     hist_beg.className = "HIST-START";
   }
 
-  // Back scroll to proper position from bottom. Keep that here
-  // unless you enable resize observer for "chat_hist"
-  if(added > 0)
-    xows_gui_doc_scrl_keep(peer);
-
   xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
 
   // Inform MAM loaded
@@ -675,7 +755,7 @@ function xows_gui_mesg_repl_dlg_close(li_msg)
   // Check whether event directely reference object
   if(!li_msg || li_msg.tagName != "LI-MESG") {
     // We need to search any message in edit mode
-    li_msg = xows_doc("chat_hist").querySelector(".MESG-EDITOR");
+    li_msg = xows_doc("hist_mesg").querySelector(".MESG-EDITOR");
   }
 
   if(li_msg)
@@ -740,7 +820,7 @@ function xows_gui_mesg_retr_dlg_abort(li_msg)
   // Check whether event directely reference object
   if(!li_msg || li_msg.tagName != "LI-MESG") {
     // We need to search any message in edit mode
-    li_msg = xows_doc("chat_hist").querySelector(".MESG-TRASH");
+    li_msg = xows_doc("hist_mesg").querySelector(".MESG-TRASH");
   }
 
   if(li_msg)
@@ -775,4 +855,5 @@ function xows_gui_mesg_retr_dlg_valid(li_msg)
   // Send message retraction
   if(usid) xows_cli_msg_retr(xows_gui_peer, usid);
 }
+
 

@@ -192,10 +192,6 @@ function xows_gui_call_view_open(peer)
 
     // Show Call view
     call_view.hidden = false;
-
-    // Keep scroll to proper position from bottom. Calling this
-    // manually allow us to get rid of ResizeObserver
-    xows_gui_doc_scrl_keep(peer);
   }
 }
 
@@ -298,7 +294,7 @@ const XOWS_RING_RING = 2;
  *
  * @param   {object}    event      Event object
  */
-function xows_gui_call_ring_onclick(event)
+function xows_gui_hist_ring_onclick(event)
 {
   switch(event.target.id)
   {
@@ -321,7 +317,7 @@ function xows_gui_call_ring_onclick(event)
   }
 
   // Close dialog
-  xows_gui_call_ring_close(xows_gui_peer);
+  xows_gui_hist_ring_close(xows_gui_peer);
 }
 
 /**
@@ -331,9 +327,9 @@ function xows_gui_call_ring_onclick(event)
  * @param   {number}    type          Dialog type.
  * @param   {string}    reason        Calling dialog open reason
  */
-function xows_gui_call_ring_show(peer, type, reason)
+function xows_gui_hist_ring_show(peer, type, reason)
 {
-  const call_ring = xows_gui_doc(peer,"call_ring");
+  const hist_ring = xows_gui_doc(peer,"hist_ring");
 
   let is_video = false, inbound = false;
 
@@ -400,13 +396,13 @@ function xows_gui_call_ring_show(peer, type, reason)
     break;
   }
 
-  call_ring.classList.toggle("RING-VDEO", is_video);
-  call_ring.classList.toggle("RING-RING", (type === XOWS_RING_RING));
-  call_ring.classList.toggle("RING-NEGO", (type === XOWS_RING_NEGO));
-  call_ring.classList.toggle("RING-TERM", (type === XOWS_RING_TERM));
-  call_ring.classList.toggle("RING-INBD", inbound);
+  hist_ring.classList.toggle("RING-VDEO", is_video);
+  hist_ring.classList.toggle("RING-RING", (type === XOWS_RING_RING));
+  hist_ring.classList.toggle("RING-NEGO", (type === XOWS_RING_NEGO));
+  hist_ring.classList.toggle("RING-TERM", (type === XOWS_RING_TERM));
+  hist_ring.classList.toggle("RING-INBD", inbound);
 
-  call_ring.querySelector("RING-TEXT").innerText = xows_l10n_get(text);
+  hist_ring.querySelector("RING-TEXT").innerText = xows_l10n_get(text);
 
   if(bell) {
     xows_snd_sample_loop("ringbell"); //< Play Ring Bell sound
@@ -420,20 +416,20 @@ function xows_gui_call_ring_show(peer, type, reason)
     xows_snd_sample_stop("ringtone"); //< Stop Ring Bell sound
   }
 
-  if(call_ring.hidden) {
+  if(hist_ring.hidden) {
 
     // Add event listener
     if(peer === xows_gui_peer)
-      xows_doc_listener_add(call_ring, "click", xows_gui_call_ring_onclick);
+      xows_doc_listener_add(hist_ring, "click", xows_gui_hist_ring_onclick);
 
     // Show the incoming call dialog
-    call_ring.hidden = false;
+    hist_ring.hidden = false;
 
     // Force scroll down
-    xows_gui_doc_scrl_down(peer, false);
+    xows_gui_hist_scrl_down(peer, false);
 
     // Configure chat navigation bar
-    xows_gui_chat_nav_alert(peer, "RINGING");
+    xows_gui_edit_alrt_set(peer, "RINGING");
   }
 }
 
@@ -442,23 +438,23 @@ function xows_gui_call_ring_show(peer, type, reason)
  *
  * @param   {object}    peer          Contact Peer object.
  */
-function xows_gui_call_ring_close(peer)
+function xows_gui_hist_ring_close(peer)
 {
   // Stop Ring Tone & Bell sound
   xows_snd_sample_stop("ringtone");
   xows_snd_sample_stop("ringbell");
 
-  const call_ring = xows_gui_doc(peer,"call_ring");
+  const hist_ring = xows_gui_doc(peer,"hist_ring");
 
   // Remove event listener
   if(peer === xows_gui_peer)
-    xows_doc_listener_rem(call_ring, "click", xows_gui_call_ring_onclick);
+    xows_doc_listener_rem(hist_ring, "click", xows_gui_hist_ring_onclick);
 
   // Hide the dialog
-  call_ring.hidden = true;
+  hist_ring.hidden = true;
 
   // Configure chat navigation bar
-  xows_gui_chat_nav_reset(peer, "RINGING");
+  xows_gui_edit_alrt_reset(peer, "RINGING");
 }
 
 /* -------------------------------------------------------------------
@@ -524,7 +520,7 @@ function xows_gui_call_self_invite_onmedia(peer, stream)
   xows_gui_doc_update(peer, XOWS_UPDT_BUZY);
 
   // Open Ring dialog in Negotiation mode
-  xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
+  xows_gui_hist_ring_show(peer, XOWS_RING_NEGO, null);
 
   // Add local participant (ourself) to Call View
   xows_gui_call_view_part_add(peer, xows_cli_self, stream);
@@ -580,7 +576,7 @@ function xows_gui_call_self_accept_onmedia(peer, stream)
   xows_gui_doc_update(peer, XOWS_UPDT_BUZY);
 
   // Open Ring dialog in Negotiation mode
-  xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
+  xows_gui_hist_ring_show(peer, XOWS_RING_NEGO, null);
 
   // Get session medias (remote medias, at this stage)
   const constr = xows_cli_call_medias(peer);
@@ -630,7 +626,7 @@ function xows_gui_call_self_cancel(peer, error)
   if(xows_cli_call_exists(peer)) {
 
     // Set Ring dialog in Terminate mode
-    xows_gui_call_ring_show(peer, XOWS_RING_TERM, reason);
+    xows_gui_hist_ring_show(peer, XOWS_RING_TERM, reason);
 
     // Hang up with Peer
     xows_gui_call_self_hangup(peer, reason);
@@ -683,7 +679,7 @@ function xows_gui_call_onoffer(peer, stream)
     xows_gui_badg_unrd_call(peer, true);
 
   // Open Ring dialog in Ringing mode
-  xows_gui_call_ring_show(peer, XOWS_RING_RING, null);
+  xows_gui_hist_ring_show(peer, XOWS_RING_RING, null);
 }
 
 /**
@@ -709,19 +705,19 @@ function xows_gui_call_onstate(peer, state)
   if(state === "ringing") {
 
     // Set Ring dialog in Ringing mode
-    xows_gui_call_ring_show(peer, XOWS_RING_RING, null);
+    xows_gui_hist_ring_show(peer, XOWS_RING_RING, null);
   }
 
   if(state === "gathering") {
 
     // Set Ring dialog in Negotiation mode
-    xows_gui_call_ring_show(peer, XOWS_RING_NEGO, null);
+    xows_gui_hist_ring_show(peer, XOWS_RING_NEGO, null);
   }
 
   if(state === "connected") {
 
     // Set Ring dialog in Negotiation mode
-    xows_gui_call_ring_close(peer);
+    xows_gui_hist_ring_close(peer);
 
     // Add in call (buzy) badge to tabs/roster/contact
     xows_gui_badg_buzy(peer, true);
@@ -740,7 +736,7 @@ function xows_gui_call_onstate(peer, state)
 function xows_gui_call_ontermd(peer, reason)
 {
   // Open the Call dialog
-  xows_gui_call_ring_show(peer, XOWS_RING_TERM, reason);
+  xows_gui_hist_ring_show(peer, XOWS_RING_TERM, reason);
 
   // Close and reset GUI elements
   xows_gui_call_exit(peer);
@@ -795,5 +791,5 @@ function xows_gui_call_onerror(peer, internal, error)
   xows_gui_call_exit(peer);
 
   // Open the Call dialog
-  xows_gui_call_ring_show(peer, XOWS_RING_TERM, reason);
+  xows_gui_hist_ring_show(peer, XOWS_RING_TERM, reason);
 }

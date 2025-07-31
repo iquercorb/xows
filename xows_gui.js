@@ -165,9 +165,6 @@ function xows_gui_frag_new(slot, source)
     return;
   }
 
-  // Copy offscreen scroll parameters
-  xows_doc_scrl_copy(slot, source);
-
   // Clone elements from initial offscreen slot
   xows_doc_frag_clone(slot, source, "peer_col");
 }
@@ -183,13 +180,12 @@ function xows_gui_frag_new(slot, source)
  */
 function xows_gui_frag_export(slot)
 {
-  if(!xows_doc_frag_db.has(slot)) {
-    xows_log(1,"gui_peer_frag_export","fragment doesn't exist",slot);
-    return;
-  }
+  // Unlisten scrollable elements to prevent ResizeObserver bug
+  xows_doc_scroll_unobserv(xows_doc("chat_hist"));
+  xows_doc_scroll_unobserv(xows_doc("mucl_list"));
 
-  // Export scroll parameters to offscreen
-  xows_doc_scrl_export(slot, "chat_main");
+  // Export chat history scrollBottom ad-hoc parameter
+  xows_doc_scroll_export("chat_hist");
 
   // Export document elements to offscreen fragment
   xows_doc_frag_export(slot, "peer_col");
@@ -224,8 +220,9 @@ function xows_gui_frag_import(slot)
   // Import document elements from offscreen fragment
   xows_doc_frag_import(slot, "peer_col", clone);
 
-  // Import scroll parameters from offscreen
-  xows_doc_scrl_import(slot, "chat_main");
+  // Import chat history scrollBottom ad-hoc parameter
+  if(slot !== XOWS_GUI_FRAG_VOID)
+    xows_doc_scroll_import("chat_hist");
 }
 
 /**
@@ -237,9 +234,6 @@ function xows_gui_frag_discard(slot)
 {
   // Delete Document Fragment
   xows_doc_frag_delete(slot);
-
-  // Delete Scroll parameters
-  xows_doc_scrl_delete(slot);
 }
 
 /**
@@ -264,9 +258,11 @@ function xows_gui_frag_clear()
  */
 function xows_gui_init()
 {
+  // Export chat history scrollBottom ad-hoc parameter
+  xows_doc_scroll_export("chat_hist");
+
   // Create intial offscreen data from current document
-  xows_doc_scrl_export(XOWS_GUI_FRAG_VOID, "chat_main");
-  xows_doc_frag_export(XOWS_GUI_FRAG_VOID, "peer_col", false);
+  xows_gui_frag_export(XOWS_GUI_FRAG_VOID);
 
   // Poll for available devices for Multimedia features
   xows_gui_devices_poll();
@@ -282,8 +278,6 @@ function xows_gui_init()
   xows_doc_listener_add(window, "beforeunload", xows_gui_wnd_unload);
   // Set event listener to hook browser "nav back"
   xows_doc_listener_add(window, "popstate", xows_gui_wnd_onback);
-  // Set event listener to handle chat scroll moving on resize
-  xows_doc_listener_add(window, "resize", xows_gui_chat_onresize);
 
   // Main Page "scr_main" event listeners
   xows_doc_listener_add(xows_doc("rost_hand"), "click", xows_gui_layout_hand_onclick);
@@ -795,28 +789,30 @@ function xows_gui_doc_import(peer)
   // Set current active Peer
   xows_gui_peer = peer;
 
-  // Re-bind resize observer
-  xows_gui_chat_observer.observe(xows_doc("chat_main"));
-  //xows_gui_chat_observer.observe(xows_doc("chat_hist"));
+  // Reassign and resize observers listeners to scrollable elements
+  xows_doc_scroll_listen(xows_doc("chat_hist"));
+  if(peer.type === XOWS_PEER_ROOM)
+    xows_doc_scroll_listen(xows_doc("mucl_list"));
 
   // Recreate event listeners
   xows_doc_listener_add(xows_doc("chat_head"), "click", xows_gui_chat_head_onclick);
-  xows_doc_listener_add(xows_doc("chat_main"), "scrollend",xows_gui_chat_onscroll);
-  xows_doc_listener_add(xows_doc("chat_hist"), "click", xows_gui_hist_onclick);
 
+  xows_doc_listener_add(xows_doc("chat_hist"), "scrollend",xows_gui_hist_onscroll);
   if(!xows_doc("call_view").hidden) {
     xows_doc_listener_add(xows_doc("call_menu"),"click",xows_gui_call_view_onclick);
     xows_doc_listener_add(xows_doc("call_volu"),"input",xows_gui_call_view_oninput);
   }
 
-  const call_ring = xows_doc("call_ring");
-  if(!call_ring.hidden) xows_doc_listener_add(call_ring, "click", xows_gui_call_ring_onclick);
+  xows_doc_listener_add(xows_doc("hist_mesg"), "click", xows_gui_hist_onclick);
+
+  const hist_ring = xows_doc("hist_ring");
+  if(!hist_ring.hidden) xows_doc_listener_add(hist_ring, "click", xows_gui_hist_ring_onclick);
 
   const hist_upld = xows_doc("hist_upld");
   if(!hist_upld.hidden) xows_doc_listener_add(hist_upld, "click", xows_gui_upld_onclick);
 
-  const chat_nav = xows_doc("chat_nav");
-  if(!chat_nav.hidden) xows_doc_listener_add(chat_nav, "click", xows_gui_chat_nav_onclick);
+  const edit_alrt = xows_doc("edit_alrt");
+  if(!edit_alrt.hidden) xows_doc_listener_add(edit_alrt, "click", xows_gui_edit_alrt_onclick);
 
   const chat_edit = xows_doc("chat_edit");
   xows_doc_listener_add(chat_edit, "click", xows_gui_edit_onclick);
@@ -972,82 +968,6 @@ function xows_gui_doc_cls_has(peer, id, cls)
     return document.getElementById(id).classList.contains(cls);
   } else {
     return xows_doc_frag_find(peer.addr, id).classList.contains(cls);
-  }
-}
-
-/**
- * Save the main chat scroll position for the specified peer in the
- * ad-hoc 'scrollBottom' property.
- *
- * If the specified Peer history is offscreen, the function operate on
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to save scroll value
- */
-function xows_gui_doc_scrl_save(peer)
-{
-  if(peer === xows_gui_peer) {
-    xows_doc_scrl_save(document.getElementById("chat_main"));
-  } else {
-    xows_doc_scrl_save(xows_doc_scrl_db.get(peer.addr));
-  }
-}
-
-/**
- * Get the main chat last saved scroll position (relative to bottom)
- * corresponding to the specified peer.
- *
- * If the specified Peer history is offscreen, it returns value from
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to get scroll value
- */
-function xows_gui_doc_scrl_get(peer)
-{
-  // Returns current DOM element or offscreen dummy object ad-hoc propery
-  if(peer === xows_gui_peer) {
-    return document.getElementById("chat_main").scrollBottom;
-  } else {
-    return xows_doc_scrl_db.get(peer.addr).scrollBottom;
-  }
-}
-
-/**
- * Move to bottom the main chat scroll corresponding to the specified peer
- *
- * If the specified Peer history is offscreen, the function operate on
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to get scroll value
- * @param   {boolean}  [smooth]   Perform smooth scroll
- */
-function xows_gui_doc_scrl_down(peer, smooth = true)
-{
-  // Force update navigation bar
-  xows_gui_chat_nav_update(xows_gui_peer, 0, 0);
-
-  if(peer === xows_gui_peer) {
-    xows_doc_scrl_down(document.getElementById("chat_main"), smooth);
-  } else {
-    xows_doc_scrl_down(xows_doc_scrl_db.get(peer.addr));
-  }
-}
-
-/**
- * Compensate (to keept at position) the main chat scroll corresponding
- * to the specified peer.
- *
- * If the specified Peer history is offscree, the function operate on
- * the offscreen dummy object.
- *
- * @param   {object}    peer      Peer object to get scroll value
- */
-function xows_gui_doc_scrl_keep(peer)
-{
-  if(peer === xows_gui_peer) {
-    xows_doc_scrl_keep(document.getElementById("chat_main"));
-  } else {
-    xows_doc_scrl_keep(xows_doc_scrl_db.get(peer.addr));
   }
 }
 
@@ -1937,9 +1857,11 @@ function xows_gui_self_fram_onclick(event)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
 
-  if(event.target.id === "self_bt_acct")
+  if(event.target.id === "self_bt_acct") {
     // Open user porfile page
     xows_gui_page_acct_open();
+    return; //< Do NOT open menu
+  }
 
   if(event.target.closest("#self_bttn")) {
     // Open user show/presence level menu
@@ -2143,173 +2065,6 @@ function xows_gui_chat_head_onclick(event)
     break;
   }
 }
-/* -------------------------------------------------------------------
- * Chat Frame Interactions - Resize and Input routines
- * -------------------------------------------------------------------*/
-/**
- * Risize observer instance for Chat frame
- */
-const xows_gui_chat_observer = new ResizeObserver(xows_gui_chat_onresize);
-
-/**
- * Callback function to handle and process chat frame resizing
- *
- * This callback may be called either by Document "resize" event listener
- * or ResizeObserver object.
- *
- * @param   {object}    event   Event object or array of ResizeObserverEntry
- * @param   {object}    observ  Reference to calling ResizeObserver or undefined
- */
-function xows_gui_chat_onresize(event, observ)
-{
-  if(xows_gui_peer)
-    xows_doc_scrl_keep(document.getElementById("chat_main"));
-}
-
-/**
- * Callback function to handle user scroll the chat history window
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_gui_chat_onscroll(event)
-{
-  if(!xows_gui_peer)
-    return;
-
-  // Check whether the "onscroll" event was fired by an automatic scroll
-  // position adjustement, in this case we ignore the event as we are only
-  // intereseted by scroll user.
-  if(xows_doc_scrl_edited())
-    return;
-
-  const chat_main = xows_doc("chat_main");
-
-  // Save scroll position
-  xows_gui_doc_scrl_save(xows_gui_peer);
-
-  // If scroll near of top, fetch older history
-  if(chat_main.scrollTop < xows_doc("hist_beg").offsetHeight * 0.8) {
-    // Query archive for current chat contact
-    xows_gui_mam_fetch_older(xows_gui_peer, xows_options.cli_archive_delay);
-  }
-
-  // Update Chat navigation banner according user scroll relative to bottom.
-  // If scroll is far enough from bottom, show the "Back to recent" banner
-  xows_gui_chat_nav_update(xows_gui_peer, chat_main.scrollBottom, chat_main.clientHeight);
-}
-
-/* -------------------------------------------------------------------
- *
- * Chat Navigation Bar
- *
- * -------------------------------------------------------------------*/
-/**
- * Handles click on chat navigation banner.
- *
- * @param   {object}    event      Event object
- */
-function xows_gui_chat_nav_onclick(event)
-{
-  // Scroll history down, this will also update navigation bar
-  // status (and hide it) since scrolling down imply an update
-  xows_gui_doc_scrl_down(xows_gui_peer, true);
-}
-
-/**
- * Update chat navigation state and visibility according given
- * scroll position relative to client.
- *
- * @param   {object}    peer        Peer object
- * @param   {number}    scroll      Chat Scroll relative to client bottom
- * @param   {number}    client      Chat client height
- */
-function xows_gui_chat_nav_update(peer, scroll, client)
-{
-  // Get element
-  const chat_nav = xows_gui_doc(peer,"chat_nav");
-
-  if(scroll >= 50) {
-
-    // If scroll is greater than client height we set the "Old-Message" status
-    // which is not formely an alert.
-    if(scroll > client)
-      chat_nav.classList.add("OLDMSG");
-
-    // Scroll is pretty far from chat history bottom, if any alter is
-    // present we show the navigation bar
-
-    if(chat_nav.hidden && chat_nav.classList.length) {
-      // Add event listener
-      if(peer === xows_gui_peer)
-        xows_doc_listener_add(chat_nav, "click", xows_gui_chat_nav_onclick);
-      chat_nav.hidden = false;
-    }
-
-  } else {
-
-    // Scroll is near bottom of chat history, we reset common alerts
-    // and hide navigation bar
-
-    if(!chat_nav.hidden) {
-      // Remove event listener
-      if(peer === xows_gui_peer)
-        xows_doc_listener_rem(chat_nav, "click", xows_gui_chat_nav_onclick);
-      chat_nav.hidden = true;
-    }
-
-    // Unset "Old-Message" status, since user is new reading last messages
-    chat_nav.classList.remove("OLDMSG");
-
-    // Reset UNREAD alert, we assume user actualy read the new message
-    chat_nav.classList.remove("UNREAD");
-  }
-}
-
-/**
- * Adds alert status to navigation bar.
- *
- * Depending current scroll position, the navigation bar may be not shown
- * and UNREAD alert may be completely ignored.
- *
- * @param   {object}    peer        Peer object
- * @param   {string}    alert       Alert to apply (RINGING or UNREAD)
- */
-function xows_gui_chat_nav_alert(peer, alert)
-{
-  // Get element
-  const chat_nav = xows_gui_doc(peer,"chat_nav");
-
-  const scroll = xows_gui_doc_scrl_get(peer);
-
-  // If scroll is already almost at bottom we ignore the "UNREAD" alert
-  if(scroll < 50 && alert === "UNREAD")
-    return;
-
-  // Add class
-  chat_nav.classList.add(alert);
-
-  // Update status according scroll
-  xows_gui_chat_nav_update(peer, scroll, scroll);
-}
-
-/**
- * Removes alert status from the navigation bar.
- *
- * @param   {object}    peer        Peer object
- * @param   {string}    alert       Alert to reset (RINGING or UNREAD)
- */
-function xows_gui_chat_nav_reset(peer, alert)
-{
-  // Get element
-  const chat_nav = xows_gui_doc(peer,"chat_nav");
-
-  // Add class
-  chat_nav.classList.remove(alert);
-
-  // Update status according scroll
-  const scroll = xows_gui_doc_scrl_get(peer);
-  xows_gui_chat_nav_update(peer, scroll, scroll);
-}
 
 /* -------------------------------------------------------------------
  *
@@ -2378,7 +2133,7 @@ function xows_gui_upld_start(peer, file)
 
   // Force scroll down
   if(peer === xows_gui_peer)
-    xows_gui_doc_scrl_down(peer, false);
+    xows_gui_hist_scrl_down(peer, false);
 
   // Send upload query
   xows_cli_upld_query(peer, file);

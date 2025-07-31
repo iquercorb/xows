@@ -930,7 +930,7 @@ function xows_gui_mucl_list_update(room)
  * MUC Interactions - Occupant contextual Menu
  * -------------------------------------------------------------------*/
 /**
- * Occupant drop menu on-close Callback function
+ * Occupant Contextual Menu on-close Callback function
  */
 function xows_gui_muc_occu_menu_onclose()
 {
@@ -940,23 +940,23 @@ function xows_gui_muc_occu_menu_onclose()
 }
 
 /**
- * Occupant drop menu placement Callback function
+ * Occupant Contextual Menu placement and config Callback function
  *
- * @param   {object}    button    Drop menu button
- * @param   {object}    drop      Drop menu object
+ * @param   {element}    button   Menu button element
+ * @param   {element}    menu     Menu (itself) element
  */
-function xows_gui_muc_occu_menu_onshow(button, drop)
+function xows_gui_muc_occu_menu_onshow(button, menu)
 {
   // Calculate menu position next to button
   const rect = button.getBoundingClientRect();
-  drop.style.left = (rect.left - (drop.offsetWidth)) + "px";
+  menu.style.left = (rect.left - menu.offsetWidth) + "px";
 
   // Calculate overflow from screen height
   const offsetTop = rect.top + (rect.height * 0.5);
-  let overflow = (offsetTop + drop.offsetHeight) - window.screen.height;
+  let overflow = (offsetTop + menu.offsetHeight) - window.screen.height;
   if(overflow < 0) overflow = 0;
 
-  drop.style.top = (offsetTop - overflow) + "px";
+  menu.style.top = (offsetTop - overflow) + "px";
 
   // Get related Occupant
   const occu = xows_cli_occu_get(xows_gui_peer, button.closest("LI-PEER").id);

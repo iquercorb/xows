@@ -43,13 +43,15 @@
         </row-head>
         <!-- Main Frame (Roster Lists) -->
         <row-main>
-          <peer-list id="cont_list">
-            <ul hidden id="cont_pend" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Pending'}">
-              <li-peer id="peer-pend" XOWS_TPL_INSTANCED></li-peer>
-            </ul>
-            <ul hidden id="cont_budy" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Authorized'}">
-              <li-peer id="peer-cont" XOWS_TPL_INSTANCED></li-peer>
-            </ul>
+          <peer-list id="cont_list" class="SCROLLABLE">
+            <div class="SCROLLED-Y">
+              <ul hidden id="cont_pend" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Pending'}">
+                <li-peer id="peer-pend" XOWS_TPL_INSTANCED></li-peer>
+              </ul>
+              <ul hidden id="cont_budy" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Authorized'}">
+                <li-peer id="peer-cont" XOWS_TPL_INSTANCED></li-peer>
+              </ul>
+            </div>
           </peer-list>
         </row-main>
       </row-page>
@@ -66,14 +68,14 @@
         </row-head>
         <!-- Main Frame (Roster Lists) -->
         <row-main>
-          <peer-list id="room_list">
-            <ul hidden id="room_book" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Bookmarks'}">
-            </ul>
-            <ul hidden id="room_publ" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Public Channels'}">
-              <li-peer id="peer-room" XOWS_TPL_INSTANCED></li-peer>
-            </ul>
-            <ul hidden id="room_priv" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Private Channels'}">
-            </ul>
+          <peer-list id="room_list" class="SCROLLABLE">
+            <div class="SCROLLED-Y">
+              <ul hidden id="room_book" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Bookmarks'}"></ul>
+              <ul hidden id="room_publ" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Public Channels'}">
+                <li-peer id="peer-room" XOWS_TPL_INSTANCED></li-peer>
+              </ul>
+              <ul hidden id="room_priv" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Private Channels'}"></ul>
+            </div>
           </peer-list>
         </row-main>
       </row-page>
@@ -88,9 +90,10 @@
         </row-head>
         <!-- Main Frame (Roster Lists) -->
         <row-main>
-          <peer-list id="occu_list">
-            <ul id="priv_occu" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Room occupant'}">
-            </ul>
+          <peer-list id="occu_list" class="SCROLLABLE">
+            <div class="SCROLLED-Y">
+              <ul id="priv_occu" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Room occupant'}"></ul>
+            </div>
           </peer-list>
         </row-main>
       </row-page>
@@ -106,10 +109,10 @@
               <peer-name id="self_name"></peer-name>
               <peer-meta id="self_meta"></peer-meta>
             </peer-info>
+            <peer-acts id="self_acts">
+              <button id="self_bt_acct" title="${'Account options'}"></button>
+            </peer-acts>
           </div>
-          <peer-acts id="self_acts">
-            <button id="self_bt_acct" title="${'Account options'}"></button>
-          </peer-acts>
         </div>
         <div id="app_about"></div>
       </row-foot>
@@ -166,60 +169,66 @@
         </div>
         <!-- Main Frame (Chat Messages history) -->
         <row-main id="chat_main">
-          <!-- Chat History  -->
-          <div id="chat_hist">
-            <!-- Chat History - Message list -->
-            <hist-bound id="hist_beg" class="" data-text="${'Start of history'}"></hist-bound>
-            <ul id="hist_ul">
-              <li-mesg id="hist-mesg" XOWS_TPL_INSTANCED></li-mesg>
-              <li-mesg id="hist-null" XOWS_TPL_INSTANCED></li-mesg> <!-- Special Null dummy message -->
-            </ul>
-            <!-- DEPRECATED <hist-bound hidden id="hist_end"></hist-bound> -->
-          </div>
-          <!-- Chat History - Upload Progress -->
-          <div hidden id="hist_upld">
-            <section>
-              <h3>${'Uploading file'}</h3>
-              <div class="progress">
-                <div id="upld_pbar" class="progress-bar" ></div>
+          <!-- Chat History -->
+          <div id="chat_hist" class="SCROLLABLE" data-scrollbottom="0">
+            <div class="SCROLLED-Y">
+              <div id="hist_mesg">
+                <!-- Chat History - Message list -->
+                <hist-bound id="hist_beg" class="" data-text="${'Start of history'}"></hist-bound>
+                <ul id="hist_ul">
+                  <li-mesg id="hist-mesg" XOWS_TPL_INSTANCED></li-mesg>
+                  <li-mesg id="hist-null" XOWS_TPL_INSTANCED></li-mesg> <!-- Special Null dummy message -->
+                </ul>
+                <!-- DEPRECATED <hist-bound hidden id="hist_end"></hist-bound> -->
               </div>
-              <p id="upld_text"></p>
-            </section>
-            <fieldset>
-              <btn-close id="upld_exit"></btn-close>
-            </fieldset>
-          </div>
-          <!-- Chat History - Call Signaling Dialog -->
-          <div hidden id="call_ring" data-type="">
-            <ring-icon class="RING-RING"></ring-icon>
-            <ring-text>${'Incoming call...'}</ring-text>
-            <ring-acts>
-              <button id="ring_bt_pkup" title="${'Accept call'}"></button>
-              <button id="ring_bt_deny" title="${'Reject call'}"></button>
-              <btn-close id="ring_bt_clos" title="${'Close'}"></btn-close>
-            </ring-acts>
-          </div>
+              <!-- Chat History - Upload Progress -->
+              <div hidden id="hist_upld">
+                <section>
+                  <h3>${'Uploading file'}</h3>
+                  <div class="progress">
+                    <div id="upld_pbar" class="progress-bar" ></div>
+                  </div>
+                  <p id="upld_text"></p>
+                </section>
+                <fieldset>
+                  <btn-close id="upld_exit"></btn-close>
+                </fieldset>
+              </div>
+              <!-- Chat History - Call Signaling Dialog -->
+              <div hidden id="hist_ring" data-type="">
+                <ring-icon class="RING-RING"></ring-icon>
+                <ring-text>${'Incoming call...'}</ring-text>
+                <ring-acts>
+                  <button id="ring_bt_pkup" title="${'Accept call'}"></button>
+                  <button id="ring_bt_deny" title="${'Reject call'}"></button>
+                  <btn-close id="ring_bt_clos" title="${'Close'}"></btn-close>
+                </ring-acts>
+              </div>
+            </div>
+          </div> <!-- chat_hist -->
         </row-main>
         <!-- Foot Frame (Message Edit/Input Panel) -->
         <row-foot id="chat_foot">
-          <!-- Chat History - Navigation/Notification banner -->
-          <div hidden id="chat_nav">
-            <span id="nav_text" data-back="${'Back to recent messages'}" data-unrd="${'New unread messages'}" data-ring="${'New incomming call'}"></span>
-          </div>
           <aside>
             <input id="edit_file" type="file"></input>
-            <div hidden id="drop_emoj" XOWS_TPL_IMPORT></div>
           </aside>
           <div id="chat_edit">
+            <!-- Chat Editor - Alert banner -->
+            <div hidden id="edit_alrt">
+              <span id="nav_text" data-back="${'Back to recent messages'}" data-unrd="${'New unread messages'}" data-ring="${'New incomming call'}"></span>
+            </div>
+            <!-- Chat Editor - Reply-To banner -->
             <div hidden id="edit_rply" data-id="" data-to="">
               ${'Reply to'}<span id="rply_name"></span>
               <button id="rply_clos" title="${'Cancel reply'}"></button>
             </div>
+            <!-- Chat Editor - Message Editor area -->
             <div id="edit_area">
               <button id="edit_upld" title="${'Upload a file'}"></button>
               <chat-inpt id="edit_inpt" class="PLACEHOLD" placeholder="${'Send a message ...'}" contenteditable=true spellcheck=true></chat-inpt>
-              <button id="edit_emoj" title="${'Add an emoji'}"> </button>
+              <button id="edit_emoj" title="${'Insert an emoji'}"> </button>
             </div>
+            <!-- Chat Editor - Writing mensions -->
             <div id="edit_info">
               <div hidden id="edit_stat"></div>
             </div>
@@ -245,18 +254,20 @@
         </row-head>
         <!-- Main Frame (Room Occupants List) -->
         <row-main id="mucl_rost">
-          <peer-list id="mucl_list">
-            <ul hidden id="ownr_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Owner'}">
-            </ul>
-            <ul hidden id="admn_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Administrator'}">
-            </ul>
-            <ul hidden id="modo_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Moderator'}">
-            </ul>
-            <ul hidden id="part_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Participant'}">
-            </ul>
-            <ul hidden id="vist_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Visitor'}">
-              <li-peer id="peer-occu" XOWS_TPL_INSTANCED></li-peer>
-            </ul>
+          <peer-list id="mucl_list" class="SCROLLABLE">
+            <div class="SCROLLED-Y">
+              <ul hidden id="ownr_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Owner'}">
+              </ul>
+              <ul hidden id="admn_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Administrator'}">
+              </ul>
+              <ul hidden id="modo_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Moderator'}">
+              </ul>
+              <ul hidden id="part_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Participant'}">
+              </ul>
+              <ul hidden id="vist_ul" data-title="&#x25cf;&ensp;&ensp;&ensp;${'Visitor'}">
+                <li-peer id="peer-occu" XOWS_TPL_INSTANCED></li-peer>
+              </ul>
+            </div>
           </peer-list>
           <menu-drop hidden id="drop_occu" XOWS_TPL_IMPORT></menu-drop>
         </row-main>

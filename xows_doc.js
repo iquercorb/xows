@@ -191,9 +191,9 @@ function xows_doc_frag_clone(dst, src, element)
  *
  * @param   {string}    slot      Offscreen slot identifier
  * @param   {string}    element   Offscreen base element id
- * @param   {boolean}   clone     Indicate that nodes must be cloned
+ * @param   {boolean}  [clone]    Indicate that nodes must be cloned
  */
-function xows_doc_frag_export(slot, element, clone)
+function xows_doc_frag_export(slot, element, clone = false)
 {
   // create slot if required
   if(!xows_doc_frag_db.has(slot))
@@ -226,13 +226,18 @@ function xows_doc_frag_export(slot, element, clone)
  *
  * @param   {string}    slot      Offscreen slot identifier
  * @param   {string}    element   Offscreen base element id
- * @param   {boolean}   clone     Clone nodes
+ * @param   {boolean}  [clone]    Clone nodes
  */
-function xows_doc_frag_import(slot, element, clone)
+function xows_doc_frag_import(slot, element, clone = false)
 {
   if(xows_doc_frag_db.has(slot)) {
 
     let s, d;
+
+    if(!xows_doc_frag_db.get(slot).has(element)) {
+      xows_log(1,"doc_frag_import","element not found",element);
+      return;
+    }
 
     // set source and destination
     s = xows_doc_frag_db.get(slot).get(element);
@@ -335,199 +340,6 @@ function xows_doc_frag_element_find(slot, element, id)
 }
 
 /**
- * Object that stores offscreen Scroll Parameters
- */
-const xows_doc_scrl_db = new Map();
-
-/**
- * Flag to signal scroll was programatically edited
- */
-let xows_doc_scrl_edit = false;
-
-/**
- * Create new offscreen scroll parameters.
- *
- * @param   {string}    slot      Offscreen slot identifier
- */
-function xows_doc_scrl_init(slot)
-{
-  xows_doc_scrl_db.set(slot,{
-    scrollTop    : 0,
-    scrollHeight : 0,
-    clientHeight : 0,
-    scrollBottom : 0 }); //< ad-hoc porperty
-}
-
-/**
- * Get offscreen scroll parameters.
- *
- * @param   {string}    slot      Offscreen slot identifier
- *
- * @return  {object}    Offscreen scroll parameters
- */
-function xows_doc_scrl_get(slot)
-{
-  return xows_doc_scrl_db.get(slot);
-}
-
-/**
- * Save specified element scroll parameters to offscreen slot.
- *
- * @param   {string}    slot      Destination offscreen slot
- * @param   {string}    id        DOM element Id to be saved
- */
-function xows_doc_scrl_export(slot, id)
-{
-  const s = document.getElementById(id);
-
-  // Compute scrollBottom from current state before saving
-  s.scrollBottom = s.scrollHeight - (s.clientHeight + s.scrollTop);
-
-  xows_doc_scrl_db.set(slot,{
-    scrollTop    : s.scrollTop,
-    scrollHeight : s.scrollHeight,
-    clientHeight : s.clientHeight,
-    scrollBottom : s.scrollBottom || 0 }); //< ad-hoc porperty
-}
-
-/**
- * Copy offscreen scroll parameters from one slot to another
- *
- * @param   {string}    dst       Destination offscreen slot
- * @param   {string}    src       Source offscreen slot
- */
-function xows_doc_scrl_copy(dst, src)
-{
-  xows_doc_scrl_db.set(dst, xows_doc_scrl_db.get(src));
-}
-
-/**
- * Delete offscreen scroll parameters.
- *
- * @param   {string}    slot      Offscreen slot identifier
- */
-function xows_doc_scrl_delete(slot)
-{
-  return xows_doc_scrl_db.delete(slot);
-}
-
-/**
- * Clears all offscreen scroll parameters (reset database).
- */
-function xows_doc_scrl_clear()
-{
-  return xows_doc_scrl_db.clear();
-}
-
-/**
- * Import offscreen scroll parameters to the specified DOM element, adjusting
- * element's scroll position against the bottom of scrollable content,
- * compensating any changes of client area or scrollable content size.
- *
- * @param   {string}    slot      Source offscreen slot
- * @param   {string}    id        DOM element Id to be updated
- */
-function xows_doc_scrl_import(slot, id)
-{
-  const s = xows_doc_scrl_db.get(slot);
-  const d = document.getElementById(id);
-
-  // Signal scroll was edited so next "onscroll" event must be ignored
-  xows_doc_scrl_edit = true;
-
-  // Use ad-hoc "scrollBottom" property to adjust scroll position
-  // relative to the bottom of the scrollable content.
-  d.scrollBottom = s.scrollBottom;
-  d.scrollTop = d.scrollHeight - (d.clientHeight + d.scrollBottom);
-
-  //xows_log(1,"doc_scrl_import","scrollBottom="+d.scrollBottom,"scrollTop="+d.scrollTop+" scrollHeigh="+d.scrollHeight+" clientHeight="+d.clientHeight);
-}
-
-/**
- * Calculates and store the element's scroll position relative to the bottom
- * of the scrollable content allowing later scroll adjustment relative to the
- * bottom of the scrollable content.
- *
- * @param   {element|object}  element  DOM element or object to save
- */
-function xows_doc_scrl_save(element)
-{
-  // DOM stock scroll parameters are designed in the perspective of TOP-to-DOWN
-  // scroll, keeping the scroll position relative to the TOP of the scrollable
-  // content in case of client area or scrollable content size changes.
-  //
-  // This is a problem in some contexts (for instance, in chat history), where
-  // scroll mechanism is usually reversed (DOWN-to-TOP) and where in case of
-  // client area or scrollable content size change, the scroll position should
-  // be kept reltative to the scrollable content's BOTTOM.
-  //
-  // As workaround, we create and maintain an ad-hoc "scrollBottom" property
-  // in the scrollable element's parent, which is the calculated scroll position
-  // relative to the BOTTOM of scrollable content. We then can use this
-  // parameter to do the required math to counter the Browser defaut behavior.
-
-  // Save parameters
-  element.scrollBottom = element.scrollHeight - (element.clientHeight + element.scrollTop);
-}
-
-/**
- * Adjusts the element's scroll to compensate client area or scrollable content
- * size change, in the way to keep it at same position relative to scrollable
- * content's bottom.
- *
- * @param   {element|object}  element  DOM element or object to adjust
- */
-function xows_doc_scrl_keep(element)
-{
-  // Signal scroll was edited so next "onscroll" event must be ignored
-  xows_doc_scrl_edit = true;
-
-  element.scrollTop = element.scrollHeight - (element.clientHeight + (element.scrollBottom || 0));
-}
-
-/**
- * Moves the element's scroll to the bottom of the scrollable content.
- *
- * @param   {element|object}  element  DOM element or object to adjust
- * @param   {boolean}         smooth   Perform smooth scroll (DOM element only)
- */
-function xows_doc_scrl_down(element, smooth)
-{
-  // Signal scroll was edited so next "onscroll" event must be ignored
-  xows_doc_scrl_edit = true;
-
-  if(smooth) {
-    element.scrollTo({top:(element.scrollHeight - element.clientHeight),behavior:"smooth"});
-  } else {
-    element.scrollTop = (element.scrollHeight - element.clientHeight);
-  }
-  element.scrollBottom = 0;
-}
-
-/**
- * Returns whether scroll was previously programmatically edited, telling
- * that any "onscroll" event should be ignored.
- *
- * @return  {boolean}   True if scroll was edited, false otherwise
- */
-function xows_doc_scrl_edited()
-{
-  // Modifying scroll parameter programmatically triggers an "onscroll" event
-  // the same as if user actually scrolled from Browser window. This produce
-  // unwanted scroll position "save" whitch mess up all calculations.
-  //
-  // To prevent that, after each scroll adjustment on resize, we set a flag
-  // to signal that the "onscroll" event was fired by automatic adjustement
-  // so it is possible to ignore the event.
-  if(xows_doc_scrl_edit) {
-    xows_doc_scrl_edit = false;
-    return true;
-  } else {
-    return false;
-  }
-}
-
-/**
  * Global reference to document's Selection object
  */
 const xows_doc_sel = document.getSelection();
@@ -608,6 +420,16 @@ function xows_doc_init(onready)
   // Set application "About" content
   xows_doc("app_about").innerText = XOWS_APP_NAME.toUpperCase()+" v"+XOWS_APP_VERS;
 
+  // Retrieve all SCROLLABLE elements to create custom scrollbar and
+  // assing listeners
+  const scrollable = document.querySelectorAll(".SCROLLABLE");
+  for(let i = 0; i < scrollable.length; ++i) {
+    // Create custom scrollbar elements
+    xows_doc_scroll_create(scrollable[i]);
+    // Assign listeners
+    xows_doc_scroll_listen(scrollable[i]);
+  }
+
   xows_log(2,"doc_init","document ready");
 
   // Finaly call onready callback
@@ -624,9 +446,6 @@ function xows_doc_media_onload(media)
   // Remove the loading style
   media.parentNode.classList.remove("LOADPND");
   media.parentNode.classList.remove("LOADING");
-
-  // Force adjust scroll
-  xows_gui_chat_onresize();
 }
 
 /**
@@ -1788,3 +1607,409 @@ function xows_doc_void_onclick(event)
   xows_doc_mbox_modal();
 }
 
+/* -------------------------------------------------------------------
+ *
+ * Custom Scroll-Bars routines
+ *
+ * -------------------------------------------------------------------*/
+/**
+ * Export scrollBottom property value to dataset
+ *
+ * The 'scrollBottom' property is an ad-hoc property used to store
+ * element's scroll position relative to client viewport bottom. It is
+ * needed to store it since DocumentFragment operations do not keep
+ * custom properties.
+ *
+ * For more details about 'scrollBottom' see inner comment of
+ * the 'xows_doc_scroll_onscroll' function.
+ *
+ * @param   {string}    id  Element ID to import scroll
+ */
+function xows_doc_scroll_export(id)
+{
+  const element = document.getElementById(id);
+  element.dataset.scrollbottom = element.scrollBottom || 0;
+}
+
+/**
+ * Import scrollBottom property value from dataset
+ *
+ * The 'scrollBottom' property is an ad-hoc property used to store
+ * element's scroll position relative to client viewport bottom. It is
+ * needed to store it since DocumentFragment operations do not keep
+ * custom properties.
+ *
+ * For more details about 'scrollBottom' see inner comment of
+ * the 'xows_doc_scroll_onscroll' function.
+ *
+ * @param   {string}    id  Element ID to import scroll
+ */
+function xows_doc_scroll_import(id)
+{
+  const element = document.getElementById(id);
+  element.scrollBottom = parseInt(element.dataset.scrollbottom);
+
+  xows_doc_scroll_edit = true;
+  element.scrollTop = element.scrollHeight - (element.clientHeight + element.scrollBottom);
+}
+
+/**
+ * ResizeObserver object to track scrollables' viewport and content resizing
+ */
+const xows_doc_scroll_sizeobs = new ResizeObserver(xows_doc_scroll_onresize);
+
+/**
+ * Creates custom scrollbar elements for the specified scrollable element.
+ *
+ * @param   {element}   element   Scrollable DOM element
+ */
+function xows_doc_scroll_create(element)
+{
+  // Create scrollbar elements
+  const bar = document.createElement("scroll-bar");
+
+  // Assing ID to scrollbar element, we will use it to cross-reference
+  // scrollable element and its related scrollbar
+  bar.id = "scrollbar_" + xows_gen_nonce_asc(6);
+
+  // If scrollable element doesn't have ID we create one because we
+  // need it to track element.
+  if(!element.id)
+    element.id = "scrollable_" + xows_gen_nonce_asc(6);
+
+  // We store scrollable element ID rather than direct reference since
+  // elements may be moved from DOM to DocumentFragments and vice versa and
+  // this process invalidate references to DOM elements.
+  bar.dataset.scrollable = element.id;
+  const hnd = document.createElement("scroll-hnd");
+  hnd.hidden = true;
+  bar.appendChild(hnd);
+
+  // We parent scroll elements to scrollable's parent, we assume that scrollable
+  // element is placed in properly configured 'container' element
+  element.parentNode.appendChild(bar);
+
+  // Store related scrollbar element ID, this is used to retrieve the proper
+  // related scrollbar element from scrollable. Again, we cannot use direct
+  // reference because of offscreen DocumentFragements.
+  element.dataset.scrollbar = bar.id;
+
+  if("scrollbottom" in element.dataset)
+    element.scrollBottom = parseInt(element.dataset.scrollbottom);
+
+  for(let i = 0; i < element.children.length; ++i)
+    element.children[i].dataset.scrollable = element.id;
+
+  xows_log(2,"doc_scroll_create","create scrollbar",bar.id+" <=> "+element.id);
+}
+
+/**
+ * Setups custom scrollbar required event listeners for scrolling handling
+ * and processing.
+ *
+ * @param   {element}   element     Scrollable DOM element
+ * @param   {function} [onforward]  Optional callback to forward Event to.
+ */
+function xows_doc_scroll_listen(element)
+{
+  // Retreive scrollable related scrollbar element
+  const bar = document.getElementById(element.dataset.scrollbar);
+
+  // Add listener to scrollbar element
+  bar.addEventListener("mousedown", xows_doc_scroll_onmousedn);
+
+  // Add listener to scrollable element
+  element.addEventListener("scroll", xows_doc_scroll_onscroll, {passive:true});
+
+  // Keep informed of scrollable element resize
+  xows_doc_scroll_sizeobs.observe(element);
+
+  // Also observe scrollable' content to update on content resize
+  for(let i = 0; i < element.children.length; ++i)
+    xows_doc_scroll_sizeobs.observe(element.children[i]);
+}
+
+/**
+ * Unobserves (from ResizeObserver) the specified the scrollable element
+ * and its children.
+ *
+ * This function is mainly used to clean ResizeObserver to prevent bugs and
+ * artifacts when elements are moved to DocumentFragement.
+ *
+ * @param   {element}   element     Scrollable DOM element
+ */
+function xows_doc_scroll_unobserv(element)
+{
+  // Unobserv elements
+  xows_doc_scroll_sizeobs.unobserve(element);
+  for(let i = 0; i < element.children.length; ++i)
+    xows_doc_scroll_sizeobs.unobserve(element.children[i]);
+}
+
+/**
+ * Flag to signal scroll was programatically edited
+ */
+let xows_doc_scroll_edit = false;
+
+/**
+ * Recalculates custom scrollbar size and position according scrollable
+ * content size, client viewport and scroll position.
+ *
+ * @param   {element}     abl     Scrollable DOM element
+ */
+function xows_doc_scroll_adjust(abl)
+{
+  // Retrieve <scroll-bar> element
+  const bar = document.getElementById(abl.dataset.scrollbar);
+
+  if(!bar) {
+    console.log(abl);
+  }
+
+  // Get scrollbar handle element
+  const hnd = bar.firstElementChild;
+
+  // Calculate client size ratio (for handle size)
+  const cliRatio = abl.clientHeight / abl.scrollHeight;
+
+  // Ratio of 1 mean no-overflow
+  if(cliRatio < 1) {
+
+    // Here is overflow
+    if(hnd.hidden)
+      hnd.hidden = false;
+
+    // Calcultate scroll position ratio (for handle position)
+    const topRatio = abl.scrollTop / abl.scrollHeight;
+
+    // Risze and position handle accordingly
+    hnd.style.height = (bar.offsetHeight * cliRatio) + "px";
+    hnd.style.top = (bar.offsetHeight * topRatio) + "px";
+
+  } else {
+
+    // The entire page is visible, no need for scroll
+    if(!hnd.hidden)
+      hnd.hidden = true;
+  }
+}
+
+/**
+ * Handle scrollable viewport and content resing to adjust scrollbar size
+ *
+ * @param   {object[]}  entries   ResizeObserver entries
+ * @param   {object}    observer  ResizeObserver object
+ */
+function xows_doc_scroll_onresize(entries, observer)
+{
+  // recalculate scrollbar for resized elements
+  for(const entry of entries) {
+
+    let abl;
+    if("scrollable" in entry.target.dataset) {
+      abl = document.getElementById(entry.target.dataset.scrollable);
+      if(!abl) continue; //< this may occure because of DocumentFragment operations
+    } else {
+      abl = entry.target;
+    }
+
+    // Checks for presence of scrollbottom attribute, indicating scrollable
+    // element must be handled as TOP-to-DOWN scrollable.
+    if("scrollbottom" in abl.dataset) {
+
+      // Prevent scrollBottom to be saved with shifted value
+      xows_doc_scroll_edit = true;
+
+      // As explained within 'xows_doc_scroll_adjust', when a scrollable
+      // element has its content resized, browser engine keeps content position
+      // relative to client viewport top (the meaning of 'scrollTop' property).
+      //
+      // For chat history, we need this behavior to be inverted, so content
+      // position is conserved relative to client viewport bottom.
+      //
+      // In the bellow math, we use the custom 'scrollBottom' property that we
+      // maintain as a counterpart of 'scrollTop' to recalculate the proper
+      // value for 'scrollTop' to keep content position relative to client
+      // viewport bottom.
+      abl.scrollTop = abl.scrollHeight - (abl.clientHeight + abl.scrollBottom);
+
+      // We skip scroll adjustement since scroll event is fired once
+      // the scrollTop property is modified
+      continue;
+    }
+
+    // Adjust scroll
+    xows_doc_scroll_adjust(abl);
+  }
+}
+
+/**
+ * Handles scrollable element on-scroll event to move and resize
+ * custom scrollbar's handle accordingly.
+ *
+ * @param   {object}    event     Event object
+ */
+function xows_doc_scroll_onscroll(event)
+{
+  const abl = event.target;
+
+  // Adjust scroll
+  xows_doc_scroll_adjust(abl);
+
+  // DOM stock scroll parameters are designed in the perspective of TOP-to-DOWN
+  // scroll, keeping the scroll position relative to the TOP of the scrollable
+  // content in case of client area or scrollable content size changes.
+  //
+  // This is a problem in some contexts (for instance, in chat history), where
+  // scroll mechanism is usually reversed (BOTTOM-to-UP) and where in case of
+  // client area or scrollable content size change, the scroll position should
+  // be kept reltative to the scrollable content's BOTTOM.
+  //
+  // As workaround, we create and maintain an ad-hoc "scrollBottom" property
+  // in the scrollable element's parent, which is the calculated scroll position
+  // relative to the BOTTOM of scrollable content. We then can use this
+  // parameter to do the required math to counter the Browser defaut behavior.
+
+  if(("scrollbottom" in abl.dataset)) {
+
+    // Modifying scroll parameter programmatically triggers an "onscroll" event
+    // the same as if user actually scrolled from Browser window. This produce
+    // unwanted scroll position "save" whitch mess up all calculations.
+    //
+    // To prevent that, after each scroll adjustment on resize, we set a flag
+    // to signal that the "onscroll" event was fired by automatic adjustement
+    // so it is possible to ignore the event.
+    if(xows_doc_scroll_edit) {
+      xows_doc_scroll_edit = false;
+    } else {
+      abl.scrollBottom = abl.scrollHeight - (abl.clientHeight + abl.scrollTop);
+    }
+  }
+}
+
+/**
+ * Custom scrollbar's scrolling processing data
+ */
+const xows_doc_scroll_data = {bar:null,hnd:null,abl:null,msy:0,top:0,max:0};
+
+/**
+ * Handles scrollable element on-scroll event to move and resize
+ * custom scrollbar's handle accordingly.
+ *
+ * @param   {object}    event   Event object
+ */
+function xows_doc_scroll_onmousedn(event)
+{
+  // Prevent default event behavior, this is required to
+  // avoid mouse to select content while moving around
+  event.preventDefault();
+
+  // Retrieve <scroll-bar> element
+  const bar = event.target.closest("SCROLL-BAR");
+
+  // Retrieve associated scrollable element
+  const abl = document.getElementById(bar.dataset.scrollable);
+
+  // Check whether click occurent on handle or track
+  if(event.target.tagName === "SCROLL-HND") {
+
+    // Get scrollbar handle
+    const hnd = bar.firstElementChild;
+
+    // Get reference to modal data
+    const data = xows_doc_scroll_data;
+
+    // Store related elements
+    data.bar = bar;
+    data.hnd = bar.firstElementChild;
+    data.abl = abl;
+
+    // Store contextual parameters
+    data.msy = event.screenY; //< mouse initial position
+    data.top = parseInt(bar.firstElementChild.style.top); //< scroll handle initial position
+    data.max = bar.offsetHeight - hnd.offsetHeight; //< scroll handle max position
+
+    hnd.classList.add("SCROLLING");
+
+    // Enter scrolling processing mode
+    xows_doc_listener_add(window, "mousemove",  xows_doc_scroll_onmousemv);
+    xows_doc_listener_add(window, "mouseup",    xows_doc_scroll_onmouseup);
+
+  } else {
+
+    // Calculate relative click position on track
+    const topRation = event.offsetY / bar.offsetHeight;
+
+    // Apply position to scrollable
+    abl.scrollTop = abl.scrollHeight * topRation;
+  }
+}
+
+/**
+ * Handles mouse motion for custom scrollbar's scrolling processing mode
+ *
+ * Moves the custom scrollbar handle and updates scrollable element
+ * position according mouse motion.
+ *
+ * @param   {object}    event   Event object
+ */
+function xows_doc_scroll_onmousemv(event)
+{
+  // Get reference to scrolling processing data
+  const data = xows_doc_scroll_data;
+
+  // Calculate handle new position
+  let top = (data.top + (event.screenY - data.msy));
+
+  // Clamp to min and max positions
+  if(top <        0) top = 0;
+  if(top > data.max) top = data.max;
+
+  // Move handle to new position
+  data.hnd.style.top = top + "px";
+
+  // Set scrollable new scroll position
+  const topRation = top / data.bar.offsetHeight;
+  data.abl.scrollTop = data.abl.scrollHeight * topRation;
+}
+
+/**
+ * Handles mouse button up for custom scrollbar scrolling processing mode
+ *
+ * Stop scrolling processing and releases the scrollbar handle by
+ * removing related event listeners.
+ *
+ * @param   {object}    event   Event object
+ */
+function xows_doc_scroll_onmouseup(event)
+{
+  // Get reference to data
+  const data = xows_doc_scroll_data;
+
+  // Handle is no longer "captured"
+  data.hnd.classList.remove("SCROLLING");
+
+  // Remove scrolling processing event listeners
+  xows_doc_listener_rem(window, "mousemove",  xows_doc_scroll_onmousemv);
+  xows_doc_listener_rem(window, "mouseup",    xows_doc_scroll_onmouseup);
+}
+
+/**
+ * Moves the element's scroll to the bottom of the scrollable content.
+ *
+ * @param   {element|object}  element  DOM element or object to adjust
+ * @param   {boolean}         smooth   Perform smooth scroll (DOM element only)
+ */
+function xows_doc_scroll_todown(element, smooth)
+{
+  // Signal scroll was edited so next "onscroll" event must be ignored
+  xows_doc_scroll_edit = true;
+
+  if(smooth) {
+    element.scrollTo({top:(element.scrollHeight - element.clientHeight),behavior:"smooth"});
+  } else {
+    element.scrollTop = (element.scrollHeight - element.clientHeight);
+  }
+
+  element.dataset.scrollbottom = 0;
+}
