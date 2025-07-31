@@ -959,7 +959,7 @@ function xows_gui_muc_occu_menu_onshow(button, menu)
   menu.style.top = (offsetTop - overflow) + "px";
 
   // Get related Occupant
-  const occu = xows_cli_occu_get(xows_gui_peer, button.closest("LI-PEER").id);
+  const occu = xows_cli_occu_get(xows_gui_peer, button.closest("LI-PEER").dataset.id);
 
   const is_ownr = (xows_gui_peer.affi === XOWS_AFFI_OWNR);
   const is_admn = !occu.self && (xows_gui_peer.affi > XOWS_AFFI_MEMB);
