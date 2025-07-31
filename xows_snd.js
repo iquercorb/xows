@@ -514,7 +514,7 @@ function xows_snd_sample_onloaded(event)
     entry.node.connect(xows_snd_out_mastr_vol);
   }
 
-  xows_log(2,"snd_sample_onloaded","'"+audio.name+"' audio sample available");
+  xows_log(2,"snd_sample_onloaded","'"+event.target.name+"' audio sample available");
 }
 
 /**
