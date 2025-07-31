@@ -2879,17 +2879,6 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
 }
 
 /**
- * Query for XEP-0084 avatar metadata
- *
- * @param   {string}    peer     Peer to query avatar
- */
-function xows_cli_pep_avat_meta_query(peer)
-{
-  // Query for Avatar Meta-Data
-  xows_xmp_avat_meta_get_query(peer.addr, xows_cli_pep_avat_meta_parse);
-}
-
-/**
  * Stack for Avatar fetch cycle, to ensure only one query per Peer at a time.
  */
 const xows_cli_pep_avat_fetch_stk = new Map();
@@ -5019,17 +5008,6 @@ function xows_cli_call_peer_hangup(peer, reason)
 
   // Clear call session
   xows_cli_call_clear(peer);
-}
-
-/**
- * Terminate all living Multimedia Call and clear all data
- */
-function xows_cli_call_hangup_all()
-{
-  for(const peer of xows_cli_call_db.keys()) {
-    // Terminate all session
-    xows_cli_call_self_hangup(peer, "success");
-  }
 }
 
 /* -------------------------------------------------------------------
