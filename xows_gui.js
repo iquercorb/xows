@@ -51,11 +51,6 @@ const XOWS_FETCH_NEWR = xows_load_task_bit();
 const XOWS_FETCH_OLDR = xows_load_task_bit();
 
 /**
- * Current selected GUI locale code
- */
-let xows_gui_locale = "en-US";
-
-/**
  * Object to temporarly store login user and password
  */
 let xows_gui_auth = null;
@@ -166,7 +161,7 @@ function xows_gui_frag_new(slot, source)
   }
 
   // Clone elements from initial offscreen slot
-  xows_doc_frag_clone(slot, source, "peer_col");
+  xows_doc_frag_clone(slot, source);
 }
 
 /**
@@ -188,7 +183,8 @@ function xows_gui_frag_export(slot)
   xows_doc_scroll_export("chat_hist");
 
   // Export document elements to offscreen fragment
-  xows_doc_frag_export(slot, "peer_col");
+  //xows_doc_frag_export(slot, "peer_col");
+  xows_doc_frag_export("peer_col", slot);
 }
 
 /**
@@ -814,10 +810,13 @@ function xows_gui_doc_import(peer)
   const edit_alrt = xows_doc("edit_alrt");
   if(!edit_alrt.hidden) xows_doc_listener_add(edit_alrt, "click", xows_gui_edit_alrt_onclick);
 
+  const edit_inpt = xows_doc("edit_inpt");
+  xows_doc_listener_add(edit_inpt, "keyup", xows_gui_edit_inpt_oncaret);
+  xows_doc_listener_add(edit_inpt, "mouseup", xows_gui_edit_inpt_oncaret);
+  xows_doc_listener_add(edit_inpt, "paste", xows_gui_edit_inpt_onpaste, false); //< need preventDefault()
   const chat_edit = xows_doc("chat_edit");
+  xows_doc_listener_add(chat_edit, "input", xows_gui_edit_oninput);
   xows_doc_listener_add(chat_edit, "click", xows_gui_edit_onclick);
-  xows_doc_listener_add(chat_edit, "input", xows_gui_edit_inpt_oninput);
-  xows_doc_listener_add(chat_edit, "paste", xows_gui_edit_inpt_onpaste, false); //< need preventDefault()
   xows_doc_listener_add(xows_doc("edit_file"), "change", xows_gui_edit_onfile);
 
   if(peer.type === XOWS_PEER_ROOM) {
@@ -898,76 +897,7 @@ function xows_gui_doc(peer, id)
   if(peer === xows_gui_peer) {
     return document.getElementById(id);
   } else {
-    return xows_doc_frag_find(peer.addr, id);
-  }
-}
-
-/**
- * Toggle class of Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- * @param   {boolean}   force     Force enable or disable
- */
-function xows_gui_doc_cls_tog(peer, id, cls, force)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.toggle(cls,force);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.toggle(cls,force);
-  }
-}
-
-/**
- * Add class to Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- */
-function xows_gui_doc_cls_add(peer, id, cls)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.add(cls);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.add(cls);
-  }
-}
-
-/**
- * Remove class to Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- */
-function xows_gui_doc_cls_rem(peer, id, cls)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.remove(cls);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.remove(cls);
-  }
-}
-
-/**
- * Check for class in Peer element, either in current document or in
- * offscreen fragment
- *
- * @param   {object}    peer      Peer object
- * @param   {string}    id        Element id
- * @param   {string}    cls       Class name
- */
-function xows_gui_doc_cls_has(peer, id, cls)
-{
-  if(peer === xows_gui_peer) {
-    return document.getElementById(id).classList.contains(cls);
-  } else {
-    return xows_doc_frag_find(peer.addr, id).classList.contains(cls);
+    return xows_doc_frag_db.get(peer.addr).getElementById(id);
   }
 }
 
@@ -1893,11 +1823,13 @@ function xows_gui_self_onpush(self)
   self_meta.className = (self.stat) ? "" : "PLACEHOLD";
 
   // Update all opened chat history
-  let i = xows_cli_cont.length;
-  while(i--) xows_gui_hist_update(xows_cli_cont[i], self);
+  for(let i = 0; i < xows_cli_cont.length; ++i)
+    if(xows_cli_cont[i].live)
+      xows_gui_hist_update(xows_cli_cont[i], self);
 
-  i = xows_cli_room.length;
-  while(i--) xows_gui_hist_update(xows_cli_room[i], self);
+  for(let i = 0; i < xows_cli_room.length; ++i)
+    if(xows_cli_room[i].live)
+      xows_gui_hist_update(xows_cli_room[i], self);
 }
 
 /* -------------------------------------------------------------------
@@ -2071,8 +2003,6 @@ function xows_gui_chat_head_onclick(event)
  * Upload Interactions
  *
  * -------------------------------------------------------------------*/
-const xows_gui_upld_stk = new Map();
-
 /**
  * Handle click or File Upload dialog
  *

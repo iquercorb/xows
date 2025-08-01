@@ -166,100 +166,82 @@ const xows_doc_frag_db = new Map();
  *
  * @param   {string}    dst       Destination offscreen slot identifier
  * @param   {string}    src       Source offscreen slot identifier
- * @param   {string}    element   Offscreen base element id
  */
-function xows_doc_frag_clone(dst, src, element)
+function xows_doc_frag_clone(dst, src)
 {
-  // create slot if required
-  if(!xows_doc_frag_db.has(dst))
-    xows_doc_frag_db.set(dst,new Map());
+  // Create new destination DocumentFragment
+  const d = document.createDocumentFragment();
+  xows_doc_frag_db.set(dst, d);
 
-  let s, d;
-
-  // set source and destination
-  s = xows_doc_frag_db.get(src).get(element);
-  d = document.createDocumentFragment();
-  xows_doc_frag_db.get(dst).set(element, d);
+  // Get source DocumentFragment
+  const s = xows_doc_frag_db.get(src);
 
   // clone source nodes to destination
-  for(let i = 0, n = s.childNodes.length; i < n; ++i)
-    d.appendChild(s.childNodes[i].cloneNode(true));
+  for(let i = 0; i < s.children.length; ++i)
+    d.appendChild(s.children[i].cloneNode(true));
 }
 
 /**
  * Backup specified element content to an offscreen document fragment
  *
+ * @param   {string}    id        Source DOM element ID
  * @param   {string}    slot      Offscreen slot identifier
- * @param   {string}    element   Offscreen base element id
  * @param   {boolean}  [clone]    Indicate that nodes must be cloned
  */
-function xows_doc_frag_export(slot, element, clone = false)
+function xows_doc_frag_export(id, slot, clone = false)
 {
-  // create slot if required
-  if(!xows_doc_frag_db.has(slot))
-    xows_doc_frag_db.set(slot,new Map());
+  // Create new destination DocumentFragment
+  const d = document.createDocumentFragment();
+  xows_doc_frag_db.set(slot, d);
 
-  let s, d;
-
-  // set source and destination
-  s = document.getElementById(element);
-  d = document.createDocumentFragment();
-  xows_doc_frag_db.get(slot).set(element, d);
+  // Get source DOM element
+  const s = document.getElementById(id);
 
   if(clone) {
 
     // clone children from document to fragment
-    for(let i = 0, n = s.childNodes.length; i < n; ++i)
-      d.appendChild(s.childNodes[i].cloneNode(true));
+    for(let i = 0; i < s.children.length; ++i)
+      d.appendChild(s.children[i].cloneNode(true));
 
   } else {
 
     // move children from fragment to document
-    while(s.childNodes.length)
+    while(s.children.length)
       d.appendChild(s.firstChild);
 
   }
 }
 
 /**
- * Restore specified element from offscreen fragment
+ * Import stored offscreen document fragment to current DOM
  *
  * @param   {string}    slot      Offscreen slot identifier
- * @param   {string}    element   Offscreen base element id
+ * @param   {string}    id        Destination parent DOM element ID
  * @param   {boolean}  [clone]    Clone nodes
  */
-function xows_doc_frag_import(slot, element, clone = false)
+function xows_doc_frag_import(slot, id, clone = false)
 {
-  if(xows_doc_frag_db.has(slot)) {
+  if(!xows_doc_frag_db.has(slot))
+    return;
 
-    let s, d;
+  // Get source Fragment and destination DOM element
+  const s = xows_doc_frag_db.get(slot);
+  const d = document.getElementById(id);
 
-    if(!xows_doc_frag_db.get(slot).has(element)) {
-      xows_log(1,"doc_frag_import","element not found",element);
-      return;
-    }
+  // empty destination
+  d.innerText = "";
 
-    // set source and destination
-    s = xows_doc_frag_db.get(slot).get(element);
-    d = document.getElementById(element);
+  if(clone) {
 
-    // empty destination
-    d.innerText = "";
+    // clone children from fragment to document
+    for(let i = 0; i < s.children.length; ++i)
+      d.appendChild(s.childNodes[i].cloneNode(true));
 
-    if(clone) {
+  } else {
 
-      // clone children from fragment to document
-      for(let i = 0, n = s.childNodes.length; i < n; ++i) {
-        d.appendChild(s.childNodes[i].cloneNode(true));
-      }
-
-    } else {
-
-      // move children from fragment to document
-      while(s.childNodes.length) {
-        d.appendChild(s.firstChild);
-      }
-    }
+    // move children from fragment to document
+    while(s.children.length)
+      d.appendChild(s.firstChild);
   }
 }
 
@@ -274,28 +256,6 @@ function xows_doc_frag_delete(slot)
 }
 
 /**
- * Delete all offscreen document fragment
- */
-function xows_doc_frag_clear()
-{
-  xows_doc_frag_db.clear();
-}
-
-/**
- * Get offscreen slot saved root element
- *
- * @param   {string}    slot      Offscreen slot identifier
- * @param   {string}    id        Offscreen base element id
- */
-function xows_doc_frag_element(slot, id)
-{
-  if(xows_doc_frag_db.has(slot))
-    return xows_doc_frag_db.get(slot).get(id);
-
-  return null;
-}
-
-/**
  * Get element within backed document fragment element
  *
  * @param   {string}    slot      Offscreen slot identifier
@@ -303,40 +263,7 @@ function xows_doc_frag_element(slot, id)
  */
 function xows_doc_frag_find(slot, id)
 {
-  if(xows_doc_frag_db.has(slot)) {
-
-    const frag = xows_doc_frag_db.get(slot);
-
-    if(frag.has(id))
-      return frag.get(id);
-
-    let node;
-    for(const element of frag.values())
-      if(node = element.getElementById(id))
-        return node;
-  }
-
-  return null;
-}
-
-/**
- * Find child element with specified id in offscreen root element
- *
- * @param   {string}    slot      Offscreen slot identifier
- * @param   {string}    element   Offscreen base element id
- * @param   {string}    id        Child element id to search
- */
-function xows_doc_frag_element_find(slot, element, id)
-{
-  if(xows_doc_frag_db.has(slot)) {
-
-    const frag = xows_doc_frag_db.get(slot);
-
-    if(frag.has(element))
-      return frag.get(element).getElementById(id);
-  }
-
-  return null;
+  return xows_doc_frag_db.get(slot).getElementById(id);
 }
 
 /**
@@ -357,10 +284,19 @@ const xows_doc_rng = document.createRange();
  */
 function xows_doc_caret_around(node, before = false)
 {
+  // Delete document current selection ranges
   xows_doc_sel.removeAllRanges();
+
+  // Create new (use temporary) selection range that
+  // includes the specified node: [=>|<n>..</n>|<=]
   xows_doc_rng.setStartBefore(node);
   xows_doc_rng.setEndAfter(node);
+
+  // Collapse selection either at start or end to go around
+  // the node: [=>|<=<n>..</n>] or [<n>..</n>=>|<=]
   xows_doc_rng.collapse(before);
+
+  // Set created range as current document selection
   xows_doc_sel.addRange(xows_doc_rng);
 }
 
@@ -1205,18 +1141,6 @@ function xows_doc_page_onkeyu(event)
      if(submit) submit.click();
    }
   }
-}
-
-/**
- * Check whether given page is the currently openned one
- *
- * @param   {string}    page      Page ID to check
- *
- * @return  {boolean}   True if page is openned, false otherwise
- */
-function xows_doc_page_opened(page)
-{
-  return (xows_doc_page_param.pageid == page);
 }
 
 /* -------------------------------------------------------------------
