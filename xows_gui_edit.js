@@ -609,10 +609,10 @@ function xows_gui_emoj_menu_onshow(button, menu)
 
   const style = window.getComputedStyle(menu);
   const marginBottom = parseInt(style.getPropertyValue("margin-bottom"));
-  const marginLeft = parseInt(style.getPropertyValue("margin-left"));
+  const marginRight = parseInt(style.getPropertyValue("margin-right"));
 
-  menu.style.left = (rect.right - (menu.offsetWidth - marginLeft)) + "px";
-  menu.style.top = (rect.top - (menu.offsetHeight + marginBottom)) + "px";
+  menu.style.right = (window.innerWidth - (rect.right - marginRight)) + "px";
+  menu.style.bottom = (window.innerHeight - (rect.top - marginBottom)) + "px";
 }
 
 /**
