@@ -120,11 +120,21 @@
   --msg-hl-base:       #3E3E4F;  /* Highlighted message background */
 }
 
+@font-face {
+  font-family: 'Rubik';
+  src: url("fonts/Rubik-VariableFont_wght.ttf") format("truetype");
+}
+@font-face {
+  font-family: 'Rubik';
+  src: url("fonts/Rubik-Italic-VariableFont_wght.ttf") format("truetype");
+  font-style: italic;
+}
 [hidden] {
   display: none !important;
 }
 body {
-  font-family: Arial, sans-serif;
+  /*font-family: Arial, sans-serif;*/
+  font-family: 'Rubik', Arial, sans-serif;
   margin: 0;
   color: var(--text-tone0);
   background-color: var(--base-tone3);
@@ -407,7 +417,7 @@ peer-list ul::before {
   display: block;
   content: attr(data-title);
   text-transform: uppercase;
-  font-weight: bold;
+  font-weight: 500;
   font-size: .7em;
   margin: 0 0 7px 23px;
   color: var(--text-tone3);
@@ -1190,7 +1200,7 @@ dbox-head {
   display: inline-block;
   text-transform: uppercase;
   font-size: 0.95em;
-  font-weight: bold;
+  font-weight: 500;
   margin: 8px 0;
   color: var(--text-tone0);
 }
@@ -1347,6 +1357,7 @@ dbox-icon.STYL-ASK {
 }
 #over_prof h4 {
   margin: 0 0 15px 0;
+  font-weight: 500;
 }
 #prof_occu,
 #prof_cont {
@@ -1361,7 +1372,7 @@ dbox-icon.STYL-ASK {
   display: inline-block;
   margin: 10px 0;
   color: var(--text-tone1);
-  font-weight: bold;
+  font-weight: 500;
   font-size: 0.95em;
 }
 #over_prof .btn-action {
@@ -1426,7 +1437,7 @@ page-inner h1 {
   display: inline-block;
   text-transform: uppercase;
   font-size: 1.3em;
-  font-weight: bold;
+  font-weight: 500;
   color: var(--text-tone0);
 }
 page-inner h2 {
@@ -1435,6 +1446,7 @@ page-inner h2 {
   padding: 0;
   font-size: 0.9em;
   color: var(--text-tone2);
+  font-weight: 500;
 }
 page-inner input {
   margin: 15px auto;
@@ -1729,7 +1741,7 @@ row-page {
 }
 #rost_fram head-info {
   font-size: 0.9em;
-  font-weight: bold;
+  font-weight: 500;
   text-transform: uppercase;
   color: var(--text-tone3);
   margin-top: 2px;
@@ -1775,12 +1787,11 @@ peer-avat badg-lock {
 peer-name {
   display: block;
   max-height: 20px;
-  font-weight: bold;
   font-size: 0.85em;
   overflow:hidden;
   white-space:nowrap;
   text-overflow: ellipsis;
-  color: var(--text-tone2);
+  color: var(--text-tone1);
 }
 peer-addr {
   display: block;
@@ -1828,8 +1839,9 @@ li-peer:hover badg-lock,
 li-peer.SELECTED badg-lock {
   background-color: var(--base-tone4);
 }
+li-peer:hover peer-name,
 li-peer.SELECTED peer-name {
-  color: var(--text-tone1);
+  color: var(--text-tone0);
 }
 li-peer.RINGING {
   animation: ringing-background 1s ease-out infinite;
@@ -1951,15 +1963,15 @@ li-peer.PEER-ROOM peer-avat {
   align-items: center;
   width: 100%;
 }
-#self_acts {
+#self_panl peer-acts {
+  flex: none;
+  width: 40px;
   visibility: visible;
   margin: 0;
-  width: 32px;
-  flex: none;
 }
-#self_acts button {
-  display: block;
-  width: 32px; height: 32px;
+#self_panl peer-acts button {
+  display: inline-block;
+  width: 40px; height: 40px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -1968,11 +1980,13 @@ li-peer.PEER-ROOM peer-avat {
   background-position: center;
   background-repeat: no-repeat;
   cursor: pointer;
+  border-radius: 5px;
+  margin: 0;
   opacity: .7;
-}#self_acts button:hover  {
+}#self_panl peer-acts:hover button  {
   opacity: 1;
-  background-color: rgba(220,220,255,0.2);
-}#self_acts button:disabled  {
+  background-color: var(--base-tone4) !important;
+}#self_panl peer-acts button:disabled  {
   opacity: .4;
   cursor: default;
 }
@@ -1981,7 +1995,7 @@ li-peer.PEER-ROOM peer-avat {
   display: flex;
   flex-direction: row;
   height: 40px; width: 200px;
-  border-radius: 3px;
+  border-radius: 5px;
   align-items: center;
   cursor: pointer;
 }
@@ -1991,7 +2005,7 @@ li-peer.PEER-ROOM peer-avat {
 #self_bttn:hover badg-show {
   border-color: var(--base-tone4);
 }
-#self_bt_acct {
+#self_acct {
   background-image: url("images/gear.svg");
 }
 #app_about {
@@ -2139,7 +2153,7 @@ li-peer.PEER-ROOM peer-avat {
 chat-titl {
   margin: 0;
   padding: 0;
-  font-weight: bold;
+  font-weight: 500;
   font-size: 0.9em;
 }
 chat-addr {
@@ -2696,14 +2710,14 @@ mesg-date {
   vertical-align: middle;
 }
 mesg-from {
-  font-size: 0.95em;
-  font-weight: bold;
+  font-size: 0.9em;
+  font-weight: 500;
   color: var(--text-tone0);
   white-space: nowrap;
 }
 mesg-body {
   display: inline;
-  font-size: .95em;
+  font-size: .9em;
   line-height: 24px;
   color: var(--text-tone1);
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
@@ -3153,7 +3167,7 @@ mesg-trsh {
 }
 mesg-trsh span {
   margin: 0 5px 0 0;
-  font-weight: bold;
+  font-weight: 500;
   font-size: 0.85em;
   color: var(--reje-hover);
 }
@@ -3291,7 +3305,7 @@ button.trsh-bt-abort {
   flex: 1;
   margin: 0 0 0 5px;
   color: var(--link-hover);
-  font-weight: bold;
+  font-weight: 500;
 }
 #rply_clos {
   float: right;
@@ -3545,7 +3559,7 @@ chat-inpt {
 }
 #mucl_head head-info {
   font-size: 0.9em;
-  font-weight: bold;
+  font-weight: 500;
   text-transform: uppercase;
   color: var(--text-tone3);
   margin-top: 2px;
@@ -3914,7 +3928,7 @@ memb-acts {
 memb-nick {
   display: block;
   max-height: 18px;
-  font-weight: bold;
+  font-weight: 500;
   font-size: 0.85em;
   line-height: 20px;
   overflow:hidden;
