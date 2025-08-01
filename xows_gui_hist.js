@@ -58,7 +58,8 @@ function xows_gui_hist_scrl_get(peer)
   if(peer === xows_gui_peer) {
     return document.getElementById("chat_hist").scrollBottom;
   } else {
-    return parseInt(xows_doc_frag_find(peer.addr,"chat_hist").dataset.scrollbottom);
+    //return parseInt(xows_doc_frag_find(peer.addr,"chat_hist").dataset.scrollbottom);
+    return parseInt(xows_doc_frag_db.get(peer.addr).getElementById("chat_hist").dataset.scrollbottom);
   }
 }
 
@@ -79,7 +80,8 @@ function xows_gui_hist_scrl_down(peer, smooth = true)
   if(peer === xows_gui_peer) {
     xows_doc_scroll_todown(document.getElementById("chat_hist"), smooth);
   } else {
-    xows_doc_frag_find(peer.addr,"chat_hist").dataset.scrollbottom = 0;
+    //xows_doc_frag_find(peer.addr,"chat_hist").dataset.scrollbottom = 0;
+    xows_doc_frag_db.get(peer.addr).getElementById("chat_hist").dataset.scrollbottom = 0;
   }
 }
 
@@ -280,12 +282,11 @@ function xows_gui_hist_resume(peer)
  */
 function xows_gui_hist_mesg_find(peer, id, from, tomb = false)
 {
-  // Get Peer's history <ul> element in fast way
   let hist_ul;
   if(peer === xows_gui_peer) {
     hist_ul = document.getElementById("hist_ul");
   } else {
-    hist_ul = xows_doc_frag_element_find(peer.addr,"peer_col","hist_ul");
+    hist_ul = xows_doc_frag_db.get(peer.addr).getElementById("hist_ul");
   }
 
   // First search by id attribute
