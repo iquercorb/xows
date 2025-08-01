@@ -1699,16 +1699,30 @@ function xows_doc_scroll_adjust(abl)
   // Ratio of 1 mean no-overflow
   if(cliRatio < 1) {
 
-    // Here is overflow
-    if(hnd.hidden)
-      hnd.hidden = false;
+    // Calculate scroll handle height
+    let hndHeight = (bar.offsetHeight * cliRatio);
+
+    // If scrollable content is very large compared to client height the
+    // resulting ratio gives a very small handle and we want to keep it at
+    // minimum size to be usable.
+    if(hndHeight < 20) {
+      // since we use scroll handle top position to compute the actual scroll
+      // position while scrolling, changing handle height induce an offset
+      // that makes the very bottom of content unreachable. So, we have to
+      // store the proper offset value to do the required math on scrolling.
+      hnd.scrollOff = 20 - hndHeight;
+      hndHeight += hnd.scrollOff;
+    } else {
+      hnd.scrollOff = 0;
+    }
 
     // Calcultate scroll position ratio (for handle position)
-    const topRatio = abl.scrollTop / abl.scrollHeight;
+    const topRatio = (abl.scrollTop / abl.scrollHeight);
+    hnd.style.height = hndHeight + "px";
+    hnd.style.top = ((bar.offsetHeight - hnd.scrollOff) * topRatio) + "px";
 
-    // Risze and position handle accordingly
-    hnd.style.height = (bar.offsetHeight * cliRatio) + "px";
-    hnd.style.top = (bar.offsetHeight * topRatio) + "px";
+    if(hnd.hidden)
+      hnd.hidden = false;
 
   } else {
 
@@ -1814,7 +1828,7 @@ function xows_doc_scroll_onscroll(event)
 /**
  * Custom scrollbar's scrolling processing data
  */
-const xows_doc_scroll_data = {bar:null,hnd:null,abl:null,msy:0,top:0,max:0};
+const xows_doc_scroll_data = {bar:null,hnd:null,abl:null,msy:0,top:0,max:0,off:0};
 
 /**
  * Handles scrollable element on-scroll event to move and resize
@@ -1851,7 +1865,7 @@ function xows_doc_scroll_onmousedn(event)
     // Store contextual parameters
     data.msy = event.screenY; //< mouse initial position
     data.top = parseInt(bar.firstElementChild.style.top); //< scroll handle initial position
-    data.max = bar.offsetHeight - hnd.offsetHeight; //< scroll handle max position
+    data.max = (bar.offsetHeight - hnd.offsetHeight) ; //< scroll handle max position
 
     hnd.classList.add("SCROLLING");
 
@@ -1892,9 +1906,32 @@ function xows_doc_scroll_onmousemv(event)
   // Move handle to new position
   data.hnd.style.top = top + "px";
 
-  // Set scrollable new scroll position
-  const topRation = top / data.bar.offsetHeight;
-  data.abl.scrollTop = data.abl.scrollHeight * topRation;
+  // The scroll handle height may be set at its minimum size, making it larger
+  // than while the actual client to content ratio would require. In this case,
+  // the 'scrollOff' value is greater than zero, indicating we need to do some
+  // more math to compensate the induced offset.
+  let topOffset;
+  if(data.hnd.scrollOff) {
+    // The idea here is to get an interpolation phase (0 to 1) of the scroll
+    // handle position relative to motion range. When the handle is at the top
+    // stop, we got 0.0. When at bottom stop, we got 1.0.
+    const rng = data.bar.offsetHeight - data.hnd.offsetHeight;
+    const bot = data.bar.offsetHeight - (top + data.hnd.offsetHeight);
+    const t = (1.0 + ((top - bot) / rng)) * 0.5;
+    // Once we have the handle "virtual" position on track (in a range from 0.0
+    // to 1.0), we can proportionnaly add the required offset accordingly. This
+    // way, when handle is at top of track, the offset value has not effect and
+    // scrollable content start is properly reached. In contrary, whe, handle
+    // is at bottom of track, the offset value is fully added, allowing to
+    // reach the very end of scrollable content.
+    topOffset = top + (t * data.hnd.scrollOff);
+  } else {
+    // No offset, we can use the actual handle top position as reference
+    topOffset = top;
+  }
+
+  const topRatio = topOffset / data.bar.offsetHeight;
+  data.abl.scrollTop = data.abl.scrollHeight * topRatio;
 }
 
 /**
