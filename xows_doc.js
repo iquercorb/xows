@@ -1870,8 +1870,8 @@ function xows_doc_scroll_onmousedn(event)
     hnd.classList.add("SCROLLING");
 
     // Enter scrolling processing mode
-    xows_doc_listener_add(window, "mousemove",  xows_doc_scroll_onmousemv);
-    xows_doc_listener_add(window, "mouseup",    xows_doc_scroll_onmouseup);
+    xows_doc_listener_add(window, "mousemove", xows_doc_scroll_onmousemv);
+    xows_doc_listener_add(window, "mouseup",   xows_doc_scroll_onmouseup);
 
   } else {
 
@@ -1951,8 +1951,8 @@ function xows_doc_scroll_onmouseup(event)
   data.hnd.classList.remove("SCROLLING");
 
   // Remove scrolling processing event listeners
-  xows_doc_listener_rem(window, "mousemove",  xows_doc_scroll_onmousemv);
-  xows_doc_listener_rem(window, "mouseup",    xows_doc_scroll_onmouseup);
+  xows_doc_listener_rem(window, "mousemove", xows_doc_scroll_onmousemv);
+  xows_doc_listener_rem(window, "mouseup",   xows_doc_scroll_onmouseup);
 }
 
 /**
