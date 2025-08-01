@@ -345,16 +345,3 @@ function xows_wrtc_connected(rpc)
 {
   return (rpc.connectionState === "connected");
 }
-
-/**
- * Returns whether WebRTC Peer Connection can be considered as busy.
- *
- * @param   {object}      rpc       Instance of RTCPeerConnection object
- *
- * @return  {boolean}   True if WebRTC Peer Connection is busy, false otherwise.
- */
-function xows_wrtc_busy(rpc)
-{
-  return (rpc.localDescription !== null);
-}
-

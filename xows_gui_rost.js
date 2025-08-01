@@ -246,8 +246,6 @@ function xows_gui_rost_subs_onpush(cont)
 /* -------------------------------------------------------------------
  * Roster Interactions - Peers Management : Rooms
  * -------------------------------------------------------------------*/
-const xows_gui_rost_room_qeu = [];
-
 /**
  * Function to add or update item of the roster Room list
  *
