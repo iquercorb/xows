@@ -184,7 +184,7 @@ function xows_cach_avat_temp_hash(iden)
 const xows_cach_peer_db = new Map();
 
 /**
- * Save User, Room or Occupant data to localStorage and live DB
+ * Save Contact, Room or Occupant data to localStorage and live DB
  *
  * @param   {object}    peer      Peer Object to save data
  */
@@ -198,10 +198,10 @@ function xows_cach_peer_save(peer)
   try {
     cach = JSON.parse(localStorage.getItem(iden));
   } catch(e) {
-    xows_log(1,"cli_cache_peer_add","JSON parse error",iden);
+    xows_log(1,"cach_peer_save","JSON parse error",iden);
   }
 
-  if(cach !== null) {
+  if(cach) {
 
     // Update cached data
     cach.name = peer.name;
@@ -264,7 +264,7 @@ function xows_cach_peer_get(iden)
       xows_cach_peer_db.set(iden, JSON.parse(localStorage.getItem(iden)));
     } catch(e) {
       // malformed data
-      xows_log(1,"cli_cache_peer_get","JSON parse error",e);
+      xows_log(1,"cach_peer_get","JSON parse error",iden);
       localStorage.removeItem(iden);
       return null;
     }
@@ -343,7 +343,7 @@ function xows_cach_caps_get(node)
       xows_cach_caps_db.set(node,JSON.parse(localStorage.getItem(node)));
     } catch(e) {
       // malformed data
-      xows_log(1,"cli_cache_caps_get","JSON parse error",e);
+      xows_log(1,"cach_caps_get","JSON parse error",e);
       localStorage.removeItem(node);
       return null;
     }
