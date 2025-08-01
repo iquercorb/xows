@@ -1027,10 +1027,6 @@ function xows_cli_xmp_onready(bind, resume)
       xows_cli_self.name = userid.charAt(0).toUpperCase()+userid.slice(1);
     }
 
-    // Set empty own status if null or undefined
-    if(xows_cli_self.stat === null || xows_cli_self.stat === undefined)
-      xows_cli_self.stat = "";
-
     // Start features & services discovery
     xows_cli_warmup_start();
   }
@@ -1658,17 +1654,12 @@ let xows_cli_fw_subspush = function() {};
  */
 function xows_cli_pres_onrecv(from, show, prio, stat, node, phot)
 {
+  if(xows_cli_isself_addr(from))
+    return;
+
   const cont = xows_cli_cont_get(from);
   if(!cont) {
-
-    // prevent warning for own "unavailable" report
-    if(!xows_cli_self.jful)
-      return;
-
-    // prevent warning for own presence report
-    if(!xows_cli_isself_addr(from))
-      xows_log(1,"cli_xmp_onpresence","unknown/unsubscribed Contact",from);
-
+    xows_log(1,"cli_xmp_onpresence","unknown/unsubscribed Contact",from);
     return;
   }
 
