@@ -153,9 +153,9 @@ a:active {
 emo-ji {
   display: inline;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
-  font-size: 1.3em;
+  font-size: 1.4em;
   line-height: 20px;
-  vertical-align: top;
+  vertical-align: middle;
 }
 @media (max-width: 824px) {
   emo-ji {
@@ -3419,6 +3419,7 @@ chat-inpt {
   word-break: normal;
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   white-space: break-spaces; /* DO NOT TOUCH THIS ! */
+  line-height: 20px;
 }
 @media (max-width: 824px) {
   #edit_area {
@@ -3450,7 +3451,7 @@ chat-inpt {
   display: flex;
   flex-direction: column;
   position: absolute;
-  width: 420px; height: 340px;
+  width: 424px; height: 340px;
   z-index: 8;
   border-color: var(--base-tone5);
   border-style: solid;
@@ -3482,14 +3483,8 @@ chat-inpt {
   color: var(--text-tone3);
   font-size: 0.9em;
 }
-/*
-#drop_emoj::-webkit-scrollbar-thumb {
-  background-color: var(--base-tone0);
-  border-color: var(--base-tone3);
-}
-*/
 #drop_emoj ul {
-  padding: 0;
+  padding-right: 14px;
   margin: 0;
   white-space: normal;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
