@@ -728,9 +728,6 @@ function xows_gui_doc_init(peer)
   const placeholder = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
   xows_gui_doc(peer,"edit_inpt").setAttribute("placeholder",placeholder);
 
-  // Check whether file Upload is available
-  xows_gui_doc(peer,"edit_upld").disabled = !xows_cli_services.has(XOWS_NS_HTTPUPLOAD);
-
   // Set chat header bar informations
   xows_gui_doc_update(peer);
 }
@@ -991,6 +988,11 @@ function xows_gui_doc_update(peer, mask = 0xff)
       xows_gui_doc(peer, "chat_cala").disabled = unavailable;
       xows_gui_doc(peer, "chat_calv").disabled = unavailable;
     }
+  }
+
+  if(mask & XOWS_UPDT_OTHR) {
+    // Check whether file Upload is available
+    xows_gui_doc(peer,"edit_upld").disabled = !xows_cli_services.has(XOWS_NS_HTTPUPLOAD);
   }
 
   // Special mask to disable the preloading screen
@@ -1787,7 +1789,7 @@ function xows_gui_self_fram_onclick(event)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
 
-  if(event.target.id === "self_bt_acct") {
+  if(event.target.id === "self_acct") {
     // Open user porfile page
     xows_gui_page_acct_open();
     return; //< Do NOT open menu
