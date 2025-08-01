@@ -51,28 +51,7 @@
 function xows_gui_edit_onclick(event)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
-  /*
-  // Check whether click occure within input area
-  if(event.target.closest("CHAT-INPT")) {
 
-    // Get selection range
-    const rng = xows_doc_sel_rng(0);
-    if(rng.collapsed) {
-      const node = rng.endContainer;
-      // Checks whether current selection is within <emo-ji> node
-      //if(node.parentNode.tagName === "EMO-JI") {
-      if(node.parentNode.tagName !== "CHAT-INPT") {
-        // Move caret before or after the <emo-ji> node
-        xows_doc_caret_around(node.parentNode, !rng.endOffset);
-      }
-    }
-
-    // Store selection
-    xows_gui_edit_inpt_rng = rng;
-
-    return;
-  }
-  */
   if(event.target.id === "edit_inpt")
     return;
 
@@ -308,6 +287,11 @@ function xows_gui_edit_rply_set(li_msg)
  * Edition Panel - Message input Routines
  * -------------------------------------------------------------------*/
 /**
+ * Chat Editor reference to last selection Range object
+ */
+let xows_gui_edit_inpt_rng = null;
+
+/**
  * Handles caret position changes within the Chat Editor input area.
  *
  * The function takes events from keyup and mouseup to catch new caret
@@ -340,11 +324,6 @@ function xows_gui_edit_inpt_oncaret(event)
   // Store carret position
   xows_gui_edit_inpt_rng = xows_doc_sel.getRangeAt(0);
 }
-
-/**
- * Chat Editor reference to last selection Range object
- */
-let xows_gui_edit_inpt_rng = null;
 
 /**
  * Handle inputs in Chat Editor input to update caret position, send
@@ -392,11 +371,14 @@ function xows_gui_edit_inpt_setfocus()
   // Set input focus to message edit area
   edit_inpt.focus();
 
-  // move edit caret to end of content
-  const rng = xows_doc_sel.getRangeAt(0);
+  // Get latest saved selection range
+  let rng = xows_gui_edit_inpt_rng;
+  if(!rng) rng = xows_doc_sel.getRangeAt(0);
 
-  if(rng.endContainer !== edit_inpt)
+  if(!edit_inpt.contains(rng.commonAncestorContainer)) {
+    // move edit caret to end of content
     xows_doc_caret_around(rng.endContainer);
+  }
 }
 
 /**
@@ -475,14 +457,14 @@ function xows_gui_edit_inpt_insert(text, tagname)
 {
   const edit_inpt = document.getElementById("edit_inpt");
 
-  // set default carret position if none saved
-  if(!xows_gui_edit_inpt_rng) {
-    xows_doc_caret_at(edit_inpt, true);
-    xows_gui_edit_inpt_rng = xows_doc_sel.getRangeAt(0);
-  }
-
   // Get the last saved selection range (caret position)
-  const rng = xows_gui_edit_inpt_rng;
+  let rng = xows_gui_edit_inpt_rng;
+
+  // set default carret position if none saved
+  if(!rng || !edit_inpt.contains(rng.commonAncestorContainer)) {
+    xows_doc_caret_at(edit_inpt, true);
+    rng = xows_doc_sel.getRangeAt(0);
+  }
 
   // Delete content of selection if any
   if(rng && !rng.collapsed)
@@ -624,11 +606,14 @@ function xows_gui_emoj_menu_onclick(event)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
 
-  if(event.target.id !== "emoj_clos" && event.target.tagName !== "LI")
-    return;
+  if(event.target.tagName === "LI") {
+    xows_gui_edit_inpt_insert(event.target.innerText, "EMO-JI"); //< Insert selected Emoji
+  } else if(event.target.id !== "emoj_clos") {
+    return; //< prevent closing
+  }
 
-  xows_gui_edit_inpt_insert(event.target.innerText, "EMO-JI"); //< Insert selected Emoji
-  //xows_gui_edit_inpt_insert(li.childNodes[0].nodeValue, "EMO-JI"); //< Insert selected Emoji
+  // Set focus to Input
+  xows_gui_edit_inpt_setfocus();
 
   // Close menu
   xows_doc_menu_close();
