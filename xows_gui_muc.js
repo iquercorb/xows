@@ -1343,7 +1343,7 @@ function xows_gui_page_mucc_open(room, form)
     if(!form[i].value) form[i].value = [0];
 
   // Set the Room ID in the page header frame
-  xows_doc("mucc_room").innerText = room.name +" ("+room.addr+")";
+  xows_doc("mucc_room").innerText = "# "+room.name +" ("+room.addr+")";
 
   // Initialize parameters
   const param = xows_gui_page_mucc;
@@ -1469,6 +1469,23 @@ function xows_gui_page_muca_onload(from, items)
   // Set placeholder in case of empty list
   if(muca_outc.innerHTML == "") muca_outc.innerHTML = phold;
   if(muca_affi.innerHTML == "") muca_affi.innerHTML = phold;
+
+  // Set Ban List and Member list list-view height
+  let h, hli, hmax;
+
+  // Set Ban-List list-view height
+  h = muca_outc.offsetHeight; //< Get list total height
+  hli = (h / muca_outc.children.length); //< Height of a single element
+  hmax = hli * 4; //< Four elements per list-view max
+  if(h > hmax) h = hmax;
+  xows_doc("muca_banv").style.height = h + "px";
+
+  // Set Member-List list-view height
+  h = muca_affi.offsetHeight; //< Get list total height
+  hli = (h / muca_affi.children.length); //< Height of a single element
+  hmax = hli * 4; //< Four elements per list-view max
+  if(h > hmax) h = hmax;
+  xows_doc("muca_mbrv").style.height = h + "px";
 }
 
 /**
@@ -1587,7 +1604,7 @@ function xows_gui_page_muca_oninput(target)
 function xows_gui_page_muca_open(room)
 {
   // Set the Room ID in the page header frame
-  xows_doc("muca_room").innerText = room.name +" ("+room.addr +")";
+  xows_doc("muca_room").innerText = "# "+room.name +" ("+room.addr +")";
 
   // Initialize parameters
   const param = xows_gui_page_muca;

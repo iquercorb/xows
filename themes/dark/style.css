@@ -156,6 +156,7 @@ emo-ji {
   font-size: 1.4em;
   line-height: 20px;
   vertical-align: middle;
+  margin: 0 .1em;
 }
 @media (max-width: 824px) {
   emo-ji {
@@ -302,43 +303,8 @@ pre {
   background-color: var(--base-tone3);
 }
 /* ------------------------------------------------------------------ */
-/* Global WebKit scroll style
+/* Custom Scrollbar style
 /* ------------------------------------------------------------------ */
-/*
-* {
-  scrollbar-width: none;
-  scrollbar-color: var(--text-tone4) transparent;
-}
-::-webkit-scrollbar {
-  width: 12px; height: 12px;
-  background-color: transparent;
-}
-::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-::-webkit-scrollbar-thumb {
-  border-width: 3px;
-  border-style: solid;
-  border-radius: 6px;
-}
-::-webkit-resizer,
-::-webkit-scrollbar-button,
-::-webkit-scrollbar-corner {
-  display: none;
-}
-@media (max-width: 824px) {
-  * {
-    scrollbar-width: thin;
-  }
-  ::-webkit-scrollbar {
-    width: 5px; height: 5px;
-  }
-  ::-webkit-scrollbar-thumb {
-    border-width: 1px;
-    border-radius: 3px;
-  }
-}
-*/
 scroll-bar {
   display: block;
   position: absolute;
@@ -412,7 +378,17 @@ col-side scroll-hnd {
   animation: spin-anim 500Ms linear infinite;
 }
 /* ------------------------------------------------------------------ */
-/* Scroll style for Lists (Contacts, Rooms, Occupants)
+/* Miscellaneous custom containers
+/* ------------------------------------------------------------------ */
+list-view {
+  display: block;
+  overflow: auto;
+}
+list-view scroll-bar {
+  margin: 0 !important;
+}
+/* ------------------------------------------------------------------ */
+/* Peer Lists (Contacts, Rooms, Occupants)
 /* ------------------------------------------------------------------ */
 peer-list {
   display: block;
@@ -1021,12 +997,6 @@ page-wrap {
   overflow-x: hidden;
   scrollbar-color: var(--base-tone0) transparent;
 }
-/*
-page-wrap::-webkit-scrollbar-thumb {
-  background-color: var(--base-tone0);
-  border-color: var(--base-tone3);
-}
-*/
 col-padd {
   display:block;
   flex: auto;
@@ -1036,10 +1006,11 @@ col-exit {
   flex: auto;
   position: sticky;
   top: 0;
-  max-width: 44px;
+  max-width: 40px;
   background-color: var(--base-tone4);
   text-align: center;
-  padding: 10px 5px;
+  padding-top: 15px;
+  padding-right: 3px;
 }
 col-page {
   display:block;
@@ -1047,6 +1018,19 @@ col-page {
   max-width: 800px;
   width: 100%; height: 100%;
   text-align: center;
+  position: relative;
+}
+col-page scroll-bar {
+  margin: 4px 4px 4px 0;
+}
+col-page scroll-hnd {
+  background-color: var(--text-tone4);
+}
+col-page scroll-hnd:hover {
+  background-color: var(--text-tone3);
+}
+col-page scroll-hnd.SCROLLING {
+  background-color: var(--text-tone3);
 }
 /* ------------------------------------------------------------------ */
 /* Popup Dialog - Commons */
@@ -1107,11 +1091,6 @@ popu-text {
   color: var(--text-tone0);
   margin: 0 0 0 10px;
 }
-/*
-#over_popu.STYL-ERR popu-text {
-  color: var(--text-error) !important;
-}
-*/
 popu-acts {
   flex: auto;
   min-width: 52px;
@@ -1426,13 +1405,13 @@ page-inner {
   max-width: 800px;
   margin: auto;
   color: var(--text-tone2);
-  padding: 5px 5px 40px 35px;
+  padding: 0 20px 20px 30px;
   font-size: 0.9em;
   background-color: var(--base-tone4);
 }
 page-inner header {
   border-bottom: 1px solid var(--base-tone5);
-  margin: 0 15px 25px 0;
+  margin: 0 0 25px 0;
   padding: 5px 0 45px 0;
 }
 page-inner header span {
@@ -1553,6 +1532,20 @@ page-inner fieldset select:focus {
 page-inner fieldset .rotext {
   display: inline;
   float: right;
+}
+page-inner details {
+  padding: 10px;
+  background-color: var(--base-tone2);
+  border-radius:8px;
+}
+page-inner details > summary {
+  font-size: 1.1em;
+  cursor: pointer;
+}
+page-inner list-view {
+  position: relative;
+  height: 180px;
+  margin-top: 10px;
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Commons */
@@ -1835,27 +1828,6 @@ li-peer:hover badg-lock,
 li-peer.SELECTED badg-lock {
   background-color: var(--base-tone4);
 }
-/*
-li-peer::before {
-  display: block;
-  flex:none;
-  content: "";
-  width: 6px; height: 3px;
-  margin: 0 2px 0 -2px;
-  border-right: 4px solid var(--link-base);
-  border-radius: 4px;
-  transition: height ease 150ms;
-  visibility: hidden;
-}
-li-peer:hover::before  {
-  visibility: visible;
-  height: 10px;
-}
-li-peer.SELECTED::before {
-  visibility: visible;
-  height: 35px;
-}
-*/
 li-peer.SELECTED peer-name {
   color: var(--text-tone1);
 }
@@ -1956,7 +1928,6 @@ li-peer.PEER-ROOM peer-avat {
   background-repeat: no-repeat;
   background-size: 26px;
   background-image: url("images/sharp.svg");
-  /*background-color: var(--text-tone4);*/
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control panel */
@@ -2035,7 +2006,6 @@ li-peer.PEER-ROOM peer-avat {
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control elements  */
 /* ------------------------------------------------------------------ */
-
 #drop_self {
   position:absolute;
   left:27px; bottom:90px;
@@ -2141,13 +2111,6 @@ li-peer.PEER-ROOM peer-avat {
 #chat_fram.CHAT-BUDY #chat_mucl {
   display: none;
 }
-/*
-#chat_fram.CALL-OPEN #call_view {
-  display: flex;
-  width: 100%; height: 33%;
-  min-height: 200px;
-}
-*/
 #chat_fram.CALL-FULL #call_view {
   height: 100%;
   max-height: 100%;
@@ -2239,10 +2202,6 @@ head-info badg-show {
 /*
 @media (max-width: 824px) {
 
-}
-#chat_main::-webkit-scrollbar-thumb {
-  background-color: var(--base-tone1);
-  border-color: var(--base-tone4);
 }
 */
 /* ------------------------------------------------------------------ */
@@ -2431,21 +2390,6 @@ background-image: url("images/cam_off.svg");
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - Chat History */
 /* ------------------------------------------------------------------ */
-#chat_hist {
-  /*
-  display: flex;
-  flex-direction: column;
-  align-content: end;
-  */
-  /*
-  margin: 0;
-  padding: 0;
-  */
-  /*
-  width: 100%;
-  min-height: 100%;
-  */
-}
 #chat_hist ul {
   list-style: none;
   margin: 0 0 29px 0;
@@ -3451,27 +3395,25 @@ chat-inpt {
   display: flex;
   flex-direction: column;
   position: absolute;
-  width: 424px; height: 340px;
+  width: 430px; height: 350px;
+  padding: 10px;
   z-index: 8;
   border-color: var(--base-tone5);
-  border-style: solid;
-  border-width: 10px 5px 10px 10px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0,0,0,0.2);
   background-color: var(--base-tone5);
   overflow-y: scroll;
   overflow-x: hidden;
-  margin-bottom: 15px;
-  margin-left: 5px;
+  margin-bottom: 8px;
+  margin-right: -5px;
 }
 #drop_emoj row-head {
-  padding: 0 5px;
-  margin-bottom: 10px;
-  height: 20px;
+  padding: 0 0 0 5px;
+  height: 40px;
 }
 #emoj_clos {
   background-image: url("images/cancel.svg");
-  width: 20px; height: 20px;
+  width: 18px; height: 18px;
   opacity: 0.5;
 }
 #emoj_clos:hover {
@@ -3506,15 +3448,23 @@ chat-inpt {
   border: 1px solid var(--base-tone6);
   margin: 25px 0;
 }
+#drop_emoj scroll-bar {
+  margin-right: 4px;
+}
 @media (max-width: 824px) {
   #drop_emoj {
-    bottom: 365px;
-    width: 260px; height: 365px;
-    border-width: 5px 0 5px 2px;
+    width: 345px; height: 320px;
   }
   #drop_emoj li {
-    width: 32px; height: 32px;
-    font-size: 1.5em;
+    width: 40px; height: 40px;
+    font-size: 35px;
+  }
+  #drop_emoj scroll-bar {
+    width: 7px;
+    margin-right: 4px;
+  }
+  #drop_emoj scroll-hnd {
+    width: 7px;
   }
 }
 /* ------------------------------------------------------------------ */
@@ -3728,6 +3678,7 @@ chat-inpt {
   background-size: 50%;
   background-position: bottom;
   background-repeat: no-repeat;
+  padding: 5px 5px 40px 5px;
 }
 #page_auth input {
   display: block;
@@ -3899,31 +3850,20 @@ chat-inpt {
 }
 #page_muca ul {
   display: block;
-  min-height: 44px;
-  max-height: 220px;
-  background-color: var(--base-tone2);
-  border-radius: 6px;
-  padding: 0 15px 0 2px;
-  overflow: auto;
-  margin: 0 0 20px 0;
-  border: 5px solid var(--base-tone2);
-  scrollbar-color: var(--base-tone0) transparent;
-  scrollbar-width: initial;
+  padding: 0 15px 0 0;
+  margin: 0;
 }
-/*
-#page_muca ul::-webkit-scrollbar-thumb {
-  background-color: var(--base-tone0);
-  border-color: var(--base-tone3);
-}
-*/
 #page_muca li {
-  height: 34px;
-  padding: 9px 20px;
-  font-size: 0.95em;
+  height: 32px;
+  font-size: 1em;
   font-style: italic;
   color: var(--text-tone4);
   font-weight: bold;
   text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 #page_muca fieldset label {
   margin-bottom: 10px;

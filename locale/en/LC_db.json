@@ -566,10 +566,16 @@
   "Banned users":
   "",
 
+  "Ban list":
+  "",
+
   "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
   "",
 
   "Occupants affiliation":
+  "",
+
+  "Members list":
   "",
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":

@@ -6,9 +6,16 @@
 <section>
   <h2>${'Banned users'}</h2>
   <fieldset>
-    <ul id="muca_outc">
-      <li-memb id="memb-outc" XOWS_TPL_INSTANCED></li-memb>
-    </ul>
+    <details>
+      <summary>${'Ban list'}</summary>
+        <list-view id="muca_banv">
+          <div class="SCROLLABLE">
+            <ul id="muca_outc">
+              <li-memb id="memb-outc" XOWS_TPL_INSTANCED></li-memb>
+            </ul>
+          </div>
+        </list-view>
+    </details>
     <p>${'Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.'}</p>
   </fieldset>
 </section>
@@ -16,9 +23,16 @@
 <section>
   <h2>${'Occupants affiliation'}</h2>
   <fieldset>
-    <ul id="muca_affi">
-      <li-memb id="memb-affi" XOWS_TPL_INSTANCED></li-memb>
-    </ul>
+    <details>
+      <summary>${'Members list'}</summary>
+        <list-view id="muca_mbrv">
+          <div class="SCROLLABLE">
+            <ul id="muca_affi">
+              <li-memb id="memb-affi" XOWS_TPL_INSTANCED></li-memb>
+            </ul>
+          </div>
+        </list-view>
+    </details>
     <p>${'Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.'}</p>
   </fieldset>
 </section>

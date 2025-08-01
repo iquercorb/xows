@@ -566,11 +566,17 @@
   "Banned users":
   "Utilisateurs bannis",
 
+  "Ban list":
+  "Liste d'interdiction",
+
   "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
   "Les utilisateurs bannis ne sont pas autorisés à rejoindre le Salon ni à s'y inscrire. Vous pouvez annuler le bannissement d'un utilisateur afin qu'il puisse à nouveau rejoindre le Salon et s'y inscrire si les règles du serveur le permettent.",
 
   "Occupants affiliation":
   "Affiliation des occupants",
+
+  "Members list":
+  "Liste des membres",
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
   "L'affiliation permet de spécifier la liste des utilisateurs autorisés à accéder à un Salon réservé aux membres, à lui accorder le statut d'administrateur ou à en devenir propriétaire. Un utilisateur non-membre peut rejoindre le Salon tant qu'il n'est pas réservé aux membres.",
