@@ -2405,9 +2405,7 @@ background-image: url("images/cam_off.svg");
 /* Main Page - Center Col - Main Frame - Chat History */
 /* ------------------------------------------------------------------ */
 #chat_hist{
-  display: flex;
-  flex-direction: column;
-  justify-content: end;
+  display: block; /* MUST be "block" for scrollbar */
 }
 #hist_mesg ul {
   list-style: none;
