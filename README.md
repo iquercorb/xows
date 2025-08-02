@@ -70,9 +70,9 @@ Screenshots
 One word about the code itself
 ----------------------------------------------------------------------------------------
 The application is written in ECMAScript 6 JavaScript, BUT, in old-fashion (C style)
-using many (almost exclusively) callbacks functions, avoding as most possible promises,
-arrow functions, (pseudo) classes and await/sync mechanism. That is, exactly the
-opposite of what is recommended for "modern JavaScript".
+using many (almost exclusively) callback functions, avoding as most as possible
+promises, arrow functions, (pseudo) classes and await/sync mechanism. That is, exactly
+the opposite of what is recommended for "modern JavaScript".
 
 I could enumerate many reasons why I am strongly refractaire to "modern javascript
 syntax" and "way to do", but here is the main one : This has an huge impact on my
