@@ -2404,7 +2404,12 @@ background-image: url("images/cam_off.svg");
 /* ------------------------------------------------------------------ */
 /* Main Page - Center Col - Main Frame - Chat History */
 /* ------------------------------------------------------------------ */
-#chat_hist ul {
+#chat_hist{
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+}
+#hist_mesg ul {
   list-style: none;
   margin: 0 0 29px 0;
   padding: 0;
@@ -2420,14 +2425,14 @@ hist-bound {
   background-image: url("images/chat_phold.svg");
   border-bottom: 1px solid var(--base-tone5);
 }
-#hist_beg.HIST-START {
+hist-bound.HIST-START {
   display: grid;
   align-items: end;
   height: 200px;
   background-image: none;
   border-bottom: 1px solid var(--base-tone5);
 }
-#hist_beg.HIST-START::before {
+hist-bound.HIST-START::before {
   content: attr(data-text);
   display: grid;
   align-items: center;
