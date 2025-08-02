@@ -38,7 +38,7 @@ is initially more self-hosting oriented.
 
 Current stage of development
 ----------------------------------------------------------------------------------------
-The application now implements the main required features that made it proper modern
+The application now implements the main required features that made it a modern
 chat client. It is mainly focused on chats features to mimic what is offered by the
 famous "D*****d" client, but in a way more rudimentary way. The main implemented
 features are the following (features with '*' depend on XMPP server configuration):
@@ -78,10 +78,13 @@ I could enumerate many reasons why I am strongly refractaire to "modern javascri
 syntax" and "way to do", but here is the main one : This has an huge impact on my
 ability to write, READ and UNDERSTAND the code. I don't care the "callback hell",
 I learned to code in C/C++ where callbacks are the only way and never being a
-problem ("This is the way"). What I fear are unundestandable code, syntax sugar
+problem ("This is the way").
+
+What I fear are unundestandable code, syntax sugar
 that hides monstruous backstage implementations, classes that are actually not classes,
 "strings" that are strings but not instances of String() and even sometimes arrays of
 bytes, local variables that 'magically' pass from a function to another and APIs that
-doesn't allow to pass a custom variable for callbacks. Excepting such things,
-JavaScript is a pretty amusing toy.
+doesn't allow to pass a custom variable for callbacks.
+
+Excepting such things, JavaScript is a pretty amusing toy.
 
