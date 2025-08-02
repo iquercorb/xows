@@ -775,7 +775,7 @@ function xows_gui_mesg_repl_dlg_open(li_msg)
 
   // Set caret and focus
   const mesg_inpt = mesg_edit.querySelector("MESG-INPT");
-  xows_doc_caret_at(mesg_inpt);
+  xows_doc_sel_caret_within(mesg_inpt);
   mesg_inpt.focus();
 }
 

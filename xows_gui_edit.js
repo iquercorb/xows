@@ -287,9 +287,42 @@ function xows_gui_edit_rply_set(li_msg)
  * Edition Panel - Message input Routines
  * -------------------------------------------------------------------*/
 /**
- * Chat Editor reference to last selection Range object
+ * Stored input selection range
  */
-let xows_gui_edit_inpt_rng = null;
+let xows_gui_edit_inpt_rng = document.createRange();
+
+/**
+ * Stores current input selection range so it can be restored later
+ */
+function xows_gui_edit_inpt_sel_save()
+{
+  xows_gui_edit_inpt_rng = xows_doc_sel.getRangeAt(0);
+}
+
+/**
+ * Restores previously saved input selection range. If saved range
+ * is empty the caret is placed at end of input content.
+ *
+ * @param   {object}    event     Event object
+ */
+function xows_gui_edit_inpt_sel_load()
+{
+  const edit_inpt = xows_doc("edit_inpt");
+
+  let rng = xows_gui_edit_inpt_rng;
+
+  // Check whether saved range is within node
+  if(!edit_inpt.contains(rng.commonAncestorContainer)) {
+    // Create new selection range at end of input area
+    rng = xows_gui_edit_inpt_rng = document.createRange();
+    rng.selectNodeContents(edit_inpt);
+    rng.collapse(start);
+  }
+
+  // Replace current range with saved one
+  xows_doc_sel.removeAllRanges();
+  xows_doc_sel.addRange(rng);
+}
 
 /**
  * Handles caret position changes within the Chat Editor input area.
@@ -317,12 +350,12 @@ function xows_gui_edit_inpt_oncaret(event)
     const node = rng.endContainer;
     if(node.id !== "edit_inpt" && node.parentNode.id !== "edit_inpt") {
       // Move caret before or after the child node
-      xows_doc_caret_around(node.parentNode, !rng.endOffset);
+      xows_doc_sel_caret_around(node.parentNode, !rng.endOffset);
     }
   }
 
-  // Store carret position
-  xows_gui_edit_inpt_rng = xows_doc_sel.getRangeAt(0);
+  // Save carret position
+  xows_gui_edit_inpt_sel_save();
 }
 
 /**
@@ -339,8 +372,8 @@ function xows_gui_edit_oninput(event)
   if(xows_gui_peer)
     xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
 
-  // Store carret position
-  xows_gui_edit_inpt_rng = xows_doc_sel.getRangeAt(0);
+  // Save carret position
+  xows_gui_edit_inpt_sel_save();
 
   const edit_inpt = document.getElementById("edit_inpt");
 
@@ -366,19 +399,8 @@ function xows_gui_edit_oninput(event)
  */
 function xows_gui_edit_inpt_setfocus()
 {
-  const edit_inpt = xows_doc("edit_inpt");
-
   // Set input focus to message edit area
-  edit_inpt.focus();
-
-  // Get latest saved selection range
-  let rng = xows_gui_edit_inpt_rng;
-  if(!rng) rng = xows_doc_sel.getRangeAt(0);
-
-  if(!edit_inpt.contains(rng.commonAncestorContainer)) {
-    // move edit caret to end of content
-    xows_doc_caret_around(rng.endContainer);
-  }
+  xows_doc("edit_inpt").focus();
 }
 
 /**
@@ -389,28 +411,29 @@ function xows_gui_edit_inpt_setfocus()
  */
 function xows_gui_edit_inpt_onenter(input)
 {
+  xows_cli_pres_show_back(); //< Wakeup presence
+
+  if(!xows_gui_peer)
+    return;
+
+  if(!input.innerText.length)
+    return;
+
+  const rply = xows_doc("edit_rply");
+
   // Send message
-  if(xows_gui_peer) {
+  xows_cli_msg_send(xows_gui_peer, input.innerText.trimEnd(), null, rply.dataset.id, rply.dataset.to);
+  input.innerText = ""; //< Empty any residual <br>
+  input.className = "PLACEHOLD"; //< Set input placeholder
 
-    if(input.innerText.length) {
+  // Reset Reply data
+  xows_gui_edit_rply_close();
 
-      const rply = xows_doc("edit_rply");
+  // Save carret position
+  xows_gui_edit_inpt_sel_save();
 
-      // Send message
-      xows_cli_msg_send(xows_gui_peer, input.innerText.trimEnd(), null, rply.dataset.id, rply.dataset.to);
-      input.innerText = ""; //< Empty any residual <br>
-
-      // Reset Reply data
-      xows_gui_edit_rply_close();
-
-      // Add CSS class to show placeholder
-      input.className = "PLACEHOLD";
-
-    }
-
-    // Reset chatsate to active
-    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_ACTI);
-  }
+  // Reset chatsate to active
+  xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_ACTI);
 }
 
 /**
@@ -423,6 +446,9 @@ function xows_gui_edit_inpt_onpaste(event)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
 
+  if(!xows_gui_peer)
+    return;
+
   // Get clipboard raw text
   let text = event.clipboardData.getData("text");
   if(!text.length)
@@ -432,68 +458,57 @@ function xows_gui_edit_inpt_onpaste(event)
   event.preventDefault();
 
   // Set composing
-  if(xows_gui_peer)
-    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
+  xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
 
   // Hide the placeholder text
   xows_doc("edit_inpt").className = "";
 
-  // Replace selection by text
-  xows_doc_sel.deleteFromDocument();
-  xows_doc_sel.getRangeAt(0).insertNode(document.createTextNode(text));
-  xows_doc_sel.collapseToEnd();
+  // Paste node in current selection range
+  xows_doc_sel_paste(document.createTextNode(text));
 
-  // Store caret position
-  xows_gui_edit_inpt_rng = xows_doc_sel.getRangeAt(0);
+  // Save caret position
+  xows_gui_edit_inpt_sel_save();
 }
 
 /**
  * Chat Editor insert element at/within current/last selection
  *
  * @param   {string}    text      Text to insert
- * @param   {string}   [tagname]  Optional wrapper node tagname
+ * @param   {string}   [wraper]   Optional wrapper node tagname
  */
-function xows_gui_edit_inpt_insert(text, tagname)
+function xows_gui_edit_inpt_insert(text, wraper)
 {
+  xows_cli_pres_show_back(); //< Wakeup presence
+
+  if(!xows_gui_peer)
+    return;
+
   const edit_inpt = document.getElementById("edit_inpt");
-
-  // Get the last saved selection range (caret position)
-  let rng = xows_gui_edit_inpt_rng;
-
-  // set default carret position if none saved
-  if(!rng || !edit_inpt.contains(rng.commonAncestorContainer)) {
-    xows_doc_caret_at(edit_inpt, true);
-    rng = xows_doc_sel.getRangeAt(0);
-  }
-
-  // Delete content of selection if any
-  if(rng && !rng.collapsed)
-    rng.deleteContents();
 
   // Create node to insert
   let node;
 
-  if(tagname) {
-    node = document.createElement(tagname);
+  if(wraper) {
+    node = document.createElement(wraper);
     node.appendChild(document.createTextNode(text));
   } else {
     node = document.createTextNode(text);
   }
 
-  // Insert node within selected range
-  rng.insertNode(node);
+  // Load latest saved selection within input or set at end
+  xows_gui_edit_inpt_sel_load();
+
+  // Paste node in current selection range
+  xows_doc_sel_paste(node);
+
+  // Save caret position
+  xows_gui_edit_inpt_sel_save();
 
   // Hide the placeholder text
   edit_inpt.className = "";
 
   // Focus on input
   edit_inpt.focus();
-
-  // Move caret after the created node
-  xows_doc_caret_around(node);
-
-  // Store selection
-  xows_gui_edit_inpt_rng = xows_doc_sel.getRangeAt(0);
 }
 
 /* -------------------------------------------------------------------

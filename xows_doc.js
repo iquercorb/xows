@@ -272,32 +272,28 @@ function xows_doc_frag_find(slot, id)
 const xows_doc_sel = document.getSelection();
 
 /**
- * Global reference to temporary selection Range object
- */
-const xows_doc_rng = document.createRange();
-
-/**
  * Set edition caret either before or after the specified node
  *
  * @param   {element}   node      Reference node to position caret
  * @param   {element}   before    Place caret before of node
  */
-function xows_doc_caret_around(node, before = false)
+function xows_doc_sel_caret_around(node, before = false)
 {
-  // Delete document current selection ranges
+  // Create new selection range
+  const rng = document.createRange();
+
+  // Set selection range that includes the specified node:
+  // =>|<n>..</n>|<=
+  rng.setStartBefore(node);
+  rng.setEndAfter(node);
+
+  // Collapse selection either at start or end to go around the node:
+  // =>|<=<n>..</n> or <n>..</n>=>|<=
+  rng.collapse(before);
+
+  // Replace current range with new one
   xows_doc_sel.removeAllRanges();
-
-  // Create new (use temporary) selection range that
-  // includes the specified node: [=>|<n>..</n>|<=]
-  xows_doc_rng.setStartBefore(node);
-  xows_doc_rng.setEndAfter(node);
-
-  // Collapse selection either at start or end to go around
-  // the node: [=>|<=<n>..</n>] or [<n>..</n>=>|<=]
-  xows_doc_rng.collapse(before);
-
-  // Set created range as current document selection
-  xows_doc_sel.addRange(xows_doc_rng);
+  xows_doc_sel.addRange(rng);
 }
 
 /**
@@ -306,22 +302,40 @@ function xows_doc_caret_around(node, before = false)
  * @param   {element}   node      Node to position caret in
  * @param   {boolean}   start     Place caret at beginning of content
  */
-function xows_doc_caret_at(node, start = false)
+function xows_doc_sel_caret_within(node, start = false)
 {
+  // Create new selection range
+  const rng = document.createRange();
+
+  // Set selection range that includes specified node content:
+  // <n>|<=..=>|</n>
+  rng.selectNodeContents(node);
+
+  // Collapse selection either at start or end within the node:
+  // <n>=>|<=..</n> or <n>..=>|<=</n>
+  rng.collapse(start);
+
+  // Replace current range with new one
   xows_doc_sel.removeAllRanges();
-  xows_doc_rng.selectNodeContents(node);
-  xows_doc_rng.collapse(start);
-  xows_doc_sel.addRange(xows_doc_rng);
+  xows_doc_sel.addRange(rng);
 }
 
 /**
- * Get current document selection range
+ * Pastes the specified node in the current selection range
  *
- * @param   {number}    index     The zero-based index of the range to return
+ * @param   {element}   node      Node to insert in current selection
+ * @param   {number}   [index]    Optional zero-based index of range
  */
-function xows_doc_sel_rng(index)
+function xows_doc_sel_paste(node, index = 0)
 {
-  return xows_doc_sel.getRangeAt(index);
+  // Delete content of current selection range
+  xows_doc_sel.deleteFromDocument();
+
+  // Insert specified node at new collapsed position
+  xows_doc_sel.getRangeAt(index).insertNode(node);
+
+  // Collapse selection after inserted node
+  xows_doc_sel.collapseToEnd();
 }
 
 /**
