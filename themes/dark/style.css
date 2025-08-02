@@ -3333,6 +3333,7 @@ button.trsh-bt-abort {
 #edit_area {
   position: relative;
   display: flex;
+  align-items: center;
   min-width: 100px;
   padding: 10px;
   margin: 0 16px 0 16px;
@@ -3366,6 +3367,8 @@ button.trsh-bt-abort {
 chat-inpt {
   display: inline-block;
   width: 0; /* DO NOT TOUCH THIS */
+  /* To allow input to grow, do not set height */
+  line-height: 24px;
   flex: auto;
   align-self: center;
   font-size: 0.9em;
@@ -3377,7 +3380,6 @@ chat-inpt {
   word-break: normal;
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   white-space: break-spaces; /* DO NOT TOUCH THIS ! */
-  line-height: 20px;
 }
 @media (max-width: 824px) {
   #edit_area {
@@ -3486,7 +3488,7 @@ chat-inpt {
 /* ------------------------------------------------------------------ */
 #edit_info {
   margin: 0 10px 0 10px;
-  height: 36px;
+  height: 35px;
   display: flex;
   align-items: center;
 }
