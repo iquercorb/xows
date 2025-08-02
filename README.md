@@ -1,45 +1,60 @@
 ----------------------------------------------------------------------------------------
-X.O.W.S
+XOWS XMPP Web-Client
 ----------------------------------------------------------------------------------------
 
 XMPP Over WebSocket
 
 
-Version: 0.9.8 (beta with bugs)
+Version: 0.9.9 (it begins to have good shape)
 ----------------------------------------------------------------------------------------
 
 
 Presentation
 ----------------------------------------------------------------------------------------
-X.O.W.S (or XoWS) stands for "XMPP Over WebSocket" and is a Javascript XMPP web client
-that use the WebSocket protocole.
+XOWS (or Xows) stands for "XMPP Over WebSocket", it is a JavaScript/HTML based XMPP
+web client that use the WebSocket protocole.
 
-The main idea of the project is initially to create a XMPP client with the following
-caracteristics:
-- Free from thirdparty library, lightweight and quick to load.
-- Performant with low memory footprint.
-- Allowing easy customisation and creation of graphical theme / web interface.
-- Implementing features closer to modern chat clients like a one with name
-  beginning by "D".
+It consist on a JavaScript application as main program with additional web
+content (HTML, SVG images and fonts) for the interface.
 
-The application is written in plain Javascript, in old-fashion (C-style) using many
-fcallbacks functions. The main code avoids as most as possible Javascript's false
-friends like the "this" keyword, anonymous functions, modern syntactic sugar and
-confusing (to me) paradigms such as Promises, "sync" and "async" mechanism.
+It can be used simply by loading the JavaScript files (or the single minified
+file) from a web page (typically, an index.html), then call the initialization
+function from the HTML <script> element. Nothing more to do since the
+application is designed to automatically load the additionnal web content from
+the specified theme subfolder.
 
-The current code state is judged by myself as "terribly messy", as the MUC
-features and graphical interface had lead me to massive code rewrite along the
-development process, with a lot of ad-hoc things. **Therefore, it is highly
-probable that it remain a lot of small (or less small) bugs.**
+The initial idea of the project was to create an easy to install XMPP web client for
+personal servers allowing to provide chat client in self-hosting context. The
+focus was made on the following caracteristcs:
+- Easy to install, in a "rustic" way (no docker, no DB, only web content)
+- Easy to use, with modern chat client features and a pretty interface.
+- Free from third party JavaScript library, lightweight and quick to load.
+- Allowing customisation and creation of graphical theme / web interface.
 
-Things that still to be Implemented/Fixed/Tested
+It is better to mention that, since it is only a client, you will need to
+connect it to an XMPP server to run it properly. It is up to you to use your
+self-hosted XMPP server or to connect to any public XMPP server, however, it
+is initially more self-hosting oriented.
+
+Current stage of development
 ----------------------------------------------------------------------------------------
- - Probably a lot of small bugs
- - Application main options via main screen (such as language selection)
- - A good Tutorial for deployment
- - Some code refactoring (especially on the GUI side)
- - A proper loading handling to avoid graphicals glitchs
- - The Audio/video calls (WebRTC) is currently at a very prototypale stage
+The application now implements the main required features that made it proper modern
+chat client. It is mainly focused on chats features to mimic what is offered by the
+famous "D*****d" client, but in a way more rudimentary way. The main implemented
+features are the following (features with '*' depend on XMPP server configuration):
+
+- Instant messaging, to chat with friends and people you trust.
+- Multi-User-Chat* (or Group Chat), to chat with strangers in IRC-like channels.
+- File Upload*, to share image or data in chats (using XEP-0363 HTTP File Upload)
+- Audio or Video calls (in duo/private only, based on XMPP Jingle and WebRTC).
+
+More in details, here are the implemented chat features:
+
+- Support for MarkDown styling in messages.
+- Support for message deletion and correction.
+- Support for message reply (reply-to) in chat context.
+- Automatic embedding of images, video and audio.
+- Automatic embedding of most popular video platforms.
 
 Screenshots
 ----------------------------------------------------------------------------------------
@@ -52,34 +67,21 @@ Screenshots
 
 ![Contact Profile Popup](snapshots/04.png)
 
-Library architecture
+One word about the code itself
 ----------------------------------------------------------------------------------------
+The application is written in ECMAScript 6 JavaScript, BUT, in old-fashion (C style)
+using many (almost exclusively) callbacks functions, avoding as most possible promises,
+arrow functions, (pseudo) classes and await/sync mechanism. That is, exacly the contrary
+of what is recommanded for "modern JavaScript".
 
-The application is divided into several "API Modules" with one file per "module", each
-"module" is dedicated to a specific aspect of the program and have a dedicated function
-name prefix except the "base API". Here is module list and their quick description:
-
-#### Low-Level API / "Back end" (Algorithms and protocole implemenation)
-
-- `xows_base.js` **Base API**: Base constants and functions such as string/bytes manipulation and algorithms
-- `xows_xml.js`  **XML Module**: XML parsing, manipulation and building functions
-- `xows_sasl.js` **SALS Module**: SASL mechanism implementation
-- `xows_sck.js`  **WebSocket Module**: WebSocket interface functions
-- `xows_xmp.js`  **XMPP Module**: "Low-Level" XMPP protocol client interface
-
-####  Mid-Level API (client interface)
-
-- `xows_cach.js` **Caching Module**: Data caching and Browser local storage management functions
-- `xows_load.js` **Agnostic loader**: Small toolset for loading tasks management and triggering
-- `xows_cli.js`  **Client Module**: "High-level" XMPP client interface
-- `xows_wrtc.js` **WebRTC Module**: WebRTC interface implementation
-
-####  High-Level Program / "Front end" (GUI and "public" functions)
-
-- `xows_l10n.js` **l10n Module**: Localization mechanisms and translation functions
-- `xows_tpl.js`  **HTML Templates Module**: HTML templates download and parsing mechanism
-- `xows_doc.js`  **DOM Managment Module**: Browser DOM document management and GUI base tools
-- `xows_gui.js`  **GUI Module**: GUI related functions and mechanisms
-- `xows_init.js` **Init Module**: The main "Public" API and library initialization functions
-
+I could enumerate many reasons why I am strongly refractaire to "modern javascript
+syntax" and "way to do", but here is the main one : This has an huge impact on my
+ability to write, READ and UNDERSTAND the code. I don't care the "callback hell",
+I learned to code in C/C++ where callbacks are the only way and never being a
+problem ("This is the way"). What I fear are unundestandable code, syntax sugar
+that hides monstruous backstage implementations, classes that are actually not classes,
+"strings" that are strings but not instances of String() and even sometimes arrays of
+bytes, local variables that 'magically' pass from a function to another and APIs that
+doesn't allow to pass a custom variable for callbacks. Excepting such things,
+JavaScript is a pretty amusing toy.
 
