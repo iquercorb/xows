@@ -161,7 +161,7 @@ a:active {
 }
 
 emo-ji {
-  display: inline;
+  display: inline-block;
   font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
   font-size: 1.4em;
   line-height: 20px;
@@ -278,13 +278,6 @@ button:disabled {
   background-repeat: no-repeat;
   background-position: center;
   background-image: url("images/logo_404.svg");
-}
-.PLACEHOLD::before {
-  content: attr(placeholder);
-  font-style: italic;
-  color: var(--text-tone3);
-  pointer-events: none;
-  white-space: nowrap;
 }
 /* ------------------------------------------------------------------ */
 /* History message styling elements
@@ -1694,13 +1687,6 @@ head-meta {
   height: 24px;
   cursor: default;
 }
-head-meta[contenteditable="true"] {
-  cursor: auto;
-  border: 1px solid var(--base-tone4);
-  background-color: var(--base-tone4);
-}head-meta[contenteditable="true"]:focus {
-  outline: 1px solid var(--base-tone3);
-}
 head-acts {
   flex: none;
   height: 100%;
@@ -2083,8 +2069,15 @@ li-peer.PEER-ROOM peer-avat {
   font-size: 0.8em;
   color: var(--text-tone2);
 }
-#self_mi_stat.PLACEHOLD peer-meta::before {
-
+peer-meta[placeholder]::before {
+  content: "";
+}
+peer-meta[placeholder]:empty::before {
+  content: attr(placeholder);
+  font-style: italic;
+  color: var(--text-tone3);
+  pointer-events: none;
+  white-space: nowrap;
 }
 #drop_self button {
   display: block;
@@ -3383,6 +3376,16 @@ chat-inpt {
   word-break: normal;
   overflow-wrap: anywhere; /* DO NOT TOUCH THIS ! */
   white-space: break-spaces; /* DO NOT TOUCH THIS ! */
+}
+chat-inpt[placeholder]::before {
+  content: "";
+}
+chat-inpt[placeholder]:empty::before {
+  content: attr(placeholder);
+  font-style: italic;
+  color: var(--text-tone3);
+  pointer-events: none;
+  white-space: nowrap;
 }
 @media (max-width: 824px) {
   #edit_area {

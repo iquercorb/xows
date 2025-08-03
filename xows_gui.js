@@ -950,7 +950,6 @@ function xows_gui_doc_update(peer, mask = 0xff)
     if(mask & XOWS_UPDT_SUBJ) {
       const chat_meta = xows_gui_doc(peer, "chat_meta");
       chat_meta.innerText = peer.subj ? peer.subj : "";
-      chat_meta.className = peer.subj ? "" : "PLACEHOLD";
     }
 
     // Muc Roster Admin button
@@ -1822,7 +1821,6 @@ function xows_gui_self_onpush(self)
 
   const self_meta = xows_doc("self_meta");
   self_meta.innerText = self.stat;
-  self_meta.className = (self.stat) ? "" : "PLACEHOLD";
 
   // Update all opened chat history
   for(let i = 0; i < xows_cli_cont.length; ++i)
@@ -1853,7 +1851,6 @@ function xows_gui_self_menu_onshow(button, drop)
 
   // Set status
   const drop_meta = drop.querySelector("PEER-META");
-  drop_meta.className = (xows_cli_self.stat) ? "" : "PLACEHOLD";
   drop_meta.innerText = xows_cli_self.stat;
 }
 
