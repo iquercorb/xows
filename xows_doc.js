@@ -279,6 +279,21 @@ const xows_doc_sel = document.getSelection();
  */
 function xows_doc_sel_caret_around(node, before = false)
 {
+  // BEWARE:
+  // Unlike in Firefox, under WebKit-based browsers the caret position is
+  // override and automatically jumps at critical time (user input) when it is
+  // placed between two nodes (Same rule apply on caret navigation using keys).
+  // The hidden rule is that caret can never lie between two nodes, it is either
+  // moved at end of preceding node's content or at offset #1 of the following
+  // node's content.
+  // Unlike in Firefox, if there is no following node (caret is at end of input
+  // content) the caret still in the last node, apending characters within, no
+  // new #text node is never ever created.
+  //
+  // Better to say that under WebKit-based browsers, this function has a very
+  // little meaning and DOES NOT WORK in practice since browser is STEALING the
+  // caret control.
+
   // Create new selection range
   const rng = document.createRange();
 

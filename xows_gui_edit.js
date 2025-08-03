@@ -286,6 +286,7 @@ function xows_gui_edit_rply_set(li_msg)
 /* -------------------------------------------------------------------
  * Edition Panel - Message input Routines
  * -------------------------------------------------------------------*/
+
 /**
  * Stored input selection range
  */
@@ -327,10 +328,6 @@ function xows_gui_edit_inpt_sel_load()
 /**
  * Handles caret position changes within the Chat Editor input area.
  *
- * The function takes events from keyup and mouseup to catch new caret
- * position and adjusts it outside child nodes. Mainly used for go around
- * emojis to prevent font family mixtures.
- *
  * Notice that we use 'keyup' and 'mouseup' rather than 'keydown' and
  * 'mousedown' because browser set final selection range on key or button
  * release.
@@ -344,20 +341,9 @@ function xows_gui_edit_inpt_oncaret(event)
     if(event.keyCode < 35 || event.keyCode > 40) //< home; end; arrow keys
       return;
 
-  // Get selection range
-  const rng = xows_doc_sel.getRangeAt(0);
-  if(rng.collapsed) { //< don't touch ranged selection
-    const node = rng.endContainer;
-    if(node.id !== "edit_inpt" && node.parentNode.id !== "edit_inpt") {
-      // Move caret before or after the child node
-      xows_doc_sel_caret_around(node.parentNode, !rng.endOffset);
-    }
-  }
-
   // Save carret position
   xows_gui_edit_inpt_sel_save();
 }
-
 /**
  * Handle inputs in Chat Editor input to update caret position, send
  * writing status (chat states) and set or remove placeholder text.
@@ -372,6 +358,8 @@ function xows_gui_edit_oninput(event)
   if(xows_gui_peer)
     xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
 
+  const new_rng = xows_doc_sel.getRangeAt(0);
+
   // Save carret position
   xows_gui_edit_inpt_sel_save();
 
@@ -383,15 +371,11 @@ function xows_gui_edit_oninput(event)
     if(edit_inpt.innerText.trim().length === 0) {
 
       // Add CSS class to show placeholder
-      edit_inpt.className = "PLACEHOLD";
       edit_inpt.innerText = ""; //< Empty any residual <br>
 
       return; //< Return now
     }
   }
-
-  // Hide the placeholder text
-  edit_inpt.className = "";
 }
 
 /**
@@ -424,7 +408,6 @@ function xows_gui_edit_inpt_onenter(input)
   // Send message
   xows_cli_msg_send(xows_gui_peer, input.innerText.trimEnd(), null, rply.dataset.id, rply.dataset.to);
   input.innerText = ""; //< Empty any residual <br>
-  input.className = "PLACEHOLD"; //< Set input placeholder
 
   // Reset Reply data
   xows_gui_edit_rply_close();
@@ -460,9 +443,6 @@ function xows_gui_edit_inpt_onpaste(event)
   // Set composing
   xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
 
-  // Hide the placeholder text
-  xows_doc("edit_inpt").className = "";
-
   // Paste node in current selection range
   xows_doc_sel_paste(document.createTextNode(text));
 
@@ -473,10 +453,15 @@ function xows_gui_edit_inpt_onpaste(event)
 /**
  * Chat Editor insert element at/within current/last selection
  *
+ * If 'surround' parameter is defined, the inserted text is surrounded
+ * by a node with the specified tagname. If 'editable" parameter is not set to
+ * true, the inserted node cannot be edited and caret automatically jumps around.
+ *
  * @param   {string}    text      Text to insert
- * @param   {string}   [wraper]   Optional wrapper node tagname
+ * @param   {string}   [surround]  Optional surrounding node tagname
+ * @param   {string}   [editable] Optional set surrounding node as editable
  */
-function xows_gui_edit_inpt_insert(text, wraper)
+function xows_gui_edit_inpt_insert(text, surround, editable = false)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
 
@@ -488,9 +473,17 @@ function xows_gui_edit_inpt_insert(text, wraper)
   // Create node to insert
   let node;
 
-  if(wraper) {
-    node = document.createElement(wraper);
+  if(surround) {
+
+    node = document.createElement(surround);
     node.appendChild(document.createTextNode(text));
+
+    // To prevent browser to allow writing within the node, we must
+    // set the "contenteditable" attribute to false. This is especially
+    // required for inserted emojis.
+    if(!editable)
+      node.setAttribute("contenteditable",false);
+
   } else {
     node = document.createTextNode(text);
   }
@@ -503,9 +496,6 @@ function xows_gui_edit_inpt_insert(text, wraper)
 
   // Save caret position
   xows_gui_edit_inpt_sel_save();
-
-  // Hide the placeholder text
-  edit_inpt.className = "";
 
   // Focus on input
   edit_inpt.focus();
@@ -622,7 +612,7 @@ function xows_gui_emoj_menu_onclick(event)
   xows_cli_pres_show_back(); //< Wakeup presence
 
   if(event.target.tagName === "LI") {
-    xows_gui_edit_inpt_insert(event.target.innerText, "EMO-JI"); //< Insert selected Emoji
+    xows_gui_edit_inpt_insert(event.target.innerText, "EMO-JI", false); //< Insert selected Emoji
   } else if(event.target.id !== "emoj_clos") {
     return; //< prevent closing
   }
