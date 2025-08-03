@@ -1,0 +1,796 @@
+{
+  "unsername already exists":
+  "用户名已存在",
+
+  "username contains illegal characters":
+  "用户名包含违规字符",
+
+  "unable to register":
+  "注册不可用",
+
+  "invalid username (JID domain missing)":
+  "JID 错误(未声明服务器)",
+
+  "invalid server framing":
+  "无效的服务器帧",
+
+  "the server closed the stream":
+  "服务器关闭了链接",
+
+  "the server reported stream error":
+  "服务器抛出了链接错误",
+
+  "account registration is not allowed by the server":
+  "服务器暂未开放注册",
+
+  "unable to find a suitable authentication mechanism":
+  "未找到合适的身份认证机制",
+
+  "Server does not provide required stream features":
+  "服务器未提供需要的功能",
+
+  "wrong username or password":
+  "用户名或密码错误",
+
+  "authentication error":
+  "身份认证错误",
+
+  "server integrity check failed":
+  "服务器完整性校验失败",
+
+  "bind resource error":
+  "资源绑定失败",
+
+  "session establishment failure":
+  "会话建立失败",
+
+  "unable to connect to remote server":
+  "无法连接到远程服务器",
+
+  "Connection lost (recovery failed)":
+  "连接丢失(恢复失败)",
+
+  "Network error":
+  "网络错误",
+
+  "Authentication failure":
+  "认证失败",
+
+  "Registration failure":
+  "注册失败",
+
+  "Connection failure":
+  "连接失败",
+
+  "Login":
+  "登录",
+
+  "Please enter your username and password":
+  "请输入您的用户名和密码",
+
+  "Login automatically":
+  "自动登录",
+
+  "Username":
+  "用户名",
+
+  "Password":
+  "密码",
+
+  "Connect":
+  "连接",
+
+  "Register a new account":
+  "注册新账号",
+
+  "Account creation":
+  "账号创建",
+
+  "Please enter new account username and password":
+  "请输入新账号的用户名和密码",
+
+  "I am not a robot":
+  "我不是一个机器人",
+
+  "Register":
+  "注册",
+
+  "Login with an existing account":
+  "登录已有账号",
+
+  "It remains unsaved changes":
+  "更改尚未保存",
+
+  "Save changes":
+  "保存更改",
+
+  "Reset":
+  "重置",
+
+  "Loading...":
+  "加载中...",
+
+  "Connecting...":
+  "连接中...",
+
+  "Please wait...":
+  "请稍等...",
+
+  "Contacts":
+  "联系人",
+
+  "Subscribes to contact":
+  "添加到联系人",
+
+  "Authorized":
+  "已认证",
+
+  "Resend authorization request":
+  "重发认证请求",
+
+  "Remove contact":
+  "移除联系人",
+
+  "Waiting for authorization":
+  "等待认证中",
+
+  "Authorization pending":
+  "等待认证",
+
+  "Remote server not found":
+  "远程服务器未找到",
+
+  "Server error":
+  "服务器错误",
+
+  "Channels":
+  "群聊",
+
+  "Join or create a Channel":
+  "加入或创建群聊",
+
+  "Query public Channels list":
+  "查询公开群聊列表",
+
+  "Bookmarks":
+  "书签",
+
+  "Public Channels":
+  "公开群聊",
+
+  "Private Channels":
+  "私人群聊",
+
+  "Private messages":
+  "私聊",
+
+  "Room occupant":
+  "群成员",
+
+  "Edit user profile":
+  "编辑个人信息",
+
+  "Status message":
+  "状态信息",
+
+  "Define a status message...":
+  "定义状态信息",
+
+  "Edit status message":
+  "编辑状态信息",
+
+  "Indicate anything you want to mention about your current situation.":
+  "设置你想提及的关于你当前状况的任何事情。",
+
+  "Enter a status message...":
+  "输入状态信息",
+
+  "Available For Chat":
+  "在线闲聊",
+
+  "Available":
+  "在线",
+
+  "Away":
+  "离开",
+
+  "Extended Away":
+  "其他",
+
+  "Do Not Disturb":
+  "免打扰",
+
+  "Disconnect":
+  "离线",
+
+  "Set topic of":
+  "设置主题",
+
+  "Enter a topic...":
+  "输入主题",
+
+  "Set the message of the day, a welcome message or the discussion subject.":
+  "设置每日消息、欢迎消息或讨论主题。",
+
+  "Nickname for":
+  "设置昵称",
+
+  "Specify your new nickname for this Channel.":
+  "设置你在本群的新昵称。",
+
+  "Enter a nickname...":
+  "输入昵称...",
+
+  "Video call":
+  "视频通话",
+
+  "Audio call":
+  "语音通话",
+
+  "Add Channel to Bookmarks":
+  "把群聊保存到书签",
+
+  "Change nickname":
+  "更改昵称",
+
+  "Edit Channel topic":
+  "编辑主题",
+
+  "Enable notifications":
+  "启用通知",
+
+  "Disable notifications":
+  "关闭通知",
+
+  "Channel occupants list":
+  "群成员列表",
+
+  "Back to recent messages":
+  "返回最新消息",
+
+  "New unread messages":
+  "新的未读消息",
+
+  "New incomming call":
+  "新呼叫",
+
+  "Upload a file":
+  "文件上传",
+
+  "Send a message ...":
+  "发送图片",
+
+  "Insert an emoji":
+  "插入表情",
+
+  "Profil":
+  "详情",
+
+  "Send a message":
+  "发送消息",
+
+  "Contact profile":
+  "联系人详情",
+
+  "Subscribe":
+  "申请认证",
+
+  "Pending...":
+  "等待处理...",
+
+  "This user have no status message":
+  "用户没有状态信息",
+
+  "Contact subscription":
+  "联系人认证",
+
+  "Mutual":
+  "相互认证",
+
+  "Pending":
+  "等待处理",
+
+  "Unavailable":
+  "不可用",
+
+  "Affiliation to Channel":
+  "群内角色",
+
+  "Role in Channel":
+  "群内权限",
+
+  "Occupant options":
+  "群员选项",
+
+  "Affiliation":
+  "角色",
+
+  "Owner":
+  "群主",
+
+  "Administrator":
+  "管理员",
+
+  "Member":
+  "成员",
+
+  "Unaffiliated":
+  "访客",
+
+  "Role":
+  "权限",
+
+  "Moderator":
+  "群管理",
+
+  "Participant":
+  "群成员",
+
+  "Visitor":
+  "访客",
+
+  "Kick":
+  "踢出",
+
+  "Ban":
+  "封禁",
+
+  "Occupants":
+  "群成员",
+
+  "Change occupant role":
+  "更改群员权限",
+
+  "Assign the Channel role":
+  "指定群员权限",
+
+  "Kick occupant":
+  "踢出群员",
+
+  "Change occupant affiliation":
+  "更改群员角色",
+
+  "Grant Channel affiliation":
+  "授予角色",
+
+  "Ban occupant":
+  "封禁群员",
+
+  "to occupant":
+  "调整为群员",
+
+  "Add this Contact":
+  "添加联系人",
+
+  "Enter Channel name or address...":
+  "输入群名或群聊地址",
+
+  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
+  "如果群不存在且服务器未限制，将会创建一个新的群。",
+
+  "Join":
+  "加入",
+
+  "Channel initialization":
+  "群聊初始化",
+
+  "You just created a new Channel, would you want to configure it right now ?":
+  "你创建了一个新群，是否现在进行配置？",
+
+  "Ignore":
+  "以后再说",
+
+  "Configure":
+  "配置",
+
+  "You were banned from the Channel":
+  "您被该群管理封禁",
+
+  "You were kicked from the Channel":
+  "您被该群管理踢出",
+
+  "Rules changes caused you to leave the Channel":
+  "群规则变更请重新加入",
+
+  "Server error caused you to leave the Channel":
+  "服务器错误请重新加入",
+
+  "Revoke contact subscription":
+  "移除联系人",
+
+  "Do you really want to remove contact and revoke subscription authorization ?":
+  "您真的想移除联系人并撤回认证吗？",
+
+  "Do you really want to remove contact and abort subscription authorization request ?":
+  "您想要移除联系人并中止认证请求吗？",
+
+  "Contact subscription request":
+  "联系人添加请求",
+
+  "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
+  "新的联系人添加申请，您是否同意并添加到联系人列表？",
+
+  "Allow":
+  "同意",
+
+  "Deny":
+  "拒绝",
+
+  "New subscription authorization request was sent":
+  "添加请求已发送",
+
+  "Send a message to":
+  "发送到",
+
+  "is currently writing":
+  "正在输入",
+
+  "and":
+  "和",
+
+  "other(s)":
+  "其他",
+
+  "are currently writing":
+  "正在输入",
+
+  "Start of history":
+  "聊天开始的地方",
+
+  "at":
+  "at",
+
+  "Contact address (JID)":
+  "联系人地址(JID)",
+
+  "Enter contact XMPP address...":
+  "输入联系人 XMPP 地址...",
+
+  "A subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
+  "添加请求会发送到该地址，请等待对方同意。",
+
+  "Submit":
+  "提交",
+
+  "Configure Channel...":
+  "配置群聊",
+
+  "Set Channel subject...":
+  "设置群主题",
+
+  "Add Channel to bookmarks ?":
+  "把群添加到书签？",
+
+  "Add Bookmark":
+  "添加书签",
+
+  "Channel configuration":
+  "群聊配置",
+
+  "Channel subject":
+  "群聊主题",
+
+  "Channel informations":
+  "群聊信息",
+
+  "Access &amp; moderation":
+  "权限与管理",
+
+  "Other options":
+  "其他选项",
+
+  "Channel title":
+  "群名",
+
+  "Channel description":
+  "群介绍",
+
+  "Persistent Channel":
+  "非临时群聊",
+
+  "Unless this option is enabled, Channel will be automatically deleted once all occupants have left it":
+  "除非启用此选项，否则一旦所有参与者离开，群聊将自动删除",
+
+  "Public Channel":
+  "公开群聊",
+
+  "A public Channel can be found by any user through normal means such as searching and service discovery":
+  "任何用户都可以通过搜索和服务发现等正常方式找到公开群聊",
+
+  "Protected by password":
+  "群聊密码保护",
+
+  "Password":
+  "密码",
+
+  "Enter a password...":
+  "输入密码...",
+
+  "A password-protected Channel requires to provide a password to join it":
+  "被密码保护的群聊需要输入密码才能加入",
+
+  "Allowed to members only":
+  "仅限成员加入",
+
+  "Enable this to restrict Channel access and only allow those that have at least the Member affiliation":
+  "启用此选项可限制群聊访问权限，只允许具有成员或以上权限的群员加入",
+
+  "Moderated Channel":
+  "发言许可",
+
+  "In moderated Channels, occupants must be given permission to speak by a Channel moderator":
+  "开启发言许可后，群员需要管理员授予的权限才能发言",
+
+  "Occupants anonymity":
+  "群员地址匿名",
+
+  "In a Non-Anonymous Channel, occupants address is exposed to others, otherwise only Moderators can view occupants address":
+  "公开模式下所有人地址公开，其他模式只有管理员可以看到群员地址，",
+
+  "Semi-Anonymous":
+  "半匿名",
+
+  "Non-Anonymous":
+  "公开",
+
+  "Occupants visibility":
+  "特定角色可见",
+
+  "Set Channel occupants visibility according their assigned Role":
+  "根据权限设置群员地址的可见性",
+
+  "History max length":
+  "历史记录最大长度",
+
+  "Specify the maximum number of previous messages that should be sent to users when they join the Channel":
+  "设定最大数量，用于群员加入群聊时显示的历史记录",
+
+  "History default length":
+  "历史消息默认值",
+
+  "Specify the number of previous messages sent to new users when they join the Channel":
+  "设定数量，用于新用户加入群聊显示的历史记录",
+
+  "Enable messages archiving":
+  "启用消息存档",
+
+  "Stores messages in persistent way using Message Archive Management":
+  "使用消息归档管理(PEP-0313)持久化存储消息",
+
+  "Channel administration":
+  "群管理",
+
+  "List is empty":
+  "列表为空",
+
+  "Banned users":
+  "被封禁的用户",
+
+  "Ban list":
+  "封禁列表",
+
+  "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
+  "被封禁的用户不允许加入或注册为群成员。您可以取消对用户的封禁，以便在服务器规则允许的情况下，用户可以再次加入并注册为群成员。",
+
+  "Occupants affiliation":
+  "群聊角色",
+
+  "Members list":
+  "群员列表",
+
+ "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
+  "群聊角色提供了一种方法，可以允许指定用户进入仅限成员的群、授予管理员权限或房间所有权。非成员用户可以加入群聊，直到它不仅限成员。",
+
+  "User profile":
+  "用户资料",
+
+  "Display name":
+  "显示名字",
+
+  "My Nickname":
+  "我的昵称",
+
+  "The nickname associated with your account to interact with other users, if none is defined, your account username is used.":
+  "与您的帐号关联的昵称，用于与其他用户交互，如果没有设置，则使用您的帐号用户名。",
+
+  "Avatar image":
+  "头像",
+
+  "Your account's profile picture displayed to other users, if none is defined, a default image will be shown.":
+  "您的账号头像会显示给其他用户，如果没有设置，会显示默认头像。",
+
+  "Profile access":
+  "资料访问权限",
+
+  "Set access rules for your profile data, if restricted, only subscribed users can see your avatar and access profile data.":
+  "为您的个人资料数据设置访问规则，如果受到限制，只有订阅的用户才能看到您的头像并访问个人资料数据。",
+
+  "Profile data in open access":
+  "个人资料公开可见",
+
+  "Account options":
+  "账号选项",
+
+  "Account password":
+  "账号密码",
+
+  "Current password":
+  "当前密码",
+
+  "New password":
+  "新密码",
+
+  "Confirm password":
+  "确认密码",
+
+  "To change your account password, enter your current password, then specify and confirm the new password to set.":
+  "要更改帐号密码，请输入当前密码，然后输入并确认要设置的新密码。",
+
+  "Change Password":
+  "更改密码",
+
+  "The current password you entered is wrong":
+  "您输入的当前密码错误",
+
+  "The password confirmation does not match":
+  "新密码与确认密码不匹配",
+
+  "Password has been changed successfully":
+  "密码已更改",
+
+  "Password change failed":
+  "密码更改失败",
+
+  "Account deletion":
+  "账号删除",
+
+  "Cancel registration with current server and delete your account data permanently.":
+  "取消在当前服务器上的注册并永久删除您的帐号数据。",
+
+  "Delete your account":
+  "删除您的账号",
+
+  "Are you sure you want to delete your XMPP/Jabber account on this server ? This action cannot be reversed.":
+  "您确定要删除您在当前服务器上的 XMPP/Jabber 账号吗？永久删除无法找回。",
+
+  "Yes, farewell":
+  "是的，再见",
+
+  "God damn, NO !":
+  "点错啦,不要！",
+
+  "Uploading file":
+  "文件上传中",
+
+  "Upload denied":
+  "上传被拒绝",
+
+  "Upload failed":
+  "上传失败",
+
+  "HTTP server unreachable":
+  "HTTP 服务器不可达",
+
+  "Error":
+  "错误",
+
+  "Unhandled error":
+  "未处理错误",
+
+  "Apply":
+  "确认",
+
+  "Abort":
+  "中止",
+
+  "Close":
+  "关闭",
+
+  "Cancel":
+  "取消",
+
+  "Retry":
+  "重试",
+
+  "Add":
+  "添加",
+
+  "Input devices access":
+  "输入设备访问权限",
+
+  "Getting access to input devices failed, would you like to retry ?":
+  "获取输入设备访问权限失败，是否重试？",
+
+  "Enable or disable the camera":
+  "启用或关闭摄像头",
+
+  "Mute or unmute the microphone":
+  "静默或取消静默麦克风",
+
+  "Mute or unmute sound":
+  "静音或取消静音",
+
+  "Volume":
+  "音量",
+
+  "Hang up":
+  "挂断",
+
+  "Expand/Reduce":
+  "展开/收起",
+
+  "Incoming call...":
+  "来电..",
+
+  "Incoming video call...":
+  "视频来电...",
+
+  "Incoming audio call...":
+  "语音来电...",
+
+  "The call has been declined":
+  "呼叫被拒绝",
+
+  "The other party is buzy":
+  "对方忙碌中",
+
+  "The other party hung up":
+  "对方已挂断",
+
+  "Network negotiation...":
+  "网络协商中..",
+
+  "Call in progress...":
+  "呼叫中...",
+
+  "You missed a call":
+  "您有未接来电",
+
+  "The other party encountered error":
+  "对方遇到错误",
+
+  "The other party lacks suitable devices":
+  "对方缺少合适的设备",
+
+  "Input devices access failed":
+  "输入设备访问失败",
+
+  "Call failure":
+  "呼叫失败",
+
+  "Access to input devices is required for call session, configure your browser to allow it and try again.":
+  "音视频通话需要对应输入设备权限，请配置浏览器权限同意后再试。",
+
+  "modified":
+  "已更正",
+
+  "Edit message":
+  "编辑消息",
+
+  "Delete message":
+  "删除消息",
+
+  "Delete message ?":
+  "删除消息？",
+
+  "Reply":
+  "回复",
+
+  "Reply to":
+  "回复 ",
+
+  "The message is unreachable":
+  "消息不可达",
+
+  "The message was deleted":
+  "消息已删除",
+
+  "Do you really want to disconnect current session ?":
+  "您确定要断开当前链接吗？",
+
+  "has left the conversation":
+  "已离开聊天",
+
+  "joined the conversation":
+  "加入聊天"
+}
