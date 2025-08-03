@@ -358,8 +358,6 @@ function xows_gui_edit_oninput(event)
   if(xows_gui_peer)
     xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
 
-  const new_rng = xows_doc_sel.getRangeAt(0);
-
   // Save carret position
   xows_gui_edit_inpt_sel_save();
 
