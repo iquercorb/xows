@@ -2411,11 +2411,11 @@ function xows_cli_self_edit(name, url, access)
   } else {
 
     // This is avatar suppression
-    if(xows_cli_self.avat) {
+    //if(xows_cli_self.avat) {
 
       // Retract current avatar
       xows_cli_pep_avat_retr();
-    }
+    //}
   }
 
   // Publish user nickname
@@ -2826,7 +2826,8 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
       xows_cli_pep_avat_publ("open");
 
       // Set Peer avatar as loaded
-      xows_load_task_done(peer, XOWS_FETCH_AVAT);
+      if(peer.load & XOWS_FETCH_AVAT)
+        xows_load_task_done(peer, XOWS_FETCH_AVAT);
 
       // Allow new avatar fetch
       xows_cli_pep_avat_fetch_stk.delete(peer);
@@ -2958,8 +2959,10 @@ function xows_cli_pep_avat_publ(access)
 function xows_cli_pep_avat_meta_publ(from, type, error)
 {
   // If data publish succeed, follow by sending meta-data
-  if(type != "result")
+  if(type != "result") {
+    xows_log(1,"cli_pep_avat_meta_publ","data publication error");
     return;
+  }
 
   const datauri = xows_cach_avat_get(xows_cli_self.avat);
   if(!datauri)
@@ -2979,6 +2982,10 @@ function xows_cli_pep_avat_meta_publ(from, type, error)
 
   xows_xmp_avat_meta_publish(hash, xows_url_to_type(datauri), binary.length,
                              XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, access, null);
+
+  // Advert new avatar
+  xows_cli_pres_update();
+
   /*
   // If requested, change access model Avatar-Data and Avatar-Metadata
   if(access)
@@ -2996,6 +3003,9 @@ function xows_cli_pep_avat_retr()
 {
   xows_xmp_avat_meta_publish(null);
   xows_cli_self.avat = null;
+
+  // Advert removed avatar
+  xows_cli_pres_update();
 }
 
 /* -------------------------------------------------------------------
