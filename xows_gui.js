@@ -744,18 +744,6 @@ function xows_gui_cli_onerror(from, error)
  * Peer Documents - Creation & Management
  * -------------------------------------------------------------------*/
 /**
- * Check whether Peer offscreen slot exists
- *
- * @param   {object}    peer      Peer object to check
- *
- * @return  {boolean}   True if offscreen slot exists, false otherwise
- */
-function xows_gui_doc_has(peer)
-{
-  return xows_doc_frag_db.has(peer.addr);
-}
-
-/**
  * Create new Peer offscreen slot using initial DOM elements
  *
  * @param   {object}    peer      Peer object to initialize offscreen for
@@ -936,6 +924,18 @@ function xows_gui_doc_reassign(peer, slot)
  * Peer Documents - Fetch and Actions routines
  * -------------------------------------------------------------------*/
 /**
+ * Check whether Peer offscreen slot exists
+ *
+ * @param   {object}    peer      Peer object to check
+ *
+ * @return  {boolean}   True if offscreen slot exists, false otherwise
+ */
+function xows_gui_doc_has(peer)
+{
+  return xows_doc_frag_db.has(peer.addr);
+}
+
+/**
  * Get Peer related element by id, either in current document or in
  * offscreen fragment
  *
@@ -948,9 +948,11 @@ function xows_gui_doc(peer, id)
 {
   if(peer === xows_gui_peer) {
     return document.getElementById(id);
-  } else {
+  } else if(xows_doc_frag_db.has(peer.addr))
     return xows_doc_frag_db.get(peer.addr).getElementById(id);
   }
+
+  return null;
 }
 
 /* -------------------------------------------------------------------
