@@ -118,9 +118,42 @@ function xows_gui_rost_list_find(addr)
 {
   return xows_doc("rost_fram").querySelector("LI-PEER[data-id='"+addr+"']");
 }
+
+/**
+ * Inserts given Peer's <li-peer> element in specified list following
+ * ordering rules.
+ *
+ * @param   {element}   dst_ul    Destination list
+ * @param   {element}   li_peer   Contact <li-peer> element to insert
+ * @param   {boolean}  [top]      Optional force insertion at top of list
+ */
+function xows_gui_rost_list_insert(dst_ul, li_peer, top = false)
+{
+  let li_insr = null;
+
+  if(top) {
+
+    li_insr = dst_ul.firstElementChild;
+
+  } else {
+
+    const peer_id = li_peer.dataset.id;
+
+    for(const li of dst_ul.children) {
+      if(xows_collator.compare(peer_id, li.dataset.id) < 0) {
+        li_insr = li;
+        break;
+      }
+    }
+  }
+
+  dst_ul.insertBefore(li_peer, li_insr);
+}
+
 /* -------------------------------------------------------------------
  * Roster Interactions - Peers Management : Contacts
  * -------------------------------------------------------------------*/
+
 /**
  * Function to add or update item of the roster contact list
  *
@@ -175,9 +208,9 @@ function xows_gui_rost_cont_onpush(cont, text)
     xows_gui_doc_init(cont);
   }
 
-  // Parent to proper <ul>
+  // Insert <li-peer> into proper <ul>
   if(li_peer.parentNode != dst_ul)
-    dst_ul.appendChild(li_peer);
+    xows_gui_rost_list_insert(dst_ul, li_peer);
 
   // Update Lists visibility
   xows_gui_rost_contlst_update();
@@ -235,9 +268,9 @@ function xows_gui_rost_subs_onpush(cont)
     li_peer = xows_tpl_spawn_rost_subs(cont);
   }
 
-  // Parent <li-peer> element to list
+  // Insert <li-peer> into proper <ul>
   if(li_peer.parentNode != dst_ul)
-    dst_ul.appendChild(li_peer);
+    xows_gui_rost_list_insert(dst_ul, li_peer);
 
   // Update Lists visibility
   xows_gui_rost_contlst_update();
@@ -246,6 +279,7 @@ function xows_gui_rost_subs_onpush(cont)
 /* -------------------------------------------------------------------
  * Roster Interactions - Peers Management : Rooms
  * -------------------------------------------------------------------*/
+
 /**
  * Function to add or update item of the roster Room list
  *
@@ -286,9 +320,9 @@ function xows_gui_rost_room_onpush(room, join)
     xows_gui_doc_init(room);
   }
 
-  // Parent to proper <ul>
+  // Insert <li-peer> into proper <ul>
   if(li_peer.parentNode != dst_ul)
-    dst_ul.appendChild(li_peer);
+    xows_gui_rost_list_insert(dst_ul, li_peer);
 
   // Update room list <ul> visibility
   xows_gui_rost_roomlst_update();
@@ -386,6 +420,7 @@ function xows_gui_rost_occu_onpush(occu, mucx)
 
   let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+occu.addr+"']");
   if(li_peer) {
+
     // Update occupant <li_peer> element according template
     xows_tpl_update_room_occu(li_peer, occu);
     // Update chat title bar
@@ -411,9 +446,9 @@ function xows_gui_rost_occu_onpush(occu, mucx)
     xows_gui_doc_init(occu);
   }
 
-  // Parent to proper <ul>
+  // Insert <li-peer> into proper <ul>
   if(li_peer.parentNode != dst_ul)
-    dst_ul.appendChild(li_peer);
+    xows_gui_rost_list_insert(dst_ul, li_peer, true); //< Insert on top
 
   // Show the Private Message tab
   xows_doc_show("tab_occu");

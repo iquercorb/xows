@@ -734,120 +734,6 @@ function xows_gui_muc_role_mbox_open(occu, role)
 }
 
 /* -------------------------------------------------------------------
- * MUC interactions - Occupants "Peer" management
- * -------------------------------------------------------------------*/
-/**
- * Handle the received occupant from MUC Room
- *
- * @param   {object}    occu      Occupant object
- * @param   {object}   [mucx]     Optionnal MUX x extra parameters
- */
-function xows_gui_muc_onpush(occu, mucx)
-{
-  // Get Occupant's Room
-  const room = occu.room;
-
-  if(mucx) {
-    // check for nicname change
-    if(mucx.code.includes(303)) {
-
-      // The mucx object should embedd an extrea ad-hoc property
-      // containing the old occupant address to switch
-      if(!mucx.prev) {
-        xows_log(1,"gui_cli_onoccupush","missing previous JID for nickname change");
-        return;
-      }
-
-      // Search for existing occupant <li-peer> element for this Room
-      const li_peer = xows_gui_mucl_list_find(occu.room, mucx.prev);
-      // Change <li-peer> element id
-      if(li_peer) li_peer.dataset.id = occu.addr;
-    }
-
-    // checks whether we have a special status code with this occupant
-    if(mucx.code.includes(110)) { //< Self presence update
-
-      // Update privileges related GUI elements
-      xows_gui_doc_update(room);
-    }
-  }
-
-  // Select the proper role/affiliation <ul> to put the occupant in
-  let dst_id = "vist_ul";
-  if(occu.affi > XOWS_AFFI_MEMB) {
-    dst_id = (occu.affi > XOWS_AFFI_ADMN) ? "ownr_ul" : "admn_ul";
-  } else {
-    switch(occu.role) {
-    case XOWS_ROLE_MODO: dst_id = "modo_ul"; break;
-    case XOWS_ROLE_PART: dst_id = "part_ul"; break;
-    }
-  }
-
-  // Search for existing occupant <li-peer> element for this Room
-  let li_peer = xows_gui_mucl_list_find(occu.room, occu.addr);
-  if(li_peer) {
-
-    // Update the existing <li-peer> ellement according template
-    xows_tpl_update_room_occu(li_peer, occu);
-
-  } else {
-
-    // Create new <li-peer> element from template
-    li_peer = xows_tpl_spawn_room_occu(occu);
-  }
-
-  // Parent <li-peer> to proper destination <ul>
-  xows_gui_doc(room, dst_id).appendChild(li_peer);
-
-  // Update occupant list
-  xows_gui_mucl_list_update(room);
-
-  // Update message history avatars
-  xows_gui_hist_update(room, occu);
-
-  // Update Private Message with relatives
-  if(occu.self) {
-    let i = xows_cli_priv.length;
-    while(i--) {
-      if(xows_cli_priv[i].room === room)
-        xows_gui_hist_update(xows_cli_priv[i], occu);
-    }
-  }
-}
-
-/**
- * Function to remove item from the room occupant list
- *
- * @param   {object}    occu      Occupant object to remove
- */
-function xows_gui_muc_onpull(occu)
-{
-  // If Occupant is ourself, this mean we leaved the Room
-  if(occu.self) {
-
-    // Check whether current Peer is the Room we leaved
-    if(occu.room === xows_gui_peer)
-      xows_gui_peer_switch_to(null); //< Unselect Peer
-
-  } else {
-
-    // Search and remove <li_peer> in document
-    const li_peer = xows_gui_mucl_list_find(occu.room, occu.addr);
-    if(li_peer) {
-
-      const src_ul = li_peer.parentNode;
-      src_ul.removeChild(li_peer);
-
-      // Show or hide list depending content
-      src_ul.hidden = !src_ul.childElementCount;
-    }
-  }
-
-  // Client can remove object from Room
-  xows_cli_occu_rem(occu);
-}
-
-/* -------------------------------------------------------------------
  * MUC interactions - Occupants list routines
  * -------------------------------------------------------------------*/
 /**
@@ -871,7 +757,7 @@ function xows_gui_mucl_head_onclick(event)
  *
  * @param   {object}    event     Event object associated with trigger
  */
-function xows_gui_mucl_list_onclick(event)
+function xows_gui_muc_list_onclick(event)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
 
@@ -897,7 +783,7 @@ function xows_gui_mucl_list_onclick(event)
  * @param   {object}    room      Room object
  * @param   {object}    addr      Occupant address
  */
-function xows_gui_mucl_list_find(room, addr)
+function xows_gui_muc_list_find(room, addr)
 {
   return xows_gui_doc(room,"mucl_list").querySelector("LI-PEER[data-id='"+addr+"']");
 }
@@ -907,7 +793,7 @@ function xows_gui_mucl_list_find(room, addr)
  *
  * @param   {object}    room      Room object
  */
-function xows_gui_mucl_list_update(room)
+function xows_gui_muc_list_update(room)
 {
   // show and hide proper <ul> as required
   const ownr_ul = xows_gui_doc(room, "ownr_ul");
@@ -924,6 +810,145 @@ function xows_gui_mucl_list_update(room)
 
   const vist_ul = xows_gui_doc(room, "vist_ul");
   vist_ul.hidden = (vist_ul.querySelector("LI-PEER") === null);
+}
+
+/**
+ * Inserts given Peer's <li-peer> element in specified list following
+ * ordering rules.
+ *
+ * @param   {element}   dst_ul    Destination list
+ * @param   {element}   li_peer   Contact <li-peer> element to insert
+ */
+function xows_gui_muc_list_insert(dst_ul, li_peer)
+{
+  let li_insr = null;
+
+  const peer_id = li_peer.dataset.id;
+
+  for(const li of dst_ul.children) {
+    if(xows_collator.compare(peer_id, li.dataset.id) < 0) {
+      li_insr = li;
+      break;
+    }
+  }
+
+  dst_ul.insertBefore(li_peer, li_insr);
+}
+
+/* -------------------------------------------------------------------
+ * MUC interactions - Occupants "Peer" management
+ * -------------------------------------------------------------------*/
+/**
+ * Handle the received occupant from MUC Room
+ *
+ * @param   {object}    occu      Occupant object
+ * @param   {object}   [mucx]     Optionnal MUX x extra parameters
+ */
+function xows_gui_muc_list_onpush(occu, mucx)
+{
+  // Get Occupant's Room
+  const room = occu.room;
+
+  if(mucx) {
+    // check for nicname change
+    if(mucx.code.includes(303)) {
+
+      // The mucx object should embedd an extrea ad-hoc property
+      // containing the old occupant address to switch
+      if(!mucx.prev) {
+        xows_log(1,"gui_cli_onoccupush","missing previous JID for nickname change");
+        return;
+      }
+
+      // Search for existing occupant <li-peer> element for this Room
+      const li_peer = xows_gui_muc_list_find(occu.room, mucx.prev);
+      // Change <li-peer> element id
+      if(li_peer) li_peer.dataset.id = occu.addr;
+    }
+
+    // checks whether we have a special status code with this occupant
+    if(mucx.code.includes(110)) { //< Self presence update
+
+      // Update privileges related GUI elements
+      xows_gui_doc_update(room);
+    }
+  }
+
+  // Select the proper role/affiliation <ul> to put the occupant in
+  let dst_id = "vist_ul";
+  if(occu.affi > XOWS_AFFI_MEMB) {
+    dst_id = (occu.affi > XOWS_AFFI_ADMN) ? "ownr_ul" : "admn_ul";
+  } else {
+    switch(occu.role) {
+    case XOWS_ROLE_MODO: dst_id = "modo_ul"; break;
+    case XOWS_ROLE_PART: dst_id = "part_ul"; break;
+    }
+  }
+
+  // Search for existing occupant <li-peer> element for this Room
+  let li_peer = xows_gui_muc_list_find(occu.room, occu.addr);
+  if(li_peer) {
+
+    // Update the existing <li-peer> ellement according template
+    xows_tpl_update_room_occu(li_peer, occu);
+
+  } else {
+
+    // Create new <li-peer> element from template
+    li_peer = xows_tpl_spawn_room_occu(occu);
+  }
+
+  // Insert <li-peer> into proper destination <ul>
+  const dst_ul = xows_gui_doc(room,dst_id);
+  if(li_peer.parentNode != dst_ul || mucx.code.includes(303))
+    xows_gui_muc_list_insert(dst_ul, li_peer);
+
+  // Update occupant list
+  xows_gui_muc_list_update(room);
+
+  // Update message history avatars
+  xows_gui_hist_update(room, occu);
+
+  // Update Private Message with relatives
+  if(occu.self) {
+    let i = xows_cli_priv.length;
+    while(i--) {
+      if(xows_cli_priv[i].room === room)
+        xows_gui_hist_update(xows_cli_priv[i], occu);
+    }
+  }
+}
+
+/**
+ * Function to remove item from the room occupant list
+ *
+ * @param   {object}    occu      Occupant object to remove
+ */
+function xows_gui_muc_list_onpull(occu)
+{
+  // If Occupant is ourself, this mean we leaved the Room
+  if(occu.self) {
+
+    // Check whether current Peer is the Room we leaved
+    if(occu.room === xows_gui_peer)
+      xows_gui_peer_switch_to(null); //< Unselect Peer
+
+  } else {
+
+    // Search and remove <li_peer> in document
+    const li_peer = xows_gui_muc_list_find(occu.room, occu.addr);
+    if(li_peer) {
+
+      const src_ul = li_peer.parentNode;
+      src_ul.removeChild(li_peer);
+
+      // Show or hide list depending content
+      src_ul.hidden = !src_ul.childElementCount;
+    }
+  }
+
+  // Client can remove object from Room
+  xows_cli_occu_rem(occu);
 }
 
 /* -------------------------------------------------------------------

@@ -66,11 +66,6 @@ let xows_gui_peer = null;
 let xows_gui_has_focus = true;
 
 /**
- * Flag for client connexion loss
- */
-let xows_gui_resume_pnd = false;
-
-/**
  * Currently available media devices (for multimedia calls)
  */
 let xows_gui_devices_data = null;
@@ -338,8 +333,8 @@ function xows_gui_init()
   xows_cli_set_callback("occupull",   xows_gui_rost_occu_onpull);
   xows_cli_set_callback("mucjoin",    xows_gui_muc_onjoin);
   xows_cli_set_callback("mucexit",    xows_gui_muc_onexit);
-  xows_cli_set_callback("mucpush",    xows_gui_muc_onpush);
-  xows_cli_set_callback("mucpull",    xows_gui_muc_onpull);
+  xows_cli_set_callback("mucpush",    xows_gui_muc_list_onpush);
+  xows_cli_set_callback("mucpull",    xows_gui_muc_list_onpull);
   xows_cli_set_callback("mucsubj",    xows_gui_muc_onsubj);
   xows_cli_set_callback("msgrecv",    xows_gui_hist_onrecv);
   xows_cli_set_callback("msgrecp",    xows_gui_hist_onrecp);
@@ -484,6 +479,11 @@ function xows_gui_hang(delay, text)
  *
  * -------------------------------------------------------------------*/
 /**
+ * Flag for client connexion loss
+ */
+let xows_gui_resume_pnd = false;
+
+/**
  * Main startup function, either shows login page or try to autoconnect
  * using browser saved credentials (if supported)
  */
@@ -491,16 +491,12 @@ function xows_gui_startup()
 {
   // Check whether credentials are available for auto-login
   if(xows_gui_cred_support()) {
-
     // Try to find credential for automatic login
     const options = { "password"  : true,
                       "mediation" : "optional" };
-
     navigator.credentials.get(options).then(  xows_gui_startup_oncreds,
                                               xows_gui_page_auth_open);
-
   } else {
-
     // Show login page
     xows_gui_page_auth_open();
   }
@@ -514,16 +510,11 @@ function xows_gui_startup()
 function xows_gui_startup_oncreds(creds)
 {
   if(creds) {
-
     xows_log(2,"gui_startup_oncreds","auto connect");
-
     // Try connect
     xows_gui_connect(creds.id, creds.password, false, false);
-
   } else {
-
     xows_log(2,"gui_startup_oncreds","no credential");
-
     // Show login page
     xows_gui_page_auth_open();
   }
@@ -531,7 +522,6 @@ function xows_gui_startup_oncreds(creds)
 
 /**
  * Function to connect (try login)
- *
  *
  * @param   {string}    user    Login username or Full JID
  * @param   {string}    pass    Login Password
@@ -884,7 +874,7 @@ function xows_gui_doc_import(peer)
   if(peer.type === XOWS_PEER_ROOM) {
     xows_doc_listener_add(xows_doc("mucl_hand"), "click", xows_gui_layout_hand_onclick);
     xows_doc_listener_add(xows_doc("mucl_head"), "click", xows_gui_mucl_head_onclick);
-    xows_doc_listener_add(xows_doc("mucl_list"), "click", xows_gui_mucl_list_onclick);
+    xows_doc_listener_add(xows_doc("mucl_list"), "click", xows_gui_muc_list_onclick);
   }
 
   // Check whether document is newly opened and need some preload

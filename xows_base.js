@@ -882,6 +882,23 @@ function xows_hash_sdbm(input)
 /* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
  *          common string validation and parsing functions
  * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
+/**
+ * Collator object for string comparison
+ */
+const xows_collator = new Intl.Collator();
+
+/**
+ * Compare two strings
+ *
+ * @param   {string}  a   First string to compare
+ * @param   {string}  b   Second string to compare
+ *
+ * @return  {number}  A number indicating how a and b compare to each other
+ */
+function xows_strcmp(a, b)
+{
+  return xows_collator.compare(a, b);
+}
 
 /**
  * Regex object to test and validate JID format
