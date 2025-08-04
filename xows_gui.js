@@ -948,7 +948,7 @@ function xows_gui_doc(peer, id)
 {
   if(peer === xows_gui_peer) {
     return document.getElementById(id);
-  } else if(xows_doc_frag_db.has(peer.addr))
+  } else if(xows_doc_frag_db.has(peer.addr)) {
     return xows_doc_frag_db.get(peer.addr).getElementById(id);
   }
 
@@ -1021,7 +1021,7 @@ function xows_gui_doc_update(peer, mask = 0xff)
 
       // Common header elements
       xows_gui_doc(peer,"chat_titl").innerText = peer.name;
-      xows_gui_doc(peer,"chat_meta").innerText = peer.stat;
+      xows_gui_doc(peer,"chat_meta").innerText = peer.stat ? peer.stat : "";
       xows_gui_doc(peer,"chat_show").dataset.show = peer.show;
 
       // Contact or Occupant (Private Message) variations
