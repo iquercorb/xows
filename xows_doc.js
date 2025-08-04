@@ -256,17 +256,6 @@ function xows_doc_frag_delete(slot)
 }
 
 /**
- * Get element within backed document fragment element
- *
- * @param   {string}    slot      Offscreen slot identifier
- * @param   {string}    id        Child element id to search
- */
-function xows_doc_frag_find(slot, id)
-{
-  return xows_doc_frag_db.get(slot).getElementById(id);
-}
-
-/**
  * Global reference to document's Selection object
  */
 const xows_doc_sel = document.getSelection();
