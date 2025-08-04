@@ -413,6 +413,11 @@ function xows_gui_hist_mesg_hligh(peer, id)
 }
 
 /**
+ * Reference to last rised Peer (to avoid unnecessary processing)
+ */
+let xows_gui_hist_last_rise = null;
+
+/**
  * Callback function to add sent or received message to the history
  * window
  *
@@ -505,6 +510,12 @@ function xows_gui_hist_onrecv(peer, mesg, wait, self, error)
       // Show the "unread" chat navigation signal
       xows_gui_edit_alrt_set(peer, "UNREAD");
     }
+  }
+
+  // Rise Peer in roster
+  if(peer.type !== XOWS_PEER_ROOM && peer !== xows_gui_hist_last_rise) {
+    xows_gui_rost_list_rise(peer);
+    xows_gui_hist_last_rise = peer;
   }
 }
 

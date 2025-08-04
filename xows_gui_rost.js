@@ -132,13 +132,9 @@ function xows_gui_rost_list_insert(dst_ul, li_peer, top = false)
   let li_insr = null;
 
   if(top) {
-
     li_insr = dst_ul.firstElementChild;
-
   } else {
-
     const peer_id = li_peer.dataset.id;
-
     for(const li of dst_ul.children) {
       if(xows_strcmp(peer_id, li.dataset.id) < 0) {
         li_insr = li;
@@ -146,8 +142,104 @@ function xows_gui_rost_list_insert(dst_ul, li_peer, top = false)
       }
     }
   }
-
   dst_ul.insertBefore(li_peer, li_insr);
+}
+
+/**
+ * Rises the specified peer to the top of its current list
+ *
+ * @param   {object}   peer     Peer object
+ */
+function xows_gui_rost_list_rise(peer)
+{
+  const li_peer = xows_doc("rost_fram").querySelector("LI-PEER[data-id='"+peer.addr+"']");
+  const dst_ul = li_peer.parentNode;
+
+  if(li_peer !== dst_ul.firstElementChild)
+    dst_ul.insertBefore(li_peer, dst_ul.firstElementChild);
+}
+
+/* -------------------------------------------------------------------
+ * Roster Interactions - Contacts list Routines
+ * -------------------------------------------------------------------*/
+/**
+ * Function to force query and refresh for Room list
+ */
+function xows_gui_rost_contlst_reload()
+{
+  xows_gui_peer_switch_to(null);
+  // Empty the lists
+  xows_doc("cont_pend").hidden = true;
+  xows_doc("cont_pend").innerText = "";
+  xows_doc("cont_budy").hidden = true;
+  xows_doc("cont_budy").innerText = "";
+
+  // Add loading spinner at top of list
+  xows_doc_cls_add("cont_list","LOADING");
+
+  // Query for roster content
+  xows_cli_rost_fetch();
+}
+
+/**
+ * Updates the Contact list according contacts presents
+ */
+function xows_gui_rost_contlst_update()
+{
+  // Remove the potential loading spinner
+  xows_doc_cls_rem("cont_list","LOADING");
+
+  // show and hide proper <ul> as required
+  const cont_pend = xows_doc("cont_pend");
+
+  // We need the count of pending subscribe
+  const nsubs = cont_pend.childElementCount;
+  cont_pend.hidden = (nsubs == 0);
+
+  // Update the notification badge
+  xows_doc("cont_noti").dataset.subs = nsubs;
+
+  const cont_budy = xows_doc("cont_budy");
+  cont_budy.hidden = !cont_budy.childElementCount;
+}
+/* -------------------------------------------------------------------
+ * Roster Interactions - Rooms list Routines
+ * -------------------------------------------------------------------*/
+/**
+ * Function to force query and refresh for Room list
+ */
+function xows_gui_rost_roomlst_reload()
+{
+  // if current selected room is public, exit
+  if(xows_gui_peer && xows_gui_peer.publ)
+    xows_gui_peer_switch_to(null);
+
+  // Add loading animation to Room list
+  xows_doc_cls_add("room_list", "LOADING");
+
+  // Empty the Public Room list
+  xows_doc("room_publ").innerHTML = "";
+
+  // Query to get public room list with delay
+  setTimeout(xows_cli_muc_list_query, 500);
+}
+
+/**
+ * Updates the Occupant list according occupants presents in room
+ *
+ * @param   {object}    room      Room object
+ */
+function xows_gui_rost_roomlst_update()
+{
+  // show and hide proper <ul> as required
+  const room_publ = xows_doc("room_publ");
+  room_publ.hidden = !room_publ.childElementCount;
+
+  const room_priv = xows_doc("room_priv");
+  room_priv.hidden = !room_priv.childElementCount;
+
+  const room_book = xows_doc("room_book");
+  room_book.hidden = !room_book.childElementCount;
 }
 
 /* -------------------------------------------------------------------
@@ -478,88 +570,6 @@ function xows_gui_rost_occu_onpull(occu)
   }
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Contacts list Routines
- * -------------------------------------------------------------------*/
-/**
- * Function to force query and refresh for Room list
- */
-function xows_gui_rost_contlst_reload()
-{
-  xows_gui_peer_switch_to(null);
-  // Empty the lists
-  xows_doc("cont_pend").hidden = true;
-  xows_doc("cont_pend").innerText = "";
-  xows_doc("cont_budy").hidden = true;
-  xows_doc("cont_budy").innerText = "";
-
-  // Add loading spinner at top of list
-  xows_doc_cls_add("cont_list","LOADING");
-
-  // Query for roster content
-  xows_cli_rost_fetch();
-}
-
-/**
- * Updates the Contact list according contacts presents
- */
-function xows_gui_rost_contlst_update()
-{
-  // Remove the potential loading spinner
-  xows_doc_cls_rem("cont_list","LOADING");
-
-  // show and hide proper <ul> as required
-  const cont_pend = xows_doc("cont_pend");
-
-  // We need the count of pending subscribe
-  const subs_list = cont_pend.querySelectorAll("LI-PEER");
-  cont_pend.hidden = (subs_list.length == 0);
-
-  // Update the notification badge
-  xows_doc("cont_noti").dataset.subs = subs_list.length;
-
-  const cont_budy = xows_doc("cont_budy");
-  cont_budy.hidden = (cont_budy.querySelector("LI-PEER") === null);
-}
-/* -------------------------------------------------------------------
- * Roster Interactions - Rooms list Routines
- * -------------------------------------------------------------------*/
-/**
- * Function to force query and refresh for Room list
- */
-function xows_gui_rost_roomlst_reload()
-{
-  // if current selected room is public, exit
-  if(xows_gui_peer && xows_gui_peer.publ)
-    xows_gui_peer_switch_to(null);
-
-  // Add loading animation to Room list
-  xows_doc_cls_add("room_list", "LOADING");
-
-  // Empty the Public Room list
-  xows_doc("room_publ").innerHTML = "";
-
-  // Query to get public room list with delay
-  setTimeout(xows_cli_muc_list_query, 500);
-}
-
-/**
- * Updates the Occupant list according occupants presents in room
- *
- * @param   {object}    room      Room object
- */
-function xows_gui_rost_roomlst_update()
-{
-  // show and hide proper <ul> as required
-  const room_publ = xows_doc("room_publ");
-  room_publ.hidden = (room_publ.querySelector("LI-PEER") === null);
-
-  const room_priv = xows_doc("room_priv");
-  room_priv.hidden = (room_priv.querySelector("LI-PEER") === null);
-
-  const room_book = xows_doc("room_book");
-  room_book.hidden = (room_book.querySelector("LI-PEER") === null);
-}
 
 /* -------------------------------------------------------------------
  * Roster Interactions - Subscriptions routines
