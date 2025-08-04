@@ -3848,7 +3848,7 @@ chat-inpt[placeholder]:empty::before {
 #user_file {
   display: none;
 }
-.edit-icon {
+.user-icon {
   display: inline-block;
   margin: -5px 10px 0 0;
   border-radius: 5px;
@@ -3857,6 +3857,9 @@ chat-inpt[placeholder]:empty::before {
   vertical-align: middle;
   padding: 8px;
   background-color: var(--base-tone3);
+}
+#page_user button {
+  margin: 0 0 0 10px;
 }
 #user_avat {
   display: block;
