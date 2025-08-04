@@ -70,49 +70,6 @@ let xows_options = {
 };
 
 /**
- * Function that initialize the normal login process, by user, in
- * opposition of the automatic login, via credentials
- */
-function xows_init_login_user()
-{
-  xows_log(2,"init_login_user","normal login");
-
-  // Show or hide the "remember me" check box according browser
-  // compatibility
-  (window.PasswordCredential) ? xows_doc_show("auth_save")
-                              : xows_doc_hide("auth_save");
-
-  // Open login screen
-  xows_gui_page_auth_open();
-}
-
-/**
- * Function to automatically login using browser saved credential
- *
- * @param   {object}    cred      Found credential to login
- */
-function xows_init_login_auto(cred)
-{
-  if(cred) {
-
-    xows_log(2,"init_login_auto","found credential","try auto login");
-
-    // Open wait screen
-    xows_gui_page_wait_open("Connecting...");
-
-    xows_gui_auth = { "user"  : cred.id,
-                      "pass"  : cred.password };
-
-    // Try connect
-    xows_gui_connect();
-
-  } else {
-    xows_log(2,"init_login_auto","No credential found","Fallback to normal login");
-    xows_init_login_user();
-  }
-}
-
-/**
  * Initialization function, used as callback, called once the
  * Doc (Document) module is successfully initialized
  *
@@ -127,21 +84,8 @@ function xows_init_ondoc()
   // Initialize GUI
   xows_gui_init();
 
-  // Check whether credentials are available for auto-login
-  if(window.PasswordCredential) {
-
-    // Try to find credential for automatic login
-    const options = { "password"    : true,
-                      "mediation"   : "optional" };
-
-    // Promises... promise().you(unreadable => {code})...
-    navigator.credentials.get(options).then(  xows_init_login_auto,
-                                              xows_init_login_user);
-  } else {
-
-    // Normal login with user interaction
-    xows_init_login_user();
-  }
+  // Startup GUI (Auto-connect or login page)
+  xows_gui_startup();
 }
 
 /**

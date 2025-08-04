@@ -133,6 +133,30 @@ function xows_gui_devices_has(type)
 }
 
 /**
+ * Stores credential data into navigator
+ *
+ * @param   {object}    data    Crediential data to store
+ */
+function xows_gui_cred_store(data)
+{
+  const creds = new PasswordCredential(data);
+
+  navigator.credentials.store(creds).then(
+    ( ) => {xows_log(2,"gui_cred_store","credential stored");},
+    (e) => {xows_log(1,"gui_cred_store","error storing credential",e);});
+}
+
+/**
+ * Check for browser support of PasswordCredential storage
+ *
+ * @return   {boolean}   True if browser support feature, false otherwise
+ */
+function xows_gui_cred_support()
+{
+  return (("credentials" in navigator) && ("PasswordCredential" in window));
+}
+
+/**
  * Constant for initial offscreen slot identifier
  */
 const XOWS_GUI_FRAG_VOID = "void";
@@ -456,19 +480,65 @@ function xows_gui_hang(delay, text)
 
 /* -------------------------------------------------------------------
  *
- * Client Interface - Connect / Dsiconnect
+ * Base processes - Startup / Connect / Dsiconnect
  *
  * -------------------------------------------------------------------*/
+/**
+ * Main startup function, either shows login page or try to autoconnect
+ * using browser saved credentials (if supported)
+ */
+function xows_gui_startup()
+{
+  // Check whether credentials are available for auto-login
+  if(xows_gui_cred_support()) {
+
+    // Try to find credential for automatic login
+    const options = { "password"  : true,
+                      "mediation" : "optional" };
+
+    navigator.credentials.get(options).then(  xows_gui_startup_oncreds,
+                                              xows_gui_page_auth_open);
+
+  } else {
+
+    // Show login page
+    xows_gui_page_auth_open();
+  }
+}
+
+/**
+ * Callback to handles navigator credential fetching result
+ *
+ * @param   {object}    creds   PasswordCredential object or null
+ */
+function xows_gui_startup_oncreds(creds)
+{
+  if(creds) {
+
+    xows_log(2,"gui_startup_oncreds","auto connect");
+
+    // Try connect
+    xows_gui_connect(creds.id, creds.password, false, false);
+
+  } else {
+
+    xows_log(2,"gui_startup_oncreds","no credential");
+
+    // Show login page
+    xows_gui_page_auth_open();
+  }
+}
+
 /**
  * Function to connect (try login)
  *
  *
  * @param   {string}    user    Login username or Full JID
  * @param   {string}    pass    Login Password
- * @param   {boolean}   cred    Indicate remember credential
+ * @param   {boolean}   save    Indicate remember credential
  * @param   {boolean}   regi    Register new account
  */
-function xows_gui_connect(user, pass, cred, regi = false)
+function xows_gui_connect(user, pass, save, regi = false)
 {
   // Display wait screen
   xows_gui_page_wait_open("Connecting...");
@@ -477,7 +547,7 @@ function xows_gui_connect(user, pass, cred, regi = false)
   xows_gui_auth = {};
   xows_gui_auth.user = user;
   xows_gui_auth.pass = pass;
-  xows_gui_auth.cred = cred;
+  xows_gui_auth.save = save;
 
   // Close any popup-box
   xows_doc_popu_close();
@@ -507,20 +577,15 @@ function xows_gui_connect(user, pass, cred, regi = false)
 function xows_gui_cli_onready(user, resume)
 {
   // Check whether user asked to remember
-  if(xows_gui_auth) {
+  if(xows_gui_cred_support() && xows_gui_auth.save) {
 
-    if(xows_gui_auth.cred) {
+    xows_log(2,"gui_cli_onready","Saving credential");
 
-      // Output log
-      xows_log(2,"gui_cli_onready","Saving credential");
+    const data = {id        : xows_gui_auth.user,
+                  password  : xows_gui_auth.pass};
 
-      // Store credentials
-      if(window.PasswordCredential) {
-        const cred = {"id"        : xows_gui_auth.user,
-                      "password"  : xows_gui_auth.pass};
-        navigator.credentials.store(new PasswordCredential(cred));
-      }
-    }
+    // Store credential data (Ask user, etc.)
+    xows_gui_cred_store(data);
   }
 
   // Check whether we recover from connexion loss
@@ -2226,6 +2291,10 @@ function xows_gui_page_auth_open()
   // Reset inputs
   xows_doc("auth_user").value = xows_gui_auth ? xows_gui_auth.user : "";
   xows_doc("auth_pass").value = xows_gui_auth ? xows_gui_auth.pass : "";
+
+  // Show or hide the automatic connection check box
+  (xows_gui_cred_support()) ? xows_doc_show("auth_save")
+                            : xows_doc_hide("auth_save");
 
   // Enable or disable connect button
   xows_doc("auth_cnct").disabled = !(xows_doc("auth_user").value.length &&

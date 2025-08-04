@@ -1456,9 +1456,10 @@ page-inner input::placeholder {
 page-inner input:focus {
   outline: 1px solid var(--base-tone5);
 }
+/* The following does not work anymore */
 page-inner input:autofill,
 page-inner input:-webkit-autofill {
-  background-color: #545666;
+  background-color: #3E3E4F;
 }
 page-inner p {
   margin: 15px 0 15px 0;
@@ -3705,8 +3706,15 @@ chat-inpt[placeholder]:empty::before {
 #page_auth input {
   display: block;
 }
+#page_auth input[type="text"],
+#page_auth input[type="password"] {
+  width: 200px;
+}
 #auth_save {
   padding: 0;
+}
+#auth_save label {
+  color: var(--text-tone2);
 }
 #auth_cred {
   display: inline !important;
