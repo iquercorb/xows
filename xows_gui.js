@@ -1375,9 +1375,12 @@ function xows_gui_wnd_noti_emit(peer, body)
   case "granted":
     {
       // Retrieve the cached, actual or temporary, avatar dataUrl
-      const icon = xows_cach_avat_get(peer.avat);
+      const avat = xows_cach_avat_get(peer.avat);
+      const badg = "/" + xows_options.lib_path + "/logo.svg";
+      const icon = avat ? avat : badg;
+
       // Push new notification
-      const notif = new Notification(peer.name,{"body":body,"icon":(icon?icon:("/"+xows_options.lib_path+"/icon.svg"))});
+      const notif = new Notification(peer.name,{"body":body,"icon":icon,"badge":badg});
       // Sound is slower than light...
       xows_snd_sample_play("notify");
     }
