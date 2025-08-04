@@ -56,19 +56,6 @@ const XOWS_APP_NODE = "https://github.com/iquercorb/xows";
 const XOWS_LOGO_SVG = new Path2D("m7.39 0.00182c-0.949 0.0386-1.99 0.696-2.81 1.54l2.42 3.79c-2.24 1.41-3.3 3.4-3.98 5.57-2.24 0.214-0.682-4.16-0.836-5.17 0 0-3.6 5.7-1.55 7.3 1.46 1.15 3.94 1.59 3.94 1.59l-3.15 3.99c2.14 0.72 6.9 0.794 6.9 0.794l2.73-4.25h1.91l2.73 4.25s4.76-0.0743 6.9-0.794l-3.15-3.99s2.47-0.444 3.94-1.59c2.04-1.6-1.65-7.3-1.65-7.3-0.152 1.01 1.5 5.38-0.739 5.17-0.675-2.17-1.74-4.16-3.98-5.57l2.42-3.79c-0.827-0.845-1.86-1.5-2.81-1.54-0.135-0.00482-0.27 0.00193-0.401 0.0232l-3.64 4.52h-1.14l-3.64-4.52a2.01 2.01 0 0 0-0.401-0.0232zm1.42 8.17c1.69 0 1.44 2.58 1.44 2.58s-0.968 0.027-1.88 0.027-1.54-0.0482-1.54-0.726c0-0.678 0.285-1.88 1.97-1.88zm6.39 0c1.69 0 1.97 1.2 1.97 1.88 0 0.678-0.63 0.726-1.54 0.726a77.5 77.5 0 0 1-1.88-0.027s-0.241-2.58 1.44-2.58z");
 
 /**
- * Check whether the the given value matches the specified bitmask
- *
- * @param   {number}    value     Value to check bits
- * @param   {number}    mask      Mask to test bits in value
- *
- * @return  {boolean}   true if mask matches value, false otherwise
- */
-function xows_hasbits(value, mask)
-{
-  return ((value & mask) === mask);
-}
-
-/**
  * Parse number value or string to boolean
  *
  * @param   {(number|string)} value Value to parse as boolean
@@ -110,22 +97,6 @@ function xows_isfunc(obj) {
 function xows_def_readonly(obj, prop, value)
 {
   Object.defineProperty(obj,prop,{"value":value,"writable":false});
-}
-
-/**
- * Pseudo-random, seed based, number generation using the Mulberry32
- * PRNG algorithm
- *
- * @param   {number}    seed      Seed to generate number
- *
- * @return  {number}    Pseudo-random number between 0.0 and 1.0
- */
-function xows_random(seed)
-{
-  let t = seed += 0x6D2B79F5;
-  t = Math.imul(t ^ t >>> 15, t | 1);
-  t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-  return ((t ^ t >>> 14) >>> 0) / 4294967296;
 }
 
 /**
