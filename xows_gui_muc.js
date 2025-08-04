@@ -797,19 +797,19 @@ function xows_gui_muc_list_update(room)
 {
   // show and hide proper <ul> as required
   const ownr_ul = xows_gui_doc(room, "ownr_ul");
-  ownr_ul.hidden = (ownr_ul.querySelector("LI-PEER") === null);
+  ownr_ul.hidden = !ownr_ul.childElementCount;
 
   const admn_ul = xows_gui_doc(room, "admn_ul");
-  admn_ul.hidden = (admn_ul.querySelector("LI-PEER") === null);
+  admn_ul.hidden = !admn_ul.childElementCount;
 
   const modo_ul = xows_gui_doc(room, "modo_ul");
-  modo_ul.hidden = (modo_ul.querySelector("LI-PEER") === null);
+  modo_ul.hidden = !modo_ul.childElementCount;
 
   const part_ul = xows_gui_doc(room, "part_ul");
-  part_ul.hidden = (part_ul.querySelector("LI-PEER") === null);
+  part_ul.hidden = !part_ul.childElementCount;
 
   const vist_ul = xows_gui_doc(room, "vist_ul");
-  vist_ul.hidden = (vist_ul.querySelector("LI-PEER") === null);
+  vist_ul.hidden = !vist_ul.childElementCount;
 }
 
 /**
@@ -822,16 +822,13 @@ function xows_gui_muc_list_update(room)
 function xows_gui_muc_list_insert(dst_ul, li_peer)
 {
   let li_insr = null;
-
   const peer_id = li_peer.dataset.id;
-
   for(const li of dst_ul.children) {
     if(xows_strcmp(peer_id, li.dataset.id) < 0) {
       li_insr = li;
       break;
     }
   }
-
   dst_ul.insertBefore(li_peer, li_insr);
 }
 
