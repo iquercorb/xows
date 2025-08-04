@@ -2238,18 +2238,6 @@ function xows_gui_page_auth_oninput(target)
 }
 
 /**
- * User Login page on-input event callback function
- *
- * @param   {object}    target    Target object of the triggered Event
- */
-function xows_gui_page_auth_oncreds(target)
-{
-  // Enable or disable connect button
-  xows_doc("auth_cnct").disabled = !(xows_doc("auth_user").value.length &&
-                                     xows_doc("auth_pass").value.length);
-}
-
-/**
  * User Login page on-click event callback function
  *
  * @param   {object}    target    Target object of the triggered Event

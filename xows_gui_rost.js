@@ -140,7 +140,7 @@ function xows_gui_rost_list_insert(dst_ul, li_peer, top = false)
     const peer_id = li_peer.dataset.id;
 
     for(const li of dst_ul.children) {
-      if(xows_collator.compare(peer_id, li.dataset.id) < 0) {
+      if(xows_strcmp(peer_id, li.dataset.id) < 0) {
         li_insr = li;
         break;
       }
