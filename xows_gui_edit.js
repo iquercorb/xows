@@ -317,7 +317,7 @@ function xows_gui_edit_inpt_sel_load()
     // Create new selection range at end of input area
     rng = xows_gui_edit_inpt_rng = document.createRange();
     rng.selectNodeContents(edit_inpt);
-    rng.collapse(start);
+    rng.collapse(false); //< Collapse to end
   }
 
   // Replace current range with saved one
