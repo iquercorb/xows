@@ -208,8 +208,8 @@ function xows_xml_serialize(node)
   // Append attributes list
   n = node.attributes.length;
   for(i = 0; i < n; ++i)
-    result += " " + node.attributes[i].nodeName + "=\"" +
-                    node.attributes[i].nodeValue + "\"";
+    result += " " + node.attributes[i].nodeName + "='" +
+                    node.attributes[i].nodeValue + "'";
 
   // Append children
   n = node.childNodes.length;
@@ -243,7 +243,8 @@ function xows_xml_serialize(node)
  */
 function xows_xml_parse(str)
 {
-  return xows_clean_dom(xows_xml_parser.parseFromString(str,"text/xml"));
+  //return xows_clean_dom(xows_xml_parser.parseFromString(str,"text/xml"));
+  return xows_xml_parser.parseFromString(str,"text/xml");
 }
 
 /**
