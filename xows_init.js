@@ -61,7 +61,7 @@ let xows_options = {
   gui_allow_register  : false,      //< Enable XMPP account register (show proper link and dialog)
 
   cli_archive_count   : 50,         //< Minimum count of history message to fetch each query
-  cli_archive_delay   : 500,        //< Temporization delay for older message fetch
+  gui_archive_delay   : 500,        //< Temporization delay for older message fetch
   cli_pepnotify_bkms  : true,       //< Request for Native Bookmarks (XEP-0402) PEP notifications
   cli_pepnotify_nick  : true,       //< Request for User Nickname (XEP-0172) PEP notifications
   cli_avat_autopub    : true,       //< Auto-publish the default Avatar if none exists for user
@@ -97,9 +97,9 @@ function xows_init(options)
     if(options.hasOwnProperty("gui_locale"))            xows_options.gui_locale = options.gui_locale;
     if(options.hasOwnProperty("gui_theme"))             xows_options.gui_theme = options.gui_theme;
     if(options.hasOwnProperty("gui_allow_register"))    xows_options.gui_allow_register = options.gui_allow_register;
+    if(options.hasOwnProperty("gui_archive_delay"))     xows_options.gui_archive_delay = options.gui_archive_delay;
 
     if(options.hasOwnProperty("cli_archive_count"))     xows_options.cli_archive_count = options.cli_archive_count;
-    if(options.hasOwnProperty("cli_archive_delay"))     xows_options.cli_archive_delay = options.cli_archive_delay;
     if(options.hasOwnProperty("cli_pepnotify_bkms"))    xows_options.cli_pepnotify_bkms = options.cli_pepnotify_bkms;
     if(options.hasOwnProperty("cli_pepnotify_nick"))    xows_options.cli_pepnotify_nick = options.cli_pepnotify_nick;
     //if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;

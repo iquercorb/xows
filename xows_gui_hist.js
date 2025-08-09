@@ -106,7 +106,7 @@ function xows_gui_hist_onscroll(event)
 
     // Set timeout to fetch older history
     if(!xows_gui_hist_fetch_hto)
-      xows_gui_hist_fetch_hto = setTimeout(xows_gui_mam_fetch_older, xows_options.cli_archive_delay, xows_gui_peer);
+      xows_gui_hist_fetch_hto = setTimeout(xows_gui_mam_fetch_older, xows_options.gui_archive_delay, xows_gui_peer);
 
   } else if(chat_hist.scrollTop > 100) {
 
