@@ -228,25 +228,25 @@ function xows_gui_hist_update(peer, author)
     return;
 
   // Get peer ID
-  const peerid =  xows_cli_peer_iden(author);
+  const ident =  xows_cli_peer_iden(author);
 
   let i;
 
-  // Set new content for all <mesg-from>
-  const spn = hist_ul.querySelectorAll("MESG-FROM[data-peer='"+peerid+"'],RPLY-FROM[data-peer='"+peerid+"']");
-  i = spn.length;
-  while(i--) if(author.name != spn[i].innerText) spn[i].innerText = author.name;
+  // Set new content for all elements
+  const from_nodes = hist_ul.querySelectorAll("MESG-FROM[data-peer='"+ident+"'],RPLY-FROM[data-peer='"+ident+"']");
+  i = from_nodes.length;
+  while(i--) if(author.name != from_nodes[i].innerText) from_nodes[i].innerText = author.name;
 
   if(!author.avat)
     return;
 
   // Retrieve or generate avatar CSS class
-  const cls = xows_tpl_spawn_avat_cls(author);
+  const avat_cls = xows_tpl_spawn_avat_cls(author);
 
-  // Set new CSS class to all corresponding figures
-  const fig = hist_ul.querySelectorAll("MESG-AVAT[data-peer='"+peerid+"'],RPLY-AVAT[data-peer='"+peerid+"']");
-  i = fig.length;
-  while(i--) if(cls != fig[i].className) fig[i].className = cls;
+  // Set new CSS class to all corresponding elements
+  const avat_nodes = hist_ul.querySelectorAll("MESG-AVAT[data-peer='"+ident+"'],RPLY-AVAT[data-peer='"+ident+"']");
+  i = avat_nodes.length;
+  while(i--) if(avat_cls != avat_nodes[i].className) avat_nodes[i].className = avat_cls;
 }
 
 /**

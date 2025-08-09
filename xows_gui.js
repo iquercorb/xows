@@ -1907,6 +1907,11 @@ function xows_gui_app_tab_select(tab_id)
  *
  * ---------------------------------------------------------------------------*/
 /**
+ * Storage for previous Self update (to make selective updates)
+ */
+const xows_gui_self_prev = {name:null,addr:null,avat:null,stat:null};
+
+/**
  * Updates user (own) account related GUI elements according current
  * state.
  *
@@ -1917,30 +1922,40 @@ function xows_gui_app_tab_select(tab_id)
  */
 function xows_gui_self_onpush(self)
 {
-  // Create new Avatar CSS class
-  const avat_cls = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
-
   // Update User Panel
   xows_doc("self_show").dataset.show = self.show;
-  xows_doc("self_avat").className = avat_cls;
-  xows_doc("self_name").innerText = self.name;
   xows_doc("self_meta").innerText = self.stat;
 
   // Update User Presence-Menu
   const drop_self = xows_doc("drop_self");
-  drop_self.querySelector("PEER-AVAT").className = avat_cls;
-  drop_self.querySelector("PEER-NAME").innerText = self.name;
   drop_self.querySelector("PEER-ADDR").innerText = self.addr;
   drop_self.querySelector("PEER-META").innerText = self.stat;
 
-  // Update all opened chat history
-  for(let i = 0; i < xows_cli_cont.length; ++i)
-    if(xows_cli_cont[i].live)
-      xows_gui_hist_update(xows_cli_cont[i], self);
+  // If Avatar or Name changed, update all opened chat history
+  if(xows_gui_self_prev.avat !== self.avat || xows_gui_self_prev.name !== self.name) {
 
-  for(let i = 0; i < xows_cli_room.length; ++i)
-    if(xows_cli_room[i].live)
-      xows_gui_hist_update(xows_cli_room[i], self);
+    // Create new Avatar CSS class
+    const avat_cls = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
+
+    // Update User Panel
+    xows_doc("self_avat").className = avat_cls;
+    xows_doc("self_name").innerText = self.name;
+
+    // Update User Presence-Menu
+    drop_self.querySelector("PEER-AVAT").className = avat_cls;
+    drop_self.querySelector("PEER-NAME").innerText = self.name;
+
+    for(let i = 0; i < xows_cli_cont.length; ++i)
+      if(xows_cli_cont[i].live)
+        xows_gui_hist_update(xows_cli_cont[i], self);
+
+    for(let i = 0; i < xows_cli_room.length; ++i)
+      if(xows_cli_room[i].live)
+        xows_gui_hist_update(xows_cli_room[i], self);
+  }
+
+  // Copy self object to be later compared (to make selective updates)
+  xows_gui_self_prev = Object.assign({}, self);
 }
 
 /* ---------------------------------------------------------------------------
