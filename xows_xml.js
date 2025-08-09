@@ -243,7 +243,7 @@ function xows_xml_serialize(node)
  */
 function xows_xml_parse(str)
 {
-  //return xows_clean_dom(xows_xml_parser.parseFromString(str,"text/xml"));
+  //return xows_tpl_clean(xows_xml_parser.parseFromString(str,"text/xml"));
   return xows_xml_parser.parseFromString(str,"text/xml");
 }
 

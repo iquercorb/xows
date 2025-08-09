@@ -1002,31 +1002,6 @@ function xows_html_escape(str)
 }
 
 /* ---------------------------------------------------------------------------
- * DOM Tree utilities
- * ---------------------------------------------------------------------------*/
-/**
- * Removes empty or useless text nodes such as CR/LF from DOM tree
- *
- * @param   {object}    node      Root node of DOM tree to clean
- *
- * @return  {object}    DOM node passed as parameter
- */
-function xows_clean_dom(node)
-{
-  let child, i = node.childNodes.length;
-  while(i--) {
-    child = node.childNodes[i];
-    if(child.nodeType === 8 || (child.nodeType === 3 && !/\S/.test(child.nodeValue))) {
-      node.removeChild(child);
-    } else if(child.nodeType === 1) {
-      xows_clean_dom(child);
-    }
-  }
-
-  return node;
-}
-
-/* ---------------------------------------------------------------------------
  * Graphics and Picture utilities
  * ---------------------------------------------------------------------------*/
 /**

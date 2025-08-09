@@ -159,6 +159,31 @@ const xows_tpl_emoticon_map = {
 };
 
 /* ---------------------------------------------------------------------------
+ * DOM Tree utilities
+ * ---------------------------------------------------------------------------*/
+/**
+ * Removes empty or useless text nodes such as CR/LF from DOM tree
+ *
+ * @param   {object}    node      Root node of DOM tree to clean
+ *
+ * @return  {object}    DOM node passed as parameter
+ */
+function xows_tpl_clean(node)
+{
+  let child, i = node.childNodes.length;
+  while(i--) {
+    child = node.childNodes[i];
+    if(child.nodeType === 8 || (child.nodeType === 3 && !/\S/.test(child.nodeValue))) {
+      node.removeChild(child);
+    } else if(child.nodeType === 1) {
+      xows_tpl_clean(child);
+    }
+  }
+
+  return node;
+}
+
+/* ---------------------------------------------------------------------------
  *
  * Module Events Configuration
  *
@@ -360,8 +385,7 @@ function xows_tpl_template_parse(html, path, type)
 
   // Parse the given string as HTML to create the corresponding DOM tree
   // then returns the generated <body>.
-  const temp_plate = xows_tpl_parser.parseFromString(html,"text/html");
-  const template = xows_clean_dom(xows_tpl_parser.parseFromString(html,"text/html").body);
+  const template = xows_tpl_clean(xows_tpl_parser.parseFromString(html,"text/html").body);
 
   if(!template) {
     xows_log(0,"tpl_template_parse","template parse error",path);
@@ -410,7 +434,9 @@ function xows_tpl_template_parse(html, path, type)
       xows_tpl_model[name] = document.createDocumentFragment();
       xows_tpl_model[name].appendChild(template.firstChild);
     } else {
-      document.head.appendChild(temp_plate.head.firstChild);
+      xows_log(1,"tpl_template_parse","empty instanciable",name);
+      //const temp_plate = xows_tpl_parser.parseFromString(html,"text/html");
+      //document.head.appendChild(temp_plate.head.firstChild);
     }
   } else {
     // Search for an element the id that matches the name to append data
