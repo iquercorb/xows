@@ -1956,7 +1956,7 @@ function xows_gui_self_onpush(self)
   }
 
   // Copy self object to be later compared (to make selective updates)
-  xows_gui_self_prev = Object.assign({}, self);
+  Object.assign(xows_gui_self_prev, self);
 }
 
 /* ---------------------------------------------------------------------------
