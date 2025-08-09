@@ -1931,7 +1931,7 @@ function xows_gui_self_onpush(self)
   drop_self.querySelector("PEER-ADDR").innerText = self.addr;
   drop_self.querySelector("PEER-META").innerText = self.stat;
 
-  // If Avatar or Name changed, update all opened chat history
+  // Selective update for Avatar or Name changed
   if(xows_gui_self_prev.avat !== self.avat || xows_gui_self_prev.name !== self.name) {
 
     // Create new Avatar CSS class
@@ -1945,6 +1945,7 @@ function xows_gui_self_onpush(self)
     drop_self.querySelector("PEER-AVAT").className = avat_cls;
     drop_self.querySelector("PEER-NAME").innerText = self.name;
 
+    // Update all opened chat history
     for(let i = 0; i < xows_cli_cont.length; ++i)
       if(xows_cli_cont[i].live)
         xows_gui_hist_update(xows_cli_cont[i], self);
