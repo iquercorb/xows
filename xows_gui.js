@@ -33,77 +33,84 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         GUI API Interface
+ * User Interface (GUI) Module
  *
- * ------------------------------------------------------------------ */
-
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Global constants and variables
+ * ---------------------------------------------------------------------------*/
 /**
- * Threshold time for aggregated to full message
+ * Constants value for loading process tasks bits (see xows_load* )
  */
-const XOWS_MESG_AGGR_THRESHOLD = 600000; //< 10 min
+const XOWS_FETCH_NEWR = xows_load_task_bit(); //< Newer history fetch
+const XOWS_FETCH_OLDR = xows_load_task_bit(); //< Older history fetch
 
 /**
- * History loading process tasks bit (see xows_load* )
- */
-const XOWS_FETCH_NEWR = xows_load_task_bit();
-const XOWS_FETCH_OLDR = xows_load_task_bit();
-
-/**
- * Object to temporarly store login user and password
+ * Storage for user (own) authentication data (login, password, etc.)
  */
 let xows_gui_auth = null;
 
 /**
- * JID of the currently selected peer (room or contact) in Roster
+ * Reference to Peer object that user is currently interacting with.
+ *
+ * The GUI allows to interact with only one user at a time, opening one and
+ * only one Chat window (It can be either Contact, MUC Room or MUC Occupant
+ * in case of private messages). This variable stores and therefore represents
+ * the Peer whose chat windows is currently open by user.
+ *
+ * If this variable is null, this mean no chat window is open (this may happen
+ * either transitionally or in a more durable way).
+ *
+ * If you break this, everything is broken since this reference is used all
+ * along the Module absolutely EVERYWHERE.
  */
 let xows_gui_peer = null;
 
+/* ---------------------------------------------------------------------------
+ * Media Devices Management
+ * ---------------------------------------------------------------------------*/
 /**
- * Current state of browser focus
+ * Storage for available Media Devices informations
  */
-let xows_gui_has_focus = true;
+let xows_gui_devs_data = null;
 
 /**
- * Currently available media devices (for multimedia calls)
+ * Query the navigator to gather data bout available (detected) Media Devices
  */
-let xows_gui_devices_data = null;
-
-/**
- * Callback function to query device enumeration from MediaDevices API
- */
-function xows_gui_devices_poll()
+function xows_gui_devs_poll()
 {
   // Query available devices for Multimedia features
-  if(navigator.mediaDevices) {
-    navigator.mediaDevices.enumerateDevices().then(xows_gui_devices_oninfos);
-    navigator.mediaDevices.ondevicechange = xows_gui_devices_onchange;
+  if("mediaDevices" in navigator) {
+    navigator.mediaDevices.enumerateDevices().then(xows_gui_devs_oninfos);
+    navigator.mediaDevices.ondevicechange = xows_gui_devs_onchange;
   }
 }
 
 /**
- * Callback function to handle media devices changes event
+ * Handles received Media Devices changes notify (forwarded from mediaDevice
+ * API).
  *
  * @param   {object}    event      Event object
  */
-function xows_gui_devices_onchange(event)
+function xows_gui_devs_onchange(event)
 {
   // Update medias list
-  navigator.mediaDevices.enumerateDevices().then(xows_gui_devices_oninfos);
+  navigator.mediaDevices.enumerateDevices().then(xows_gui_devs_oninfos);
 }
 
 /**
- * Callback function to handle device enumeration from MediaDevices API
+ * Handles received Media Devices informations (forwarded from mediaDevice API).
  *
  * @param   {object}    devinfo    Array of MediaDeviceInfo object
  */
-function xows_gui_devices_oninfos(devinfo)
+function xows_gui_devs_oninfos(devinfo)
 {
   // Update media infos list
-  xows_gui_devices_data = devinfo;
+  xows_gui_devs_data = devinfo;
 
-  xows_log(2,"gui_ondevicesinfos","received medias infos");
+  xows_log(2,"gui_devices_oninfo","received medias infos");
 
   // Update relevant GUI element
   if(xows_gui_peer)
@@ -111,24 +118,28 @@ function xows_gui_devices_oninfos(devinfo)
 }
 
 /**
- * Check whether current medias list has the specified type
+ * Check whether the specified media type is available, searching in
+ * the Media Devices list as reported by mediaDevice API.
  *
  * @param   {string}    type      Media type to search for
  */
-function xows_gui_devices_has(type)
+function xows_gui_devs_has(type)
 {
-  if(!xows_gui_devices_data)
+  if(!xows_gui_devs_data)
     return false;
 
-  for(let i = 0; i < xows_gui_devices_data.length; ++i)
-    if(xows_gui_devices_data[i].kind === type)
+  for(let i = 0; i < xows_gui_devs_data.length; ++i)
+    if(xows_gui_devs_data[i].kind === type)
       return true;
 
   return false;
 }
 
+/* ---------------------------------------------------------------------------
+ * Navigator Credential Management
+ * ---------------------------------------------------------------------------*/
 /**
- * Stores credential data into navigator
+ * Stores navigator Credential data into navigator
  *
  * @param   {object}    data    Crediential data to store
  */
@@ -151,20 +162,25 @@ function xows_gui_cred_support()
   return (("credentials" in navigator) && ("PasswordCredential" in window));
 }
 
+/* ---------------------------------------------------------------------------
+ * Peer Offscreen documents management
+ * ---------------------------------------------------------------------------*/
 /**
- * Constant for initial offscreen slot identifier
+ * Constant for initial Offscreen-Slot identifier
+ *
+ * This is the 'key' used to stores the Peers related GUI (Chat Window)
+ * initial state (before any alteration) into the Offscreen storage Map.
  */
 const XOWS_GUI_FRAG_VOID = "void";
 
 /**
- * Common function to create new set of Peer's offscreen DocumentFragment.
+ * Creates a new Peer Offscreen-Slot (DocumentFragment).
  *
- * Clones the initial DOM elements (which was saved in a Document Fragment at
- * initialization) to a new DocumentFragment referenced under the specified
- * slot (usually, Peer's address).
+ * It clones the Peer related initial DOM Elements (saved in "void"
+ * Offscreen-Slot at initialization) to a new Offscreen-Slot.
  *
- * If source is specified, the new set of DocumentFragment is cloned from
- * the specified source instead of saved initial DOM elements.
+ * If 'source' is specified, the new set of Offscreen-Slot is cloned from
+ * the specified 'source' instead of "void" Offscreen-Slot.
  *
  * @param   {string}    slot      Destination slot (Peer's address)
  * @param   {string}   [source]   Optional source slot.
@@ -184,11 +200,10 @@ function xows_gui_frag_new(slot, source)
 }
 
 /**
- * Common function to "export" current DOM elements to Peer's offscreen
- * Document Fragment.
+ * Exports the specified Peer Offscreen-Slot (DocumentFragment)
  *
- * Moves the current DOM elements to the offscreen Document Fragment
- * referenced by the specified slot (usually, Peer's address).
+ * It moves the current Peer related DOM Elements to the specified
+ * Offscreen-Slot.
  *
  * @param   {string}    slot      Document fragment slot (Peer's address)
  */
@@ -207,15 +222,13 @@ function xows_gui_frag_export(slot)
 }
 
 /**
- * Common function to "import" Peer's offscreen Document Fragment to
- * current DOM.
+ * Import the specified Peer Offscreen-Slot (DocumentFragment)
  *
- * Moves elements from offscreen Document Fragment referenced by the
- * specified slot (usually, Peer's address) to the current DOM, actualy
- * replacing DOM elements .
+ * It moves the specified Offscreen-Slot's Elements into the DOM, effectively
+ * replacing existing DOM Elements.
  *
- * If the specified slot is null (or undefined) the function Moves elements
- * from the INITIAL offscreen Document Fragment instead.
+ * If the 'slot' is null (or undefined) the function moves elements from
+ * the "void" (initial) Offscreen-Slot.
  *
  * @param   {string}    slot      Document fragment slot (Peer's address) or null
  */
@@ -241,7 +254,7 @@ function xows_gui_frag_import(slot)
 }
 
 /**
- * Common function to delete Peer's related offscreen element.
+ * Deletes the specified Peer Offscreen-Slot.
  *
  * @param   {string}    slot      Document fragment slot (Peer's address)
  */
@@ -252,7 +265,7 @@ function xows_gui_frag_discard(slot)
 }
 
 /**
- * Clear all Peer's related offscreen elements.
+ * Removes all Peer Offscreen-Slot, leaving only the initial "void".
  */
 function xows_gui_frag_clear()
 {
@@ -265,11 +278,14 @@ function xows_gui_frag_clear()
 
 /* -------------------------------------------------------------------
  *
- * Main initialization
+ * Module initialization
  *
  * -------------------------------------------------------------------*/
 /**
- * Initialize main GUI elements (to be called once)
+ * Module initialization.
+ *
+ * Configures required elements to make the Module ready to use. This
+ * function should be called only once.
  */
 function xows_gui_init()
 {
@@ -279,8 +295,12 @@ function xows_gui_init()
   // Create intial offscreen data from current document
   xows_gui_frag_export(XOWS_GUI_FRAG_VOID);
 
+  // Check whether Registering option is enabled
+  if(xows_options.gui_allow_register)
+    xows_doc_show("auth_regi"); //< The link in Login Page
+
   // Poll for available devices for Multimedia features
-  xows_gui_devices_poll();
+  xows_gui_devs_poll();
 
   // Set event listener to handle user keyboard
   xows_doc_listener_add(document, "keydown", xows_gui_wnd_onkey, false); //< need preventDefault()
@@ -354,10 +374,18 @@ function xows_gui_init()
   // Set loader functions
   xows_load_task_set(XOWS_FETCH_NEWR, xows_gui_mam_fetch_newer);
   xows_load_task_set(XOWS_FETCH_OLDR, xows_gui_mam_fetch_older);
+
+  // Startup GUI (Auto-connect or login page)
+  xows_gui_startup();
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * Main GUI management
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Clean the GUI to its session-start state
+ * Cleans the GUI to its Session-Start state
  *
  * This function keeps the sessions and Peer's related elements and simply
  * close any opened dialog, menu or page.
@@ -375,7 +403,7 @@ function xows_gui_clean()
 }
 
 /**
- * Hard-reset all GUI to its initial loading state
+ * Hard-reset all GUI to its initial "Loaded" state
  *
  * This function reset and empty all GUI element to their initial
  * loading state and delete all Peer related elements.
@@ -438,7 +466,10 @@ function xows_gui_reset()
 let xows_gui_hang_hto = null;
 
 /**
- * Set GUI to paused mode with Wait screen
+ * Set GUI to paused mode with Wait screen.
+ *
+ * This function is part of automated GUI hang process, it is called
+ * via a setTimeout, and should not be called alone outside this context.
  */
 function xows_gui_hang_timeout(text)
 {
@@ -461,7 +492,11 @@ function xows_gui_hang_abort()
 }
 
 /**
- * Prepare to enter GUI in paused mode with Wait screen
+ * Prepare for GUI hang state.
+ *
+ * GUI hang is kind of "pause" mode with the Wait Page displayed. It is mainly
+ * used in the connection recovery process, to stop any user interaction and
+ * showing the "connecting..." wait page until connection recover or timeout.
  *
  * @param   {number}  delay   Delay before displaying wait page
  * @param   {string}  text    Text for the wait page
@@ -473,19 +508,22 @@ function xows_gui_hang(delay, text)
   xows_gui_hang_hto = setTimeout(xows_gui_hang_timeout, delay, text);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Base processes - Startup / Connect / Dsiconnect
+ * Startup, Connect and Dsiconnect routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Flag for client connexion loss
+ * Flag indicating that client is in connection recovery process
  */
 let xows_gui_resume_pnd = false;
 
 /**
  * Main startup function, either shows login page or try to autoconnect
- * using browser saved credentials (if supported)
+ * using navigator saved credentials (if supported)
+ *
+ * This function is not intended to be called more than once, it could have
+ * been integrated in Module Initialization but was left outside, in case...
  */
 function xows_gui_startup()
 {
@@ -503,7 +541,8 @@ function xows_gui_startup()
 }
 
 /**
- * Callback to handles navigator credential fetching result
+ * Handles received result of Navigator Credential fetch query (forwarded from
+ * Credential Management API)
  *
  * @param   {object}    creds   PasswordCredential object or null
  */
@@ -521,7 +560,10 @@ function xows_gui_startup_oncreds(creds)
 }
 
 /**
- * Function to connect (try login)
+ * Attempts Client connection and login.
+ *
+ * Stores authentication data and request Client (CLI Module) to connect
+ * and login to XMPP server.
  *
  * @param   {string}    user    Login username or Full JID
  * @param   {string}    pass    Login Password
@@ -559,9 +601,9 @@ function xows_gui_connect(user, pass, save, regi = false)
 }
 
 /**
- * Function to handle client login success and ready
+ * Handles Client successfull connection and ready (forwarded from CLI Module)
  *
- * @param   {object}    user      User object
+ * @param   {object}    user      User (SELF) Peer object
  * @param   {boolean}   resume    Indicate XMPP stream resume
  */
 function xows_gui_cli_onready(user, resume)
@@ -642,7 +684,9 @@ function xows_gui_cli_onready(user, resume)
 }
 
 /**
- * Function to disconnect
+ * Disconnect Client.
+ *
+ * This tells Client to close the current XMPP session.
  */
 function xows_gui_disconnect()
 {
@@ -657,7 +701,7 @@ function xows_gui_disconnect()
 }
 
 /**
- * Handle client connexion closed
+ * Handles Client session closed (forwarded from CLI Module)
  *
  * @parma   {number}    code      Signal code for closing
  * @param   {string}   [text]     Optional information or error message
@@ -721,7 +765,11 @@ function xows_gui_cli_onclose(code, text)
 }
 
 /**
- * Handle client incomming error
+ * Handles Client unhandled error (forwarded from CLI Module)
+ *
+ * Errors that reach this point are not handled, this may happen if XMPP server
+ * send an error for which there is no dedicated implementation. This should
+ * never happen, but may happen anyway.
  *
  * @parma   {string}    from      Error expeditor
  * @param   {object}    error     Error data object
@@ -735,18 +783,18 @@ function xows_gui_cli_onerror(from, error)
   xows_doc_popu_open(XOWS_STYL_ERR, text);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Peer Documents Routines
+ * Peer Documents Set Routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /* -------------------------------------------------------------------
- * Peer Documents - Creation & Management
+ * Peer Documents Set - Creation, Export and Import
  * -------------------------------------------------------------------*/
 /**
- * Create new Peer offscreen slot using initial DOM elements
+ * Creates new Documents set (chat interface) for the specified Peer
  *
- * @param   {object}    peer      Peer object to initialize offscreen for
+ * @param   {object}    peer      Peer object
  */
 function xows_gui_doc_init(peer)
 {
@@ -776,7 +824,7 @@ function xows_gui_doc_init(peer)
 }
 
 /**
- * Reset Peer offscreen slot to initial state
+ * Resets Peer's Documents set (chat interface) to initial state
  *
  * @param   {object}    peer      Peer object to reset offscreen for
  */
@@ -790,7 +838,9 @@ function xows_gui_doc_reset(peer)
 }
 
 /**
- * Move and store current document Peer elements to offscreen
+ * Export Peer's Documents set (chat interface) to Offscreen
+ *
+ * This moves Peer related DOM Elements ot its dedicated Offscreen-Slot
  *
  * @param   {object}    peer      Peer object
  */
@@ -804,7 +854,10 @@ function xows_gui_doc_export(peer)
 }
 
 /**
- * Bring back saved Peer offscreen elements to current document
+ * Import Peer's Documents set (chat interface) to DOM
+ *
+ * This moves Peer related Offscreen-Slot Elements to DOM, showing Peer
+ * related chat interface to user.
  *
  * @param   {object}    peer      Peer object
  */
@@ -861,7 +914,7 @@ function xows_gui_doc_import(peer)
 
   if(peer.type === XOWS_PEER_ROOM) {
     xows_doc_listener_add(xows_doc("mucl_hand"), "click", xows_gui_layout_hand_onclick);
-    xows_doc_listener_add(xows_doc("mucl_head"), "click", xows_gui_mucl_head_onclick);
+    xows_doc_listener_add(xows_doc("mucl_head"), "click", xows_gui_muc_head_onclick);
     xows_doc_listener_add(xows_doc("mucl_list"), "click", xows_gui_muc_list_onclick);
   }
 
@@ -898,7 +951,11 @@ function xows_gui_doc_import(peer)
 }
 
 /**
- * Reassign saved Peer offscreen elements to another reference
+ * Reassign Peer's Documents set (chat interface) to another Offscreen-Slot
+ *
+ * This function may be used when a Peer change its identifier (its JID), this
+ * mainly happen in MUC context (Private Messages) when JID may changes as
+ * Occupant changes its nickname.
  *
  * @param   {object}    peer      Peer object with updated address
  * @param   {string}    slot      Previous Peer's slot (address) to be reassigned
@@ -920,11 +977,11 @@ function xows_gui_doc_reassign(peer, slot)
     xows_gui_doc_import(peer);
 }
 
-/* -------------------------------------------------------------------
- * Peer Documents - Fetch and Actions routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Peer Documents Set - Elements access routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Check whether Peer offscreen slot exists
+ * Check whether Peer Documents Set exists
  *
  * @param   {object}    peer      Peer object to check
  *
@@ -936,8 +993,10 @@ function xows_gui_doc_has(peer)
 }
 
 /**
- * Get Peer related element by id, either in current document or in
- * offscreen fragment
+ * Get Peer Documents Set element by id.
+ *
+ * The returned element can be either in current DOM (if Peer is the current
+ * selected one) or from offscreen DocumentFragment (Offscreen-Slot)
  *
  * @param   {object}    peer      Peer object
  * @param   {string}    id        Element id
@@ -955,11 +1014,11 @@ function xows_gui_doc(peer, id)
   return null;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * Peer Documents - Update routines
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Maks bits for document update routine
+ * Constants maks bits for document update routine
  */
 const XOWS_UPDT_NOTI = 0x01;  //< Update Notification button
 const XOWS_UPDT_BUZY = 0x02;  //< Update according Call Buzy state
@@ -970,8 +1029,8 @@ const XOWS_UPDT_ALL  = 0xff;  //< All common updates
 const XOWS_UPDT_LOAD = 0x100; //< Special mask for preloading
 
 /**
- * Update Peer's chat frame and Occupant list elements heads according
- * Peer data.
+ * Updates Peer Documents Set elements according current Peer and
+ * global states.
  *
  * @param   {object}    peer      Peer object
  * @param   {number}   [mask]     Optional bits mask for selective update
@@ -1033,9 +1092,9 @@ function xows_gui_doc_update(peer, mask = 0xff)
       }
 
       // Show or hide call buttons
-      const has_ices = xows_cli_extsvc_has("stun","turn");
-      xows_gui_doc(peer,"chat_cala").hidden = !(xows_gui_devices_has("audioinput") && has_ices);
-      xows_gui_doc(peer,"chat_calv").hidden = !(xows_gui_devices_has("videoinput") && has_ices);
+      const has_ices = xows_cli_extservs_has("stun","turn");
+      xows_gui_doc(peer,"chat_cala").hidden = !(xows_gui_devs_has("audioinput") && has_ices);
+      xows_gui_doc(peer,"chat_calv").hidden = !(xows_gui_devs_has("videoinput") && has_ices);
     }
 
     // Enable or disable Call buttons according buzy state
@@ -1065,14 +1124,16 @@ function xows_gui_doc_update(peer, mask = 0xff)
 
 /* -------------------------------------------------------------------
  *
- * Peer General Routines
+ * Peer Selection
  *
  * -------------------------------------------------------------------*/
 /**
- * Set the active Peer and display its associated document set.
+ * Set the active Peer and display its associated Document Set (chat
+ * interface).
  *
- * This function is a central pivot of GUI interaction, it open and close
- * the proper document sets according requested Peer selection
+ * This function is a central pivot of GUI interactions, it opens and closes
+ * the proper Document Sets according Peer selected by user then set this
+ * Peer as current selected one.
  *
  * @param   {string}    addr      Peer JID to select
  */
@@ -1161,11 +1222,12 @@ function xows_gui_peer_switch_to(addr)
 
 /* -------------------------------------------------------------------
  *
- * Main layout interactions
+ * Layout management
  *
  * -------------------------------------------------------------------*/
 /**
- * Handle click on column Handles to hide Roster or MUC List
+ * Handles column's flap-handles click events to expand or hide
+ * Roster or MUC List in narrow-screen configuration.
  *
  * @param   {object}    event   Event object
  */
@@ -1198,7 +1260,7 @@ function xows_gui_layout_rost_view()
 }
 
 /**
- * Toggles the MUC (Occupants) Roster column (Left Panel)
+ * Toggles the MUC (Occupants) list column (Right Panel)
  */
 function xows_gui_layout_muc_toggle()
 {
@@ -1217,21 +1279,21 @@ function xows_gui_layout_muc_toggle()
   }
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Browser window routines
+ * Navigator window routines
  *
- * -------------------------------------------------------------------*/
- /* -------------------------------------------------------------------
- * Browser window - Title
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Navigator window - Title bar
+ * ---------------------------------------------------------------------------*/
 /**
- * Stack for document title changes
+ * Stack for navigator window title bar changes
  */
 const xows_gui_wnd_title_stk = [];
 
 /**
- * Push the title stack and set new document title
+ * Push the titles stack and set new navigator window title
  *
  * @param   {string}    title     Title to set
  */
@@ -1242,18 +1304,18 @@ function xows_gui_wnd_title_set(title)
 }
 
 /**
- * Pop title stack and restore previous document title
+ * Pop the titles stack to restores previous navigator window title
  */
 function xows_gui_wnd_title_pop()
 {
   document.title = xows_gui_wnd_title_stk.pop();
 }
 
-/* -------------------------------------------------------------------
- * Browser window - Browser navigation Back handle
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Navigator window - Navigation Back handling
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles user click on browser navigation history back
+ * Handles navigator 'Back' button click
  *
  * @param   {object}    event     Event object
  */
@@ -1269,11 +1331,16 @@ function xows_gui_wnd_onback(event)
   }
 }
 
-/* -------------------------------------------------------------------
- * Browser window - Events Handling
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Navigator window - Misc events handling
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles the client/Web page focus change
+ * Current state of navigator window focus
+ */
+let xows_gui_wnd_has_focus = true;
+
+/**
+ * Handles navigator window page/tab focus changes
  *
  * @param   {object}    event     Event object
  */
@@ -1283,7 +1350,7 @@ function xows_gui_wnd_onfocus(event)
   {
   case "focus":
   case "blur":
-    if(!xows_gui_has_focus)
+    if(!xows_gui_wnd_has_focus)
       xows_cli_pres_show_back();
     break;
 
@@ -1294,11 +1361,11 @@ function xows_gui_wnd_onfocus(event)
     break;
   }
 
-  xows_gui_has_focus = document.hasFocus();
+  xows_gui_wnd_has_focus = document.hasFocus();
 }
 
 /**
- * Handles the client/Web page unload
+ * Handles navigator window page/tab unload
  *
  * @param   {object}    event     Event object
  */
@@ -1310,11 +1377,11 @@ function xows_gui_wnd_unload(event)
   return undefined; //< prevent prompting dialog to user
 }
 
-/* -------------------------------------------------------------------
- * Browser window - Push Notification
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Navigator window - Desktop Notifications
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle received notification permission from user
+ * Handles received Desktop-Notification permission from user.
  *
  * @param   {string}    perm      Received permission
  */
@@ -1326,7 +1393,7 @@ function xows_gui_wnd_noti_onperm(perm)
 }
 
 /**
- * Query user for notification permission
+ * Asks user for Desktop-Notification permission.
  */
 function xows_gui_wnd_noti_ask()
 {
@@ -1336,10 +1403,9 @@ function xows_gui_wnd_noti_ask()
 }
 
 /**
- * Returns whether permission for browser/window notifications
- * emission was granted by user.
+ * Returns whether permission for Desktop-Notification was granted by user.
  *
- * @return  {boolean}   True if permission granted, false otherwise
+ * @return  {boolean}   True if permission granted, false otherwise.
  */
 function xows_gui_wnd_noti_allowed()
 {
@@ -1347,7 +1413,7 @@ function xows_gui_wnd_noti_allowed()
 }
 
 /**
- * Pop a new browser Notification
+ * Pop a new Desktop-Notification
  *
  * @param   {object}    peer      Peer object
  * @param   {string}    body      Notification body (message body)
@@ -1385,16 +1451,16 @@ function xows_gui_wnd_noti_emit(peer, body)
   }
 }
 
-/* -------------------------------------------------------------------
- * Browser window - User input devices access
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Navigator window - User input devices access
+ * ---------------------------------------------------------------------------*/
 /**
- * User input devices access parameters
+ * Storage for user media devices access parameters
  */
 const xows_gui_wnd_media_param = {constr:null,onmedia:null,onabort:null,payload:null,error:null};
 
 /**
- * Request user permissions to access input devices specified by constraints.
+ * Asks user permission to access media devices specified by constraints.
  *
  * @param   {object}     constr     Medias constraints to acquire
  * @param   {function}   onmedia    Acquire success callback
@@ -1430,10 +1496,10 @@ function xows_gui_wnd_media_try(constr, onmedia, onabort, payload)
 }
 
 /**
- * Callback for user access input devices faillure or deny.
+ * Handle user media devices access permission denied or faillure.
  *
- * If received error is an explicit user access denied, the configured
- * onabort callback is directly called with the received error.
+ * If the received error is an explicit user access denied, the configured
+ * 'onabort' callback is directly called with the received error.
  *
  * On the other hand, if it is not clear why access failed, a message dialog
  * is displayed to ask user to abort or retry.
@@ -1471,7 +1537,7 @@ function xows_gui_wnd_media_onfail(error)
 }
 
 /**
- * Callback for user access input devices canceled or denied by user
+ * Handles user access media devices canceled or denied by user
  */
 function xows_gui_wnd_media_onabort()
 {
@@ -1483,16 +1549,16 @@ function xows_gui_wnd_media_onabort()
     param.onabort(param.payload, param.error);
 }
 
-/* -------------------------------------------------------------------
- * Browser window - Input Handling
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Navigator window - Global input handling
+ * ---------------------------------------------------------------------------*/
 /**
- * Chat Editor table to store current pressed (down) key
+ * Storage for currently pressed keyboard keys (by keycodes)
  */
 const xows_gui_wnd_keydn = new Array(256);
 
 /**
- * Handles browser window keyboard inputs
+ * Handles navigator window keyboard input events
  *
  * It is used to capture user's pressing keyboard basic keys such as
  * Escape or Enter to trigger proper actions, for instance, closing
@@ -1542,11 +1608,11 @@ function xows_gui_wnd_onkey(event)
   }
 }
 
-/* -------------------------------------------------------------------
- * Browser window - Exit Popup-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Navigator window - Disconnect Confirmation
+ * ---------------------------------------------------------------------------*/
 /**
- * Disconnect Confirmation message box on-abort callback function
+ * Handles Disconnect Confirmation Popup abortion (click on abort button)
  */
 function xows_gui_wnd_exit_popu_onabort()
 {
@@ -1554,7 +1620,7 @@ function xows_gui_wnd_exit_popu_onabort()
 }
 
 /**
- * Disconnect Confirmation message box on-valid callback function
+ * Handles Disconnect Confirmation Popup validation (click on OK button)
  */
 function xows_gui_wnd_exit_popu_onvalid()
 {
@@ -1566,7 +1632,7 @@ function xows_gui_wnd_exit_popu_onvalid()
 }
 
 /**
- * Disconnect Confirmation message box open
+ * Opens Disconnect Confirmation Popup Dialog
  */
 function xows_gui_wnd_exit_popu_open()
 {
@@ -1577,20 +1643,17 @@ function xows_gui_wnd_exit_popu_open()
                      true);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
  * Notification Badges
  *
- * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Notification Badges - Roster Tabs Management
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Notification Badges - Application Tabs
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to update roster tab unread notification spot according
+ * Updates unread notification spots of the Application Tabs according
  * current state.
- *
- * This function is a 'private' shortcut to avoid code duplication
- * and should not be called alone.
  *
  * @param   {object}    peer      Peer object, either Room or Contact
  */
@@ -1639,12 +1702,14 @@ function xows_gui_badg_update_tabs(peer, mesg, call, ring)
   tab_rost.classList.toggle("RINGING", remain_ring > 0);
 }
 
-/* -------------------------------------------------------------------
- * Notification Badges - Unread alerts
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Notification Badges - Roster's spots
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to add and/or increase an unread message notification on
- * the displayed roster contact DOM element
+ * Adds (and increase count of) unread messages for the specified Peer
+ *
+ * This show a red spot (with count of unread messages) on the corresponding
+ * Contact element in Roster.
  *
  * @param   {object}    peer      Peer object, either Room or Contact
  * @param   {string}    id        Message Id (not yet used)
@@ -1666,8 +1731,8 @@ function xows_gui_badg_unrd_mesg(peer, id)
 }
 
 /**
- * Function to add and toggle ringing call and missed call notification
- * on the displayed roster contact DOM element
+ * Toggles ringing and missed call (incoming Media Call) notification
+ * for the specified Peer.
  *
  * @param   {object}    peer      Peer object, either Room or Contact
  * @param   {boolean}   ring      If true set ringing call otherwise set missed call
@@ -1693,8 +1758,10 @@ function xows_gui_badg_unrd_call(peer, ring)
 }
 
 /**
- * Function to clear any unread message notification on
- * the displayed roster contact DOM element
+ * Clears unread message and ringing notification for the specified Peer.
+ *
+ * This removes notification spots from the corresponding Contact element
+ * in Roster and reset count of unread messages.
  *
  * @param   {object}    peer      Peer object, either Room or Contact
  */
@@ -1724,12 +1791,11 @@ function xows_gui_badg_unrd_reset(peer)
   xows_gui_badg_update_tabs(peer, mesg, call, ring);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * Notification Badges - In-Call (Buzy) Badge
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to show or hide an calling status badge on the displayed
- * roster contact DOM element
+ * Toggles the In-Call badge for the specified Peer.
  *
  * @param   {object}    peer      Peer object, either Room or Contact
  * @param   {boolean}   enable    Enable or disable calling status
@@ -1760,13 +1826,13 @@ function xows_gui_badg_buzy(peer, enable)
   }
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Application Interactions
+ * Application Tabs
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function to handle click event on GUI Roster Tabs <li>
+ * Handles Application Tabs click events.
  *
  * @param   {object}    event     Event object associated with trigger
  */
@@ -1803,7 +1869,7 @@ function xows_gui_app_fram_onclick(event)
 }
 
 /**
- * Select to specified Application Tab
+ * Selects the specified Application Tab
  *
  * @param   {string}    tab_id    Tab ID to select
  *
@@ -1834,13 +1900,56 @@ function xows_gui_app_tab_select(tab_id)
 
   return sel_page;
 }
-/* -------------------------------------------------------------------
+
+/* ---------------------------------------------------------------------------
  *
- * Self Interactions
+ * User Account visual feedback
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * User Panel on-click callback
+ * Updates user (own) account related GUI elements according current
+ * state.
+ *
+ * This updates user (own) nickname, avatar, show level and status accross
+ * all GUI elements (including Peer's chat interfaces).
+ *
+ * @param   {object}    self      User Peer object
+ */
+function xows_gui_self_onpush(self)
+{
+  // Create new Avatar CSS class
+  const avat_cls = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
+
+  // Update User Panel
+  xows_doc("self_show").dataset.show = self.show;
+  xows_doc("self_avat").className = avat_cls;
+  xows_doc("self_name").innerText = self.name;
+  xows_doc("self_meta").innerText = self.stat;
+
+  // Update User Presence-Menu
+  const drop_self = xows_doc("drop_self");
+  drop_self.querySelector("PEER-AVAT").className = avat_cls;
+  drop_self.querySelector("PEER-NAME").innerText = self.name;
+  drop_self.querySelector("PEER-ADDR").innerText = self.addr;
+  drop_self.querySelector("PEER-META").innerText = self.stat;
+
+  // Update all opened chat history
+  for(let i = 0; i < xows_cli_cont.length; ++i)
+    if(xows_cli_cont[i].live)
+      xows_gui_hist_update(xows_cli_cont[i], self);
+
+  for(let i = 0; i < xows_cli_room.length; ++i)
+    if(xows_cli_room[i].live)
+      xows_gui_hist_update(xows_cli_room[i], self);
+}
+
+/* ---------------------------------------------------------------------------
+ *
+ * User Panel
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles User Panel click events.
  *
  * @param   {object}    event     Event object associated with trigger
  */
@@ -1857,67 +1966,17 @@ function xows_gui_self_fram_onclick(event)
   if(event.target.closest("#self_bttn")) {
     // Open user show/presence level menu
     xows_doc_menu_toggle(xows_doc("self_bttn"), "drop_self",
-                         xows_gui_self_menu_onclick,
-                         xows_gui_self_menu_onshow);
+                         xows_gui_self_menu_onclick);
   }
 }
 
-/* -------------------------------------------------------------------
- * Self Interactions - Self Peer Management
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Panel - Presence/Profile menu
+ * ---------------------------------------------------------------------------*/
 /**
- * Update the presence menu according current own presence show level
- * and status
+ * Handles User Presence-Menu click events.
  *
- * @param   {object}    self      User Peer object
- */
-function xows_gui_self_onpush(self)
-{
-  xows_doc("self_show").dataset.show = self.show;
-
-  // Create new Avatar CSS class
-  xows_doc("self_avat").className = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
-  xows_doc("self_name").innerText = self.name;
-
-  const self_meta = xows_doc("self_meta");
-  self_meta.innerText = self.stat;
-
-  // Update all opened chat history
-  for(let i = 0; i < xows_cli_cont.length; ++i)
-    if(xows_cli_cont[i].live)
-      xows_gui_hist_update(xows_cli_cont[i], self);
-
-  for(let i = 0; i < xows_cli_room.length; ++i)
-    if(xows_cli_room[i].live)
-      xows_gui_hist_update(xows_cli_room[i], self);
-}
-
-/* -------------------------------------------------------------------
- * Self Interactions - Self Presence/Profile menu
- * -------------------------------------------------------------------*/
-/**
- * User Presence (show) menu on-show (open) callback
- *
- * @param   {object}    button    Drop menu button
- * @param   {object}    drop      Drop menu object
- */
-function xows_gui_self_menu_onshow(button, drop)
-{
-  // Update avatar CSS class
-  const cls = xows_tpl_spawn_avat_cls(xows_cli_self);
-  drop.querySelector("PEER-AVAT").className = cls;
-  drop.querySelector("PEER-NAME").innerText = xows_cli_self.name;
-  drop.querySelector("PEER-ADDR").innerText = xows_cli_self.addr;
-
-  // Set status
-  const drop_meta = drop.querySelector("PEER-META");
-  drop_meta.innerText = xows_cli_self.stat;
-}
-
-/**
- * User Presence (show) menu button/drop on-click callback
- *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {object}    event     Event object
  */
 function xows_gui_self_menu_onclick(event)
 {
@@ -1955,11 +2014,11 @@ function xows_gui_self_menu_onclick(event)
   }
 }
 
-/* -------------------------------------------------------------------
- * Self Interactions - Self Status Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Panel - Presence Status Input-Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Self status message input box on-valid callback
+ * Handles User (own) Status Input Dialog validation (click on Valid button)
  *
  * @param   {string}    value     Input content
  */
@@ -1971,7 +2030,7 @@ function xows_gui_self_stat_ibox_onvalid(value)
 }
 
 /**
- * Self status message input box on-input callback
+ * Handles User (own) Status Input Dialog character input events
  *
  * @param   {string}    value     Input content
  */
@@ -1981,7 +2040,7 @@ function xows_gui_self_stat_ibox_oninput(value)
 }
 
 /**
- * Open self status message input box
+ * Opens User (own) Status Input Dialog
  */
 function xows_gui_self_stat_ibox_open()
 {
@@ -1995,16 +2054,13 @@ function xows_gui_self_stat_ibox_open()
     xows_gui_self_stat_ibox_oninput, true);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Chat Frame Routines
+ * Chat Frame Interaction
  *
- * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Chat Frame Interactions - User Click
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Chat Header on-click callback function
+ * Handles Chat-Frame header click events
  *
  * @param   {object}    event     Event object associated with trigger
  */
@@ -2057,13 +2113,13 @@ function xows_gui_chat_head_onclick(event)
   }
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Upload Interactions
+ * File-Upload Interaction
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle click or File Upload dialog
+ * Handles File-Upload progression dialog click events
  *
  * @param   {object}    event     Event object associated with trigger
  */
@@ -2074,8 +2130,9 @@ function xows_gui_upld_onclick(event)
 }
 
 /**
- * Closes File Upload progression dialog, if an upload is currently
- * processing, it is aborted.
+ * Closes File-Upload progression dialog.
+ *
+ * If an upload is currently processing, it is aborted.
  *
  * @param   {object}    peer      Peer object
  */
@@ -2096,7 +2153,7 @@ function xows_gui_upld_close(peer)
 }
 
 /**
- * File Upload Frame open
+ * Starts new File-Upload and opens progression dialog.
  *
  * @param   {object}    peer      Peer object
  * @param   {object}    file      File object to upload
@@ -2129,7 +2186,7 @@ function xows_gui_upld_start(peer, file)
 }
 
 /**
- * Handles File Upload download progress
+ * Handles File-Upload progression events (forwarded from CLI Module)
  *
  * @param   {object}    peer      Peer object
  * @param   {number}    percent   Data upload progression in percent
@@ -2141,7 +2198,9 @@ function xows_gui_upld_onporg(peer, percent)
 }
 
 /**
- * Handles File Upload download finished (either success, error or abort)
+ * Handles File Upload finished events (forwarded from CLI Module)
+ *
+ * The upload may finish on success, error or abort.
  *
  * @param   {object}    peer      Peer object
  * @param   {number}    stat      Upload status code (sucess, error, etc.)
@@ -2180,18 +2239,18 @@ function xows_gui_upld_onload(peer, stat, data)
   xows_gui_upld_close(peer);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Page Screen Dialogs
+ * Contextual Pages
  *
- * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Page Screen - Wait Screen Page
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Contextual Pages - Connection (wait) Page
+ * ---------------------------------------------------------------------------*/
 /**
- * Connection Waiting page on-click event callback function
+ * Handles Connection (wait) Page click events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_wait_onclick(target)
 {
@@ -2209,7 +2268,7 @@ function xows_gui_page_wait_onclick(target)
 }
 
 /**
- * Wait Screen page open
+ * Opens the Connection (wait) Page.
  *
  * @param   {string}    text      Message to display
  */
@@ -2222,13 +2281,13 @@ function xows_gui_page_wait_open(text)
   xows_doc_page_open("page_wait",false,null,null,xows_gui_page_wait_onclick);
 }
 
-/* -------------------------------------------------------------------
- * Page Screen - User Login Page
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Contextual Pages - User Login (auth) Page
+ * ---------------------------------------------------------------------------*/
 /**
- * User Login page on-input event callback function
+ * Handles User Login (auth) Page character input events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_auth_oninput(target)
 {
@@ -2238,9 +2297,9 @@ function xows_gui_page_auth_oninput(target)
 }
 
 /**
- * User Login page on-click event callback function
+ * Handles User Login (auth) Page click events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_auth_onclick(target)
 {
@@ -2267,7 +2326,7 @@ function xows_gui_page_auth_onclick(target)
 }
 
 /**
- * User Login page open
+ * Opens User Login (auth) Page
  */
 function xows_gui_page_auth_open()
 {
@@ -2289,13 +2348,13 @@ function xows_gui_page_auth_open()
                      xows_gui_page_auth_onclick);
 }
 
-/* -------------------------------------------------------------------
- * Page Screen - User Register Page
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Contextual Pages - User Register (regi) Page
+ * ---------------------------------------------------------------------------*/
 /**
- * User Register page on-input event callback function
+ * Handles User Register (regi) Page character input events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_regi_oninput(target)
 {
@@ -2309,9 +2368,9 @@ function xows_gui_page_regi_oninput(target)
 }
 
 /**
- * User Register page on-click event callback function
+ * Handles User Register (regi) Page click events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_regi_onclick(target)
 {
@@ -2348,7 +2407,7 @@ function xows_gui_page_regi_onclick(target)
 }
 
 /**
- * User Register page open
+ * Opens User Register (regi) Page
  */
 function xows_gui_page_regi_open()
 {
@@ -2367,11 +2426,12 @@ function xows_gui_page_regi_open()
                                             xows_gui_page_regi_onclick);
 }
 
-/* -------------------------------------------------------------------
- * Page Screen - User Profile Page
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Contextual Pages - User Profile (user) Page
+ * ---------------------------------------------------------------------------*/
 /**
- * User Profile page on-abort callback function
+ * Handles User Profile (user) Page abortion (click on Popup Dialog Abort
+ * button)
  */
 function xows_gui_page_user_onabort()
 {
@@ -2395,7 +2455,8 @@ function xows_gui_page_user_onabort()
 }
 
 /**
- * User Profile page on-valid callback function
+ * Handles User Profile (user) Page validation (click on Popup Dialog Valid
+ * button)
  */
 function xows_gui_page_user_onvalid()
 {
@@ -2406,9 +2467,9 @@ function xows_gui_page_user_onvalid()
 }
 
 /**
- * User Profile page on-input event callback function
+ * Handles User Profile (user) Page character input events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_user_oninput(target)
 {
@@ -2428,9 +2489,9 @@ function xows_gui_page_user_oninput(target)
 }
 
 /**
- * User Profile page on-click event callback function
+ * Handles User Profile (user) Page click events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_user_onclick(target)
 {
@@ -2460,11 +2521,11 @@ function xows_gui_page_user_onclick(target)
 }
 
 /**
- * User Profile page callback avatar file change event
+ * Handles User Profile (user) Page file element change events
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {object}    event     Event object
  */
-function xows_gui_page_user_ev_file(event)
+function xows_gui_page_user_onfile(event)
 {
   const user_file = xows_doc("user_file");
 
@@ -2494,16 +2555,16 @@ function xows_gui_page_user_ev_file(event)
 }
 
 /**
- * User Profile page on-close callback function
+ * Handles User Profile (user) Page Close (user closed the page)
  */
 function xows_gui_page_user_onclose()
 {
   // remove "change" event listener to file input
-  xows_doc_listener_rem(xows_doc("user_file"),"change",xows_gui_page_user_ev_file);
+  xows_doc_listener_rem(xows_doc("user_file"),"change",xows_gui_page_user_onfile);
 }
 
 /**
- * User Profile page open
+ * Opens User Profile (user) Page
  */
 function xows_gui_page_user_open()
 {
@@ -2519,27 +2580,33 @@ function xows_gui_page_user_open()
                                         xows_gui_page_user_onclick);
 
   // add "change" event listener to file input
-  xows_doc_listener_add(xows_doc("user_file"),"change",xows_gui_page_user_ev_file);
+  xows_doc_listener_add(xows_doc("user_file"),"change",xows_gui_page_user_onfile);
 }
 
 
-/* -------------------------------------------------------------------
- * Page Screen - Account options Page
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Contextual Pages - Account Options (acct) Page
+ * ---------------------------------------------------------------------------*/
 /**
- * Account options page on-abort callback function
+ * Handles Account Options (acct) Page abortion (click on Popup-Dialog Abort
+ * button)
+ *
+ * (placeholder, not yet used)
  */
 function xows_gui_page_acct_onabort() {}
 
 /**
- * Account options page on-valid callback function
+ * Handles Account Options (acct) Page validation (click on Popup-Dialog Valid
+ * button)
+ *
+ * (placeholder, not yet used)
  */
 function xows_gui_page_acct_onvalid() {}
 
 /**
- * Account options page on-input event callback function
+ * Handles Account Options (acct) Page character input events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_acct_oninput(target)
 {
@@ -2551,9 +2618,13 @@ function xows_gui_page_acct_oninput(target)
 }
 
 /**
- * Account options page handle change password result
+ * Handles Account Options (acct) Page password change result
  *
- * @param   {object}    target    Target object of the triggered Event
+ * This handles resceived password change query result to show the proper
+ * success or error messages.
+ *
+ * @param   {string}    type    Result type ("result" or "error")
+ * @param   {object}    error   Error data if any
  */
 function xows_gui_page_acct_onchpas(type, error)
 {
@@ -2576,9 +2647,9 @@ function xows_gui_page_acct_onchpas(type, error)
 }
 
 /**
- * Account options page on-click event callback function
+ * Handles Account Options (acct) Page click events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_acct_onclick(target)
 {
@@ -2623,12 +2694,12 @@ function xows_gui_page_acct_onclick(target)
 }
 
 /**
- * Account options page on-close callback function
+ * Handles Account Options (acct) Page Close (user closed the page)
  */
 function xows_gui_page_acct_onclose() {}
 
 /**
- * Account options page open
+ * Opens Account Options (acct) Page
  */
 function xows_gui_page_acct_open()
 {
@@ -2652,19 +2723,48 @@ function xows_gui_page_acct_open()
                                         xows_gui_page_acct_onclick);
 }
 
-/* -------------------------------------------------------------------
- *
- * Popup Dialog-Box
- *
- * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Popup Dialog-Box - Contact/Occupant Profile
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Account Deletion Message-Dialog (Account Options (acct) Page)
+ * ---------------------------------------------------------------------------*/
 /**
- * Occupant Infos/Manage page on-input callback function
+ * Handles Account Deletion Message-Dialog abortion (click on Abort button)
  *
- * @param   {object}   peer    Occupant or Contact object to show/manage
- * @param   {object}   target  Target object of the triggered Event
+ * (Dummy function, required to show 'Abort' button)
+ */
+function xows_gui_acct_unrg_mbox_onabort() {}
+
+/**
+ * Handles Account Deletion Message-Dialog validation (click on Valid button)
+ */
+function xows_gui_acct_unrg_mbox_onvalid()
+{
+  xows_cli_regi_remove(null, null);
+}
+
+/**
+ * Opens Account Deletion Message-Dialog
+ */
+function xows_gui_acct_unrg_mbox_open()
+{
+  // Open Message Dialog-Box
+  xows_doc_mbox_open(XOWS_STYL_ASK, "Account deletion",
+                     "Are you sure you want to delete your XMPP/Jabber account on this server ? This action cannot be reversed.",
+                     xows_gui_acct_unrg_mbox_onvalid, "Yes, farewell",
+                     xows_gui_acct_unrg_mbox_onabort, "God damn, NO !");
+}
+
+/* ---------------------------------------------------------------------------
+ *
+ * Contact Profile Popup
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles Contact Profile Popup click events
+ *
+ * This only handle click on "Subscribe" button if present.
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_prof_onclick(peer, target)
 {
@@ -2680,47 +2780,12 @@ function xows_gui_prof_onclick(peer, target)
 }
 
 /**
- * Occupant Infos/Manage page open
+ * Opens Contact Profile Popup
  *
- * @param   {object}   peer    Occupant or Contact object to show/manage
+ * @param   {object}   peer    Peer object (Occupant or Contact to show)
  */
 function xows_gui_prof_open(peer)
 {
   // Open Contact Profile popup
   xows_doc_prof_open(peer, xows_gui_prof_onclick);
-}
-
-
-/* -------------------------------------------------------------------
- * Message Dialog-Box - Account deletion Message-Dialog
- * -------------------------------------------------------------------*/
-/**
- * Account deletion message box on-abort callback function
- */
-function xows_gui_acct_unrg_mbox_onabort()
-{
-
-}
-
-/**
- * Account deletion message box on-valid callback function
- */
-function xows_gui_acct_unrg_mbox_onvalid()
-{
-  xows_cli_regi_remove(null, null);
-}
-
-/**
- * Account deletion message box open
- *
- * @param   {object}    occu      Occupant object
- * @param   {number}    affi      Affiliation value to set
- */
-function xows_gui_acct_unrg_mbox_open()
-{
-  // Open Message Dialog-Box
-  xows_doc_mbox_open(XOWS_STYL_ASK, "Account deletion",
-                     "Are you sure you want to delete your XMPP/Jabber account on this server ? This action cannot be reversed.",
-                     xows_gui_acct_unrg_mbox_onvalid, "Yes, farewell",
-                     xows_gui_acct_unrg_mbox_onabort, "God damn, NO !");
 }

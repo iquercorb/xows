@@ -33,22 +33,20 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         GUI API Interface
+ * GUI Module - Chat History
  *
- *                  Chat Histor Management Sub-Module
- *
- * ------------------------------------------------------------------ */
-/* -------------------------------------------------------------------
- * Chat History - Scroll routines
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat History - Scrolling management
+ * ---------------------------------------------------------------------------*/
 /**
- * Get the main chat last saved scroll position (relative to bottom)
- * corresponding to the specified peer.
+ * Returns the Chat-History scroll position of the specified Peer's
+ * chat interface.
  *
- * If the specified Peer history is offscreen, it returns value from
- * the offscreen dummy object.
+ * The returned scroll position is not the 'scrollTop' property but in
+ * contrary the computed scroll position relative to bottom of client area.
  *
  * @param   {object}    peer      Peer object to get scroll value
  */
@@ -58,16 +56,13 @@ function xows_gui_hist_scrl_get(peer)
   if(peer === xows_gui_peer) {
     return document.getElementById("chat_hist").scrollBottom;
   } else {
-    //return parseInt(xows_doc_frag_find(peer.addr,"chat_hist").dataset.scrollbottom);
     return parseInt(xows_doc_frag_db.get(peer.addr).getElementById("chat_hist").dataset.scrollbottom);
   }
 }
 
 /**
- * Move to bottom the main chat scroll corresponding to the specified peer
- *
- * If the specified Peer history is offscreen, the function operate on
- * the offscreen dummy object.
+ * Moves to bottom the Chat-History scroll of the specified Peer's
+ * chat interface.
  *
  * @param   {object}    peer      Peer object to get scroll value
  * @param   {boolean}  [smooth]   Perform smooth scroll
@@ -85,18 +80,19 @@ function xows_gui_hist_scrl_down(peer, smooth = true)
   }
 }
 
-/* -------------------------------------------------------------------
- * Chat History - Scroll and resize handling
- * -------------------------------------------------------------------*/
 /**
- * setTimeout handle for history fetch temporization
+ * Stored setTimeout handle/reference for history fetch temporization
  */
 let xows_gui_hist_fetch_hto = null;
 
 /**
- * Callback function to handle user scroll the chat history window
+ * Handles Chat-History scroll events.
  *
- * @param   {object}    event     Event object associated with trigger
+ * This performs required actions according Chat-History scroll position
+ * changes. This is trigger by user gesture, the related Peer is then assumed
+ * to be the currently selected one.
+ *
+ * @param   {object}    event     Event object
  */
 function xows_gui_hist_onscroll(event)
 {
@@ -126,13 +122,16 @@ function xows_gui_hist_onscroll(event)
   xows_gui_edit_alrt_update(xows_gui_peer, chat_hist.scrollBottom, chat_hist.clientHeight);
 }
 
-/* -------------------------------------------------------------------
- * Chat History - Interactions
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat History - Messages Interactions
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function to handle user click in chat history
+ * Handles Chat-History click events
  *
- * @param   {object}    event     Event object associated with trigger
+ * This detects click on messages actions buttons and performs required
+ * actions accordingly.
+ *
+ * @param   {object}    event     Event object
  */
 function xows_gui_hist_onclick(event)
 {
@@ -206,15 +205,18 @@ function xows_gui_hist_onclick(event)
     }
   }
 }
-/* -------------------------------------------------------------------
- * Chat History - Management routines
- * -------------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------
+ * Chat History - Messages Management
+ * ---------------------------------------------------------------------------*/
 /**
- * Update chat history messages avatar and nickname of the specified
- * author.
+ * Updates the Chat-History messages authors's visual content.
  *
- * @param   {object}    peer      Chat history Peer, Room or Contact
- * @param   {object}    author    Author Peer object to update message
+ * This updates authors's avatar and nickname of all history messages to
+ * reflects Peers current (updated) state.
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {object}    author    Author's Peer object to be updated
  */
 function xows_gui_hist_update(peer, author)
 {
@@ -248,8 +250,10 @@ function xows_gui_hist_update(peer, author)
 }
 
 /**
- * Update chat history messages after connection resume to mark
- * messages as failed.
+ * Updates the Chat-History messages state following connection resume.
+ *
+ * This marks as "sent failed" all the messages that cannot have been sent
+ * during connection loss.
  *
  * @param   {object}    peer      Chat history Peer, Room or Contact
  */
@@ -270,10 +274,14 @@ function xows_gui_hist_resume(peer)
 }
 
 /**
- * Find history message <li-mesg> element corresponding to specified ID
+ * Find Chat-History message element (<li-mesg>) matching the suplied
+ * parameters.
  *
- * If tomb parameter is set to true and the specified messae was not found,
- * a dummy tombstone message is returned.
+ * The 'id' parameter can be the XMPP message raw id, or the message's
+ * Unique and Stable Stanza ID.
+
+ * If 'tomb' parameter is set to true and the specified message was not found,
+ * a dummy tombstone message element is returned.
  *
  * @param   {object}    peer      Peer object
  * @param   {string}    id        Message id or Unique and Stable Stanza ID
@@ -308,17 +316,22 @@ function xows_gui_hist_mesg_find(peer, id, from, tomb = false)
   return li_msg;
 }
 
-/* -------------------------------------------------------------------
- * Chat History - Content (messages) management
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat History - History Modification (Message deletion, correction etc.)
+ * ---------------------------------------------------------------------------*/
 /**
- * Perform corrected message replacement with proper references update
+ * Performs Chat-History message replacement for Message-Correction
+ * instruction.
+ *
+ * This inserts the corrected (replacement) message into History, discards
+ * (actually hides) the replaced message, then changes all references (reply-to,
+ * quote, etc.) to replaced message.
  *
  * @param   {object}    peer        Peer object
- * @param   {object}    li_old      Replaced message <li-mesg> element
- * @param   {object}    li_new      New message <li-mesg> element
+ * @param   {element}   li_old      Replaced message <li-mesg> element
+ * @param   {element}   li_new      New message <li-mesg> element
  *
- * @return  {object}    Inserted new message
+ * @return  {element}   Inserted message element
  */
 function xows_gui_hist_mesg_repl(peer, li_old, li_new)
 {
@@ -345,8 +358,10 @@ function xows_gui_hist_mesg_repl(peer, li_old, li_new)
 }
 
 /**
- * Handle incomming message retraction from the server to update message
- * history and references
+ * Performs Chat-History message discard for Message-Retraction instruction.
+ *
+ * This discards (actually hides) the rectracted message then update all
+ * references to that messages to insert tombstones.
  *
  * @param   {object}    peer      Peer object
  * @param   {string}    usid      Message Unique and Stable ID to retract
@@ -385,7 +400,10 @@ function xows_gui_hist_mesg_retr(peer, usid)
 }
 
 /**
- * Highlight (blue) the specified Move scroll to the specified element
+ * Highlights the Chat-History message element matching supplied ID.
+ *
+ * This add HIGHLIGHT style to the message element and moves the Chat-History
+ * scroll to that element.
  *
  * @param   {object}    peer      Peer object to get scroll value
  * @param   {object}    id        Message ID or Unique and Stable ID
@@ -413,15 +431,19 @@ function xows_gui_hist_mesg_hligh(peer, id)
 }
 
 /**
- * Reference to last rised Peer (to avoid unnecessary processing)
+ * Stored reference to last rised Peer (to avoid unnecessary processing)
  */
 let xows_gui_hist_last_rise = null;
 
 /**
- * Callback function to add sent or received message to the history
- * window
+ * Handles received Chat-History message related to Peer (forwarded from CLI
+ * Module)
  *
- * @param   {object}    peer      Related Peer object
+ * Notice that message author may not be the related Chat-History Peer itself,
+ * since it can be a MUC Room (in this case autor is a MUC Occupant) or the
+ * user itself, receiving "echo" of its sent message.
+ *
+ * @param   {object}    peer      Peer object
  * @param   {object}    mesg      Message object
  * @param   {boolean}   wait      Message wait for receipt
  * @param   {boolean}   self      Message is an echo of one sent by user itself
@@ -497,7 +519,7 @@ function xows_gui_hist_onrecv(peer, mesg, wait, self, error)
       xows_gui_badg_unrd_mesg(peer, mesg.id);
 
     // If GUI is not in focus, send browser Push Notification
-    if(alert && !xows_gui_has_focus)
+    if(alert && !xows_gui_wnd_has_focus)
       xows_gui_wnd_noti_emit(peer, mesg.body);
   }
 
@@ -520,8 +542,8 @@ function xows_gui_hist_onrecv(peer, mesg, wait, self, error)
 }
 
 /**
- * Handle incomming receipts from the server to update history message
- * element style
+ * Handles received Message-Receipt related to Peer (forwarded from CLI
+ * Module)
  *
  * @param   {object}    peer      Peer object
  * @param   {string}    id        Receipt related message Id
@@ -538,37 +560,29 @@ function xows_gui_hist_onrecp(peer, id)
 }
 
 /**
- * Handle incomming retraction message
+ * Handles received Message-Retraction related to Peer (forwarded from CLI
+ * Module)
  *
  * @param   {object}    peer      Peer object
- * @param   {string}    usid      Retracted message SID
+ * @param   {string}    usid      Retracted message Unique and Stable ID
  */
 function xows_gui_hist_onretr(peer, usid)
 {
   xows_gui_hist_mesg_retr(peer, usid);
 }
 
-/* -------------------------------------------------------------------
- * Main Screen - Chat Frame - History - Archive Management (MAM)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat History - Message Archive Management (MAM)
+ * ---------------------------------------------------------------------------*/
 /**
- * Reference to setTimeout sent to temporize archive queries
- */
-const xows_gui_mam_query_to = new Map();
-
-/**
- * Query arvhived message for the specified Peer
+ * Query arvhived messages for the specified Peer
  *
  * @param   {object}    peer      Peer object
- * @param   {number}    delay     Delay to temporize query
  * @param   {boolean}   newer     If true, fetch newer message instead of older
  * @param   {number}   [count]    Count of visible message to get
  */
-function xows_gui_mam_query(peer, delay, newer, count = 0)
+function xows_gui_mam_query(peer, newer, count = 0)
 {
-  if(xows_gui_mam_query_to.has(peer))  //< Query already pending
-    return;
-
   const hist_ul = xows_gui_doc(peer, "hist_ul");
 
   let end, start = null; //< IMPORTANT, set null for logic purposes
@@ -597,31 +611,26 @@ function xows_gui_mam_query(peer, delay, newer, count = 0)
   if(count === 0)
     count = xows_options.cli_archive_count;
 
-  // To prevent flood and increase ergonomy the archive query is temporised
-  xows_gui_mam_query_to.set(peer, setTimeout(xows_cli_mam_fetch, delay,
-                                             peer, count,
-                                             start, end,
-                                             xows_gui_mam_parse));
+  // Fetch archived messages
+  xows_cli_mam_fetch(peer, count, start, end, xows_gui_mam_parse);
 }
 
 /**
  * Fetch the newer available archived messages for the specified Peer
  *
  * @param   {object}    peer      Peer object
- * @param   {number}    delay     Temporization delay (in miliseconds)
  */
-function xows_gui_mam_fetch_newer(peer, delay = 0)
+function xows_gui_mam_fetch_newer(peer)
 {
-  xows_gui_mam_query(peer, delay, true);
+  xows_gui_mam_query(peer, true);
 }
 
 /**
  * Fetch older available archived messages for the specified Peer
  *
  * @param   {object}    peer      Peer object
- * @param   {number}    delay     Temporization delay (in miliseconds)
  */
-function xows_gui_mam_fetch_older(peer, delay = 0)
+function xows_gui_mam_fetch_older(peer)
 {
   let count = xows_options.cli_archive_count;
 
@@ -635,11 +644,12 @@ function xows_gui_mam_fetch_older(peer, delay = 0)
   }
 
   if(count > 0)
-    xows_gui_mam_query(peer, delay, false, count);
+    xows_gui_mam_query(peer, false, count);
 }
 
 /**
- * Callback function to handle the received archives for a contacts
+ * Handles received Chat-History archived messages related to Peer (forwarded
+ * from CLI Module)
  *
  * @param   {object}    peer      Archive related peer (Contact or Room)
  * @param   {boolean}   newer     Result are newer rather than older
@@ -653,26 +663,10 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
 
   let li_ref = null;
 
-  /*
-  // Check whether we must append or prepend received archived messages
-  if(result.length && hist_ul.children.length) {
-    // We compare time (unix epoch) to ensure last archived message is
-    // older (or equal) than the current oldest history message.
-    if(hist_ul.firstElementChild.dataset.time >= result[result.length-1].time) {
-      li_ref = hist_ul.firstElementChild; //< node to insert messages before
-    } else {
-      older = false;
-    }
-  }
-  */
-
   if(!newer)
     li_ref = hist_ul.firstElementChild; //< node to insert messages before
 
   const hist_beg = xows_gui_doc(peer, "hist_beg");
-
-  // Disable all spin loader
-  //hist_beg.className = "";
 
   let li_rep, li_rpl, li_prv, added = 0;
 
@@ -736,8 +730,6 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
     hist_beg.className = "HIST-START";
   }
 
-  xows_gui_mam_query_to.delete(peer); //< Allow a new archive query
-
   // Inform MAM loaded
   if(newer) {
     xows_load_task_done(peer, XOWS_FETCH_NEWR);
@@ -746,23 +738,21 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
   }
 }
 
-/* -------------------------------------------------------------------
- *
- * Messages Interactions
- *
- * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Messages Interactions - Message Correction Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat History - Message Correction Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * History message correction Cancel function
+ * Cancel Chat-History message correction.
  *
- * @param   {element}    [li_msg]   Instance of <li-mesg> or null
+ * This closes the Message correction input dialog and reset related
+ * parameters.
+ *
+ * @param   {element}     li_msg   Message element (<li-mesg>) or null
  */
 function xows_gui_mesg_repl_dlg_close(li_msg)
 {
   // Check whether event directely reference object
-  if(!li_msg || li_msg.tagName != "LI-MESG") {
+  if(!li_msg || li_msg.tagName !== "LI-MESG") {
     // We need to search any message in edit mode
     li_msg = xows_doc("hist_mesg").querySelector(".MESG-EDITOR");
   }
@@ -772,9 +762,9 @@ function xows_gui_mesg_repl_dlg_close(li_msg)
 }
 
 /**
- * History message correction Enable function
+ * Opens Chat-History message correction input dialog.
  *
- * @param   {element}   li_msg    Instance of <li-mesg> to open editor in
+ * @param   {element}   li_msg    Message element (<li-mesg>) to be corrected.
  */
 function xows_gui_mesg_repl_dlg_open(li_msg)
 {
@@ -791,10 +781,9 @@ function xows_gui_mesg_repl_dlg_open(li_msg)
 }
 
 /**
- * History message correction validation (enter) function, called when
- * user press the Enter key (see xows_gui_wnd_onkey() function).
+ * Validates Chat-History message correction.
  *
- * @param   {object}    inpt      Instance of <mesg-inpt> element
+ * @param   {element}    inpt     Related input element (Correction dialog Input field).
  */
 function xows_gui_mesg_repl_dlg_valid(inpt)
 {
@@ -816,13 +805,13 @@ function xows_gui_mesg_repl_dlg_valid(inpt)
   xows_tpl_mesg_edit_remove(li_msg);
 }
 
-/* -------------------------------------------------------------------
- * Messages Interactions - Message Retract Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat History - Message Retraction Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Cancel history message retraction (delete) (close dialog)
+ * Cancel Chat-History message retraction.
  *
- * @param   {element}    [li_msg]   Instance of <li-mesg> or null
+ * @param   {element}   li_msg   Message element (<li-mesg>) or null
  */
 function xows_gui_mesg_retr_dlg_abort(li_msg)
 {
@@ -837,9 +826,9 @@ function xows_gui_mesg_retr_dlg_abort(li_msg)
 }
 
 /**
- * Open history message retraction (delete) dialog
+ * Opens Chat-History message retraction dialog
  *
- * @param   {element}   li_msg    Instance of <li-mesg> to open editor in
+ * @param   {element}   li_msg    Message element (<li-mesg>) to be retracted
  */
 function xows_gui_mesg_retr_dlg_open(li_msg)
 {
@@ -851,10 +840,9 @@ function xows_gui_mesg_retr_dlg_open(li_msg)
 }
 
 /**
- * History message correction validation (enter) function, called when
- * user press the Enter key (see xows_gui_wnd_onkey() function).
+ * Validates Chat-History message retraction.
  *
- * @param   {element}   li_msg    Instance of <li-mesg> to retract
+ * @param   {element}   li_msg    Message element (<li-mesg>) to be retracted
  */
 function xows_gui_mesg_retr_dlg_valid(li_msg)
 {
@@ -864,5 +852,4 @@ function xows_gui_mesg_retr_dlg_valid(li_msg)
   // Send message retraction
   if(usid) xows_cli_msg_retr(xows_gui_peer, usid);
 }
-
 

@@ -33,99 +33,59 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                          XMPP API Layer
+ * XMPP Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 /**
- * XMPP connection error codes
+ * Constant values for XMPP connection error codes
  */
-const XOWS_XMPP_FAIL = 0x040;
-const XOWS_XMPP_AUTH = 0x080;
-const XOWS_XMPP_REGI = 0x100;
-const XOWS_XMPP_HGUP = 0x200;
-
-//const XOWS_NS_MODERATE     = "urn:xmpp:message-moderate:0";
-//const XOWS_NS_MARKERS      = "urn:xmpp:chat-markers";
-
-/* -------------------------------------------------------------------
- *
- * XMPP API - Socket routines and events
- *
- * -------------------------------------------------------------------*/
-/**
- * Handle socket open event
- */
-function xows_xmp_sck_onopen()
-{
-  // Initialize XMPP session open
-  xows_xmp_fram_open_send();
-}
+const XOWS_XMPP_FAIL = 0x040;   //< Stream or session error
+const XOWS_XMPP_AUTH = 0x080;   //< Authentication error
+const XOWS_XMPP_REGI = 0x100;   //< Registration error
+const XOWS_XMPP_HGUP = 0x200;   //< Unexpected connection close
 
 /**
- * Handle socket close event
- *
- * @parma   {number}    code      Socket error code or 0
- * @param   {string}   [text]     Optional error message
- */
-function xows_xmp_sck_onclose(code, text)
-{
-  if(code) { //< Connection error
-
-    // If socket close is on error and resource is bound, this
-    // mean the socket close occurred during a valid session
-    if(xows_xmp_sess) {
-      xows_log(1,"xmp_sck_onclose","connection lost");
-      code |= XOWS_XMPP_HGUP;
-    } else {
-      xows_log(1,"xmp_sck_onclose","connection failled");
-      code |= XOWS_XMPP_FAIL;
-    }
-
-    xows_xmp_failure(code, "unable to connect to remote server");
-  }
-}
-
-/* -------------------------------------------------------------------
- *
- * XMPP API - Client-side setup
- *
- * -------------------------------------------------------------------*/
-/**
- * Server connection URL
+ * Storage for current connection WebSocket address
  */
 let xows_xmp_addr = null;
 
 /**
- * XMPP Server domain
- */
-let xows_xmp_host = null;
-
-/**
- * XMPP authentication data
+ * Storage for session authentication data
  */
 const xows_xmp_auth = {"bare":null,"user":null,"pass":null,"regi":false};
 
 /**
- * XMPP resource/bind data
+ * Storage for current session host domain
+ */
+let xows_xmp_host = null;
+
+/**
+ * Storage for session resource/bind data
  */
 const xows_xmp_bind = {"full":null,"bare":null,"node":null,"resc":null};
 
 /**
- * XMPP session/connection status
+ * Global flag for session/connection status
  */
 let xows_xmp_sess = false;
 
+/* ---------------------------------------------------------------------------
+ *
+ * Module Events Configuration
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * XMPP interface error event client callback
+ * Module Event-Forwarding callback for Unhandled error received
  */
 let xows_xmp_fw_onerror = function() {};
 
 /**
- * Set callback functions for parse result of received common stanzas
+ * Set callback functions for Module events.
  *
- * Possibles slot parameter value are the following:
+ * The possible events are the following:
+ *
  *  - session   : XMPP Session open
  *  - presence  : Contact presence
  *  - subscrib  : Contact subscribe request
@@ -139,15 +99,15 @@ let xows_xmp_fw_onerror = function() {};
  *  - error     : Received error
  *  - close     : Session close
  *
- * @param   {string}    type      Callback slot
+ * @param   {string}    event     Callback slot
  * @param   {function}  callback  Callback function to set
  */
-function xows_xmp_set_callback(type, callback)
+function xows_xmp_set_callback(event, callback)
 {
   if(!xows_isfunc(callback))
     return;
 
-  switch(type.toLowerCase()) {
+  switch(event.toLowerCase()) {
     case "sessready": xows_xmp_fw_sess_onready = callback; break;
     case "sessclose": xows_xmp_fw_sess_onclose = callback; break;
     case "rostpush":  xows_xmp_fw_rost_onrecv = callback; break;
@@ -169,9 +129,32 @@ function xows_xmp_set_callback(type, callback)
 
 /* -------------------------------------------------------------------
  *
- * XMPP API - Utilitaries functions
+ * Utilities functions
  *
  * -------------------------------------------------------------------*/
+/**
+ * Creates a new Internal Message object.
+ *
+ * This creates a new dictionary object that represents a received or sent
+ * XMPP chat message. Such objects are used to store and transfert parsed
+ * message data from and to the Module.
+ *
+ * @param   {string}    id      Message 'id' attribute
+ * @param   {string}    to      Message 'to' attribute
+ * @param   {string}    from    Message 'from' attribute
+ * @param   {string}    type    Message 'type' attribute
+ * @param   {string}   [body]   Optional Message <body> node text content
+ * @param   {string}   [time]   Optional Message parsed or created time
+ * @param   {string}   [recp]   Optional Receipt <received> node 'id' attribute
+ * @param   {string}   [retr]   Optional Retract <retract> node 'id' attribute
+ * @param   {string}   [repl]   Optional Correction <replace> node 'id' attribute
+ * @param   {string}   [rpid]   Optional Replies <reply> node 'id' attribute
+ * @param   {string}   [rpto]   Optional Replies <reply> node 'to' attribute
+ * @param   {string}   [orid]   Optional UID <origin-id> node 'id' attribute
+ * @param   {string}   [szid]   Optional UID <stanza-id> node 'id' attribute
+ * @param   {string}   [ocid]   Optional MUC <occupant-id> node 'id' attribute
+ * @param   {string}   [page]   Optional MAM Result (Page) 'id' attribute
+ */
 function xows_xmp_message_forge(id, to, from, type, body, time, recp, retr, repl, rpid, rpto, orid, szid, ocid, page)
 {
   // Set default time
@@ -198,9 +181,9 @@ function xows_xmp_message_forge(id, to, from, type, body, time, recp, retr, repl
 }
 
 /**
- * Parse the given error <iq> and generate generic log output
+ * Parses the given error result <iq> stanza and generate generic log output.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * @param   {element}   stanza    Received <iq> stanza
  * @param   {number}    level     Log level to set
  * @param   {string}    scope     Message origin, scope or context
  *
@@ -229,7 +212,7 @@ function xows_xmp_error_log(stanza, level, scope)
 }
 
 /**
- * Parse the given error <iq> and returns the parsed error as
+ * Parses the given error result <iq> and returns the parsed error as
  * object.
  *
  * Generated object has the following properties:
@@ -238,7 +221,7 @@ function xows_xmp_error_log(stanza, level, scope)
  *    name : Tag name of <error> node's child (eg. "bad-request" ... )
  *    text : Inner text of <error> node's child.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * @param   {element}   stanza    Received <iq> stanza
  *
  * @return  {object}    Parsed error generic data
  */
@@ -271,11 +254,11 @@ function xows_xmp_error_parse(stanza)
 
 /* -------------------------------------------------------------------
  *
- * XMPP API - Connect / Disconnect routines
+ * Connect / Disconnect
  *
  * -------------------------------------------------------------------*/
 /**
- * Resets all session and connection parameters to initial state
+ * Resets all session and connection parameters to initial state.
  *
  * @param   {boolean}   auth    Indicate to reset auth data
  */
@@ -306,12 +289,12 @@ function xows_xmp_reset(auth = true)
 }
 
 /**
- * Open a new XMPP client session to the specified WebSocket URL
+ * Attempts to connect and login XMPP session at specified WebSocket address.
  *
- * @param   {string}    url       URL to WebSocket service
+ * @param   {string}    url       Server WebSocket address/URL
  * @param   {string}    jid       Authentication JID (user@domain)
  * @param   {string}    password  Authentication password
- * @param   {boolean}   register  If true proceed to register new account
+ * @param   {boolean}   register  Indiractes to proceed new account registration
  */
 function xows_xmp_connect(url, jid, password, register)
 {
@@ -362,8 +345,10 @@ function xows_xmp_connect(url, jid, password, register)
 let xows_xmp_resume_pnd = false;
 
 /**
- * Try to resume XMPP session to the specified WebSocket URL
- * using previousely defined connexion parameter.
+ * Attempts to resume XMPP session.
+ *
+ * Uses the previousely stored WebSocket address and authantication data to
+ * reconnect server then try to recover an interrupted XMPP session.
  */
 function xows_xmp_resume()
 {
@@ -384,9 +369,16 @@ function xows_xmp_resume()
 }
 
 /**
- * Closes XMPP session with failure
+ * Throws XMPP session/connection failure.
  *
- * @parma   {number}    code      Exit code
+ * This is used internally by the Module to throw a connection or session
+ * failure. Triggered scenario depend on current session state.
+ *
+ * Failure that occure during a valid session trigger a connection/session
+ * recover scenario, otherwise this is a connection attempt failure (either due
+ * to authentication failure or stream negotiation problem).
+ *
+ * @parma   {number}    code      Failure code
  * @param   {string}   [text]     Optional information or error message
  */
 function xows_xmp_failure(code, text)
@@ -418,7 +410,7 @@ function xows_xmp_failure(code, text)
 }
 
 /**
- * Closes the XMPP session
+ * Closes the XMPP session.
  */
 function xows_xmp_disconnect()
 {
@@ -436,8 +428,11 @@ function xows_xmp_disconnect()
 }
 
 /**
- * Special function to close session and exit the quickest way
- * possible, used to terminate session when browser exit page
+ * Closes fastly and without precaution the XMPP session.
+ *
+ * This is special session close procedure used in case user closed the
+ * web-client window or tab (unload event) to (try to) properly close
+ * session with server in quickest way possible.
  */
 function xows_xmp_onuload()
 {
@@ -458,31 +453,72 @@ function xows_xmp_onuload()
 }
 
 /**
- * Returns whether XMPP session is currently connected
+ * Returns whether XMPP session is established (open and authenticated).
  *
- * @return  {boolean}   True if session connected, false otherwise
+ * @return  {boolean}   True if session established, false otherwise
  */
 function xows_xmp_connected()
 {
   return xows_xmp_sess;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Basic stanza Send and Receive routines
+ * Socket Management
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * List of XMPP specific XML name space strings
+ * Handles Socket open event.
+ *
+ * This triggers the XMPP stream open scenario.
+ */
+function xows_xmp_sck_onopen()
+{
+  // Initialize XMPP session open
+  xows_xmp_fram_open_send();
+}
+
+/**
+ * Handles Socket close event.
+ *
+ * @parma   {number}    code      Socket error code or 0
+ * @param   {string}   [text]     Optional error message
+ */
+function xows_xmp_sck_onclose(code, text)
+{
+  if(code) { //< Connection error
+
+    // If socket close is on error and resource is bound, this
+    // mean the socket close occurred during a valid session
+    if(xows_xmp_sess) {
+      xows_log(1,"xmp_sck_onclose","connection lost");
+      code |= XOWS_XMPP_HGUP;
+    } else {
+      xows_log(1,"xmp_sck_onclose","connection failled");
+      code |= XOWS_XMPP_FAIL;
+    }
+
+    xows_xmp_failure(code, "unable to connect to remote server");
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ *
+ * Stanza Send and Receive
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Constant value for Jabber Client namespace
  */
 const XOWS_NS_CLIENT       = "jabber:client";
 
 /**
- * Handle socket received message event
+ * Handles Socket received message event.
  *
- * This parse the raw data as XML then forward it to the proper function.
+ * This parses the raw data as XML then forwards it to the proper processing
+ * function according stanza type.
  *
- * @param   {string}    data      Received raw data string
+ * @param   {string}    data      Received data
  */
 function xows_xmp_sck_onrecv(data)
 {
@@ -493,7 +529,7 @@ function xows_xmp_sck_onrecv(data)
   // Session management ack
   if(name === "a") return xows_xmp_sm3_a_recv(stanza);
   if(name === "r") return xows_xmp_sm3_r_recv(stanza);
-  xows_xmp_sm3_track_recv(); //< increase stream-management received counter
+  xows_xmp_sm3_handle_recv(); //< increase stream-management received counter
 
   // Session common stanzas
   if(name === "iq") return xows_xmp_iq_recv(stanza);
@@ -518,21 +554,30 @@ function xows_xmp_sck_onrecv(data)
 }
 
 /**
- * Queue for temporarily unable to send stanzas
+ * Storage for temporarily unable to send queued stanzas.
  */
 const xows_xmp_send_que = [];
 
 /**
- * Send an XMPP stanza with optional callbacks function to handle
- * received result or response for server
+ * Stack for IQ stanza queries result tracking management.
+ */
+const xows_xmp_query_stack = new Map();
+
+/**
+ * Send an XMPP stanza.
  *
- * If the onresult parameter is defined, the callback is called once
- * an stanza with the same id as the initial query is received with
- * the received stanza as unique parameter.
+ * Query Result tracking and processing:
  *
- * @param   {object}    stanza    Stanza XML Element object
- * @param   {function} [onresult] Callback for received query result
- * @param   {function} [onparse]  Callback for parsed result forwarding
+ * If the 'onresult' parameter is defined, an Query Stack entry is added with
+ * the supplied 'onresult' and 'onparse' parameters referenced by the stanza
+ * (usually an IQ query) ID.
+ * If a stanza with that referenced ID (usually an IQ result or error) is
+ * received (it should be), the stanza is forwarded to the 'onresult' callback
+ * with the initially defined 'onparse' as second parameter.
+ *
+ * @param   {element}     stanza      XML node
+ * @param   {function}   [onresult]   Callback for query result forwarding
+ * @param   {function}   [onparse]    Callback for parsed result forwarding
  */
 function xows_xmp_send(stanza, onresult, onparse)
 {
@@ -553,7 +598,7 @@ function xows_xmp_send(stanza, onresult, onparse)
 
   // If callaback is supplied, add request to stack
   if(xows_isfunc(onresult))
-    xows_xmp_iq_stack.set(id,{"onresult":onresult,"onparse":onparse});
+    xows_xmp_query_stack.set(id,{"onresult":onresult,"onparse":onparse});
 
   if(xows_sck_sock && xows_xmp_sess) {
 
@@ -561,7 +606,7 @@ function xows_xmp_send(stanza, onresult, onparse)
     xows_sck_send(xows_xml_serialize(stanza));
 
     // Stream management ack request
-    xows_xmp_sm3_track_sent();
+    xows_xmp_sm3_handle_sent();
 
   } else {
 
@@ -578,16 +623,16 @@ function xows_xmp_send(stanza, onresult, onparse)
 }
 
 /**
- * Send an XMPP stanza without additionnal check
+ * Send an XMPP stanza without additionnal check.
  *
  * This function is used to send XMPP low-level stanza to allow to
  * communicate with server while stream is not established yet.
  *
- * This is required since the common send function queue stanza untile
- * socket open and stream established to allow resume stream
+ * This is required since the normal send function enqueue stanzas until
+ * socket is open and stream established.
  *
- * @param   {object}    stanza    Stanza XML Element object
- * @param   {function} [onresult] Callback for received query result
+ * @param   {element}     stanza      XML node
+ * @param   {function}   [onresult]   Callback for query result forwarding
  */
 function xows_xmp_send_raw(stanza, onresult)
 {
@@ -610,7 +655,7 @@ function xows_xmp_send_raw(stanza, onresult)
 
     // If callaback is supplied, add request to stack
     if(xows_isfunc(onresult))
-      xows_xmp_iq_stack.set(id,{"onresult":onresult,"onparse":null});
+      xows_xmp_query_stack.set(id,{"onresult":onresult,"onparse":null});
   }
 
   // Send serialized data to socket
@@ -618,7 +663,7 @@ function xows_xmp_send_raw(stanza, onresult)
 }
 
 /**
- * Flush stanza queue, sending all pending stanzas stored
+ * Flushes stanza queue, sending all pending stanzas stored
  * during connection loss.
  */
 function xows_xmp_flush()
@@ -635,20 +680,20 @@ function xows_xmp_flush()
     xows_sck_send(xows_xmp_send_que.shift());
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - XMPP Subprotocol for WebSocket (RFC-7395)
+ * XMPP Subprotocol for WebSocket (RFC-7395)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * XMPP Subprotocol for WebSocket (RFC-7395) XMLNS constants
+ * Constant value for XMPP Subprotocol for WebSocket (RFC-7395) XMLNS
  */
 const XOWS_NS_IETF_FRAMING = "urn:ietf:params:xml:ns:xmpp-framing";
 
 /**
- * Parse received XMPP Framing (RFC-7395 Subprotocol for WebSocket)
+ * Parses received Framing Open stanza (RFC-7395 Subprotocol for WebSocket)
  *
- * @param   {object}    stanza    Received <open> stanza
+ * @param   {element}   stanza    Received <open> stanza
  */
 function xows_xmp_fram_open_recv(stanza)
 {
@@ -662,7 +707,7 @@ function xows_xmp_fram_open_recv(stanza)
 }
 
 /**
- * Open Framed Stream (RFC-7395 Subprotocol for WebSocket)
+ * Sends Framing Open stanza (RFC-7395 Subprotocol for WebSocket)
  */
 function xows_xmp_fram_open_send()
 {
@@ -675,9 +720,9 @@ function xows_xmp_fram_open_send()
 }
 
 /**
- * Function to proceed an received <close> stanza
+ * Parses received Framing Close stanza (RFC-7395 Subprotocol for WebSocket)
  *
- * @param   {object}    stanza    Received <close> stanza
+ * @param   {element}   stanza    Received <close> stanza
  */
 function xows_xmp_fram_close_recv(stanza)
 {
@@ -701,7 +746,7 @@ function xows_xmp_fram_close_recv(stanza)
 }
 
 /**
- * Closes the current XMPP session and WebSocket connection
+ * Sends Framing Close stanza (RFC-7395 Subprotocol for WebSocket)
  */
 function xows_xmp_fram_close_send()
 {
@@ -717,25 +762,33 @@ function xows_xmp_fram_close_send()
   xows_sck_send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
  * XMPP API - XMPP Stream Management (XEP-0198)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
+/**
+ * Constant value for XMPP Stream Management (XEP-0198) XMLNS
+ */
 const XOWS_NS_SM3 = "urn:xmpp:sm:3";
 
 /**
- * Data for Stream Management and resume processing
+ * Storage for Stream Management (XEP-0198) data
  */
 const xows_xmp_sm3_data = {id:null,max:null,hr:0,hs:0};
 
 /**
- * Counter for Stream Management sent stanza tracking process
+ * Storage for Stream Management (XEP-0198) stanzas-tracking processing
  */
 const xows_xmp_sm3_track_cnt = {s:0,r:0};
 
 /**
- * Reset Stream Management data
+ * Storage for Stream Management (XEP-0198) stanzas-tracking setTimeout handles
+ */
+const xows_xmp_sm3_track_hto = {s:null,r:null};
+
+/**
+ * Resets Stream Management (XEP-0198) related data
  */
 function xows_xmp_sm3_reset()
 {
@@ -761,19 +814,18 @@ function xows_xmp_sm3_reset()
 }
 
 /**
- * setTimeout Handle for stream-management sent stanza tracking process
- */
-const xows_xmp_sm3_track_hto = {s:null,r:null};
-
-/**
- * Keep track of handled stanza count for Stream Management processing
+ * Updates count of received handled stanzas for Stream-Management processing.
  *
- * It automatically increase count of received (handled) stanza
- * starting from received sStream Management <enabled>
+ * This increases count of received handled stanza starting from received
+ * Stream-Management <enabled> and manages periodic Ack reponse sending.
  *
- * @param   {boolean}   force     Bypass counter and force send request
+ * As recommended by XEP-0198, an Ack reponse will be sent automatically to
+ * server (without request) either each 10 handled stanzas or 60 seconds after
+ * the last handled stanza.
+ *
+ * @param   {boolean}   force     Bypass automated process and send Ack reponse anyway
  */
-function xows_xmp_sm3_track_recv(force)
+function xows_xmp_sm3_handle_recv(force)
 {
   if(xows_xmp_sm3_track_hto.r) {
     clearTimeout(xows_xmp_sm3_track_hto.r);
@@ -792,20 +844,23 @@ function xows_xmp_sm3_track_recv(force)
       // Increase counter
       xows_xmp_sm3_track_cnt.r++;
       // Set timeout to force send a request after 60 seconds
-      xows_xmp_sm3_track_hto.r = setTimeout(xows_xmp_sm3_track_sent, 60000, true);
+      xows_xmp_sm3_track_hto.r = setTimeout(xows_xmp_sm3_handle_sent, 60000, true);
     }
   }
 }
 
 /**
- * Keep track of sent stanza count for Stream Management processing
+ * Updates count of sent stanzas for Stream-Management processing.
  *
- * It automatically send ack request <r/> every five stanza sent or
- * 60 seconds after the last sent stanza.
+ * This increases count of sent stanza starting from received Stream-Management
+ * <enabled> and manages Ack request sending.
  *
- * @param   {boolean}   force     Bypass counter and force send request
+ * An Ack request will be sent automatically to server either
+ * each 10 sent stanzas or 60 seconds after the last sent stanza.
+ *
+ * @param   {boolean}   force     Bypass automated process and send Ack request anyway
  */
-function xows_xmp_sm3_track_sent(force)
+function xows_xmp_sm3_handle_sent(force)
 {
   if(xows_xmp_sm3_track_hto.s) {
     clearTimeout(xows_xmp_sm3_track_hto.s);
@@ -821,15 +876,15 @@ function xows_xmp_sm3_track_sent(force)
       // Increase counter
       xows_xmp_sm3_track_cnt.s++;
       // Set timeout to force send a request after 60 seconds
-      xows_xmp_sm3_track_hto.s = setTimeout(xows_xmp_sm3_track_sent, 60000, true);
+      xows_xmp_sm3_track_hto.s = setTimeout(xows_xmp_sm3_handle_sent, 60000, true);
     }
   }
 }
 
 /**
- * Function to proceed an received <enabled> stanza
+ * Handles received Enabled (<enabled>) Stream Management (XEP-0198) stanza
  *
- * @param   {object}    stanza    Received <stream:error> stanza
+ * @param   {element}   stanza    Received <enabled> stanza
  */
 function xows_xmp_sm3_enabled_recv(stanza)
 {
@@ -851,9 +906,9 @@ function xows_xmp_sm3_enabled_recv(stanza)
 }
 
 /**
- * Function to proceed an received <resumed> stanza
+ * Handles received Resumed (<resumed>) Stream Management (XEP-0198) stanza
  *
- * @param   {object}    stanza    Received <stream:error> stanza
+ * @param   {element}   stanza    Received <resumed> stanza
  */
 function xows_xmp_sm3_resumed_recv(stanza)
 {
@@ -872,9 +927,9 @@ function xows_xmp_sm3_resumed_recv(stanza)
 }
 
 /**
- * Function to proceed an received Stream Management <failed> stanza
+ * Handles received Failed (<failed>) Stream Management (XEP-0198) stanza
  *
- * @param   {object}    stanza    Received <stream:error> stanza
+ * @param   {element}   stanza    Received <failed> stanza
  */
 function xows_xmp_sm3_failed_recv(stanza)
 {
@@ -894,9 +949,9 @@ function xows_xmp_sm3_failed_recv(stanza)
 }
 
 /**
- * Function to proceed an received Stream Management <a/> stanza
+ * Handles received Ack reponse (<a>) Stream Management (XEP-0198) stanza
  *
- * @param   {object}    stanza    Received <stream:error> stanza
+ * @param   {element}   stanza    Received <a> stanza
  */
 function xows_xmp_sm3_a_recv(stanza)
 {
@@ -913,9 +968,9 @@ function xows_xmp_sm3_a_recv(stanza)
 }
 
 /**
- * Function to proceed an received Stream Management <r/> stanza
+ * Handles received Ack request (<r>) Stream Management (XEP-0198) stanza
  *
- * @param   {object}    stanza    Received <stream:error> stanza
+ * @param   {element}   stanza    Received <r> stanza
  */
 function xows_xmp_sm3_r_recv(stanza)
 {
@@ -932,7 +987,7 @@ function xows_xmp_sm3_r_recv(stanza)
 }
 
 /**
- * Function to send an <enable> stanza for Stream Management (3) support
+ * Sends an Enable request (<enable>) for Stream Management (XEP-0198) support
  */
 function xows_xmp_sm3_enable_query()
 {
@@ -940,9 +995,9 @@ function xows_xmp_sm3_enable_query()
 }
 
 /**
- * Send a Stream Management resume query to server
+ * Sends an Resume request (<resume>) for Stream Management (XEP-0198)
  *
- * @param   {object}    stanza    Received <stream:error> stanza
+ * @param   {element}   stanza    Received <stream:error> stanza
  */
 function xows_xmp_sm3_resume_query()
 {
@@ -951,14 +1006,13 @@ function xows_xmp_sm3_resume_query()
                                                  "' h='"+xows_xmp_sm3_data.hr+"'/>");
 }
 
-
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - XMPP Core (RFC-6120)
+ * XMPP Core (RFC-6120)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * XMPP Core (RFC-6120) XMLNS constants
+ * Constant values for XMPP Core (RFC-6120) XMLNS
  */
 const XOWS_NS_IETF_SASL    = "urn:ietf:params:xml:ns:xmpp-sasl";
 const XOWS_NS_IETF_BIND    = "urn:ietf:params:xml:ns:xmpp-bind";
@@ -966,28 +1020,27 @@ const XOWS_NS_IETF_SESSION = "urn:ietf:params:xml:ns:xmpp-session"; //< Obsolete
 const XOWS_NS_IETF_STREAMS = "urn:ietf:params:xml:ns:xmpp-streams";
 
 /**
- * XMPP session ready event client callback
+ * Module Event-Forwarding callback for XMPP session ready
  */
 let xows_xmp_fw_sess_onready = function() {};
 
 /**
- * XMPP stream closed event client callback
+ * Module Event-Forwarding callback for XMPP session closed
  */
 let xows_xmp_fw_sess_onclose = function() {};
 
-/* -------------------------------------------------------------------
- * XMPP API - XMPP Core (RFC-6120) - Stream Negotiation
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * XMPP Core (RFC-6120) - Stream Negotiation
+ * ---------------------------------------------------------------------------*/
 /**
- * Array to hold current server required or available stream features
- * such as <bind> and <session>
+ * Storage for server's stream features list
  */
 const xows_xmp_stream_feat = [];
 
 /**
- * Function to proceed an received <stream:error> stanza
+ * Handles received Stream Error (<stream:error>) stanza
  *
- * @param   {object}    stanza    Received <stream:error> stanza
+ * @param   {element}   stanza    Received <stream:error> stanza
  */
 function xows_xmp_stream_error_recv(stanza)
 {
@@ -1004,9 +1057,9 @@ function xows_xmp_stream_error_recv(stanza)
 }
 
 /**
- * Function to proceed an received <stream:features> stanza
+ * Handles received Stream Features (<stream:features>) stanza
  *
- * @param   {object}    stanza    Received <stream:features> stanza
+ * @param   {element}   stanza    Received <stream:features> stanza
  */
 function xows_xmp_stream_features_recv(stanza)
 {
@@ -1022,15 +1075,19 @@ function xows_xmp_stream_features_recv(stanza)
   // Check for SASL feature
   const mechanisms = stanza.getElementsByTagName("mechanism");
   if(mechanisms.length) {
+
     // Get list of available mechanisms name
     xows_xmp_sasl_mechanisms.length = 0;
     for(let i = 0, n = mechanisms.length; i < n; ++i)
       xows_xmp_sasl_mechanisms.push(xows_xml_innertext(mechanisms[i]));
-    // Output log
+
     xows_log(2,"xmp_stream_features_recv","received authentication mechanisms",xows_xmp_sasl_mechanisms.join(", "));
+
     // Check whether we are in account registration scenario
     if(xows_xmp_auth.regi) {
+
       const register = stanza.querySelector("register");
+
       if(register) {
         // Start registration process
         xows_xmp_regi_get_query(null, xows_xmp_regi_server_get_parse);
@@ -1039,12 +1096,15 @@ function xows_xmp_stream_features_recv(stanza)
         // Exit session (forward session close)
         xows_xmp_failure(XOWS_XMPP_REGI,"account registration is not allowed by the server");
       }
+
     } else {
       // Start SASL negotiation
       xows_xmp_sasl_auth_send();
     }
+
     // We should now receive an <challenge> or <success> stanza...
     return true; //< stanza processed
+
   } else {
 
     // no <mechanism> in stanza, this should be the second <stream:features>
@@ -1073,19 +1133,19 @@ function xows_xmp_stream_features_recv(stanza)
   return false;
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - XMPP Core (RFC-6120) - SASL
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * XMPP Core (RFC-6120) - SASL
+ * ---------------------------------------------------------------------------*/
 /**
- * Array of available SASL mechanism for late authentication
+ * Storage for available SASL mechanisms proposed by server.
  */
 const xows_xmp_sasl_mechanisms = [];
 
 /**
- * Function to start SASL auth process
+ * Sends initial SASL Auth (<auth>) request.
  *
- * This function requires that the SASL mechanisms list (xows_xmp_sasl_mechanisms)
- * to be filled with available candidates.
+ * This initializes the proper SASL Module mechanism according available ones
+ * then send the initial <auth> request to starts SASL negotiation.
  */
 function xows_xmp_sasl_auth_send()
 {
@@ -1112,9 +1172,12 @@ function xows_xmp_sasl_auth_send()
 }
 
 /**
- * Function to proceed an received <challenge> stanza (SASL auth)
+ * Handles received SASL Challenge (<challenge>).
  *
- * @param   {object}    stanza    Received <challenge> stanza
+ * This parses the received SASL challenge string then send an SASL Response
+ * (<reponse>) with proper payload.
+ *
+ * @param   {element}   stanza    Received <challenge> stanza
  */
 function xows_xmp_sasl_challenge_recv(stanza)
 {
@@ -1136,9 +1199,9 @@ function xows_xmp_sasl_challenge_recv(stanza)
 }
 
 /**
- * Function to proceed an received <failure> stanza (SASL auth)
+ * Handles received SASL Faillure (<failure>).
  *
- * @param   {object}    stanza    Received <failure> stanza
+ * @param   {element}   stanza    Received <failure> stanza
  */
 function xows_xmp_sasl_failure_recv(stanza)
 {
@@ -1175,9 +1238,9 @@ function xows_xmp_sasl_failure_recv(stanza)
 }
 
 /**
- * Function to proceed an received <success> stanza (SASL auth)
+ * Handles received SASL Success (<success>).
  *
- * @param   {object}    stanza    Received <success> stanza
+ * @param   {element}   stanza    Received <success> stanza
  */
 function xows_xmp_sasl_success_recv(stanza)
 {
@@ -1211,13 +1274,14 @@ function xows_xmp_sasl_success_recv(stanza)
 
   return true; //< stanza processed
 }
-/* -------------------------------------------------------------------
- * XMPP API - XMPP Core (RFC-6120) - Resource Binding
- * -------------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------
+ * XMPP Core (RFC-6120) - Resource Binding
+ * ---------------------------------------------------------------------------*/
 /**
- * Parse Resource Binding (RFC-6120) query result
+ * Handles received result of resouce bind (RFC-6120) query.
  *
- * @param   {object}    stanza    Received query response stanza
+ * @param   {element}   stanza    Received query response stanza
  */
 function xows_xmp_bind_parse(stanza)
 {
@@ -1251,24 +1315,12 @@ function xows_xmp_bind_parse(stanza)
 
   // Session ready, forward to client
   xows_xmp_fw_sess_onready(xows_xmp_bind, false);
-
-  // FIXME: The following code is obsoleted by RFC-6120
-  /*
-  // Check whether stream session feature is available
-  if(xows_xmp_stream_feat.includes(XOWS_NS_IETF_SESSION)) {
-    // Query for stream session
-    xows_xmp_session_query();
-  } else {
-    // Session ready, forward to client
-    xows_xmp_fw_sess_onready(xows_xmp_bind);
-  }
-  */
 }
 
 /**
- * Query Resource Binding (RFC-6120)
+ * Sends resource bind (RFC-6120) query.
  *
- * @param   {string}  [resource]   Optional resource string to 'enforce'
+ * @param   {string}  [resource]   Optional resource string to enforce
  */
 function xows_xmp_bind_query(resource = null)
 {
@@ -1283,76 +1335,35 @@ function xows_xmp_bind_query(resource = null)
 
   xows_xmp_send_raw(xows_xml_node("iq",{"type":"set"},bind), xows_xmp_bind_parse);
 }
-/* -------------------------------------------------------------------
- * XMPP API - DEPRECATED - XMPP Core (RFC-3921) - Session Establishment
- * -------------------------------------------------------------------*/
-/**
- * DEPRECATED - Parse Session Establishment (RFC-3921) query result
+
+/* ---------------------------------------------------------------------------
  *
- * @param   {object}    stanza    Received query response stanza
- */
-/*
-function xows_xmp_session_parse(stanza)
-{
-  if(stanza.getAttribute("type") === "error") {
-    xows_xmp_error_log(stanza,0,"xmp_session_parse");
-    // Exit session (forward session close)
-    xows_xmp_failure(XOWS_XMPP_FAIL, "session establishment failure");
-    return;
-  }
-
-  xows_log(2,"xmp_session_parse","session established");
-
-  // Session ready, forward to client
-  xows_xmp_fw_sess_onready(xows_xmp_bind);
-}
-*/
-/**
- * DEPRECATED - Query Session Establishment (RFC-3921)
- */
-/*
-function xows_xmp_session_query()
-{
-  xows_log(2,"xmp_session_query","query for session");
-
-  // Go to the next step by sending query for session open
-  const iq =  xows_xml_node("iq",{"type":"set"},
-                xows_xml_node("session",{"xmlns":XOWS_NS_IETF_SESSION}));
-
-  xows_xmp_send(iq, xows_xmp_session_parse);
-}
-*/
-
-/* -------------------------------------------------------------------
+ * XMPP Core (RFC-6120) - IQ stanza semantics
  *
- * XMPP API - XMPP Core (RFC-6120) - IQ stanza semantics routines
- *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * IQ stanza semantics XMLNS constants
+ * Constant value for IQ stanza semantics XMLNS
  */
 const XOWS_NS_IETF_STANZAS = "urn:ietf:params:xml:ns:xmpp-stanzas";
 
 /**
- * Map object to store parameters bound to sent iq queries
- */
-const xows_xmp_iq_stack = new Map();
-
-/**
- * Function to proceed an received <iq> stanza
+ * Handles received IQ (<iq>) stanza.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * If the received IQ stanza ID is found in queries stack, it is then
+ * forwarded to the defined 'onresult' callback for that query.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
  */
 function xows_xmp_iq_recv(stanza)
 {
   const id = stanza.getAttribute("id"); //< Get the <iq> ID
 
   // Search for query with the specified ID in stack
-  if(xows_xmp_iq_stack.has(id)) {
+  if(xows_xmp_query_stack.has(id)) {
 
     // Retrieve query parameters and remove entrie from stack
-    const query = xows_xmp_iq_stack.get(id);
-    xows_xmp_iq_stack.delete(id);
+    const query = xows_xmp_query_stack.get(id);
+    xows_xmp_query_stack.delete(id);
 
     // If query have a valid onresult function, call it
     if(xows_isfunc(query.onresult))
@@ -1395,15 +1406,15 @@ function xows_xmp_iq_recv(stanza)
 }
 
 /**
- * Checks for unhandled iq error and forward if required
+ * Checks for unhandled IQ error and forward event if required.
  *
- * If iq type is an error and 'onparse' is not defined, error is forwarded
- * to default error callback and function returns true. In any other case
- * the functionr returns false.
+ * If the IQ type is error and 'onparse' is not defined, this is therfore an
+ * unhandled error, it is then forwarded to default (unhandled error) event
+ * callback and true is returned. In any other case the function returns false.
  *
- * @param   {object}    stanza    Received iq stanza
- * @param   {string}    type      Received stanza type
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {string}    type      IQ type attribute value
+ * @param   {function}  onparse   Callback for parsed result forwarding
  *
  * @return  {boolean}   True in case of unhandled error, false otherwise.
  */
@@ -1424,12 +1435,14 @@ function xows_xmp_iq_unhandled(stanza, type, onparse)
 }
 
 /**
- * Function to parse an iq stanza in a generical way.
+ * Handles a received IQ result.
  *
- * This parse function may be used by serveral other functions.
+ * This is the default IQ result processing function, the received stanza is
+ * not processed beyond result type to determins whether it is an error. If an
+ * 'onparse' callback is defined, the stanza is then forwarded to it.
  *
- * @param   {object}    stanza    Received iq stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_iq_parse(stanza, onparse)
 {
@@ -1445,7 +1458,7 @@ function xows_xmp_iq_parse(stanza, onparse)
 }
 
 /**
- * Function to send formated <iq> error stanza
+ * Sends an error type IQ stanza.
  *
  * @parma   {string}    id          Query ID the error is related to
  * @parma   {string}    to          Destination JID
@@ -1460,7 +1473,7 @@ function xows_xmp_iq_error_send(id, to, type, reason)
 }
 
 /**
- * Function to send formated <iq> result stanza
+ * Sends a result type IQ stanza.
  *
  * @parma   {string}    id          Query ID the error is related to
  * @parma   {string}    to          Destination JID
@@ -1470,78 +1483,76 @@ function xows_xmp_iq_result_send(id, to)
   xows_xmp_send(xows_xml_node("iq",{"id":id,"type":"result","to":to}));
 }
 
-
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - XMPP Core (RFC-6120) - Message stanza semantics routines
+ * XMPP Core (RFC-6120) - Message stanza semantics routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Delayed Delivery (XEP-0203) XMLNS constant
+ * Constant value for Delayed Delivery (XEP-0203) XMLNS
  */
 const XOWS_NS_DELAY = "urn:xmpp:delay";
 
-/* -------------------------------------------------------------------
- * XMPP API - Message semantics - Last Message Correction (XEP-0308)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Message semantics - Last Message Correction (XEP-0308)
+ * ---------------------------------------------------------------------------*/
 /**
- * Last Message Correction (XEP-0308) XMLNS constants
+ * Constant value for Last Message Correction (XEP-0308) XMLNS
  */
 const XOWS_NS_CORRECT = "urn:xmpp:message-correct:0";
 
 
-/* -------------------------------------------------------------------
- * XMPP API - Message semantics - Last Message Correction (XEP-0308)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Message semantics - Last Message Correction (XEP-0308)
+ * ---------------------------------------------------------------------------*/
 /**
- * Message Replies (XEP-0461) XMLNS constants
+ * Constant value for Message Replies (XEP-0461) XMLNS
  */
 const XOWS_NS_REPLY = "urn:xmpp:reply:0";
 
-/* -------------------------------------------------------------------
- * XMPP API - Message semantics - Last Message Correction (XEP-0308)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Message semantics - Last Message Correction (XEP-0308)
+ * ---------------------------------------------------------------------------*/
 /**
- * Unique and Stable Stanza IDs (XEP-0359) XMLNS constants
+ * Constant value for Unique and Stable Stanza IDs (XEP-0359) XMLNS
  */
 const XOWS_NS_SID = "urn:xmpp:sid:0";
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * XMPP API - Message semantics - Last Message Correction (XEP-0308)
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Anonymous unique occupant identifiers for MUCs (XEP-0421) XMLNS constants
+ * Constant value for Anonymous unique occupant identifiers for MUCs (XEP-0421) XMLNS
  */
 const XOWS_NS_OCCUID = "urn:xmpp:occupant-id:0";
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * XMPP API - Message semantics - Message Styling (XEP-0393)
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Message Styling (XEP-0393) XMLNS constants
+ * Constant value for Message Styling (XEP-0393) XMLNS
  */
 const XOWS_NS_STYLING = "urn:xmpp:styling:0";
 
 /**
- * Message stanza received body message event client callback
+ * Module Event-Forwarding callback for Received Chat Message (with Body content)
  */
 let xows_xmp_fw_msg_onrecv = function() {};
 
-
 /**
- * Multi-User Chat (XEP-0045) received subject event callback
+ * Module Event-Forwarding callback for Received MUC (XEP-0045) Subject Message
  */
 let xows_xmp_fw_muc_onsubj = function() {};
 
 /**
- * Multi-User Chat (XEP-0045) received room notification event callback
+ * Module Event-Forwarding callback for Received MUC (XEP-0045) Notification Message
  */
 let xows_xmp_fw_muc_onnoti = function() {};
 
 /**
- * Parse received <message> stanza
+ * Handles a received Message (<message>) stanza.
  *
- * @param   {object}    stanza    Received <message> stanza
+ * @param   {element}   stanza    Received <message> stanza
  */
 function xows_xmp_message_recv(stanza)
 {
@@ -1697,11 +1708,11 @@ function xows_xmp_message_recv(stanza)
 }
 
 /**
- * Send a message with textual content
+ * Sends a Chat Message (with body content) stanza.
  *
  * @param   {string}    type      Message type
- * @param   {string}    to        JID of the recipient
- * @param   {string}    body      Message content
+ * @param   {string}    to        Recipient address (JID)
+ * @param   {string}    body      Message <body> content
  * @param   {boolean}   recp      Request message receipt
  * @param   {string}   [repl]     Optionnal message ID this one Replace
  * @param   {string}   [rpid]     Optionnal replyed message ID
@@ -1739,21 +1750,21 @@ function xows_xmp_message_body_send(type, to, body, recp, repl, rpid, rpto)
   return id;
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - Message semantics - Chat State Notifications (XEP-0085)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Message semantics - Chat State Notifications (XEP-0085)
+ * ---------------------------------------------------------------------------*/
 /**
- * Chat State Notifications (XEP-0085) XMLNS constants
+ * Constant value for Chat State Notifications (XEP-0085) XMLNS
  */
 const XOWS_NS_CHATSTATES = "http://jabber.org/protocol/chatstates";
 
 /**
- * Message stanza received chat sate message event client callback
+ * Module Event-Forwarding callback for Received Chat Stat (XEP-0085) Message
  */
 let xows_xmp_fw_msg_onchst = function() {};
 
 /**
- * Chat State Notifications (XEP-0085) values constants
+ * Constant values for Chat State Notifications (XEP-0085) types
  */
 const XOWS_CHAT_GONE    = 0;
 const XOWS_CHAT_ACTI    = 1;
@@ -1762,7 +1773,7 @@ const XOWS_CHAT_PAUS    = 3;
 const XOWS_CHAT_COMP    = 4;
 
 /**
- * Chat State Notifications (XEP-0085) string to value mapping
+ * Conversion Map for Chat State string to Constant value
  */
 const xows_xmp_chatstate_value = new Map([
   ["gone"      , 0],
@@ -1773,7 +1784,7 @@ const xows_xmp_chatstate_value = new Map([
 ]);
 
 /**
- * Chat State Notifications (XEP-0085) value to string mapping
+ * Conversion Array for Constant Value to Chat State string
  */
 const xows_xmp_chatstate_string = [
   "gone",
@@ -1784,9 +1795,9 @@ const xows_xmp_chatstate_string = [
 ];
 
 /**
- * Send a message with chat state notification (XEP-0085)
+ * Sends a Chat Stat notification (XEP-0085) message stanza.
  *
- * @param   {string}    to        JID of the recipient
+ * @param   {string}    to        Recipient address (JID)
  * @param   {string}    type      Message type to set
  * @param   {number}    chat      Chat state to set
  */
@@ -1798,24 +1809,23 @@ function xows_xmp_message_chatstate_send(to, type, chat)
                   xows_xml_node(state,{"xmlns":XOWS_NS_CHATSTATES})));
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - Message semantics - Message Delivery Receipts (XEP-0184)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Message semantics - Message Delivery Receipts (XEP-0184)
+ * ---------------------------------------------------------------------------*/
 /**
- * Message Delivery Receipts (XEP-0184) XMLNS constants
+ * Constant value for Message Delivery Receipts (XEP-0184) XMLNS
  */
 const XOWS_NS_RECEIPTS = "urn:xmpp:receipts";
 
 /**
- * Message stanza received receipt message event client callback
+ * Module Event-Forwarding callback for Received Receipt Message
  */
 let xows_xmp_fw_msg_onrecp = function() {};
 
 /**
- * Send receipt for the specified message ID at the specified
- * destination.
+ * Sends a Delivery Receipts (XEP-0184) message stanza.
  *
- * @param   {string}    to        Destnation JID
+ * @param   {string}    to        Recipient address (JID)
  * @param   {string}    id        Message ID to send receipt about
  */
 function xows_xmp_message_receipt_send(to, id)
@@ -1824,25 +1834,24 @@ function xows_xmp_message_receipt_send(to, id)
                   xows_xml_node("received",{"id":id,"xmlns":XOWS_NS_RECEIPTS})));
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - Message semantics - Last Message Correction (XEP-0308)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Message semantics - Last Message Correction (XEP-0308)
+ * ---------------------------------------------------------------------------*/
 /**
- * Message Retraction (XEP-0424) XMLNS constants
+ * Constant for Message Retraction (XEP-0424) XMLNS
  */
 const XOWS_NS_RETRACT = "urn:xmpp:message-retract:1";
 const XOWS_NS_RETRACT_TOMB = "urn:xmpp:message-retract:1#tombstone";
 
 /**
- * Message stanza received receipt message event client callback
+ * Module Event-Forwarding callback for Received Retraction Message
  */
 let xows_xmp_fw_msg_onretr = function() {};
 
 /**
- * Send retraction for the specified message ID at the specified
- * destination.
+ * Sends a Retraction (XEP-0424) message stanza.
  *
- * @param   {string}    to        Destnation JID
+ * @param   {string}    to        Recipient address (JID)
  * @param   {string}    type      Message type to set
  * @param   {string}    usid      Unique and Stable ID if message to retract
  */
@@ -1854,36 +1863,34 @@ function xows_xmp_message_retract_send(to, type, usid)
 
   // Add <store> node to ensure message to be stored in MAM
   xows_xml_parent(message, xows_xml_node("store",{"xmlns":"urn:xmpp:hints"}));
-  /*
   // Add <fallback> node
-  xows_xml_parent(message, xows_xml_node("fallback",{"xmlns":"urn:xmpp:fallback:0"}));
+  //xows_xml_parent(message, xows_xml_node("fallback",{"xmlns":"urn:xmpp:fallback:0","for":XOWS_NS_RETRACT}));
   // Add <body> node
-  xows_xml_parent(message, xows_xml_node("body",null,"[Unsupported message retraction]"));
-  */
+  //xows_xml_parent(message, xows_xml_node("body",null,"/me retracted a previous message, but it's unsupported by your client."));
 
   // Send message
   xows_xmp_send(message);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - IM and Presence (RFC-6121) - Roster Management
+ * IM and Presence (RFC-6121) - Roster Management
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Roster Management (XEP-0321) XMLNS constants
+ * Constant value for Roster Management (XEP-0321) XMLNS
  */
 const XOWS_NS_ROSTER = "jabber:iq:roster";
 
 /**
- * Roster Management (XEP-0321) roster push event callback
+ * Module Event-Forwarding callback for Received Roster Push
  */
 let xows_xmp_fw_rost_onrecv = function() {};
 
 /**
- * Function to proceed an received roster push <iq> stanza
+ * Handles a received Roster Push IQ stanza.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * @param   {element}   stanza    Received <iq> stanza
  */
 function xows_xmp_rost_push_recv(stanza)
 {
@@ -1908,10 +1915,10 @@ function xows_xmp_rost_push_recv(stanza)
 }
 
 /**
- * Function to parse result of get roster query
+ * Handles received result of Roster-Get query.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_rost_get_parse(stanza, onparse)
 {
@@ -1945,7 +1952,9 @@ function xows_xmp_rost_get_parse(stanza, onparse)
 }
 
 /**
- * Send query to get roster content to the server
+ * Sends a Roster-Get IQ query.
+ *
+ * This is used to query server for user Roster items.
  *
  * @param   {function}  onparse   Callback to receive parse result
  */
@@ -1959,7 +1968,9 @@ function xows_xmp_rost_get_query(onparse)
 }
 
 /**
- * Send query to add or remove item to/from roster
+ * Sends a Roster-Set IQ query.
+ *
+ * This is used to query server for user Roster modification (add or removes item)
  *
  * @param   {string}    jid       Contact or Room JID to add
  * @param   {string}    name      Item Display name or null to remove item
@@ -1987,13 +1998,13 @@ function xows_xmp_rost_set_query(jid, name, group, onparse)
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - IM and Presence (RFC-6121) - Presence exchange & Subscriptions
+ * IM and Presence (RFC-6121) - Presence exchange & Subscriptions
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * List of presence show level
+ * Constant values for presence Show (availability) level
  */
 const XOWS_SHOW_OFF     = 0;
 const XOWS_SHOW_DND     = 1;
@@ -2003,7 +2014,7 @@ const XOWS_SHOW_ON      = 4;
 const XOWS_SHOW_CHAT    = 5;
 
 /**
- * Correspondance map array for presence show string to level
+ * Conversion Map for Presence Show string to Constant value
  */
 const xows_xmp_show_val = new Map([
   ["dnd",   1],
@@ -2013,7 +2024,7 @@ const xows_xmp_show_val = new Map([
 ]);
 
 /**
- * Correspondance map array for presence show level to string
+ * Conversion Map for Constant value to Presence Show string
  */
 const xows_xmp_show_str = new Map([
   [1,  "dnd"],
@@ -2024,49 +2035,49 @@ const xows_xmp_show_str = new Map([
 ]);
 
 /**
- * List of presence subscription level
+ * Constant values for presence Subscription direction
  */
 const XOWS_SUBS_REM     = -1; //< remove subscription
-const XOWS_SUBS_NONE    = 0;  //< mutual non-subscription
-const XOWS_SUBS_FROM    = 1;  //< subscription allowed by user
-const XOWS_SUBS_TO      = 2;  //< subscription allowed by contact
-const XOWS_SUBS_BOTH    = 3;  //< mutual subscription
+const XOWS_SUBS_NONE    = 0x0;  //< mutual non-subscription
+const XOWS_SUBS_FROM    = 0x1;  //< subscription allowed by user
+const XOWS_SUBS_TO      = 0x2;  //< subscription allowed by contact
+const XOWS_SUBS_BOTH    = 0x3;  //< mutual subscription
 
 /**
- * Correspondance map array for presence subscription string to value
+ * Conversion Map for presence subscription string to Constant value
  */
 const xows_xmp_subs_val  = new Map([
-  ["remove" ,-1],
-  ["none"   , 0],
-  ["from"   , 1],
-  ["to"     , 2],
-  ["both"   , 3]
+  ["remove" ,  -1],
+  ["none"   , 0x0],
+  ["from"   , 0x1],
+  ["to"     , 0x2],
+  ["both"   , 0x3]
 ]);
 
 /**
- * Reference to callback function for received presence
+ * Module Event-Forwarding callback for Received Normal Presence
  */
 let xows_xmp_fw_pres_onrecv = function() {};
 
 /**
- * Reference to callback function for received subscribe presence
+ * Module Event-Forwarding callback for Received Subscription Presence
  */
 let xows_xmp_fw_pres_onsubs = function() {};
 
 /**
- * Multi-User Chat (XEP-0045) received presence event callback
+ * Module Event-Forwarding callback for Received MUC (Occupant) Presence
  */
 let xows_xmp_fw_pres_onmuco = function() {};
 
 /**
- * Reference to callback function for received presence auth error
+ * Module Event-Forwarding callback for Received Error Presence
  */
 let xows_xmp_fw_pres_onfail = function() {};
 
 /**
- * Function to proceed an received <presence> stanza
+ * Handles a received Presence (<presence>) stanza.
  *
- * @param   {object}    stanza    Received <presence> stanza
+ * @param   {element}   stanza    Received <presence> stanza
  */
 function xows_xmp_presence_recv(stanza)
 {
@@ -2182,12 +2193,11 @@ function xows_xmp_presence_recv(stanza)
 }
 
 /**
- * Send common <presence> stanza to server or MUC room to update
- * client availability and/or join or exit MUC room
+ * Sends a Presence (<presence>) stanza.
  *
- * @param   {string}    to        Destination JID (can be null)
- * @param   {string}    type      Presence type attribute (can be null)
- * @param   {number}    show      Availability level 0 to 4 (can be null)
+ * @param   {string}    to        Recipient address (JID) or null
+ * @param   {string}    type      Presence type or null
+ * @param   {number}    show      Availability level 0 to 4 or null
  * @param   {string}    stat      Status string to set
  * @param   {string}   [nick]     Optional nickname
  * @param   {boolean}  [mucx]     Optional MUC data
@@ -2246,20 +2256,22 @@ function xows_xmp_presence_send(to, type, show, stat, nick, mucx, phot)
   xows_xmp_send(stanza);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - XMPP Ping (XEP-0199)
+ * XMPP Ping (XEP-0199)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- *  XMPP Ping (XEP-0199) XMLNS constants
+ *  Constant value for XMPP Ping (XEP-0199) XMLNS
  */
 const XOWS_NS_PING = "urn:xmpp:ping";
 
 /**
- * Function to send response to <iq> ping query
+ * Handles a received Ping QI query.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * This replies with an Ping QI result.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
  */
 function xows_xmp_ping_reply(stanza)
 {
@@ -2269,20 +2281,23 @@ function xows_xmp_ping_reply(stanza)
   // Send pong
   xows_xmp_send(xows_xml_node("iq",{"id":id,"to":from,"type":"result"}));
 }
-/* -------------------------------------------------------------------
+
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Entity Time (XEP-0202)
+ * Entity Time (XEP-0202)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- *  Entity Time (XEP-0202) XMLNS constants
+ * Constant value for Entity Time (XEP-0202) XMLNS
  */
 const XOWS_NS_TIME  = "urn:xmpp:time";
 
 /**
- *  Function to send response to <iq> time query
+ * Handles a received Time QI query.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * This replies with an Time QI result.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
  */
 function xows_xmp_iq_time_reply(stanza)
 {
@@ -2307,20 +2322,22 @@ function xows_xmp_iq_time_reply(stanza)
 
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Software Version (XEP-0092)
+ * Software Version (XEP-0092)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- *  Software Version (XEP-0092) XMLNS constants
+ * Constant value for Software Version (XEP-0092) XMLNS
  */
 const XOWS_NS_VERSION      = "jabber:iq:version";
 
 /**
- *  Function to send response to <iq> version query
+ * Handles a received Version QI query.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * This replies with an Version QI result.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
  */
 function xows_xmp_iq_version_reply(stanza)
 {
@@ -2335,21 +2352,23 @@ function xows_xmp_iq_version_reply(stanza)
                       xows_xml_node("version",null,XOWS_APP_VERS)])));
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Service Discovery (XEP-0030)
+ * Service Discovery (XEP-0030)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Service Discovery (XEP-0030) XMLNS constants
+ * Constant values for Service Discovery (XEP-0030) XMLNS
  */
 const XOWS_NS_DISCOINFO    = "http://jabber.org/protocol/disco#info";
 const XOWS_NS_DISCOITEMS   = "http://jabber.org/protocol/disco#items";
 
 /**
- * Function to reply to <iq> disco#info query
+ * Handles a received disco#info QI query.
  *
- * @param   {object}    stanza    Received <iq> stanza
+ * This replies with an disco#info QI result.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
  */
 function xows_xmp_disco_info_reply(stanza)
 {
@@ -2367,10 +2386,10 @@ function xows_xmp_disco_info_reply(stanza)
 }
 
 /**
- * Parse result of disco#info query
+ * Parses received IQ result of disco#info query
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_disco_info_parse(stanza, onparse)
 {
@@ -2422,11 +2441,11 @@ function xows_xmp_disco_info_parse(stanza, onparse)
 }
 
 /**
- * Send a disco#info query
+ * Sends an disco#info IQ query
  *
- * @param   {string}    to        Target JID or URL
+ * @param   {string}    to        Target address (JID or URL)
  * @param   {string}    node      Query node attribute or null to ignore
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_disco_info_query(to, node, onparse)
 {
@@ -2437,10 +2456,10 @@ function xows_xmp_disco_info_query(to, node, onparse)
 }
 
 /**
- * Parse result of disco#items query
+ * Parses received IQ result of disco#items query
  *
- * @param   {object}    stanza    Received stanza corresponding to query
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_disco_items_parse(stanza, onparse)
 {
@@ -2473,10 +2492,10 @@ function xows_xmp_disco_items_parse(stanza, onparse)
 }
 
 /**
- * Send a disco#items query
+ * Sends an disco#items IQ query
  *
  * @param   {string}    to        Entity JID, name or URL
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_disco_items_query(to, onparse)
 {
@@ -2486,21 +2505,21 @@ function xows_xmp_disco_items_query(to, onparse)
   xows_xmp_send(iq, xows_xmp_disco_items_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - External Service Discovery (XEP-0215)
+ * External Service Discovery (XEP-0215)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * External Service Discovery (XEP-0215) XMLNS constants
+ * Constant values for External Service Discovery (XEP-0215) XMLNS
  */
 const XOWS_NS_EXTDISCO = "urn:xmpp:extdisco:2";
 
 /**
- * Parse result of external services discovery query
+ * Parses received IQ result of External-Service-Discovery query
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_extdisco_parse(stanza, onparse)
 {
@@ -2538,11 +2557,11 @@ function xows_xmp_extdisco_parse(stanza, onparse)
 }
 
 /**
- * Send a external services discovery query
+ * Sends an External-Service-Discovery IQ query
  *
- * @param   {string}    to        Target JID or URL
+ * @param   {string}    to        Target address (JID or URL)
  * @param   {string}    type      Query type attribute or null to ignore
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_extdisco_query(to, type, onparse)
 {
@@ -2557,20 +2576,23 @@ function xows_xmp_extdisco_query(to, type, onparse)
   xows_xmp_send(iq, xows_xmp_extdisco_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Data Forms (XEP-0004)
+ * Data Forms (XEP-0004)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Data Forms (XEP-0004) XMLNS constants
+ * Constant values for Data Forms (XEP-0004) XMLNS
  */
-const XOWS_NS_XDATA        = "jabber:x:data";
+const XOWS_NS_XDATA = "jabber:x:data";
 
 /**
- * Function to parse a standard jabber:x:data form
+ * Parses an X Data Form (<x>) node.
  *
- * @param   {object}    x         The <x> stanza element to parse
+ * This converts X Data Form (<x>) node content to an Array of dictionary
+ * objects.
+ *
+ * @param   {element}   x         X Data Form (<x>) node to parse
  *
  * @return  {object[]}  Array of parsed field to complete
  */
@@ -2617,21 +2639,25 @@ function xows_xmp_xdata_parse(x)
 }
 
 /**
- * Function to create a standard jabber:x:data submit <x> node using
- * the given array
+ * Builds up an X Data Form (<x>) submit type node.
  *
- * Given array must contain one or more objects with properly filled
- * "var" and "value" properties. The "var" property must be of String() type
- * and the "value" property must be null or an Array() type containing one or
- * more string-convertible value(s):
+ * This converts supplied array of dictionary object to a corresponding
+ * X Data Form (<x>) node.
  *
- *   [{"var":"name1", "value":[<data>]},
+ * The given Array must contain one or more dictionary objects with each one
+ * "var" and one "value" property.
+ * The "var" property value must be a string, the "value" property value can be
+ * null or an array containing one or more string convertible values:
+ *
+ *   [
+ *    {"var":"name1", "value":[<data>]},
  *    {"var":"name2", "value":[<data>,<data,...]},
- *    ... ]
+ *    ...
+ *   ]
  *
  * @param   {object[]}  field     Object's array to turn as <field> elements
  *
- * @return  {object}    The <x> node with <field> to submit
+ * @return  {element}   X Data Form (<x>) node
  */
 function xows_xmp_xdata_make(field)
 {
@@ -2660,7 +2686,7 @@ function xows_xmp_xdata_make(field)
 }
 
 /**
- * Function to create a standard jabber:x:data cancal <x> node
+ * Builds up an X Data Form (<x>) cancel type node.
  *
  * @return  {object}    The <x> node with <field> to submit
  */
@@ -2669,21 +2695,24 @@ function xows_xmp_xdata_cancel()
   return xows_xml_node("x",{"xmlns":XOWS_NS_XDATA,"type":"cancel"});
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - In-Band Registration (XEP-0077)
+ * In-Band Registration (XEP-0077)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * In-Band Registration (XEP-0077) XMLNS constants
+ * Constant value for In-Band Registration (XEP-0077) XMLNS
  */
 const XOWS_NS_REGISTER     = "jabber:iq:register";
 
 /**
- * Function to parse result of register form query
+ * Parses received IQ result of Registration-Get query.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * This parses the X Data From received as result of In-Band Registration
+ * "get" IQ query.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_regi_get_parse(stanza, onparse)
 {
@@ -2721,10 +2750,13 @@ function xows_xmp_regi_get_parse(stanza, onparse)
 }
 
 /**
- * Send a register fields query to the specified destination
+ * Sends a Registration-Get IQ query.
+ *
+ * This is used to retrieve user account data form in order to be modified
+ * and submitted back.
  *
  * @param   {string}    to        Peer or service JID
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_regi_get_query(to, onparse)
 {
@@ -2738,14 +2770,16 @@ function xows_xmp_regi_get_query(to, onparse)
 }
 
 /**
- * Send a register form query to the specified destination
+ * Sends a Registration-Set IQ query.
+ *
+ * This is used to submit modified account data form.
  *
  * @param   {string}    to        Peer or service JID or null
  * @param   {object}    data      Registration data to submit or null to ignore
- * @param   {object[]}  form      Fulfilled x-data form or null to ignore
+ * @param   {object[]}  xform     Fulfilled x-data form or null to ignore
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_regi_set_query(to, data, form, onparse)
+function xows_xmp_regi_set_query(to, data, xform, onparse)
 {
   // Create the base <query> node
   const query = xows_xml_node("query",{"xmlns":XOWS_NS_REGISTER});
@@ -2757,8 +2791,8 @@ function xows_xmp_regi_set_query(to, data, form, onparse)
     if(data.email     !== null) xows_xml_parent(query, xows_xml_node("email",   null,data.email));
   }
 
-  if(form !== null)
-    xows_xml_parent(query, xows_xmp_xdata_make(form));
+  if(xform !== null)
+    xows_xml_parent(query, xows_xmp_xdata_make(xform));
 
   // Create and launch the query
   const iq =  xows_xml_node("iq",{"type":"set"},query);
@@ -2770,10 +2804,13 @@ function xows_xmp_regi_set_query(to, data, form, onparse)
 }
 
 /**
- * Parse Server account registration form submit (set) result
+ * Parses received IQ result of Registration-Set query for Server Account
+ * Registration process.
  *
- * This function is part of the server account registration scenario, called
- * once the server responded to registration form submition.
+ * This parses the result of In-Band Registration form submition IQ query. On
+ * success, the SASL negotiation is started to login new session.
+ *
+ * This function is part of the Server Account Registration process.
  *
  * @param   {string}    from      Query Sender JID
  * @param   {string}    type      Query Response type
@@ -2812,10 +2849,14 @@ function xows_xmp_regi_server_set_parse(from, type, error)
 }
 
 /**
- * Parse Server account registration form query (get) result
+ * Parses received IQ result of Registration-Get query for Server Account
+ * Registration process.
  *
- * This function is part of the account registration scenario, called
- * once the server responded to registration form query.
+ * This prases the received User Account Data form to be modified or
+ * fulfilled to complete the registration process. It then immediatly submit
+ * the form via IQ "set" query.
+ *
+ * This function is part of the Server Account Registration process.
  *
  * @param   {string}    from        Sender JID
  * @param   {object}    data        Replied registration data
@@ -2844,10 +2885,13 @@ function xows_xmp_regi_server_get_parse(from, data, xform, error)
 }
 
 /**
- * Function to parse result of password set query
+ * Parses received IQ result of of Registration-Set query for Account
+ * Password Change.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * This function is part of the Account Password Change process.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_regi_pass_set_parse(stanza, onparse)
 {
@@ -2876,7 +2920,9 @@ function xows_xmp_regi_pass_set_parse(stanza, onparse)
 }
 
 /**
- * Send a register password set query
+ * Sends a Registration-Set IQ query for Account Password Change.
+ *
+ * This function is part of the Account Password Change process.
  *
  * @param   {string}    pass      New password to set
  * @param   {object[]}  xform     Fulfilled x-data form or null to ignore
@@ -2904,10 +2950,14 @@ function xows_xmp_regi_pass_set_query(pass, xform, onparse)
 }
 
 /**
- * Function to parse result of Cancel registration query
+ * Parses received IQ result of of Registration-Set query for Account
+ * Registration Cancel.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * This function is part of the Account Registration Cancel (Account deletion)
+ * process.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_regi_remove_parse(stanza, onparse)
 {
@@ -2936,7 +2986,10 @@ function xows_xmp_regi_remove_parse(stanza, onparse)
 }
 
 /**
- * Send query to cancel registration with server
+ * Sends a Registration-Set IQ query for Account Registration Cancel.
+ *
+ * This function is part of the Account Registration Cancel (Account deletion)
+ * process.
  *
  * @param   {object[]}  xform     Fulfilled x-data form or null to ignore
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -2958,19 +3011,19 @@ function xows_xmp_regi_remove_query(xform, onparse)
   xows_xmp_send(iq, xows_xmp_regi_remove_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Message Carbons (XEP-0280)
+ * Message Carbons (XEP-0280)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Message Carbons (XEP-0280) XMLNS constants
+ * Constant value for Message Carbons (XEP-0280) XMLNS
  */
 const XOWS_NS_CARBONS      = "urn:xmpp:carbons:2";
 //const XOWS_NS_CARBONS_RUL  = "urn:xmpp:carbons:rules:0";
 
 /**
- * Send query to enable or disable carbons (XEP-0280)
+ * Sends a Message-Carbons IQ query.
  *
  * @param   {boolean}   enable    Boolean to query enable or disable
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -2988,19 +3041,21 @@ function xows_xmp_carbons_query(enable, onparse)
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Vcard-temp (XEP-0054)
+ * Vcard-temp (XEP-0054)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Vcard-temp (XEP-0054) XMLNS constants
+ * Constant values for Vcard-temp (XEP-0054) XMLNS
  */
 const XOWS_NS_VCARD        = "vcard-temp";
 const XOWS_NS_VCARDXUPDATE = "vcard-temp:x:update";
 
 /**
- * Send query to publish vcard-temp
+ * Sends a vCard-Temp-Set IQ query.
+ *
+ * This is used to publish user (own) vCard-Temp.
  *
  * @param   {object}    vcard     vCard data to set
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -3016,10 +3071,10 @@ function xows_xmp_vcardt_set_query(vcard, onparse)
 }
 
 /**
- * Function to parse result of get vcard-temp query
+ * Parses recieved IQ result of vCard-Temp-Get query.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_vcardt_get_parse(stanza, onparse)
 {
@@ -3046,10 +3101,12 @@ function xows_xmp_vcardt_get_parse(stanza, onparse)
 }
 
 /**
- * Send query to retrieve vcard-temp
+ * Sends a vCard-Temp-Get IQ query.
+ *
+ * This is used to obtain either own or other peer's vCard-Temp.
  *
  * @param   {object}    to        Contact JID or null to get own
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_vcardt_get_query(to, onparse)
 {
@@ -3064,13 +3121,13 @@ function xows_xmp_vcardt_get_query(to, onparse)
   xows_xmp_send(iq, xows_xmp_vcardt_get_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Publish-Subscribe (XEP-0060)
+ * Publish-Subscribe (XEP-0060)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Publish-Subscribe (XEP-0060) XMLNS constants
+ * Constant values for Publish-Subscribe (XEP-0060) XMLNS
  */
 const XOWS_NS_PUBSUB       = "http://jabber.org/protocol/pubsub";
 const XOWS_NS_PUBSUBEVENT  = "http://jabber.org/protocol/pubsub#event";
@@ -3078,15 +3135,15 @@ const XOWS_NS_PUBSUBOWNER  = "http://jabber.org/protocol/pubsub#owner";
 const XOWS_NS_PUBSUBOPTS   = "http://jabber.org/protocol/pubsub#publish-options";
 
 /**
- * Publish-Subscribe (XEP-0060) event client callback
+ * Module Event-Forwarding callback for Received PEP notification
  */
 let xows_xmp_fw_msg_onpubs = function() {};
 
- /* -------------------------------------------------------------------
- * XMPP API - PubSub - Common routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Publish-Subscribe - Common routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Parse recevied forwarded Pubsub event message
+ * Handles recevied PEP-Node-Notification message.
  *
  * @param   {string}    from      Message Sender
  * @param   {string}    event     The <event> element of received message
@@ -3113,10 +3170,10 @@ function xows_xmp_pubsub_recv(from, event)
 }
 
 /**
- * Generic function to publish to account PEP Node
+ * Sends a PEP-Node-Publish IQ query.
  *
  * @param   {string}    node      PEP node (xmlns)
- * @param   {object}    publish   <publish> child node to add
+ * @param   {element}   publish   Payload XML node (<publish>)
  * @param   {string}    access    Pubsub Access model to define
  * @param   {function} [onparse]  Optional callback to receive query result
  */
@@ -3142,10 +3199,10 @@ function xows_xmp_pubsub_publish(node, publish, access, onparse)
 }
 
 /**
- * Generic function to query PEP Node configure
+ * Parses received result of PEP-Node-Configure-Get IQ query.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_pubsub_conf_get_parse(stanza, onparse)
 {
@@ -3175,7 +3232,7 @@ function xows_xmp_pubsub_conf_get_parse(stanza, onparse)
 }
 
 /**
- * Generic function to query PEP Node configure
+ * Sends a PEP-Node-Configure-Get IQ query.
  *
  * @param   {string}    node      PEP node (xmlns)
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -3192,15 +3249,15 @@ function xows_xmp_pubsub_conf_get_query(node, onparse)
 }
 
 /**
- * Generic function to submit PEP Node configuration
+ * Sends a PEP-Node-Configure-Set IQ query.
  *
  * @param   {string}    node      PEP node (xmlns)
- * @param   {object}    from      PEP configuration Data Form to submit
+ * @param   {object}    xform     PEP configuration Data Form to submit
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_pubsub_conf_set_query(node, form, onparse)
+function xows_xmp_pubsub_conf_set_query(node, xform, onparse)
 {
-  const x = xows_xmp_xdata_make(form);
+  const x = xows_xmp_xdata_make(xform);
 
   // Create the query
   const iq =  xows_xml_node("iq",{"type":"set"},
@@ -3212,7 +3269,7 @@ function xows_xmp_pubsub_conf_set_query(node, form, onparse)
 }
 
 /**
- * Generic function to delete PEP Node
+ * Sends a PEP-Node-Retract-Set IQ query.
  *
  * @param   {string}    node      PEP node (xmlns)
  * @param   {string}    id        Item Id to delete
@@ -3231,16 +3288,16 @@ function xows_xmp_pubsub_retract(node, id, onparse)
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - PubSub - PEP Native Bookmarks (XEP-0402)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Publish-Subscribe - PEP Native Bookmarks (XEP-0402)
+ * ---------------------------------------------------------------------------*/
 /**
- * PEP Native Bookmarks (XEP-0402) XMLNS constants
+ * Constant value for PEP Native Bookmarks (XEP-0402) XMLNS
  */
-const XOWS_NS_BOOKMARKS    = "urn:xmpp:bookmarks:1";                  //< XEP-0402
+const XOWS_NS_BOOKMARKS = "urn:xmpp:bookmarks:1";
 
 /**
- * Send query to publish bookmark
+ * Sends PEP-Node-Publish IQ query for Native-Bookmarks node.
  *
  * @param   {string}    jid       Bookmark Room JID
  * @param   {string}    name      Bookmark display name
@@ -3265,17 +3322,17 @@ function xows_xmp_bookmark_publish(jid, name, auto, nick, onparse)
   xows_xmp_pubsub_publish(XOWS_NS_BOOKMARKS, publish, "whitelist", onparse);
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - PubSub - vCard4 Over XMPP (XEP-0292)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Publish-Subscribe - vCard4 Over XMPP (XEP-0292)
+ * ---------------------------------------------------------------------------*/
 /**
- * vCard4 Over XMPP (XEP-0292) XMLNS constants
+ * Constant values for vCard4 Over XMPP (XEP-0292) XMLNS
  */
 const XOWS_NS_VCARD4       = "urn:xmpp:vcard4";
 const XOWS_NS_IETF_VCARD4  = "urn:ietf:params:xml:ns:vcard-4.0";
 
 /**
- * Send query to publish vcard-4
+ * Sends PEP-Node-Publish IQ query for vCard4 node.
  *
  * @param   {object}    vcard     vCard4 data to set
  * @param   {string}    access    Pubsub Access model to define
@@ -3293,10 +3350,10 @@ function xows_xmp_vcard4_publish(vcard, access, onparse)
 }
 
 /**
- * Function to parse result of get vcard-4 query
+ * Parses received IQ result of PEP-Node-Get query for vCard4 node.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_vcard4_get_parse(stanza, onparse)
 {
@@ -3323,10 +3380,10 @@ function xows_xmp_vcard4_get_parse(stanza, onparse)
 }
 
 /**
- * Send query to get vcard-4
+ * Sends a PEP-Node-Get IQ query for vCard4 node.
  *
  * @param   {string}    to        Contact JID get vcard
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_vcard4_get_query(to, onparse)
 {
@@ -3337,16 +3394,16 @@ function xows_xmp_vcard4_get_query(to, onparse)
   xows_xmp_send(iq, xows_xmp_vcard4_get_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - PubSub - User Nickname (XEP-0172)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Publish-Subscribe - User Nickname (XEP-0172)
+ * ---------------------------------------------------------------------------*/
 /**
- * User Nickname (XEP-0172) XMLNS constants
+ * Constant value for User Nickname (XEP-0172) XMLNS
  */
-const XOWS_NS_NICK         = "http://jabber.org/protocol/nick";
+const XOWS_NS_NICK = "http://jabber.org/protocol/nick";
 
 /**
- * Publish XEP-0172 User Nickname
+ * Sends PEP-Node-Publish IQ query for User-Nickname node.
  *
  * @param   {string}    nick      Nickname to publish
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -3363,10 +3420,10 @@ function xows_xmp_nick_publish(nick, onparse)
 }
 
 /**
- * Function to handle result of Query XEP-0172 User Nickname
+ * Parses received IQ result of PEP-Node-Get query for User-Nickname node.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_nick_get_parse(stanza, onparse)
 {
@@ -3393,10 +3450,10 @@ function xows_xmp_nick_get_parse(stanza, onparse)
 }
 
 /**
- * Query XEP-0172 User Nickname
+ * Sends a PEP-Node-Get IQ query for User-Nickname node.
  *
  * @param   {number}    to        Target bare JID
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_nick_get_query(to, onparse)
 {
@@ -3409,17 +3466,17 @@ function xows_xmp_nick_get_query(to, onparse)
   xows_xmp_send(iq, xows_xmp_nick_get_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * XMPP API - PubSub - User Avatar (XEP-0084)
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * User Avatar (XEP-0084) XMLNS constants
+ * Constant value for User Avatar (XEP-0084) XMLNS
  */
 const XOWS_NS_AVATAR_DATA  = "urn:xmpp:avatar:data";
 const XOWS_NS_AVATAR_META  = "urn:xmpp:avatar:metadata";
 
 /**
- * Publish XEP-0084 User Avatar data
+ * Sends PEP-Node-Publish IQ query for Avatar:Data node.
  *
  * @param   {string}    hash      Base-64 encoded SAH-1 hash of data
  * @param   {string}    data      Base-64 encoded Data to publish
@@ -3438,7 +3495,7 @@ function xows_xmp_avat_data_publish(hash, data, access, onparse)
 }
 
 /**
- * Publish XEP-0084 User Avatar metadata
+ * Sends PEP-Node-Publish IQ query for Avatar:Metadata node.
  *
  * @param   {string}    hash      Base-64 encoded SAH-1 hash of data
  * @param   {number}    type      Image type (expected image/png)
@@ -3473,10 +3530,10 @@ function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, on
 }
 
 /**
- * Function to handle result of Query XEP-0084 User Avatar data
+ * Parses received IQ result of PEP-Node-Get query for Avatar:Data node
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_avat_data_get_parse(stanza, onparse)
 {
@@ -3510,11 +3567,11 @@ function xows_xmp_avat_data_get_parse(stanza, onparse)
 }
 
 /**
- * Query XEP-0084 User Avatar data
+ * Sends PEP-Node-Get IQ query for Avatar:Data node.
  *
  * @param   {number}    to        Target bare JID
  * @param   {string}    hash      Data Id to get (SAH-1 data hash)
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_avat_data_get_query(to, hash, onparse)
 {
@@ -3528,10 +3585,10 @@ function xows_xmp_avat_data_get_query(to, hash, onparse)
 }
 
 /**
- * Function to handle result of Query XEP-0084 User Avatar data
+ * Parses received IQ result of PEP-Node-Get query for Avatar:Metadata node
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_avat_meta_get_parse(stanza, onparse)
 {
@@ -3558,10 +3615,10 @@ function xows_xmp_avat_meta_get_parse(stanza, onparse)
 }
 
 /**
- * Query XEP-0084 User Avatar metadata
+ * Sends PEP-Node-Get IQ query for Avatar:Metadata node.
  *
  * @param   {number}    to        Target bare JID
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_avat_meta_get_query(to, onparse)
 {
@@ -3575,34 +3632,33 @@ function xows_xmp_avat_meta_get_query(to, onparse)
 
 /* -------------------------------------------------------------------
  *
- * XMPP API - Message Archive Management(XEP-0313) routines and interface
+ * Message Archive Management (XEP-0313)
  *
  * -------------------------------------------------------------------*/
 /**
- *  Message Archive Management(XEP-0313) XMLNS constants
+ * Constant value for Message Archive Management (XEP-0313) XMLNS
  */
 const XOWS_NS_MAM = "urn:xmpp:mam:2";
 
 /**
- *  Result Set Management (XEP-0059) XMLNS constants
+ *  Constant value for Result Set Management (XEP-0059) XMLNS
  */
 const XOWS_NS_RSM = "http://jabber.org/protocol/rsm";
 
 /**
- *  Map object to store separated stack of incomming archived messages
- *  following a MAM query
+ * Storage stack for MAM query result tracking and processing
  */
 const xows_xmp_mam_stack = new Map();
 
 /**
- *  Map object to store parameters associated with a MAM query
+ * Storage for for MAM query process parameters
  */
 const xows_xmp_mam_param = new Map();
 
 /**
- * Parse recevied forwarded archived message from MAM query
+ * Handles received MAM result Message.
  *
- * @param   {string}    result    The <result> element of received message
+ * @param   {element}   result    Received <result> element.
  */
 function xows_xmp_mam_result_recv(result)
 {
@@ -3722,11 +3778,10 @@ function xows_xmp_mam_result_recv(result)
 }
 
 /**
- * Archive result parsing function called when archive query result
- * is received.
+ * Parses received IQ result of Message-Archive-Management query.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_mam_parse(stanza, onparse)
 {
@@ -3827,8 +3882,7 @@ function xows_xmp_mam_parse(stanza, onparse)
 }
 
 /**
- * Send query for archived messages matching the supplied filters
- * and the specified result set page
+ * Sends a Message-Archive-Management IQ query.
  *
  * @param   {string}    to        Query destination, or Null for default
  * @param   {number}    max       Maximum count of result pages to get
@@ -3878,22 +3932,21 @@ function xows_xmp_mam_query(to, max, jid, start, end, before, onparse)
   xows_xmp_send(iq, xows_xmp_mam_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - HTTP File Upload (XEP-0363) routines and interface
+ * HTTP File Upload (XEP-0363)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * HTTP File Upload (XEP-0363) XMLNS constants
+ * Constant value for HTTP File Upload (XEP-0363) XMLNS
  */
-const XOWS_NS_HTTPUPLOAD   = "urn:xmpp:http:upload:0";
+const XOWS_NS_HTTPUPLOAD = "urn:xmpp:http:upload:0";
 
 /**
- * Http Upload result parsing function called when Http Upload query
- * result is received
+ * Parses received IQ result of HTTP-File-Upload query.
  *
- * @param   {object}    stanza    Received query response stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_upld_parse(stanza, onparse)
 {
@@ -3937,15 +3990,14 @@ function xows_xmp_upld_parse(stanza, onparse)
 }
 
 /**
- * Send a query to request a slot for file upload via
- * HTTP Upload service
+ * Sends an HTTP-File-Upload IQ query.
  *
  * @param   {string}    to        Http-Upload service URL
  * @param   {string}    id        Custom query ID to track result
  * @param   {string}    name      Upload file name
  * @param   {number}    size      Upload file size in bytes
  * @param   {string}    type      Upload file MIM type
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_upld_query(to, id, name, size, type, onparse)
 {
@@ -3958,13 +4010,13 @@ function xows_xmp_upld_query(to, id, name, size, type, onparse)
   xows_xmp_send(iq, xows_xmp_upld_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Multi-User Chat (XEP-0045) routines and protocol
+ * Multi-User Chat (XEP-0045)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Multi-User Chat (XEP-0045) XMLNS constants
+ * Constant values for Multi-User Chat (XEP-0045) XMLNS
  */
 const XOWS_NS_MUC          = "http://jabber.org/protocol/muc";
 const XOWS_NS_MUCUSER      = "http://jabber.org/protocol/muc#user";
@@ -3997,7 +4049,7 @@ const XOWS_NS_MUCADMIN     = "http://jabber.org/protocol/muc#admin";
  */
 
 /**
- * Multi-User Chat (XEP-0045) Room role constants
+ * Constant values for MUC Room Roles
  */
 const XOWS_ROLE_NONE = 0;
 const XOWS_ROLE_VIST = 1;
@@ -4005,7 +4057,7 @@ const XOWS_ROLE_PART = 2;
 const XOWS_ROLE_MODO = 3;
 
 /**
- * Multi-User Chat (XEP-0045) Room role string to constant mapping
+ * Conversion Map for MUC Room Role string to Constant value.
  */
 const xows_xmp_role_val = new Map([
   ["none",        0],
@@ -4015,7 +4067,7 @@ const xows_xmp_role_val = new Map([
 ]);
 
 /**
- * Multi-User Chat (XEP-0045) Room role constant to string mapping
+ * Conversion Map for MUC Room Role Constant value to string.
  */
 const xows_xmp_role_str = new Map([
   [0, "none"       ],
@@ -4025,7 +4077,7 @@ const xows_xmp_role_str = new Map([
 ]);
 
 /**
- * Multi-User Chat (XEP-0045) Room affiliation constants
+ * Constant values for MUC Room Affilations
  */
 const XOWS_AFFI_OUTC = -1;
 const XOWS_AFFI_NONE = 0;
@@ -4034,7 +4086,7 @@ const XOWS_AFFI_ADMN = 2;
 const XOWS_AFFI_OWNR = 3;
 
 /**
- * Multi-User Chat (XEP-0045) Room affiliation string to constant mapping
+ * Conversion Map for MUC Room Affilations string to Constant value.
  */
 const xows_xmp_affi_val = new Map([
   ["outcast", -1],
@@ -4045,7 +4097,7 @@ const xows_xmp_affi_val = new Map([
 ]);
 
 /**
- * Multi-User Chat (XEP-0045) Room affiliation constant to string mapping
+ * Conversion Map for MUC Room Affilations Constant value to string.
  */
 const xows_xmp_affi_str = new Map([
   [-1, "outcast"],
@@ -4055,13 +4107,13 @@ const xows_xmp_affi_str = new Map([
   [ 3, "owner"  ]
 ]);
 
-/* -------------------------------------------------------------------
- * XMPP API - Multi-User Chat - MUC Owner usage routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User Chat - MUC Owner usage
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to parse result of MUC room config form
+ * Parses received IQ result of MUC-Owner-Get query for Room configuration.
  *
- * @param   {string}    to        Room JID to get configuration from
+ * @param   {element}   stanza    Received <iq> stanza
  * @param   {function}  onparse   Callback to receive parse result
  */
 function xows_xmp_muc_cfg_get_parse(stanza, onparse)
@@ -4089,7 +4141,9 @@ function xows_xmp_muc_cfg_get_parse(stanza, onparse)
 }
 
 /**
- * Send query to get MUC room config form
+ * Sends a MUC-Owner-Get IQ query for Room configuration.
+ *
+ * This is used to obtain MUC Room current configuration as X Data From.
  *
  * @param   {string}    to        Room JID to get configuration from
  * @param   {function}  onparse   Callback to receive parse result
@@ -4104,7 +4158,9 @@ function xows_xmp_muc_cfg_get_guery(to, onparse)
 }
 
 /**
- * Send query to cancel MUC form process
+ * Sends a MUC-Owner-Cancel IQ query for Room configuration.
+ *
+ * This is used to cancel MUC Room configuration process.
  *
  * @param   {string}    to        Room JID to get configuration from
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -4123,7 +4179,9 @@ function xows_xmp_muc_cfg_set_cancel(to, onparse)
 }
 
 /**
- * Send query to submit MUC room config form
+ * Sends a MUC-Owner-Set IQ query for Room configuration.
+ *
+ * This is used to submit MUC Room modified configuration.
  *
  * @param   {string}    to        Room JID to get configuration from
  * @param   {object[]}  form      Filled form array to submit
@@ -4143,7 +4201,7 @@ function xows_xmp_muc_cfg_set_query(to, form, onparse)
 }
 
 /**
- * Send query to to destroy MUC room
+ * Sends a MUC-Owner-Destroy IQ query for Room Deletion.
  *
  * @param   {string}    to        Room JID to be destroyed
  * @param   {string}   [alt]      Optional JID of alternate Room to join
@@ -4169,19 +4227,21 @@ function xows_xmp_muc_destroy_query(to, alt, passwd, reason, onparse)
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
- * XMPP API - Multi-User Chat - MUC Admin usage routines
- * -------------------------------------------------------------------*/
-
+/* ---------------------------------------------------------------------------
+ * Multi-User Chat - MUC Admin usage
+ * ---------------------------------------------------------------------------*/
 /**
- * Send query to set MUC occupant affiliation
+ * Sends a MUC-Admin-Set IQ query for Room Members Affilation.
  *
- * items parameter must be an Array of dictionnary objects formated as follow:
+ * This is used to modify the affiliation of the specified Room members.
+ *
+ * the 'items' parameter must be an array of dictionnary objects formated as
+ * follow:
  *    {affiliation:<string>,jid:<string>}
  * or
  *    {affiliation:<string>,jid:<string>,reason:<string>}
  *
- * @param   {string}    to        Room JID to assign Occupant affilation
+ * @param   {string}    to        Room JID to assign Members affilation
  * @param   {object[]}  item      Item to configure affiliation
  * @param   {function} [onparse]  Optional callback to receive query result
  */
@@ -4208,9 +4268,10 @@ function xows_xmp_muc_affi_set_query(to, item, onparse)
 }
 
 /**
- * Function to parse result of MUC room config form
+ * Parses received IQ result of MUC-Admin-Get query for Room Members
+ * Affilation.
  *
- * @param   {string}    to        Room JID to get configuration from
+ * @param   {element}   stanza    Received <iq> stanza
  * @param   {function}  onparse   Callback to receive parse result
  */
 function xows_xmp_muc_affi_get_parse(stanza, onparse)
@@ -4243,9 +4304,11 @@ function xows_xmp_muc_affi_get_parse(stanza, onparse)
 }
 
 /**
- * Send query to get MUC occupant list by role
+ * Sends a MUC-Admin-Get IQ query for Room Members Affilation.
  *
- * @param   {string}    to        Room JID to assign Occupant role
+ * This is used to obtain list of Members with the specified Room affiliation.
+ *
+ * @param   {string}    to        Room JID to assign Members role
  * @param   {string}    affi      Affiliation to get occupant list
  * @param   {function}  onparse   Callback to receive parse result
  */
@@ -4260,10 +4323,12 @@ function xows_xmp_muc_affi_get_query(to, affi, onparse)
 }
 
 /* -------------------------------------------------------------------
- * XMPP API - Multi-User Chat - MUC Moderator usage routines
+ * Multi-User Chat - MUC Moderator usage
  * -------------------------------------------------------------------*/
 /**
- * Send a subject to MUC room
+ * Sends a MUC Subject GroupChat Message.
+ *
+ * This is used to specify the subject of a MUC Room.
  *
  * @param   {string}    id        Message ID or null for auto
  * @param   {string}    to        JID of the recipient
@@ -4281,9 +4346,12 @@ function xows_xmp_muc_subject_send(to, subj)
 }
 
 /**
- * Send query to set MUC occupant role
+ * Sends a MUC-Admin-Set IQ query for Room Participants Role.
  *
- * items parameter must be an Array of dictionnary objects formated as follow:
+ * This is used to modify the Role of the specified Room participants.
+ *
+ * The 'items' parameter must be an Array of dictionnary objects formated as
+ * follow:
  *    {nick:<string>,role:<string>}
  * or
  *    {nick:<string>,role:<string>,reason:<string>}
@@ -4315,9 +4383,10 @@ function xows_xmp_muc_role_set_query(to, item, onparse)
 }
 
 /**
- * Function to parse result of MUC room config form
+ * Parses received IQ result of MUC-Admin-Get query for Room Participants
+ * Role.
  *
- * @param   {string}    to        Room JID to get configuration from
+ * @param   {element}   stanza    Received <iq> stanza
  * @param   {function}  onparse   Callback to receive parse result
  */
 function xows_xmp_muc_role_get_parse(stanza, onparse)
@@ -4348,7 +4417,9 @@ function xows_xmp_muc_role_get_parse(stanza, onparse)
 }
 
 /**
- * Send query to get MUC occupant list by role
+ * Sends a MUC-Admin-Get IQ query for Room Participants Role.
+ *
+ * This is used to obtain list of Participants with the specified Room Role.
  *
  * @param   {string}    to        Room JID to assign Occupant role
  * @param   {string}    role      Role to get occupant list
@@ -4363,14 +4434,14 @@ function xows_xmp_muc_role_get_query(to, role, onparse)
 
   xows_xmp_send(iq, xows_xmp_muc_role_get_parse, onparse);
 }
-/* -------------------------------------------------------------------
- * XMPP API - Multi-User Chat - MUC Occupant usage routines
- * -------------------------------------------------------------------*/
 
+/* -------------------------------------------------------------------
+ * Multi-User Chat - MUC Room-User usage
+ * -------------------------------------------------------------------*/
 /**
- * Send query to get MUC Room own reserved nickname
+ * Parses received IQ result of MUC-disco#info query for MUC Reserved Nickname.
  *
- * @param   {string}    to        Room JID to assign Occupant role
+ * @param   {element}   stanza    Received <iq> stanza
  * @param   {function}  onparse   Callback to receive parse result
  */
 function xows_xmp_muc_nick_parse(stanza, onparse)
@@ -4399,7 +4470,7 @@ function xows_xmp_muc_nick_parse(stanza, onparse)
 }
 
 /**
- * Send query to get MUC Room own reserved nickname
+ * Sends a MUC-disco#info IQ query for MUC Reserved Nickname.
  *
  * @param   {string}    to        Room JID to assign Occupant role
  * @param   {function}  onparse   Callback to receive parse result
@@ -4413,13 +4484,13 @@ function xows_xmp_muc_nick_query(to, onparse)
   xows_xmp_send(iq, xows_xmp_muc_nick_parse, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * XMPP API - Jingle (XEP-0166) routines and interface
+ * Jingle (XEP-0166)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Jingle (XEP-0166) XMLNS constants
+ * Constant values for Jingle (XEP-0166) XMLNS
  */
 const XOWS_NS_JINGLE       = "urn:xmpp:jingle:1";                     //< XEP-0166
 const XOWS_NS_JINGLE_ERR   = "urn:xmpp:jingle:errors:1";              //< XEP-0166
@@ -4435,21 +4506,20 @@ const XOWS_NS_JINGLE_SSMA  = "urn:xmpp:jingle:apps:rtp:ssma:0";       //< XEP-01
 const XOWS_NS_JINGLE_RTPI  = "urn:xmpp:jingle:apps:rtp:info:1";       //< XEP-0167
 
 /**
- * Jingle (XEP-0166) event client callback
+ * Module Event-Forwarding callback for Received Jingle IQ
  */
 let xows_xmp_fw_jing_onecv = function() {};
 
-/* -------------------------------------------------------------------
- * XMPP API - Jingle - SDP / Jingle conversions routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Jingle - Session Description Protocol (SDP) conversions
+ * ---------------------------------------------------------------------------*/
 /**
- * Create SDP string from jingle RTP session request
+ * Generates SDP string from Jingle RTP Session Request (<Jingle>) node.
  *
- * The supplied jingle node must follow the Jingle RTP Sessions
- * standard (XEP-0167), which is the only one supported by this
- * function.
+ * The supplied Jingle node must follow the Jingle RTP Sessions standard
+ * (XEP-0167), which is the only one supported by this function.
  *
- * @parma   {object}    jingle      Jingle node to convert
+ * @parma   {object}    jingle      Jingle (<Jingle>) node to parse
  *
  * @return  {string}    SDP string or null if failed.
  */
@@ -4630,14 +4700,15 @@ function xows_xmp_jing_jingle2sdp(jingle)
 }
 
 /**
- * Create jingle RTP session request from SDP raw string.
+ * Builds up jingle RTP Session Request (<Jingle>) node from SDP string.
  *
- * The created jingle node does not have all required attributes:
- * initiator, responder and action attributes have to be defined.
+ * Notice that the "initiator", "responder" and "action"  attributes of the
+ * Jingle (<Jingle>) query cannot be deducted from SPD data,  therefore, they
+ * are not set by this function.
  *
  * @parma   {string}    sdp         SDP string to parse
  *
- * @return  {object}    RTP session <Jingle> node.
+ * @return  {object}    Jingle (<Jingle>) node.
  */
 function xows_xmp_jing_sdp2jingle(sdp)
 {
@@ -4782,13 +4853,14 @@ function xows_xmp_jing_sdp2jingle(sdp)
 
   return jingle;
 }
-/* -------------------------------------------------------------------
- * XMPP API - Jingle - Session management interface
- * -------------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------
+ * Jingle - Session management
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to proceed an received <jingle> stanza
+ * Handles received Jingle IQ query.
  *
- * @param   {object}    stanza    Received <jingle> stanza
+ * @param   {element}   stanza    Received <iq> stanza
  */
 function xows_xmp_jing_recv(stanza)
 {
@@ -4833,11 +4905,10 @@ function xows_xmp_jing_recv(stanza)
 }
 
 /**
- * Function to parse an Jingle-Specific iq stanza, this is required
- * to handle jingle-specific error conditions.
+ * Parses received IQ result of Jingle query.
  *
- * @param   {object}    stanza    Received iq stanza
- * @param   {function}  onparse   Callback to forward parse result
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
  */
 function xows_xmp_jing_parse(stanza, onparse)
 {
@@ -4865,7 +4936,7 @@ function xows_xmp_jing_parse(stanza, onparse)
 }
 
 /**
- * Send Jingle RTP session initiate from SDP offer
+ * Sends a Jingle RTP-Session-Initiate IQ query.
  *
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sdp         SDP offer string
@@ -4894,7 +4965,7 @@ function xows_xmp_jing_initiate_sdp(to, sdp, onparse)
 }
 
 /**
- * Send Jingle RTP session accept from SDP answer
+ * Sends a Jingle RTP-Session-Accept IQ query.
  *
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sid         Jingle session ID
@@ -4919,7 +4990,7 @@ function xows_xmp_jing_accept_sdp(to, sid, sdp, onparse)
 }
 
 /**
- * Send Jingle session info
+ * Sends a Jingle RTP-Session-Info IQ query.
  *
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sid         Jingle session ID
@@ -4943,7 +5014,7 @@ function xows_xmp_jing_info(to, sid, info, attr, onparse)
 }
 
 /**
- * Send Jingle session request from SDP
+ * Sends a Jingle RTP-Session-Terminate IQ query.
  *
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sid         Jingle session ID
@@ -4962,7 +5033,7 @@ function xows_xmp_jing_terminate(to, sid, reason, onparse)
 }
 
 /**
- * Send Jingle specific error
+ * Sends a Jingle-Specific IQ error.
  *
  * @parma   {string}    id          Stanza id to reply
  * @parma   {string}    to          Destination JID
@@ -4979,23 +5050,22 @@ function xows_xmp_jing_error(id, to, type, condjing, condxmpp)
                      xows_xml_node(condjing,{"xmlns":XOWS_NS_JINGLE_ERR})])));
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
  * XMPP API - Entity Capabilities (XEP-0115)
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Entity Capabilities (XEP-0115) XMLNS constants
+ * Constant value for Entity Capabilities (XEP-0115) XMLNS
  */
-const XOWS_NS_CAPS         = "http://jabber.org/protocol/caps";
+const XOWS_NS_CAPS = "http://jabber.org/protocol/caps";
 
 /**
- * Get own entity capabilities
+ * Returns client (own) identity and features list.
  *
- * This returns an array  containing XML nodes ready to be injected
- * into a query result stanza.
+ * This returns an array of XML elements defining client identity and features.
  *
- * @return  {string}    Array of XML objects defining client identity and features.
+ * @return  {element[]}   Array of XML elements.
  */
 function xows_xmp_caps_self_features()
 {
@@ -5042,15 +5112,15 @@ function xows_xmp_caps_self_features()
 }
 
 /**
- * Cached own capabilities verification string
+ * Storage for cached client (own) capabilities verification string
  */
 let xows_xmp_caps_self_cach = null;
 
 /**
- * Get own entity capabilities verification hash
+ * Returns client (own) entity capabilities verification hash string.
  *
- * This build the verification hash from data returned by the
- * xows_xmp_caps_self_features function.
+ * This generates the verification hash from data returned by the
+ * 'xows_xmp_caps_self_features' function.
  *
  * @return  {string}    Base64 encoded verficiation hash
  */

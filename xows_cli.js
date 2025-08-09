@@ -33,23 +33,23 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         Client API Module
+ * Backend Client Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 /**
- * List of discovered entities
+ * List of discovered entities.
  */
 const xows_cli_entities = new Map();
 
 /**
- * Check whether entity has the specified feature
+ * Checks whether entity has the specified feature.
  *
- * @param   {string}    entity    Entity (JID) to check
+ * @param   {string}    entity    Entity JID/Address to check
  * @param   {string}    feat      Feature name to search
  *
- * @return  {boolean}   True if feature was found, false otherwise
+ * @return  {boolean}   True if feature found, false otherwise
  */
 function xows_cli_entity_has(entity, feat)
 {
@@ -60,42 +60,38 @@ function xows_cli_entity_has(entity, feat)
 }
 
 /**
- * Map to store per-services (such as HTTP Upload, MUC, etc) availables
- * entities (JID)
+ * Per-services (HTTP Upload, MUC, etc) availables entities (JID) storage.
  */
 const xows_cli_services = new Map();
 
 /**
- * Array to store availables external services gathered either via
- * External Service Discovery (XEP-0215) or supplied 'cli_extern_services' option.
+ * External services parameter storage.
+ *
+ * This is the list of external services gathered via External Service
+ * Discovery (XEP-0215) and supplied 'cli_extern_services' option.
  */
-const xows_cli_extsvc_db = [];
+const xows_cli_extservs = [];
 
 /**
- * Check whether external service type is available.
+ * Checks whether external services are available, searching by type.
  *
- * The function accept more than one parameter as type to check
- * against multiple types at once.
+ * @param   {string}    type      One or more service type string to search for
  *
- * @param   {string}    type      External service type to search
- *
- * @return  {boolean}   True if external service was found, false otherwise
+ * @return  {boolean}   True if at least one service was found, false otherwise.
  */
-function xows_cli_extsvc_has(type)
+function xows_cli_extservs_has(...type)
 {
-  const types = Array.from(arguments);
-
   let svcs;
 
   svcs = xows_options.cli_extern_services;
   for(let i = 0; i < svcs.length; ++i) {
-    if(types.includes(svcs[i].type))
+    if(type.includes(svcs[i].type))
       return true;
   }
 
-  svcs = xows_cli_extsvc_db;
+  svcs = xows_cli_extservs;
   for(let i = 0; i < svcs.length; ++i) {
-    if(types.includes(svcs[i].type))
+    if(type.includes(svcs[i].type))
       return true;
   }
 
@@ -103,59 +99,124 @@ function xows_cli_extsvc_has(type)
 }
 
 /**
- * Get external service list by type.
+ * Obtain one or more external services descriptor, searching by type.
  *
- * The function accept more than one parameter as type to gather
- * multiple types at once.
+ * @param   {string}    type      One or more service type string to be gathered
  *
- * @param   {string}    type      External service type to gather
- *
- * @return  {object[]}  Array of external service objects.
+ * @return  {object[]}  Array of external services descriptors.
  */
-function xows_cli_extsvc_get(type)
+function xows_cli_extservs_get(...type)
 {
-  const types = Array.from(arguments);
-
   let svcs;
 
   const result = [];
 
   svcs = xows_options.cli_extern_services;
   for(let i = 0; i < svcs.length; ++i) {
-    if(types.includes(svcs[i].type))
+    if(type.includes(svcs[i].type))
       result.push(svcs[i]);
   }
 
-  svcs = xows_cli_extsvc_db;
+  svcs = xows_cli_extservs;
   for(let i = 0; i < svcs.length; ++i) {
-    if(types.includes(svcs[i].type))
+    if(type.includes(svcs[i].type))
       result.push(svcs[i]);
   }
 
   return result;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Internal data structure and routines
+ *                  PEER structures and related routines
  *
- * -------------------------------------------------------------------*/
-/**
- * Constants for PEER object type
+ * ---------------------------------------------------------------------------*/
+/*
+ * PEER objects are one big pillar of the Client Module. They represents
+ * entities the user can interact with, such as Contacts, MUC Rooms, or
+ * MUC Occupants.
+ *
+ * As data structures, you can think of it like C union type structures. Each
+ * Peer object share common base properties (such as Type, JID, Mame, etc.) and
+ * have additional properties specific to their type.
+ *
+ * About Peer common addresses properties:
+ * Following the XMPP protocole specifications, each Peer entity address
+ * or JID can have multiple variants. Here are the meaning of the several
+ * addresses properties:
+ *
+ * 'addr' : This is the most common address that represent an entity. If Peer
+ *          is a Contact, it is the bare JID, if peer is a MUC Room this is the
+ *          Room JID and finaly, if this is a MUC Occupant, this is the MUC
+ *          Occupant JID.
+ *
+ * 'jful' : This is the Contact full JID (with resources). MUC Room doesn't
+ *          have it and MUC Occupant may have it only if available.
+ *
+ * 'jbar' : This is the Contact bare JID. For Contact type Peers it is the same
+ *          as 'addr'. MUC Room doesn't have it and MUC Occupant may have it if
+ *          full JID is available.
+ *
+ * 'jlck' : This is the Contact 'locked resource' JID, that is, the chosen
+ *          Contact full JID, among all avaiable instances (connections from
+ *          multiples client), used as receipient for sent messages.
+ *
+ * 'jrpc  : Similar to 'jlck' but for WebRTC/Jingle session. That is, the
+ *          chosen Contact full JID, among all avaiable instances (connections
+ *          from multiples client), used for peer to peer RTC session.
  */
-const XOWS_PEER_NONE  = 0x0;
+/**
+ * Constants for PEER object type and search bitmaks
+ */
+const XOWS_PEER_NONE  = 0x0;  //< Dummy
 const XOWS_PEER_CONT  = 0x1;
 const XOWS_PEER_ROOM  = 0x2;
 const XOWS_PEER_OCCU  = 0x4;
-const XOWS_PEER_ANY   = 0x7;
+const XOWS_PEER_ANY   = 0x7;  //< Search bitmask shortcut
 
-/* -------------------------------------------------------------------
- * Client API - Internal data - Self PEER Object
- * -------------------------------------------------------------------*/
 /**
- * Self PEER object
+ * Array.find() test callback function to search Peer per address.
+ *
+ * @param   {object}   peer       Array element
+ * @param   {number}   index      Array index
+ * @param   {number}   array      Array object
+ *
+ * @return  {boolean}  True if Peer address matches the "this" value
  */
-let xows_cli_self = {
+function xows_cli_test_addr(peer, index, array)
+{
+  return (peer.addr == this);
+}
+
+/**
+ * Array.find() test callback function to search Peer with a
+ * valid (non-null) 'self' property.
+ *
+ * @param   {object}   peer       Array element
+ * @param   {number}   index      Array index
+ * @param   {number}   array      Array object
+ *
+ * @return  {boolean}  True if bare matches the "this" value
+ */
+function xows_cli_test_self(peer, index, array)
+{
+  return (peer.self != null);
+}
+
+/* ---------------------------------------------------------------------------
+ * Data structures - Self CONTACT Peer Object
+ * ---------------------------------------------------------------------------*/
+/**
+ * SELF Peer object.
+ *
+ * The 'SELF' Peer object is an unique (singleton) instance representing
+ * the client's user itself as interacting Contact entity.
+ *
+ * Notice that client's user is not only represented by this singleton, but
+ * can also exists as MUC Room Occupant. In this case, the 'self' property
+ * of MUC Occupant Peer object is not null and points to this singelton.
+ */
+const xows_cli_self = {
   "jful": null,   //< Full JID (user@domain/ressource)
   "jbar": null,   //< bare JID (user@domain)
   "addr": null,   //< Common Peer Address (User Bare JID)
@@ -172,62 +233,40 @@ xows_def_readonly(xows_cli_self,"self",xows_cli_self); // Object is current clie
 Object.seal(xows_cli_self); //< prevet structure modification
 
 /**
- * Check wether the given full JID correspond to current user bare JID
+ * Checks whether the given JID corresponds to the user JID
  *
- * @param   {string}    addr      JID address to check
+ * @param   {string}    addr      JID address
  *
- * @return  {boolean}   True if address is own JID, false otherwise
+ * @return  {boolean}   True if address is user JID, false otherwise
  */
 function xows_cli_isself_addr(addr)
 {
   return addr.startsWith(xows_cli_self.addr);
 }
 
+/* ---------------------------------------------------------------------------
+ * Data structures - CONTACT Peer Object
+ * ---------------------------------------------------------------------------*/
 /**
- * Test function for Array.find() to search Peer per Bare
+ * Global list of CONTACT Peers.
  *
- * @param   {object}   peer       Array element
- * @param   {number}   index      Array index
- * @param   {number}   array      Array object
- *
- * @return  {boolean}  True if bare matches the "this" value
- */
-function xows_cli_test_addr(peer, index, array)
-{
-  return (peer.addr == this);
-}
-
-/**
- * Test function for Array.find() to search Peer with valid "self"
- *
- * @param   {object}   peer       Array element
- * @param   {number}   index      Array index
- * @param   {number}   array      Array object
- *
- * @return  {boolean}  True if bare matches the "this" value
- */
-function xows_cli_test_self(peer, index, array)
-{
-  return (peer.self != null);
-}
-
-/* -------------------------------------------------------------------
- * Client API - Internal data - Contact PEER Objects
- * -------------------------------------------------------------------*/
-/**
- * The Client Roster list of contacts
+ * This is equivalent of the user's personal Roster list of Contacts.
  */
 const xows_cli_cont = [];
 
 /**
- * Create a new Contact Peer object
+ * Creates a new CONTACT Peer object.
+ *
+ * If the 'name' parameter is set to null, the JID/address isd efined as
+ * displayed name. This is mainly used for incoming subscription requests
+ * or pending authorization.
  *
  * @param   {string}    addr      JID bare (user@service.domain)
  * @param   {string}    name      Displayed name
  * @param   {string}    subs      Current subscription
  * @param   {string}    avat      Avatar hash string
  *
- * @return  {object}  New Contact Peer object.
+ * @return  {object}  New CONTACT Peer object.
  */
 function xows_cli_cont_new(addr, name, subs, avat)
 {
@@ -260,9 +299,9 @@ function xows_cli_cont_new(addr, name, subs, avat)
 }
 
 /**
- * Remove Contact Peer object from Contacts List
+ * Removes the specified CONTACT Peer object from Contacts List.
  *
- * @param   {object}    cont      Contact Object
+ * @param   {object}    cont      CONTACT Object
  */
 function xows_cli_cont_rem(cont)
 {
@@ -271,77 +310,35 @@ function xows_cli_cont_rem(cont)
 }
 
 /**
- * Returns Contact Peer object with the specified JID
+ * Returns the CONTACT Peer object corresponding to the specified Contact JID.
  *
- * @param   {string}    addr      Contact JID to find
+ * @param   {string}    addr      Contact address (bare of full JID) to find
  *
- * @return  {object}    Contact object or null if not found
+ * @return  {object}    CONTACT Peer object or null if not found.
  */
 function xows_cli_cont_get(addr)
 {
   return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(addr));
 }
 
+/* ---------------------------------------------------------------------------
+ * Data structures - ROOM (MUC Room) Peer Object
+ * ---------------------------------------------------------------------------*/
 /**
- * Returns the contact most suitable full JID for peer to peer
- * application.
- *
- * If available, the function returns the last chat session locked JID,
- * if none exists, it returns the available JID with the best priority.
- * Eventually, if no full JID was found, the Bare JID is returned.
- *
- * @param   {object}    peer      Peer object
- *
- * @return  {string}    Contact best full JID or Bare JID if not found.
- */
-function xows_cli_best_resource(peer)
-{
-  if(peer.type === XOWS_PEER_OCCU)
-    //return peer.jbar ? peer.jbar : peer.addr;
-    return peer.addr;
-
-  // Check for chat session locked JID
-  if(peer.jlck != peer.jbar) {
-
-    return peer.jlck;
-
-  } else {
-
-    let res = null;
-
-    // Try to find best suitable resource
-    const ress = Array.from(peer.ress.values());
-
-    if(ress.length) {
-      if(ress.length > 1) {
-        // First sort by Show level
-        ress.sort(function(a,b){return b.show - a.show;});
-        // Then sort by Priority
-        ress.sort(function(a,b){return b.prio - a.prio;});
-      }
-      res = ress[0].id;
-    }
-
-    // Select ressource according show level and priority
-    return res ? peer.jbar+"/"+res : peer.jbar;
-  }
-}
-
-/* -------------------------------------------------------------------
- * Client API - Internal data - Room PEER Objects
- * -------------------------------------------------------------------*/
-/**
- * The Client Roster list of Rooms
+ * Global list of ROOM (MUC Room) Peers.
  */
 const xows_cli_room = [];
 
 /**
- * Create a new Room Peer object
+ * Create a new ROOM (MUC Room) Peer object
+ *
+ * If 'name' parameter is not supplied, the displayed name is created
+ * from the extracted node part of the JID.
  *
  * @param   {string}    addr      Room JID (room@service.domain)
  * @param   {string}    name      Displayed name
  *
- * @return  {object}    New Room Peer object
+ * @return  {object}    New ROOM (MUC Room) Peer object
  */
 function xows_cli_room_new(addr, name)
 {
@@ -395,9 +392,9 @@ function xows_cli_room_new(addr, name)
 }
 
 /**
- * Remove Room Peer object from Rooms List
+ * Removes the specified ROOM (MUC Room) Peer object from Room List
  *
- * @param   {object}    room      Room Object
+ * @param   {object}    room      ROOM Object
  */
 function xows_cli_room_rem(room)
 {
@@ -406,21 +403,22 @@ function xows_cli_room_rem(room)
 }
 
 /**
- * Returns the Room object with the specified JID
+ * Returns the ROOM Peer object corresponding to the specified MUC Room JID
  *
- * @param   {string}    addr      Room JID to find
+ * @param   {string}    addr      MUC Room JID to find
  *
- * @return  {object}    Room object or null if not found
+ * @return  {object}    ROOM Peer object or null if not found
  */
 function xows_cli_room_get(addr)
 {
   return xows_cli_room.find(xows_cli_test_addr, xows_jid_bare(addr));
 }
-/* -------------------------------------------------------------------
- * Client API - Internal data - Room occupant PEER Objects
- * -------------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------
+ * Data structures - OCCUPANT (MUC Occupant) Peer Object
+ * ---------------------------------------------------------------------------*/
 /**
- * Create a new room Occupant Peer object
+ * Create a new OCCUPANT (MUC Occupant) Peer object
  *
  * @param   {string}    room      Room object where to create Occupant
  * @param   {string}    addr      Occupant JID (room@domaine/nick)
@@ -429,7 +427,7 @@ function xows_cli_room_get(addr)
  * @param   {string}    avat      Avatar hash string
  * @param   {string}    self      Defines whether occupant is the current client
  *
- * @return  {object}    New room Occupant Peer object
+ * @return  {object}    New OCCUPANT (MUC Occupant) Peer object
  */
 function xows_cli_occu_new(room, addr, ocid, jful, avat, self)
 {
@@ -476,9 +474,9 @@ function xows_cli_occu_new(room, addr, ocid, jful, avat, self)
 }
 
 /**
- * Remove Occupant Peer object from Room Occupants List
+ * Remove OCCUPANT Peer object from its related ROOM Peer Occupant List
  *
- * @param   {object}    occu      Occupant Object
+ * @param   {object}    occu      OCCUPANT Object
  */
 function xows_cli_occu_rem(occu)
 {
@@ -488,13 +486,14 @@ function xows_cli_occu_rem(occu)
 }
 
 /**
- * Returns the Occupant object with the specified JID
+ * Returns the OCCUPANT Peer object corresponding to the specified MUC
+ * Occupant JID.
  *
- * @param   {string}    room      Room object
+ * @param   {string}    room      ROOM Peer object
  * @param   {string}    addr      Occupant JID (room@service/nick)
  * @param   {string}   [ocid]     Occupant Anonymous UID
  *
- * @return  {object}    Occupant object or null if not found
+ * @return  {object}    OCCUPANT Peer object or null if not found
  */
 function xows_cli_occu_get(room, addr, ocid)
 {
@@ -507,16 +506,22 @@ function xows_cli_occu_get(room, addr, ocid)
 }
 
 /**
- * Find existing or create new Occupant object with the specified JID
+ * Obtain an already existing or created on purpose OCCUPANT Peer object
+ * corresponding to the specified JID.
  *
- * If no matching Occupant object were found, a new Occupant is created
- * in the specified Room with available cached data.
+ * This function si designed to never fail and always return a valid
+ * OCCUPANT Peer object. This is required in MUC context since a MUC Occupant
+ * may be referenced in Room message history without currently present in the
+ * Room (ie. not 'existing'). In such case we need a valid OCCUPANT Peer
+ * object to represent it anyway as message's author. It so becomes de facto
+ * a MUC Occupant, but "offline" (that does not really exists in XMPP MUC
+ * paradigme, UNFORTUNATELY).
  *
- * @param   {string}    room      Room object
+ * @param   {string}    room      ROOM Peer object
  * @param   {string}    addr      Occupant JID (room@service/nick)
  * @param   {string}   [ocid]     Occupant Anonymous UID
  *
- * @return  {object}    Occupant object
+ * @return  {object}    OCCUPANT Peer object
  */
 function xows_cli_occu_get_or_new(room, addr, ocid)
 {
@@ -536,84 +541,105 @@ function xows_cli_occu_get_or_new(room, addr, ocid)
 }
 
 /**
- * Return sefl Occupant in the specified Room
+ * Returns the OCCUPANT Peer object of the specified Room which is
+ * the user itself (as Occupant of that Room).
  *
- * @param   {string}    room      Room object
+ * @param   {string}    room      ROOM Peer object
  *
- * @return  {object}    Occupant object
+ * @return  {object}    OCCUPANT Peer object
  */
 function xows_cli_occu_self(room)
 {
   return room.occu.find(xows_cli_test_self);
 }
 
-/* -------------------------------------------------------------------
- * Client API - Internal data - MUC Private-Message Sessions
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Data structures - Private Conversation's OCCUPANT management
+ * ---------------------------------------------------------------------------*/
 /**
- * The Client Roster list of Private Conversations
+ * Global list of Private Conversation's OCCUPANT Peers.
+ *
+ * This the list of MUC Occupant which user has ongoing Private chat
+ * with. It reflects the per-Occupant Roster's Private Conversation list.
+ *
+ * The OCCUPANT Peer objects stored in this list are the same than the
+ * ones stored within the related ROOM object, making theme referenced in
+ * two severial lists. An OCCUPANT may be removed from a ROOM and still
+ * present in this list.
  */
-const xows_cli_priv = [];
+const xows_cli_ocpm = [];
 
 /**
- * Remove Occupant from Private Conversation list
+ * Removes OCCUPANT Peers from Private Conversation list.
  *
- * @param   {object}    occu      Occupant Object
+ * @param   {object}    occu      OCCUPANT Peer Object
  */
-function xows_cli_priv_rem(occu)
+function xows_cli_ocpm_rem(occu)
 {
-  const i = xows_cli_priv.indexOf(occu);
-  xows_cli_priv.splice(i, 1);
+  const i = xows_cli_ocpm.indexOf(occu);
+  xows_cli_ocpm.splice(i, 1);
 }
 
 /**
- * Checks whether Occupant Private Conversation exists
+ * Checks whether the specified OCCUPANT Peer exists in Private
+ * Conversation list.
  *
- * @param   {string}    occu      Occupant object
+ * @param   {string}    occu      OCCUPANT Peer Object
  *
  * @return  {boolean}   True if exists, false otherwise
  */
-function xows_cli_priv_has(occu)
+function xows_cli_ocpm_has(occu)
 {
-  return xows_cli_priv.includes(occu);
+  return xows_cli_ocpm.includes(occu);
 }
 
 /**
- * Add Occupant to Private Conversation list
+ * Adds OCCUPANT Peer object to Private Conversation list.
  *
  * @param   {string}    occu      Occupant object
  *
  * @return  {boolean}   True if Occupant was added, false if already exists
  */
-function xows_cli_priv_add(occu)
+function xows_cli_ocpm_add(occu)
 {
-  const exists = xows_cli_priv.includes(occu);
-  if(!exists) xows_cli_priv.push(occu);
+  const exists = xows_cli_ocpm.includes(occu);
+  if(!exists) xows_cli_ocpm.push(occu);
   return !exists;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Peer management routines
+ * Peer Objects management routines
  *
- * -------------------------------------------------------------------*/
-
+ * ---------------------------------------------------------------------------*/
 /**
- * Returns the Room or Contact object with the specified JID
+ * Obtain a Peer object matching the given JID according the specified
+ * type bitmask.
  *
- * @param   {string}    jid       Contact JID to find
- * @param   {number}    type      Bitmaks for Peer type to search
+ * The 'addr' parameter can be any JID type address, either full or bare. The
+ * 'type' parameter is treated as a bitmask to select the type Peer to be
+ * retreived. It is therfore possible to search for multiple types at once,
+ * the returned Peer will be selectionned according the following priority:
+ * CONTACT, OCCUPANT then ROOM.
+ *
+ * For instance, is possible to get the ROOM Peer object by providing an
+ * Occupant JID and specifying only the XOWS_PEER_ROOM mask. If you specify
+ * both XOWS_PEER_ROOM|XOWS_PEER_OCCU, the OCCUPANT Peer object will
+ * be returned.
+ *
+ * @param   {string}    addr      Peer address to search for
+ * @param   {number}    type      Bitmask for Peer type to matches with
  *
  * @return  {object}    Peer object or null if not found
  */
-function xows_cli_peer_get(jid, type)
+function xows_cli_peer_get(addr, type)
 {
   // If Null JID we return self
-  if(!jid)
+  if(!addr)
     return xows_cli_self;
 
   // Get the bare JID
-  const bare = xows_jid_bare(jid);
+  const bare = xows_jid_bare(addr);
 
   // Check for own JID
   if(bare == xows_cli_self.addr)
@@ -631,12 +657,12 @@ function xows_cli_peer_get(jid, type)
     if(room) {
       // Check for Occupant
       let occu;
-      if(type & XOWS_PEER_OCCU && jid.includes("/")) {
-        occu = room.occu.find(xows_cli_test_addr, jid);
+      if(type & XOWS_PEER_OCCU && addr.includes("/")) {
+        occu = room.occu.find(xows_cli_test_addr, addr);
         if(occu) {
           return occu;
         } else {
-          return xows_cli_priv.find(xows_cli_test_addr, jid);
+          return xows_cli_ocpm.find(xows_cli_test_addr, addr);
         }
       }
       return room;
@@ -647,11 +673,22 @@ function xows_cli_peer_get(jid, type)
 }
 
 /**
- * Update (and cache) Peer or Self informations such as Nickname,
- * Avatar or Status
+ * Saves Peer object cached informations and forwards Peer creation or changes
+ * to the proper callback according Peer type.
+ *
+ * This function is used to notify the GUI Module (via configured callbacks)
+ * that a Peer has been created or has changed in some sort (eg. New
+ * avatar, Nickname change, etc).
+ *
+ * The GUI Module then create or update the visual/GUI representation
+ * of this Peer in the user interface.
+ *
+ * It is possible to pass custom parameter since it is sometimes required to
+ * supply some additional and contextual information to perform the proper
+ * operations.
  *
  * @param   {object}    peer      Peer object to update
- * @param   {any}      [param]    Additional param to pass to callback
+ * @param   {*}        [param]    Additional param to pass to callback
  */
 function xows_cli_peer_push(peer, param)
 {
@@ -674,7 +711,7 @@ function xows_cli_peer_push(peer, param)
       // Forward Occupant update
       xows_cli_fw_mucpush(peer, param);
       // Forward update Private Conversation
-      if(xows_cli_priv_has(peer))
+      if(xows_cli_ocpm_has(peer))
         xows_cli_fw_occupush(peer, param);
     } break;
 
@@ -687,7 +724,7 @@ function xows_cli_peer_push(peer, param)
 
 /**
  * Returns the most suitable identifier for Peer, it can be either Contact or
- * Occupant JID or Occupant Unique ID if available.
+ * Occupant JID or Occupant Unique-ID if available.
  *
  * @param   {object}    peer      Peer object to get most suitable ID
  *
@@ -743,8 +780,25 @@ function xows_cli_peer_subsste(peer)
 }
 
 /**
- * Returns the Contact or Occupant Peer object according specified Peer
- * object and from JID address.
+ * Obtain the CONTACT or OCCUPANT Peer object that is author of interaction
+ * as deducted from supplied informations.
+ *
+ * This function is used to retrieve Peer object corresponding to a message's
+ * author in chat context. The author can be the user itself or any other
+ * party of conversation, either Contact or MUC occumant.
+ *
+ * The Peer object specified in 'peer' parameter define the context and
+ * must be the Peer corresponding to current chat context. Therfore
+ * it can NEVER be the user itself.
+ *
+ * If 'peer' is a CONTACT, the corresponding CONTACT or SELF is returned.
+ *
+ * If 'peer' is a ROOM, the corresponding OCCUPANT Peer object is returned, it
+ * can the OCCUPANT corresponding to user itself (as Room Occupant) or any
+ * other Occupant.
+ *
+ * if 'peer' is an OCCUPANT (Private Conversation), the corresponding OCCUPANT
+ * or SELF is returned.
  *
  * @param   {string}    peer      Peer object Room or Contact
  * @param   {string}    addr      User, Room or Occupant JID
@@ -770,16 +824,16 @@ function xows_cli_author_get(peer, addr, ocid)
       return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(addr));
     }
 
-  default:
+  default: //< TODO: Optimize that for proper Private Message Occupant handling
     return xows_cli_peer_get(addr, XOWS_PEER_ANY);
   }
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Module Initialization
+ * Module Initialization
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
  * Loading process tasks bits
  */
@@ -789,7 +843,10 @@ const XOWS_FETCH_INFO = xows_load_task_bit();
 const XOWS_AWAIT_SUBJ = xows_load_task_bit();
 
 /**
- * Initializes module
+ * Module initialization.
+ *
+ * This initializes the backend client, binding callback with the XMPP module
+ * and setting required elements. This function should be called only once.
  */
 function xows_cli_init()
 {
@@ -845,43 +902,44 @@ function xows_cli_reset()
   // Clear databases
   xows_cli_entities.clear();
   xows_cli_services.clear();
-  xows_cli_extsvc_db.length = 0;
+  xows_cli_extservs.length = 0;
 
   // Clean the client data
   xows_cli_cont.length = 0;
   xows_cli_room.length = 0;
-  xows_cli_priv.length = 0;
+  xows_cli_ocpm.length = 0;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - API client interface
+ * Module Events Configuration
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for client connected
+ * Module Event-Forwarding callback for Client session ready
  */
 let xows_cli_fw_onready = function() {};
 
 /**
- * Callback function for client user status change
- */
-let xows_cli_fw_selfpush = function() {};
-
-/**
- * Callback function for connection or login error
- */
-let xows_cli_fw_onerror = function() {};
-
-/**
- * Callback function for session closed
+ * Module Event-Forwarding callback for Client session closed
  */
 let xows_cli_fw_onclose = function() {};
 
 /**
- * Set callback functions for common client events
+ * Module Event-Forwarding callback for Client unhandled error
+ */
+let xows_cli_fw_onerror = function() {};
+
+/**
+ * Module Event-Forwarding callback for Client user (own) changes
+ */
+let xows_cli_fw_selfpush = function() {};
+
+/**
+ * Set callback functions for Module events.
  *
- * Possibles slot parameter value are the following:
+ * Possibles 'event' parameter value are the following:
+ *
  *  - ready     : Session ready (connected)
  *  - error     : Session error (unhandled query error)
  *  - close     : Session closed (disconected)
@@ -910,15 +968,15 @@ let xows_cli_fw_onclose = function() {};
  *  - calltermd : Multimedia call Session Terminated
  *  - callerror : Multimedia call Session errror
  *
- * @param   {string}    type      Callback slot
- * @param   {function}  callback  Callback function to set
+ * @param   {string}    event     Event to assign callback to
+ * @param   {function}  callback  Callback function to assign
  */
-function xows_cli_set_callback(type, callback)
+function xows_cli_set_callback(event, callback)
 {
   if(!xows_isfunc(callback))
     return;
 
-  switch(type.toLowerCase()) {
+  switch(event.toLowerCase()) {
     case "ready":       xows_cli_fw_onready = callback; break;
     case "error":       xows_cli_fw_onerror = callback; break;
     case "close":       xows_cli_fw_onclose = callback; break;
@@ -948,9 +1006,13 @@ function xows_cli_set_callback(type, callback)
     case "callerror":   xows_cli_fw_callerror = callback; break;
   }
 }
-
+/* ---------------------------------------------------------------------------
+ *
+ * Base XMPP / Client routines
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Proceeds incoming XMPP error
+ * Handles incoming XMPP error (forwarded from XMPP Module)
  *
  * @parma   {string}    from      Error expeditor
  * @param   {object}    error     Error data object
@@ -961,11 +1023,11 @@ function xows_cli_xmp_onerror(from, error)
   xows_cli_fw_onerror(from, error);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Connect and Disconnect routines
+ * Sessions routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
  * Global session connection signals
  */
@@ -974,12 +1036,12 @@ const XOWS_SESS_LOST = 0x001;
 const XOWS_SESS_FAIL = 0x002;
 const XOWS_SESS_ABRT = 0x004;
 
-/* -------------------------------------------------------------------
- * Connect and Disconnect - Connection routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Sessions routines - Connection
+ * ---------------------------------------------------------------------------*/
 /**
- * Connecte client to the specified XMPP over WebSocket service
- * using the given auhentication data
+ * Attempts to connect to the specified XMPP over WebSocket service using
+ * the given authentication data.
  *
  * @param   {string}    url       XMPP over WebSocket service URL
  * @param   {string}    jid       User JID (username@domain)
@@ -996,7 +1058,7 @@ function xows_cli_cnx_login(url, jid, pass, regi)
 }
 
 /**
- * Handle successfull connection and opened XMPP session
+ * Handles successfully opened XMPP session (forwarded from XMPP Module).
  *
  * This function is called by the xows_xmp_* API layer once XMPP
  * services and items discovery is completed.
@@ -1032,21 +1094,22 @@ function xows_cli_xmp_onready(bind, resume)
   }
 }
 
-/* -------------------------------------------------------------------
- * Connect and Disconnect - Disconnect and resume routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Sessions routines - Disconnect and resume
+ * ---------------------------------------------------------------------------*/
 /**
- * Flag for client connexion loss
+ * Connection resume/recover flag, also used to store setTimeout reference
  */
 let xows_cli_cnx_resume_pnd = null;
 
 /**
- * Reconnect attempt timeout reference
+ * Connection resume/recover handle to 'retry' setTimeout reference
  */
 let xows_cli_cnx_resume_hnd = null;
 
 /**
- * Try to resume XMPP session using previousely defined auhentication data
+ * Try to resume/recover XMPP session using previousely defined
+ * auhentication data.
  *
  * @param   {boolean}   start      Start or continue resume process
  */
@@ -1086,7 +1149,7 @@ function xows_cli_cnx_resume(start = false)
 }
 
 /**
- * Close session due to connection recovert timeout
+ * Closes the session due to connection resume/recover timeout
  */
 function xows_cli_cnx_timeout()
 {
@@ -1097,7 +1160,7 @@ function xows_cli_cnx_timeout()
 }
 
 /**
- * Close the XMPP session and disconnect from server
+ * Closes (normally) the XMPP session and disconnect from server.
  */
 function xows_cli_cnx_close()
 {
@@ -1129,7 +1192,7 @@ function xows_cli_cnx_close()
 
 /**
  * Special function to close session and exit the quickest way
- * possible, used to terminate session when browser exit page
+ * possible, used to terminate session when browser exit page.
  */
 function xows_cli_onuload()
 {
@@ -1142,7 +1205,7 @@ function xows_cli_onuload()
 }
 
 /**
- * Checks wether client is connected
+ * Checks wether client is connected (valid session open)
  *
  * @return  {boolean}   True if client is connected, false otherwise
  */
@@ -1152,7 +1215,7 @@ function xows_cli_cnx_cntd()
 }
 
 /**
- * Handle XMPP stream closed
+ * Handles XMPP session closed (forwarded from XMPP Module)
  *
  * @parma   {number}    code      Signal code for closing
  * @param   {string}   [text]     Optional information or error message
@@ -1199,17 +1262,21 @@ function xows_cli_xmp_onclose(code, text)
   xows_cli_fw_onclose(code, text);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Client initialization routines
+ * Session Warm Up (initialization / discovery) routines
  *
- * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Client API - Entities Discovery routines
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Client warming up, this function starts the initial features
- * and services discovery.
+ * Starts the Session Warm Up process.
+ *
+ * Once XMPP Session is open, it is not yet fully ready for proper usage. The
+ * client must gather data from server about user itself, its contact list,
+ * but also available server's features and services.
+ *
+ * This is what the "Session Warm Up process" do, it is a pretty long journey
+ * made of several stages. The first stage is to query for own account
+ * informations.
  */
 function xows_cli_warmup_start()
 {
@@ -1219,8 +1286,15 @@ function xows_cli_warmup_start()
   xows_xmp_disco_info_query(xows_cli_self.addr, null, xows_cli_warmup_discnfo_self);
 }
 
+/* ---------------------------------------------------------------------------
+ * Session Warm Up - Entities Discovery routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Initial discovery - parse own account info
+ * Session Warm Up (stage #0) function that handles received own account
+ * informations.
+ *
+ * Once own informations parsed, the function continues the Session Warm Up
+ * Process by sending info discovery query to host server.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {string}    node      Entity node
@@ -1239,7 +1313,11 @@ function xows_cli_warmup_discnfo_self(from, node, idens, feats, xform, error)
 }
 
 /**
- * Initial discovery - parse host info
+ * Session Warm Up (stage #1) function that handles received host server
+ * informations.
+ *
+ * Once host informations parsed, the function continues the Session Warm Up
+ * Process by sending items discovery query to host server.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {string}    node      Entity node
@@ -1258,12 +1336,16 @@ function xows_cli_warmup_discnfo_host(from, node, idens, feats, xform, error)
 }
 
 /**
- * Stack for host item discovery
+ * Stack for host items information discovery
  */
 const xows_cli_warmup_discitms_stk = [];
 
 /**
- * Initial discovery - parse host item list.
+ * Session Warm Up (stage #2.1) function that handles received host server
+ * items (services).
+ *
+ * Once host items list parsed, the function continues the Session Warm Up
+ * Process by sending information discovery query for each item.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  items     Array of parsed <item> objects
@@ -1301,7 +1383,12 @@ function xows_cli_warmup_discitms_host(from, items, error)
 }
 
 /**
- * Initial discovery - parse host item (service) infos
+ * Session Warm Up (stage #2.2) function that handles received host item
+ * (service) information.
+ *
+ * Once host all items (services) informations parsed, the function continues
+ * the Session Warm Up Process either by sending external services discovery
+ * query or user Roster query.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {string}    node      Entity node
@@ -1326,13 +1413,18 @@ function xows_cli_warmup_discnfo_item(from, node, idens, feats, xform, error)
     if(xows_cli_entity_has(xows_xmp_host, XOWS_NS_EXTDISCO)) {
       xows_xmp_extdisco_query(xows_xmp_host, null, xows_cli_warmup_extdisc_host);
     } else {
-      xows_cli_warmup_config();
+      // Features and service discovery finished, now get user Roster
+      xows_xmp_rost_get_query(xows_cli_warmup_roster);
     }
   }
 }
 
 /**
- * Initial discovery - parse host external services
+ * Session Warm Up (stage #2.3) function that handles received external
+ * services information.
+ *
+ * Once host external services informations parsed, the function continues
+ * the Session Warm Up Process either by sending user Roster query.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  svcs      Array of parsed <service> objects
@@ -1349,7 +1441,7 @@ function xows_cli_warmup_extdisc_host(from, svcs, error)
     xows_log(2,"cli_extdisco_parse","discovered external",type+" ("+svcs[i].host+":"+svcs[i].port+")");
 
     // Add external service to list
-    xows_cli_extsvc_db.push(svcs[i]);
+    xows_cli_extservs.push(svcs[i]);
   }
 
   // Features and service discovery finished, now get user Roster
@@ -1357,13 +1449,12 @@ function xows_cli_warmup_extdisc_host(from, svcs, error)
 }
 
 /**
- * Initial user Roster parse after server discovery feature
+ * Session Warm Up (stage #3) function that handles received user Roster
+ * information.
  *
- * This function is called as callback to parse the initial roster
- * get query that follow the client services and features discovery.
- *
- * Once Roster parsed, the function fetch user own data, such as
- * avatar and nickname, then step forward to client configuration.
+ * Received Roster content is parsed and a query for avatar and nickname is
+ * sent for each Contact. Once all Contact data is received, the Warm Up
+ * finale configuration function (xows_cli_warmup_config) is called.
  *
  * @param   {object[]}  items     Array of parsed roster <item> objects
  * @param   {object}    error     Error data if any
@@ -1378,13 +1469,17 @@ function xows_cli_warmup_roster(items, error)
 }
 
 /**
- * Configure client according discovered features and items.
+ * Session Warm Up (stage #3) function that configures the client according
+ * discovered features and services.
  *
  * This function is called once initial discovery is finished to setup
- * availables common services such as MUC or HTTP File Upload.
+ * availables services such as MUC or HTTP File Upload.
  *
- * When setup job done, if MUC service is available, it lauch MUC room
- * discovery process then call the very last initialization function.
+ * Once configuration is done, if MUC service is available, a query for
+ * available public Room list is sent and another discovery carousel begins.
+ *
+ * Once all MUC Room information is collected, or if no MUC service is
+ * available, the Warm Up is done and 'xows_cli_warmup_finish' is called.
  */
 function xows_cli_warmup_config()
 {
@@ -1445,10 +1540,10 @@ function xows_cli_warmup_config()
 }
 
 /**
- * Final warmup function
+ * Session Warm Up finale stage.
  *
  * This function launch a loading timeout process to wait for everything to
- * be loaded, then start the session.
+ * be loaded, then starts the session.
  */
 function xows_cli_warmup_finish()
 {
@@ -1456,15 +1551,16 @@ function xows_cli_warmup_finish()
   xows_load_onempty_set(2000, xows_cli_session_start);
 }
 
-/* -------------------------------------------------------------------
- * Client API - Client final initialization
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Session Start or Resume
+ * ---------------------------------------------------------------------------*/
 /**
- * Initial self presence declaration, this is very last initialization
- * function. The client is now ready and Online
+ * Starts (or resume) session.
  *
  * This function is called once per connection to send the initial presence
  * and send user updated data (avatar, nickname, etc..) to GUI module.
+ *
+ * It is now considered that client is ONLINE and ready to use.
  *
  * @param   {boolean}   resume    Indicate XMPP stream resume
  */
@@ -1510,23 +1606,23 @@ function xows_cli_session_start(resume)
   xows_load_onempty_set(3000, xows_cli_fw_onready, xows_cli_self, resume);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - User Roster routines and interface
+ * User Roster management routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for Contact added or refreshed
+ * Module Event-Forwarding callback for Contact add or changes
  */
 let xows_cli_fw_contpush = function() {};
 
 /**
- * Callback function for Contact removed
+ * Module Event-Forwarding callback for Contact deletion
  */
 let xows_cli_fw_contpull = function() {};
 
 /**
- * Proceeds incoming XMPP roster push
+ * Handle incoming XMPP roster push (forwarded from XMPP Module)
  *
  * @param   {string}    addr      Contact JID
  * @param   {string}    name      Contact Displayred name
@@ -1567,7 +1663,7 @@ function xows_cli_rost_onpush(addr, name, subs, group)
 }
 
 /**
- * Resets all roster contacts referenced resources and set all to unavailable.
+ * Resets all roster Contacts referenced resources and set all to unavailable.
  *
  * This function is used to reset contacts resources to avoid ghost resources
  * that may stay available, for example, after a client connection loss.
@@ -1588,7 +1684,7 @@ function xows_cli_rost_reset()
 }
 
 /**
- * Function to handle parsed result of roster query
+ * Handle parsed result of roster query
  *
  * @param   {object[]}  items     Array of parsed <item> objects
  * @param   {object}    error     Error data if any
@@ -1607,7 +1703,7 @@ function xows_cli_rost_parse(items, error)
 }
 
 /**
- * Function to query client roster content (contact list)
+ * Query client roster content (contact list)
  */
 function xows_cli_rost_fetch()
 {
@@ -1616,7 +1712,7 @@ function xows_cli_rost_fetch()
 }
 
 /**
- * Add, update or remove item (contact or room) to/from Roster
+ * Add, update or remove item to/from Roster
  *
  * To remove existing item, set the name parameter ot null.
  *
@@ -1629,21 +1725,18 @@ function xows_cli_rost_set(addr, name)
   xows_xmp_rost_set_query(addr, name, null, null);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Presences and Subscription routines
+ * Contacts Presences and Subscription routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for Subscription added
+ * Module Event-Forwarding callback for incoming subscription request
  */
 let xows_cli_fw_subspush = function() {};
 
 /**
- * Handles received presence (<presence> stanza) status from
- * other contacts
- *
- * This function is called by xows_xmp_presence_recv.
+ * Handles received presence from other contacts (forwarded from XMPP Module)
  *
  * @param   {string}    from      Sender JID
  * @param   {number}    show      Numerical show level, from -1 to 4
@@ -1742,42 +1835,12 @@ function xows_cli_pres_onrecv(from, show, prio, stat, node, phot)
   xows_load_task_push(cont, load_mask, xows_cli_peer_push);
 }
 
+/* ---------------------------------------------------------------------------
+ * Contacts subscription routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Parese received disco#info capabilities query result
- *
- * @param   {string}    from      Query result sender JID
- * @param   {object[]}  iden      Array of parsed <identity> objects
- * @param   {string[]}  feat      Array of parsed feature strings
- * @param   {object[]}  form      Array of parsed X-Data fields
- * @param   {string}    node      Entity Node or null if unavailable
- */
-function xows_cli_entity_caps_parse(from, iden, feat, form, node)
-{
-  if(!xows_cach_caps_has(node)) {
-    // Add entity feature list to cache
-    xows_cach_caps_save(node, feat);
-  }
-}
-
-/**
- * Check whether an entity has the specified capability
- *
- * @param   {string}    node      Entity identifier (node)
- * @param   {string}    xmlns     XMLNS corresponding to capability
- */
-function xows_cli_entity_caps_test(node, xmlns)
-{
-  if(xows_cach_caps_has(node))
-    return xows_cach_caps_get(node).includes(xmlns);
-
-  return false;
-}
-/* -------------------------------------------------------------------
- * Client API - Contacts subscription routines
- * -------------------------------------------------------------------*/
-/**
- * Handles received subscribe (<presence> stanza) request or result
- * from orher contacts
+ * Handles received subscription request or response from orher
+ * contacts (forwarded from XMPP Module)
  *
  * @param   {string}    from      Sender JID
  * @param   {string}    type      Subscribe request/result type
@@ -1812,7 +1875,7 @@ function xows_cli_pres_onsubs(from, type, nick)
         // Create new contact
         cont = xows_cli_cont_new(xows_jid_bare(from), nick, XOWS_SUBS_NONE, null);
         // Forward add subscription request
-        xows_gui_rost_subs_onpush(cont);
+        xows_cli_fw_subspush(cont);
       }
     } break;
 
@@ -1821,7 +1884,7 @@ function xows_cli_pres_onsubs(from, type, nick)
         // Update contact subscription
         cont.subs &= ~XOWS_SUBS_FROM;
         // Update Contact
-        xows_gui_rost_cont_onpush(cont);
+        xows_cli_fw_contpush(cont);
       } else {
         // This should not happen
         xows_log(1,"cli_xmp_onsubscribe","subscribe revoked from unknow contact",from);
@@ -1833,7 +1896,7 @@ function xows_cli_pres_onsubs(from, type, nick)
         // Update contact subscription
         cont.subs |= XOWS_SUBS_FROM;
         // Forward to update Contact
-        xows_gui_rost_cont_onpush(cont);
+        xows_cli_fw_contpush(cont);
       } else {
         // This should not happen
         xows_log(1,"cli_xmp_onsubscribe","request allowed from unknow contact",from);
@@ -1849,7 +1912,7 @@ function xows_cli_pres_onsubs(from, type, nick)
 }
 
 /**
- * Send presence subscribe request to contact
+ * Send a subscription request to the specified contact
  *
  * @param   {string}    addr      Contact JID to send subsribe request
  */
@@ -1880,6 +1943,12 @@ function xows_cli_subs_request(addr)
  */
 function xows_cli_subs_revoke(cont)
 {
+  // It appear that removing Item from Roster is sufficient since server
+  // consider that as Subscription revocation and send the proper "presence"
+  // to the specified Peer.
+  // It is however required to verify that such behavior is standard. If this
+  // is not the case, uncomment the code bellow.
+
   /*
   // Revoke subscription to Contact
   if(cont.subs & XOWS_SUBS_FROM) {
@@ -1890,6 +1959,7 @@ function xows_cli_subs_revoke(cont)
   */
   // Remove item from roster
   xows_xmp_rost_set_query(cont.addr, null, null, null);
+
 }
 
 /**
@@ -1927,28 +1997,62 @@ function xows_cli_subs_answer(cont, allow)
   }
 }
 
-/* -------------------------------------------------------------------
- *
- * Client API - Message semantics
- *
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Contact's client Capabilities routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for sent or received Chat Message
+ * Parse received result of disco#info capabilities query
+ *
+ * @param   {string}    from      Query result sender JID
+ * @param   {object[]}  iden      Array of parsed <identity> objects
+ * @param   {string[]}  feat      Array of parsed feature strings
+ * @param   {object[]}  form      Array of parsed X-Data fields
+ * @param   {string}    node      Entity Node or null if unavailable
+ */
+function xows_cli_entity_caps_parse(from, iden, feat, form, node)
+{
+  if(!xows_cach_caps_has(node)) {
+    // Add entity feature list to cache
+    xows_cach_caps_save(node, feat);
+  }
+}
+
+/**
+ * Check whether an entity has the specified capability
+ *
+ * @param   {string}    node      Entity identifier (node)
+ * @param   {string}    xmlns     XMLNS corresponding to capability
+ */
+function xows_cli_entity_caps_test(node, xmlns)
+{
+  if(xows_cach_caps_has(node))
+    return xows_cach_caps_get(node).includes(xmlns);
+
+  return false;
+}
+
+/* ---------------------------------------------------------------------------
+ *
+ * Chat Messages management (Send and Receive)
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Module Event-Forwarding callback for received (or sent) Chat Message
  */
 let xows_cli_fw_msgrecv = function() {};
 
 /**
- * Callback function for new Private Message session
+ * Module Event-Forwarding callback for Private Conversation add or change
  */
 let xows_cli_fw_occupush = function() {};
 
 /**
- * Callback function for unavailable Private Message session
+ * Module Event-Forwarding callback for Private Conversation deletion
  */
 let xows_cli_fw_occupull = function() {};
 
 /**
- * Handles an incoming chat message with content
+ * Handles an incoming chat message with content (forwarded from XMPP Module)
  *
  * @param   {object}      mesg       Message object
  * @param   {object}      error      Error data if any
@@ -1977,7 +2081,7 @@ function xows_cli_msg_onrecv(mesg, error)
   if(peer.type === XOWS_PEER_OCCU) {
     // This is Room Occupant private message, if no PM session exist
     // and was actually added in PM list, we Forward PM session creation
-    if(xows_cli_priv_add(peer))
+    if(xows_cli_ocpm_add(peer))
       xows_cli_fw_occupush(peer);
   }
 
@@ -2041,16 +2145,16 @@ function xows_cli_msg_send(peer, body, repl, rpid, rpto)
   // Forward echo sent message
   xows_cli_fw_msgrecv(peer, mesg, wait, true);
 }
-/* -------------------------------------------------------------------
- * Client API - Message semantics - Message Receipt
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat Messages - Message Receipt
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for received Receipt
+ * Module Event-Forwarding callback for received message receipt
  */
 let xows_cli_fw_msgrecp = function() {};
 
 /**
- * Handles an incoming message receipt
+ * Handles an incoming message receipt (forwarded from XMPP Module)
  *
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
@@ -2078,16 +2182,16 @@ function xows_cli_msg_onrecp(id, from, to, receipt)
   xows_cli_fw_msgrecp(peer, receipt);
 }
 
-/* -------------------------------------------------------------------
- * Client API - Message semantics - Chat-Sates
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat Messages - Chat-Sates
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for received Chatstat notification
+ * Module Event-Forwarding callback for received Chat-State notification
  */
 let xows_cli_fw_msgchst = function() {};
 
 /**
- * Handles an incoming chat state notification.
+ * Handles an incoming Chat-State notification (forwarded from XMPP Module)
  *
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
@@ -2148,12 +2252,13 @@ function xows_cli_chst_onrecv(id, from, type, state, ocid)
 }
 
 /**
- *  Composing chatsate setTimeout handle/reference
+ *  Composing chat-sate setTimeout handle
  */
 let xows_cli_chst_hto = null;
 
 /**
- * Set chat state to and send the proper notification to peer
+ * Set user current Chat-State and send the proper notification to the
+ * specified Peer.
  *
  * @param   {object}    peer      Peer object to send notification
  * @param   {object}    stat      New chat state to set
@@ -2190,16 +2295,17 @@ function xows_cli_chst_set(peer, stat)
     xows_xmp_message_chatstate_send(peer.jlck, type, stat);
   }
 }
-/* -------------------------------------------------------------------
- * Client API - Message semantics - Message Retraction
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Chat Messages - Message Retraction
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for received Chatstat notification
+ * Module Event-Forwarding callback for received message retraction
  */
 let xows_cli_fw_msgretr = function() {};
 
 /**
- * Handles an incoming chat state notification.
+ * Handles a received Message Retraction instruction (forwarded from
+ * XMPP Module).
  *
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
@@ -2225,7 +2331,7 @@ function xows_cli_msg_onretr(id, from, type, usid)
 }
 
 /**
- * Retract previous Message
+ * Send a Message Retraction instruction
  *
  * @param   {object}    peer      Related Peer object
  * @param   {string}    usid      Unique and Stable ID of message to retract
@@ -2243,14 +2349,16 @@ function xows_cli_msg_retr(peer, usid)
     xows_cli_fw_msgretr(peer, usid);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Self presence (show and status) routines
+ * Self Presence (show and status) routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Send and update presence to proper destination and modify internal
- * client data to reflect new user presence
+ * Advert for own presence leve, status and related informations changes.
+ *
+ * The function send an updated presence to server, joined MUC Rooms then
+ * notify GUI Module for user (self) changes.
  */
 function xows_cli_pres_update()
 {
@@ -2295,7 +2403,10 @@ function xows_cli_pres_update()
 }
 
 /**
- * Set the client current presence status
+ * Set user (own) presence status
+ *
+ * If status really changed, an updated presence is sent
+ * with the new status.
  *
  * @param   {string}    stat      Status string to set
  */
@@ -2318,12 +2429,15 @@ function xows_cli_pres_stat_set(stat)
 let xows_cli_pres_show_sel = XOWS_SHOW_OFF;
 
 /**
- * Activity sleep setTimeout handle/reference
+ * Stored setTimeout reference for auto-away mechanism
  */
 let xows_cli_pres_show_hto = null;
 
 /**
- * Set the client current presence show level
+ * Set the user (own) current presence show level.
+ *
+ * The function also set (or reset) a timeout that automatically decreases
+ * presence level (to away, then xa) in case of inactivity.
  *
  * @param   {number}    level     Numerical show level to set (0 to 5)
  */
@@ -2347,7 +2461,11 @@ function xows_cli_pres_show_set(level)
 }
 
 /**
- * Decrease the client presence level to away or xa
+ * Decreases the user (own) presence level to away or xa.
+ *
+ * This function is only part of the auto-away mechanism and called via
+ * a timeout process to automatically decreases presence level (to Away,
+ * then XA) in case of inactivity. It has no usage outside this context.
  */
 function xows_cli_pres_show_snooze()
 {
@@ -2363,8 +2481,13 @@ function xows_cli_pres_show_snooze()
 }
 
 /**
- * Set presence back to the user chosen one if it is greater than
- * the current "away" value and reset the timer for snooze (auto-away).
+ * Resets the auto-away timeout and set user (own) presence back to the
+ * previously chosen one.
+ *
+ * This function is intended to be called each time user (human) interacts with
+ * the client (program) to advert its active presence. If this function is
+ * not called after 10 min, the user (own) presence is automatically decreased
+ * to Away, then, 10 min later, to XA
  */
 function xows_cli_pres_show_back()
 {
@@ -2380,13 +2503,17 @@ function xows_cli_pres_show_back()
   xows_cli_pres_show_hto = setTimeout(xows_cli_pres_show_snooze, 600000); //< 10 min
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - User profile management routines
+ * User (own) Profile management
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Change user name (nickname) and avatar picture
+ * Change, set or remove user (own) nickname and avatar picture.
+ *
+ * The SELF Peer object is updated, Nickname and Avatar are published via
+ * PEP and to Vcard-temp. Finaly, user (own) presence is sent with
+ * updated data.
  *
  * @param   {string}    name      Prefered nickname
  * @param   {string}    url       Image Data-URL to set as avatar
@@ -2414,7 +2541,7 @@ function xows_cli_self_edit(name, url, access)
     //if(xows_cli_self.avat) {
 
       // Retract current avatar
-      xows_cli_pep_avat_retr();
+      xows_cli_pep_avat_disable();
     //}
   }
 
@@ -2425,14 +2552,22 @@ function xows_cli_self_edit(name, url, access)
   xows_cli_pres_update();
 }
 
-/* -------------------------------------------------------------------
- * Client API - Vcard-temp routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ *
+ * vCard-Temp Publication and Query routines
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Publish user own vcard-temp to store nickname and, most important, Avatar
+ * Publish user (own) vCard-temp according current Nickname and Avatar.
+ *
+ * In the current implementation, only the <NICKNAME> and <PHOTO> sections
+ * are set while all other are erased de facto.
  */
 function xows_cli_vcardt_publish()
 {
+  // TODO: Implement publication mechanism that update and modify fetched
+  // vCard rather than erasing everything.
+
   // Array to store vcard Nodes
   const vcard = [];
 
@@ -2452,8 +2587,8 @@ function xows_cli_vcardt_publish()
   if(xows_cli_self.avat) {
     // Get avatar data-URL
     const data = xows_cach_avat_get(xows_cli_self.avat);
-    const bin_type = xows_url_to_type(data);
-    const bin_data = xows_url_to_data(data);
+    const bin_type = xows_uri_to_type(data);
+    const bin_data = xows_uri_to_data(data);
     // Add <PHOTO> node
     vcard.push(xows_xml_node("PHOTO",null,[xows_xml_node("TYPE",  null,bin_type),
                                            xows_xml_node("BINVAL",null,bin_data)]));
@@ -2466,10 +2601,14 @@ function xows_cli_vcardt_publish()
 }
 
 /**
- * Function to handle parsed result of vcard query
+ * Handles the parsed result (the vCard data) of a vCard-temp fetch query.
  *
- * @param   {string}    from      Vcard Contact JID or null
- * @param   {object}    vcard     Vcard content
+ * Currently, this function only checks for <PHOTO> in the hope of getting
+ * an Avatar, as a fallback process, if Avatar cannot be retrieved via
+ * the PEP (XEP-0084 User Avatar) mechanism.
+ *
+ * @param   {string}    from      vCard Contact JID or null
+ * @param   {object}    vcard     vCard content
  * @param   {object}   [error]    Error data if any
  */
 function xows_cli_vcardt_parse(from, vcard, error)
@@ -2531,9 +2670,9 @@ function xows_cli_vcardt_parse(from, vcard, error)
 }
 
 /**
- * Query Contact or Own vcard data
+ * Query vCard-temp for the specified Peer (or user itself).
  *
- * @param   {string}    peer      Peer object to query vcard
+ * @param   {string}    peer      Peer object
  */
 function xows_cli_vcardt_query(peer)
 {
@@ -2541,13 +2680,14 @@ function xows_cli_vcardt_query(peer)
   xows_xmp_vcardt_get_query(peer.addr, xows_cli_vcardt_parse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - PubSub routines
+ * PEP (Pubsub) Related routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles an incoming PubSub event/notification
+ * Handles an incoming PEP message event/notification (forwarded from
+ * XMPP Module)
  *
  * @param   {string}    from      Sender JID
  * @param   {string}    node      PubSub node
@@ -2591,15 +2731,15 @@ function xows_cli_msg_onpubs(from, node, items)
 }
 
 /**
- * PubSub node access change stack
+ * Query stack for PEP Node Access-Model changes
  */
 const xows_cli_pep_chmod_stk = new Map();
 
 /**
- * Handle PubSub node access change query.
+ * Handles result of PEP Node Access-Model change query.
  *
  * @param   {string}    from      Sender address
- * @param   {string}    node      Pubsub node (xmlns)
+ * @param   {string}    node      PEP node (xmlns)
  * @param   {string}    xform     x-data form to fulfill
  * @param   {object}   [error]    Error data if any
  */
@@ -2635,9 +2775,13 @@ function xows_cli_pep_chmod_parse(from, node, xform, error)
 }
 
 /**
- * Function to change Pubsub node access model (Shortcut routine)
+ * Change the specified PEP Node Access-Model.
  *
- * @param   {string}    node      Pubsub node (xmlns)
+ * This function initiates PEP edition mechanism which is processed in two
+ * steps. The first consist of getting current PEP parameters form, the
+ * second (done by 'xows_cli_pep_chmod_parse'), to send back the modified form.
+ *
+ * @param   {string}    node      PEP node (xmlns)
  * @param   {string}    access    Access model to define
  * @param   {function} [onresult] Optional callback to handle received result
  */
@@ -2653,13 +2797,14 @@ function xows_cli_pep_chmod(node, access, onresult)
   xows_xmp_pubsub_conf_get_query(node, xows_cli_pep_chmod_parse);
 }
 
-/* -------------------------------------------------------------------
- * Client API - PubSub - Nickname routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * PEP (Pubsub) - Nickname (XEP-0172 User Nickname) routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle result or notification of XEP-0172 User Nickname
+ * Handles User Nickname (XEP-0172) query result or incoming notification
+ * (forwarded from XMPP Module).
  *
- * @param   {string}    from      Query result Sender JID
+ * @param   {string}    from      Result Sender JID
  * @param   {string}    item      Received PubSub item content (<nick> node)
  * @param   {object}   [error]    Error data if any
  */
@@ -2686,9 +2831,9 @@ function xows_cli_pep_nick_parse(from, item, error)
 }
 
 /**
- * Query for XEP-0172 User Nickname
+ * Query User Nickname (XEP-0172) for the specified Peer (can be user itself)
  *
- * @param   {string}    peer      Peer object to query Nickname
+ * @param   {string}    peer      Peer object
  */
 function xows_cli_pep_nick_fetch(peer)
 {
@@ -2697,28 +2842,29 @@ function xows_cli_pep_nick_fetch(peer)
 }
 
 /**
- * Publish new XEP-0172 User Nickname
+ * Publish user (own) User Nickname (XEP-0172) according current
+ * defined nickname.
  */
 function xows_cli_pep_nick_publ()
 {
   xows_xmp_nick_publish(xows_cli_self.name, null);
 }
 
-/* -------------------------------------------------------------------
- * Client API - PubSub - Avatar routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * PEP (Pubsub) - Avatar (XEP-0084 User Avatar) routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Default size for generated avatars
+ * Constant size for generated Avatars
  */
 const XOWS_AVAT_SIZE  = 48;
 
 /**
- * Stores received XEP-0084 avatar metadata
+ * Stack for PEP User Avatar (XEP-0084) Avatar Data and Metadata processing
  */
 const xows_cli_avat_parse_stk = new Map();
 
 /**
- * Function to handle parsed result of avatar data query.
+ * Handles parsed result of PEP User Avatar (XEP-0084) Data query.
  *
  * @param   {string}    from      Avatar Contact JID.
  * @param   {object}    hash      Avtar ID (data SHA-1 hash)
@@ -2776,7 +2922,8 @@ function xows_cli_pep_avat_data_parse(from, hash, data, error)
 }
 
 /**
- * Handle received XEP-0084 avatar metadata notification
+ * Handles received PEP User Avatar (XEP-0084) Metadata query result
+ * or notification (forwarded from XMPP Module).
  *
  * @param   {string}    from      Query result Sender JID
  * @param   {object}    item      Received PupSub item content (<metadata> Node)
@@ -2871,15 +3018,18 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
 }
 
 /**
- * Stack for Avatar fetch cycle, to ensure only one query per Peer at a time.
+ * Stack for per-Peer PEP User Avatar (XEP-0084) fetching process.
  */
 const xows_cli_pep_avat_fetch_stk = new Map();
 
 /**
- * Fetch Peer Avatar, first by trying to retrieve avatar via PEP (XEP-0084),
- * then via vCard-Temp (XEP-0153)
+ * Fetch Avatar for the specified Peer (or user itself)
  *
- * @param   {string}    peer     Peer to query avatar
+ * This function starts an Avatar fetching process that is not limited to PEP
+ * User Avatar (XEP-0084). It first send a query for PEP User Avatar then
+ * fallbacks to query vCard-temp if no avatar can be retreived via PEP.
+ *
+ * @param   {string}    peer     Peer object
  */
 function xows_cli_pep_avat_fetch(peer)
 {
@@ -2901,18 +3051,15 @@ function xows_cli_pep_avat_fetch(peer)
 }
 
 /**
- * Stores parameters for XEP-0084 avatar publication process
+ * Stored temporary parameters for PEP User Avatar (XEP-0084) publication
  */
 const xows_cli_pep_avat_publ_param = {access:""};
 
 /**
- * Publish new XEP-0084 avatar data then automatically send metadata
- * if data publication succeed
+ * Publish user (own) PEP User Avatar (XEP-0084) Data and Metadat according
+ * current defined Avatar.
  *
- * This function take avatar data from the one currently cached and
- * used by client own account.
- *
- * @param   {boolean}   access    Access model for published Avatar
+ * @param   {boolean}   access    Access-Model for published PEP nodes
  */
 function xows_cli_pep_avat_publ(access)
 {
@@ -2924,7 +3071,7 @@ function xows_cli_pep_avat_publ(access)
   xows_cli_pep_avat_publ_param.access = access;
 
   // Get avatar Base64 data and create binary hash value
-  const base64 = xows_url_to_data(datauri);
+  const base64 = xows_uri_to_data(datauri);
   // The 'xows_hash_sha1' function takes strings as UTF-16 (2-bytes) encoded
   // to be converted to UTF-8, then to Uint8Array. On the other hand, atob()
   // produces an bytes array **ersatz** where each character is to be taken as
@@ -2947,10 +3094,12 @@ function xows_cli_pep_avat_publ(access)
 }
 
 /**
- * Handle result of XEP-0084 avatar data publication to publish updated
- * metadata
+ * Handles PEP User Avatar (XEP-0084) Data query result then
+ * publish corresponding Metadata.
  *
- * This function is used as callback and should not be called on hitself.
+ * This function is used for the PEP User Avatar publication process, has
+ * few utility outside this automated process and should not be called
+ * alone outside this context.
  *
  * @param   {string}    from      Query result Sender JID
  * @param   {string}    type      Query result type
@@ -2971,7 +3120,7 @@ function xows_cli_pep_avat_meta_publ(from, type, error)
   const access = xows_cli_pep_avat_publ_param.access;
 
   // Get image binary data and create hash value
-  const base64 = xows_url_to_data(datauri);
+  const base64 = xows_uri_to_data(datauri);
   // The 'xows_hash_sha1' function takes strings as UTF-16 (2-bytes) encoded
   // to be converted to UTF-8, then to Uint8Array. On the other hand, atob()
   // produces an bytes array **ersatz** where each character is to be taken as
@@ -2980,7 +3129,7 @@ function xows_cli_pep_avat_meta_publ(from, type, error)
   const binary = xows_b64_to_bytes(base64);
   const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
 
-  xows_xmp_avat_meta_publish(hash, xows_url_to_type(datauri), binary.length,
+  xows_xmp_avat_meta_publish(hash, xows_uri_to_type(datauri), binary.length,
                              XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, access, null);
 
   // Advert new avatar
@@ -2994,12 +3143,11 @@ function xows_cli_pep_avat_meta_publ(from, type, error)
 }
 
 /**
- * Retract XEP-0084 Avatar data and metadata items from PubSub.
+ * Disables (removes) user (onw) PEP User Avatar (XEP-0084)
  *
- * This function has effect only if a avalid avatar hash is
- * available.
+ * This function also send updated presence to advert Avatar changes.
  */
-function xows_cli_pep_avat_retr()
+function xows_cli_pep_avat_disable()
 {
   xows_xmp_avat_meta_publish(null);
   xows_cli_self.avat = null;
@@ -3008,11 +3156,12 @@ function xows_cli_pep_avat_retr()
   xows_cli_pres_update();
 }
 
-/* -------------------------------------------------------------------
- * Client API - PubSub - Boomark routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * PEP (Pubsub) - Bookmarks (XEP-0402 PEP Native Bookmarks) routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle notification of XEP-0402 Bookmarks
+ * Handles PEP Native Bookmarks (XEP-0402) received notification (forwarded
+ * from XMPP Module)
  *
  * @param   {string}    from      Query result Sender JID
  * @param   {object[]}  items     List of <item> nodes
@@ -3055,7 +3204,7 @@ function xows_cli_pep_book_parse(from, items)
 }
 
 /**
- * Publish new XEP-0402 Bookmark
+ * Publish (add) user (own) PEP Native Bookmark.
  *
  * @param   {object}    room      Room object to add bookmark
  * @param   {string}   [name]     Optional alternative bookmark name
@@ -3070,19 +3219,21 @@ function xows_cli_pep_book_publ(room, auto, name, nick)
   xows_xmp_bookmark_publish(room.addr, mrk_name, auto, mrk_nick, null);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - MAM routines and interface
+ * Message Archive Management (MAM) related routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Map to store per-peer MAM history fetch parameters
+ * Stack for per-Peer MAM fetching process parameters and gathered messages.
  */
 const xows_cli_mam_fetch_param = new Map();
 
 /**
- * Callback function to collect MAM archived messages from a request in
- * the context of MAM history fetch.
+ * Handles MAM parsed query result.
+ *
+ * The received archive messages are processed then stored in
+ * Array until the desired minimum count of requested message was gathered.
  *
  * @param   {string}    from      Archives sender JID, may be Room or Null
  * @param   {string}    bare      With JID bare used as filter or Null
@@ -3180,12 +3331,12 @@ function xows_cli_mam_fetch_parse(from, bare, result, count, complete)
 }
 
 /**
- * Send MAM archive query for the specified history fetch, the
- * fetch must had been initialized by xows_cli_mam_fetch()
+ * Query MAM for a new batch of archived messages.
  *
- * This function is for private usage only.
+ * This function is part of the MAM fetching autometed process and
+ * should not be called alone.
  *
- * @param   {object}    peer      Peer to get archive
+ * @param   {object}    peer      Peer object
  */
 function xows_cli_mam_fetch_query(peer)
 {
@@ -3204,7 +3355,11 @@ function xows_cli_mam_fetch_query(peer)
 }
 
 /**
- * Fetch archived messages for the specified peer
+ * Fetch archived messages for the specified Peer
+ *
+ * This function starts archived message fetching process (for the specified
+ * Peer) that may imply several successive MAM queries and parsing until the
+ * required amount of visible archived message is reached.
  *
  * @param   {object}    peer      Peer to get archive
  * @param   {number}    count     Desired minimum count of message to gather
@@ -3236,13 +3391,13 @@ function xows_cli_mam_fetch(peer, count, start, end, onresult)
   xows_cli_mam_fetch_query(peer);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - HTTP Files Upload routines and interface
+ * File Upload (HTTP File Upload XEP-0363) routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Constants for HTTP-Upload load status
+ * Constants for HTTP Upload status codes
  */
 const XOWS_UPLD_SUCC  = 1;
 const XOWS_UPLD_ABRT  = 2;
@@ -3250,26 +3405,26 @@ const XOWS_UPLD_ERIQ  = 3; //< XMPP Query error
 const XOWS_UPLD_ERHT  = 4; //< HTTP PUT error
 
 /**
- * Callback function for sent or received Chat Message
+ * Module Event-Forwarding callback for File Upload progress
  */
 let xows_cli_fw_upldprog = function() {};
 
 /**
- * Callback function for new Private Message session
+ * Module Event-Forwarding callback for File Upload finished
  */
 let xows_cli_fw_upldload = function() {};
 
 /**
- * Object used to store Current Http Upload query related data
+ * Stack for per-Peer File Upload processing
  */
 const xows_cli_upld_stk = new Map();
 
 /**
- * Returns whether an HTTP-Upload is processing for the specified Peer
+ * Returns whether an File Upload is processing for the specified Peer
  *
  * @param   {object}    peer        Peer object
  *
- * @return  {boolean}   True if HTTP-Upload processing, false otherwise
+ * @return  {boolean}   True if File Upload processing, false otherwise
  */
 function xows_cli_upld_has(peer)
 {
@@ -3277,7 +3432,7 @@ function xows_cli_upld_has(peer)
 }
 
 /**
- * Function to query an Http upload slot
+ * Query for an HTTP File Upload (XEP-0363) slot
  *
  * @param   {object}    peer        Peer object
  * @param   {object}    file        File object to upload
@@ -3312,7 +3467,8 @@ function xows_cli_upld_query(peer, file)
 }
 
 /**
- * Handes an Http Upload query result, then start upload if slot was given
+ * Handles result of HTTP File Upload (XEP-0363) slot query and starts
+ * uploading.
  *
  * @param   {string}    id        Query Id
  * @param   {string}    puturl    URL for upload PUT HTTP request
@@ -3371,7 +3527,7 @@ function xows_cli_upld_parse(id, puturl, puthdr, geturl, error)
 }
 
 /**
- * Abort the current progressing file upload if any
+ * Abort the currently processing File Upload for the related Peer
  *
  * @param   {string}     peer     Peer object
  */
@@ -3391,7 +3547,10 @@ function xows_cli_upld_abort(peer)
 }
 
 /**
- * Http Upload query XMLHttpRequest.upload "progress" callback function
+ * File Upload callback for XMLHttpRequest progress event.
+ *
+ * This function is part of File Upload automated processing, has no utility
+ * outside this context and should not be called alone outside this context.
  *
  * @param   {object}    event     Event object (ProgressEvent)
  */
@@ -3405,7 +3564,10 @@ function xows_cli_upld_onprogr(peer, event)
 }
 
 /**
- * Http Upload query XMLHttpRequest onreadystatechange callback.
+ * File Upload callback for XMLHttpRequest ready-state change event.
+ *
+ * This function is part of File Upload automated processing, has no utility
+ * outside this context and should not be called alone outside this context.
  *
  * @param   {object}    xhr       XMLHttpRequest instance
  */
@@ -3434,7 +3596,10 @@ function xows_cli_upld_onstate(peer, xhr)
 }
 
 /**
- * Http Upload query XMLHttpRequest.upload "error" callback function
+ * File Upload callback for XMLHttpRequest error event.
+ *
+ * This function is part of File Upload automated processing, has no utility
+ * outside this context and should not be called alone outside this context.
  *
  * @param   {object}    event     Event object (ProgressEvent)
  */
@@ -3456,9 +3621,12 @@ function xows_cli_upld_onerror(peer, event)
 }
 
 /**
- * Http Upload query XMLHttpRequest.upload "abort" callback function
+ *  File Upload callback for XMLHttpRequest abort event.
  *
- * @param   {object}    event     Error event object
+ * This function is part of File Upload automated processing, has no utility
+ * outside this context and should not be called alone outside this context.
+ *
+ * @param   {object}    event     Event object (ProgressEvent)
  */
 function xows_cli_upld_onabort(peer, event)
 {
@@ -3468,54 +3636,56 @@ function xows_cli_upld_onabort(peer, event)
   xows_cli_upld_stk.delete(peer);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - MUC routines and interface
+ * Multi-User-Chat (MUC) related routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for Room added or refreshed
+ * Module Event-Forwarding callback for MUC Room add or changes
  */
 let xows_cli_fw_roompush = function() {};
 
 /**
- * Callback function for Room removed
+ * Module Event-Forwarding callback for MUC Room removed
  */
 let xows_cli_fw_roompull = function() {};
 
 /**
- * Callback function for initial Room presence (Joined Room)
+ * Module Event-Forwarding callback for initial MUC presence (Joined Room)
  */
 let xows_cli_fw_mucjoin = function() {};
 
 /**
- * Callback function for terminal Room presence (Exit Room)
+ * Module Event-Forwarding callback for terminal MUC presence (Exit Room)
  */
 let xows_cli_fw_mucexit = function() {};
 
 /**
- * Callback function for Room Occupant added or refreshed
+ * Module Event-Forwarding callback for MUC Occupant add or changes
  */
 let xows_cli_fw_mucpush = function() {};
 
 /**
- * Callback function for Room Occupant removed
+ * Module Event-Forwarding callback for MUC Occupant removed
  */
 let xows_cli_fw_mucpull = function() {};
 
 /**
- * Callback function for received Room Subject
+ * Module Event-Forwarding callback for received Room Subject
  */
 let xows_cli_fw_mucsubj = function() {};
 
+/* ---------------------------------------------------------------------------
+ * MUC - Room list and info retrieval
+ * ---------------------------------------------------------------------------*/
 /**
- * MUC Room list query parameters
+ * Storage for MUC Room list query parameters
  */
 const xows_cli_muc_list_param = {stack:[],ondisco:null};
 
 /**
- * Parse result (aka. Public Room list) of disco#items queries
- * to MUC available services.
+ * Handles parsed result (public Room list) of MUC items discovery query.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {object[]}  item      Array of parsed <item> objects
@@ -3556,8 +3726,7 @@ function xows_cli_muc_list_parse(from, item)
 }
 
 /**
- * Query disco#items to MUC available services (if any) to gather list
- * of public Room (MUC Service's Items).
+ * Query for items (public Rooms) discovery to all available MUC services.
  *
  * @param   {function}    ondisco   Optional callback for discovery finished
  */
@@ -3585,8 +3754,7 @@ function xows_cli_muc_list_query(ondisco)
 }
 
 /**
- * Parse disco#info result as a MUC Room and store Peer
- * object in Room list.
+ * Handles parsed result of MUC Room discovery info query.
  *
  * @param   {string}    from      Query result sender JID
  * @param   {string}    node      Entity node
@@ -3660,9 +3828,9 @@ function xows_cli_muc_info_parse(from, node, idens, feats, xform, error)
 }
 
 /**
- * Query MUC Room infos
+ * Query info discovery for the specified MUC Room
  *
- * @param   {object}    room      Room Peer object to query infos
+ * @param   {object}    room      ROOM Peer object
  */
 function xows_cli_muc_info_query(room)
 {
@@ -3670,44 +3838,14 @@ function xows_cli_muc_info_query(room)
   xows_xmp_disco_info_query(room.addr, null, xows_cli_muc_info_parse);
 }
 
-
+/* ---------------------------------------------------------------------------
+ * MUC - Room Join and Occupants management
+ * ---------------------------------------------------------------------------*/
 /**
- * Retry to join Room sending presence stanza to MUC room using
- * Room object parameters.
+ * Handles received result of MUC Room user (own) reserved nickname query.
  *
- * This function should be used only when an initial join attempt failed,
- * otherwise, xows_cli_muc_join should be called first.
- *
- * @param   {object}    room      Room object to join
- */
-/*
-function xows_cli_muc_join_retry(room)
-{
-  // XEP-0045:
-  //
-  // "Even if a user has registered one room nickname, the service SHOULD
-  // allow the user to specify a different nickname on entering the room
-  // (e.g., in order to join from different client resources), although
-  // the service MAY choose to "lock down" nicknames and therefore deny
-  // entry to the user, including a <not-acceptable/> error."
-  //
-  // What a mess... How a registered user change its reserved nickname ?
-
-  // Compose destination using Room JID and nickname
-  let to = room.addr + "/";
-  to += room.nick ? room.nick : xows_cli_self.name;
-
-  // Content of MUC <x> node (Password)
-  const mucx = {pass:room.pass};
-
-  // Send initial presence to Room to join
-  xows_xmp_presence_send(to, null, xows_cli_self.show, xows_cli_self.stat, null, mucx, xows_cli_self.avat);
-}
-*/
-
-/**
- * Function to handle Room own reserved nickname query sent by Join
- * init function. This function also automatically try to join the Room.
+ * This function is part of MUC Join automated process and has no utility
+ * outside this context.
  *
  * @param   {string}    from      Sender Room JID
  * @param   {string}    nick      Received reserved nickname or null
@@ -3730,11 +3868,13 @@ function xows_cli_muc_join_nick(from, nick, error)
 }
 
 /**
- * Atempt to join a Room, creating required stuff and checking for
- * reserved nickname.
+ * Attempts to join a MUC Room.
  *
- * If no room object is supplied the function try to join (ie. create)
- * the room using the supplied room name.
+ * This starts the MUC Join automated process. The user (own) reserved nickname
+ * is queried first, then presence is sent to the specified MUC entity.
+ *
+ * The 'room' parameter can bei either ROOM Peer object or MUC Room JID to
+ * create new or join non-discovered Room.
  *
  * @param   {object|string}   [room]     Room object or Room identifier or JID
  * @param   {string}          [pass]     Optional password to join room
@@ -3784,7 +3924,7 @@ function xows_cli_muc_join(room, pass)
   } else {
 
     // Forward Room about to be joined
-    xows_cli_fw_roompush(room, true);
+    xows_cli_fw_roompush(room);
 
     // XEP-0045:
     //
@@ -3809,10 +3949,7 @@ function xows_cli_muc_join(room, pass)
 }
 
 /**
- * Handles received occupant presence (<presence> stanza) status
- * from MUC room
- *
- * This function is called by xows_xmp_presence_recv.
+ * Handles received MUC Occupant presence (forwarded from XMPP Module)
  *
  * @param   {string}    from      Sender JID
  * @param   {number}    show      Optional show level if available
@@ -3826,11 +3963,11 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
   // Get room object, if exists
   let room = xows_cli_room_get(from);
   if(!room) {
-    xows_log(1,"cli_xmp_onoccupant","unknown/unsubscribed Room",from);
+    xows_log(1,"cli_muc_onpres","unknown/unsubscribed Room",from);
     return;
   }
 
-  xows_log(2,"cli_xmp_onoccupant","received occupant",from);
+  xows_log(2,"cli_muc_onpres","received occupant",from);
 
   // MUC Status codes (most of them)
   //
@@ -3888,7 +4025,7 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
         // Forward removed Private Conversation
         for(let i = 0; i < room.occu.length; ++i)
-          if(xows_cli_priv_has(room.occu[i]))
+          if(xows_cli_ocpm_has(room.occu[i]))
             xows_cli_fw_occupull(room.occu[i]);
 
         // Reset Room occupant list
@@ -3934,7 +4071,7 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
       occu.show = show;
 
       // Forward removed Private Conversation
-      if(xows_cli_priv_has(occu))
+      if(xows_cli_ocpm_has(occu))
         xows_cli_fw_occupull(occu);
 
       // Forward removed Occupant
@@ -3991,9 +4128,10 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 }
 
 /**
- * Handles received presence (<presence> stanza) error
+ * Handles received MUC presence error (forwarded from XMPP Module)
  *
- * This function is called by xows_xmp_presence_recv.
+ * This function handle received presence error occuring in response to
+ * an attempt to join a Room.
  *
  * @param   {string}    from      Sender JID
  * @param   {object}    error     Error generic data
@@ -4003,7 +4141,7 @@ function xows_cli_pres_onfail(from, error)
   // Retreive related Peer (Contact or Room)
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_ROOM);
   if(!peer) {
-    xows_log(1,"cli_xmp_onpreserr","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_pres_onfail","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -4031,8 +4169,11 @@ function xows_cli_pres_onfail(from, error)
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * MUC - Special commands (Admin, Moderation, etc.)
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles an incoming room notification codes
+ * Handles received MUC notification message (forwarded from XMPP Module)
  *
  * @param   {string}    id        Message ID
  * @param   {string}    from      Sender JID
@@ -4062,7 +4203,7 @@ function xows_cli_muc_onnoti(id, from, codes)
 }
 
 /**
- * Handles an incoming message subject
+ * Handles received MUC Subject message (forwarded from XMPP Module)
  *
  * @param   {string}  id        Message ID
  * @param   {string}  from      Sender JID
@@ -4088,9 +4229,9 @@ function xows_cli_muc_onsubj(id, from, subj)
 }
 
 /**
- * Change own nickname in specified Room
+ * Changes user (own) nickname for the specified MUC Room
  *
- * @param   {object}    room      Room object
+ * @param   {object}    room      ROOM Peer object
  * @param   {string}    nick      New nickname
  */
 function xows_cli_muc_nick_set(room, nick)
@@ -4103,9 +4244,12 @@ function xows_cli_muc_nick_set(room, nick)
 }
 
 /**
- * Set subject for the specified room.
+ * Set or changes Subject of the specified MUC Room.
  *
- * @param   {object}    room      Recipient Room
+ * Notice that user must have proper permissions in Room to perform this
+ * action successfully.
+ *
+ * @param   {object}    room      ROOM Peer object
  * @param   {string}    subj      Subject content
  */
 function xows_cli_muc_subj_set(room, subj)
@@ -4115,9 +4259,12 @@ function xows_cli_muc_subj_set(room, subj)
 }
 
 /**
- * Change room occupant affiliation
+ * Changes the MUC Occupant affiliation with Room
  *
- * @param   {object}    occu      Room occupant
+ * Notice that user must have proper permissions in Room to perform this
+ * action successfully.
+ *
+ * @param   {object}    occu      OCCUPANT Peer object
  * @param   {number}    affi      Affiliation value to set
  */
 function xows_cli_muc_affi_set(occu, affi)
@@ -4126,9 +4273,12 @@ function xows_cli_muc_affi_set(occu, affi)
 }
 
 /**
- * Change room occupant role
+ * Changes the MUC Occupant role in Room
  *
- * @param   {object}    occu      Room occupant
+ * Notice that user must have proper permissions in Room to perform this
+ * action successfully.
+ *
+ * @param   {object}    occu      OCCUPANT Peer object
  * @param   {number}    role      Role value to set
  */
 function xows_cli_muc_role_set(occu, role)
@@ -4136,13 +4286,16 @@ function xows_cli_muc_role_set(occu, role)
   xows_xmp_muc_role_set_query(occu.room.addr, {"nick":occu.name,"role":role}, null);
 }
 
+/* ---------------------------------------------------------------------------
+ * MUC - Room Configuration routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Map object for user Room get config query result
+ * Storage for MUC Room (per-Room) configuration process data
  */
 const xows_cli_muc_cfg_param = new Map();
 
 /**
- * Parse result for MUC room configuration form query
+ * Handles result of MUC Room configuration form query.
  *
  * @param   {string}    from      Result sender JID
  * @param   {object[]}  xform     Array of x fata form
@@ -4169,7 +4322,7 @@ function xows_cli_muc_cfg_get_parse(from, xform, error)
 }
 
 /**
- * Query MUC Room config form (current config)
+ * Query MUC Room configuration form (get current configuration).
  *
  * @param   {string}    room      Room object to query conf
  * @param   {function}  onresult  Callback to parse received result
@@ -4185,7 +4338,7 @@ function xows_cli_muc_cfg_get(room, onresult)
 }
 
 /**
- * Function to proceed result of MUC room configuration form submition
+ * Handles result of MUC Room configuration form submission.
  *
  * @param   {string}    from      Result sender JID
  * @param   {string}    type      Result type
@@ -4208,7 +4361,7 @@ function xows_cli_muc_cfg_set_parse(from, type, error)
 
   // Forward submit result
   if(xows_isfunc(onresult))
-    onresult(room, type);
+    onresult(room, type, error);
 
   // Notice: room.init is set to false AFTER call to callback to
   // prevent double-cancel (that throw bad-request error) by GUI
@@ -4222,7 +4375,12 @@ function xows_cli_muc_cfg_set_parse(from, type, error)
 }
 
 /**
- * Cancel MUC room configuration form
+ * Cancel MUC Room configuration process.
+ *
+ * The MUC Room configuration is made in two steps, the first is to fetch
+ * form of the current configuration, the second to submit the modified form.
+ * This function is used to properly abort operation in case submition step
+ * is to be canceled.
  *
  * @param   {string}    room      Room object to query conf
  * @param   {function}  onresult  Callback to parse received result
@@ -4233,7 +4391,7 @@ function xows_cli_muc_cfg_set_cancel(room, onresult)
 }
 
 /**
- * Submit MUC Room config form
+ * Submit MUC Room configuration form.
  *
  * @param   {string}    room      Room object to query conf
  * @param   {object[]}  submit    Array of fulfilled x fata form to submit
@@ -4249,13 +4407,16 @@ function xows_cli_muc_cfg_set(room, form, onresult)
   xows_xmp_muc_cfg_set_query(room.addr, form, xows_cli_muc_cfg_set_parse);
 }
 
+/* ---------------------------------------------------------------------------
+ * MUC - Room Registration routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Map for MUC Room registration parameters
+ * Storage for MUC Room (per-Room) registration process data
  */
 const xows_cli_muc_regi_param = new Map();
 
 /**
- * Handle MUC Room registration request form submit result
+ * Handles result of MUC Room registration form submition
  *
  * @param   {object}    from      Send JID or adress
  * @param   {object}    data      Replied registration data
@@ -4285,7 +4446,7 @@ function xows_cli_muc_regi_set_result(from, type, error)
 }
 
 /**
- * Handle MUC Room registration request form query result
+ * Handles result of MUC Room registration form query
  *
  * @param   {object}    from      Send JID or adress
  * @param   {object}    data      Replied registration data
@@ -4340,6 +4501,10 @@ function xows_cli_muc_regi_get_result(from, data, form, error)
 /**
  * Query for MUC Room registration request
  *
+ * This starts the automated Room Registration process that is done in two
+ * steps. The first is to query for a Registration form, the second is to
+ * submit the properly fulfilled form.
+ *
  * @param   {object}    room      Room object to join
  * @param   {object}    nick      Reserved nickname to register
  * @param   {function}  onresult  Callback to parse received result
@@ -4355,25 +4520,25 @@ function xows_cli_muc_regi_get_query(room, nick, onresult)
   xows_xmp_regi_get_query(room.addr, xows_cli_muc_regi_get_result);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Self account management
+ * User (own) Account management
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Change own account password temporary saved data
+ * Storage for user (own) Account Password Change processing parameters
  */
 const xows_cli_regi_chpas_data = {"onresult":null,"password":null,"attempt":0};
 
 /**
- * Function to handle own account password query result.
+ * Handles result of user (own) Account Password Change query
  *
  * First attempt may fail with server requesting to fulfill informations, this
- * function automatically respond with fullfilled x-data form, including
- * username and old passord.
+ * function automatically reply with fulfilled x-data form with username and
+ * previous (current) passord.
  *
- * If the second try with fulfilled x-data form also fail, the onparse function
- * is then called with error result.
+ * If the second attempt (with fulfilled form) also fail, the configured onparse
+ * callback is then called with error result.
  *
  * @param   {string}    type      Query result type
  * @param   {object[]}  xform     Parsed x-data form if any (or null)
@@ -4422,7 +4587,7 @@ function xows_cli_regi_chpas_parse(type, xform, error)
 }
 
 /**
- * Change own account password
+ * Query for user (own) Account Password Change
  *
  * @param   {string}    password  New password to set
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -4438,23 +4603,24 @@ function xows_cli_regi_chpas(password, onparse)
   xows_xmp_regi_pass_set_query(password, null, xows_cli_regi_chpas_parse);
 }
 
+/*
+ * Testing for specific scenario where server requesting account information
+ * to be fulfilled in order to suppress account was not possible to be done yet
+ * since server used for developpment was not implemented this way. For this
+ * reason the following function is disabled but still here in case it
+ * become required.
+ *
 /**
- * Function to handle own account password query result.
- *
- * First attempt may fail with server requesting to fulfill informations, this
- * function automatically respond with fullfilled x-data form, including
- * username and old passord.
- *
- * If the second try with fulfilled x-data form also fail, the onparse function
- * is then called with error result.
+ * Handles result of user (own) Account Suppression query.
  *
  * @param   {string}    type      Query result type
  * @param   {object[]}  form      Parsed x-data form if any (or null)
  * @param   {object}    error     Error data if any
- */
-/*
+ *
 function xows_cli_regi_remove_parse(type, form, error)
 {
+
+
   const data = xows_cli_regi_chpass_data;
 
   // First query has good chances to be an error with x-data form to fulfill
@@ -4496,7 +4662,10 @@ function xows_cli_regi_remove_parse(type, form, error)
 */
 
 /**
- * Cancel registration with server (account deletion)
+ * Query to cancel user (own) Registration with server.
+ *
+ * Canceling registration mean XMPP account suppression, this is
+ * not undoable, use this carefully.
  *
  * @param   {object[]} [xform]    Optional x-data form to submit
  * @param   {function} [onparse]  Optional callback to receive query result
@@ -4506,68 +4675,115 @@ function xows_cli_regi_remove(xform, onparse)
   xows_xmp_regi_remove_query(xform, onparse);
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Client API - Multimedia Calls
+ * Media Call Sessions
  *
- * -------------------------------------------------------------------*/
-/* -------------------------------------------------------------------
- * Client API - Multimedia Calls - Client interface
- * -------------------------------------------------------------------*/
-const XOWS_CALL_INBD = true;  //< inbound call
-const XOWS_CALL_OUBD = false; //< outbound call
-
-const XOWS_CALL_HGUP = 0;     //< hung up call (initial or final state)
-const XOWS_CALL_RING = 1;     //< inbound ringing call
-const XOWS_CALL_PEND = 2;     //< pending negotation (initiated or answered)
-const XOWS_CALL_CNTD = 3;     //< connected
+ * ---------------------------------------------------------------------------*/
+/**
+ * Constants values for Media Call Session direction
+ */
+const XOWS_CALL_INBD = true;    //< Inbound call
+const XOWS_CALL_OUBD = false;   //< Outbound call
 
 /**
- * Callback function for Multimedia Call offer from Remote Peer
+ * Constants values for Media Call Session status
+ */
+const XOWS_CALL_HGUP = 0;       //< hung up call (initial or final state)
+const XOWS_CALL_RING = 1;       //< inbound ringing call
+const XOWS_CALL_PEND = 2;       //< pending negotation (initiated or answered)
+const XOWS_CALL_CNTD = 3;       //< connected
+
+/**
+ * Module Event-Forwarding callback for Media Call Session Offer from Peer
  */
 let xows_cli_fw_calloffer = function() {};
 
 /**
- * Callback function for Multimedia Callee answer from Remote Peer
+ * Module Event-Forwarding callback for Media Call Session Answer from Peer
  */
 let xows_cli_fw_callanwse = function() {};
 
 /**
- * Callback function for Multimedia Call session established
+ * Module Event-Forwarding callback for Media Call Session Established
  */
 let xows_cli_fw_callstate = function() {};
 
 /**
- * Callback function for Multimedia Call session Terminated
+ * Module Event-Forwarding callback for Media Call Session Terminated
  */
 let xows_cli_fw_calltermd = function() {};
 
 /**
- * Callback function for Multimedia Call session Error
+ * Module Event-Forwarding callback for Media Call Session Error
  */
 let xows_cli_fw_callerror = function() {};
 
 /**
- * Multimedia Call per-Peer sessions data storage map
+ * Storage for per-Peer Media Call Session data
  */
 const xows_cli_call_db = new Map();
 
 /**
- * Create new session data for Multimedia Call
+ * Returns the Peer's most suitable address for Jingle/WebRTC session.
  *
- * This function also create a new instance of RTCPeerConnection object
- * dedicated to that session.
+ * For MUC Occupants the function simply returns the MUC Occumant JID. For
+ * Contacts however, a comparison of presence status and priority is made
+ * between available resources (connections from multiple clients) to determins
+ * which one is the better candiate.
+ *
+ * @param   {object}    peer      Peer object
+ *
+ * @return  {string}    The most suitable found Peer JID
+ */
+function xows_cli_call_best_resc(peer)
+{
+  if(peer.type === XOWS_PEER_OCCU)
+    return peer.addr;
+
+  // Check for chat session locked JID
+  if(peer.jlck != peer.jbar) {
+
+    return peer.jlck;
+
+  } else {
+
+    let res = null;
+
+    // Try to find best suitable resource
+    const ress = Array.from(peer.ress.values());
+
+    if(ress.length) {
+      if(ress.length > 1) {
+        // First sort by Show level
+        ress.sort(function(a,b){return b.show - a.show;});
+        // Then sort by Priority
+        ress.sort(function(a,b){return b.prio - a.prio;});
+      }
+      res = ress[0].id;
+    }
+
+    // Select ressource according show level and priority
+    return res ? peer.jbar+"/"+res : peer.jbar;
+  }
+}
+
+/**
+ * Creates new Media Call Session data structure
+ *
+ * This also creates a new instance of RTCPeerConnection object attached
+ * to that Media Call Session.
  *
  * @param   {object}    peer    Peer object
  * @param   {number}    dir     Call direction (Inboud or Outbound)
  * @param   {number}    ste     Initial call state
  *
- * @return  {object}    Session data object
+ * @return  {object}    Media Call Session data object
  */
 function xows_cli_call_create(peer, dir, ste)
 {
   // Create new RTC Peer Connection object
-  const rpc = xows_wrtc_new(xows_cli_extsvc_get("stun","turn"),
+  const rpc = xows_wrtc_new(xows_cli_extservs_get("stun","turn"),
                                xows_cli_wrtc_onsdesc,
                                xows_cli_wrtc_ontrack,
                                xows_cli_wrtc_onstate,
@@ -4594,7 +4810,7 @@ function xows_cli_call_create(peer, dir, ste)
 }
 
 /**
- * Returns whether call session with peer exists
+ * Returns whether Media Call Session with specified Peer exists
  *
  * @return  {boolean}   True if session exists, false otherwise
  */
@@ -4604,7 +4820,7 @@ function xows_cli_call_exists(peer)
 }
 
 /**
- * Returns count of existing call sessions (active or not)
+ * Returns count of existing (active or not) Media Call Sessions
  *
  * @return  {number}    Count of call sessions
  */
@@ -4614,7 +4830,8 @@ function xows_cli_call_count()
 }
 
 /**
- * Returns whether a call session exists, meaning call buzy.
+ * Returns whether user (self) can be considered as busy in Media Call Sessions
+ * context, that is, cannot answer to an inbound call offer.
  *
  * @return  {boolean}    True if buzy, false otherwise
  */
@@ -4629,8 +4846,8 @@ function xows_cli_call_buzy()
 }
 
 /**
- * Returns whether a call session is a missed (not answered)
- * incomming call.
+ * Returns whether the Media Call Session with the specified Peer has been
+ * missed, that is, inbound call offer was aborted before user can answer it.
  *
  * @return  {boolean}    True if missed, false otherwise
  */
@@ -4648,19 +4865,17 @@ function xows_cli_call_misd(peer)
 }
 
 /**
- * Get Multimedia Call session media constraints
+ * Obtain currently active (or proposed) medias of the Media Call Session
+ * with the specified Peer.
  *
- * Depending situation, the function will either returns local, remote or
- * best-possible media constraints for this session:
+ * The returned object can be used as MediaStreamConstraints dictionary with
+ * 'audio' and 'video' properties enabled or disabled depending situation and
+ * current Session state.
  *
- *    - If the remote SDP is the only one available (inbound call invite),
- *      the remote medias are returned.
- *
- *    - If the local SDP is the only one available (oubound call invite),
- *      the local medias are returned.
- *
- *    - If both local and remote SPD are available, constraints are crossed
- *      to selecte only those available on both sides.
+ * Until Session negotiation has begun (inbound or outbound offer is answered),
+ * the enabled medias are the ones from the inbound (Peer) or outbound (Self)
+ * offer. Once negotiation started, the enabled medias are the ones that are
+ * reciprocal between the Offer and the Answer.
  *
  * @param   {object}    peer    Peer object
  *
@@ -4701,11 +4916,12 @@ function xows_cli_call_medias(peer)
 }
 
 /**
- * Returns whether session was initialized as an inbound call
+ * Returns whether Media Call Session with the specified Peer
+ * was initialized as an inbound Offer.
  *
  * @param   {object}    peer    Peer object
  *
- * @return  {object}  True if sessession is an inbound call, false otherwise
+ * @return  {object}  True if initialized as inbound Offer, false otherwise
  */
 function xows_cli_call_is_inbd(peer)
 {
@@ -4713,11 +4929,12 @@ function xows_cli_call_is_inbd(peer)
 }
 
 /**
- * Returns whether session is or was ever in connected state
+ * Returns whether Media Call Session with the specified Peer is or was
+ * ever established (in connected state).
  *
  * @param   {object}    peer    Peer object
  *
- * @return  {object}  True if sessession connected, false otherwise
+ * @return  {object}  True if session is or was established, false otherwise
  */
 function xows_cli_call_is_cntd(peer)
 {
@@ -4725,7 +4942,8 @@ function xows_cli_call_is_cntd(peer)
 }
 
 /**
- * Returns Peer list of all open sessions
+ * Returns the list of all Peers that user (Self) is currently
+ * involved with a Media Call Session.
  *
  * @return  {object[]}    Array of Peer objects
  */
@@ -4735,7 +4953,8 @@ function xows_cli_call_peer_list()
 }
 
 /**
- * Mute or unmute the specified local (self) media stream.
+ * Mute or unmute the local (Self) media stream of the Media Call Session
+ * with the specified Peer.
  *
  * @param   {object}    peer    Peer object
  * @param   {string}    media   Media to mute, either audio or video
@@ -4770,10 +4989,11 @@ function xows_cli_call_self_mute(peer, media, mute)
 }
 
 /**
- * Hold or unhold the specified remote (peer) media stream.
+ * Hold or unhold the remote (Peer) media stream of the Media Call Session
+ * with the specified Peer.
  *
- * Holding a remote Peer actualy mute audio (but not video) stream and
- * sends hold/uhold session-info to Peer.
+ * Holding a remote Peer actualy mute audio stream (but not video), and
+ * sends an hold/uhold Jingle session-info to Peer.
  *
  * @param   {object}    peer    Peer object
  * @param   {boolean}   mute    True ot mute, false ot unmute
@@ -4799,9 +5019,10 @@ function xows_cli_call_self_hold(peer, media, mute)
 }
 
 /**
- * Clear and delete session data for Multimedia Call
+ * Stops then delete Media Call Session with the specified Peer.
  *
- * This function properly delete resources and data related to Call session.
+ * This function properly stops media streams then deletes resources and data
+ * related to the Media Call Session.
  *
  * @param   {object}    peer    Peer object
  */
@@ -4837,7 +5058,7 @@ function xows_cli_call_clear(peer)
 
 /**
  *
- * Offer (invite) Multimedia Call to the specified Peer
+ * Offer (invite) the specified Peer for Media Call Session.
  *
  * @param   {object}    peer    Peer object
  * @param   {string}    audio   Local input stream to use for audio track
@@ -4846,7 +5067,7 @@ function xows_cli_call_clear(peer)
 function xows_cli_call_self_invite(peer, audio, video)
 {
   // Select most suitable full JID
-  peer.jrpc = xows_cli_best_resource(peer);
+  peer.jrpc = xows_cli_call_best_resc(peer);
 
   // Create new (outbound) session dataset for Peer
   const sess = xows_cli_call_create(peer, XOWS_CALL_OUBD, XOWS_CALL_PEND);
@@ -4872,7 +5093,7 @@ function xows_cli_call_self_invite(peer, audio, video)
 }
 
 /**
- * Answer (accept) Multimedia Call from the specified Peer
+ * Answer (accept) to a Media Call Session offer from specified Peer
  *
  * @param   {object}    peer    Peer object
  * @param   {string}    audio   Local input stream to use for audio track
@@ -4912,14 +5133,15 @@ function xows_cli_call_self_accept(peer, audio, video)
 }
 
 /**
- * Hangup (terminate) Multimedia Call with the specified Peer
+ * Hangups (terminate) Media Call Session with the specified Peer
  *
- * The possibles values for the reason parameter are the following:
+ * The possibles values for the 'reason' parameter are the following:
+ *
  *  - "success" : Normal termination of established call
  *  - "busy"    : Rejection of incoming call because already in call
  *  - "decline" : Rejection of incoming call because of user choice
  *
- * If the reason parameter is left to null or undefined, "success" is sent
+ * If the 'reason' parameter is null or undefined, "success" is sent
  * by default.
  *
  * @param   {object}    peer      Peer object
@@ -4944,7 +5166,10 @@ function xows_cli_call_self_hangup(peer, reason)
 }
 
 /**
- * Handle received Multimedia Call offer (invite) from the specified Peer
+ * Handles received Media Call Session offer (invite) from the specified Peer.
+ *
+ * This function is part of Media Call Session management automated process, it
+ * should not be called alone outside this context.
  *
  * @param   {object}    peer    Peer object
  * @param   {string}    from    Peer full JID used for session initiate
@@ -4958,7 +5183,7 @@ function xows_cli_call_peer_invite(peer, from, sid, sdp)
   if(peer.type === XOWS_PEER_OCCU) {
     // This is Room Occupant private message, if no PM session exist
     // and was actually added in PM list, we Forward PM session creation
-    if(xows_cli_priv_add(peer))
+    if(xows_cli_ocpm_add(peer))
       xows_cli_fw_occupush(peer);
   }
 
@@ -4975,7 +5200,10 @@ function xows_cli_call_peer_invite(peer, from, sid, sdp)
 }
 
 /**
- * Handle received Multimedia Call answer (accept) from the specified Peer
+ * Handles received Media Call Session Answer (accept) from the specified Peer.
+ *
+ * This function is part of Media Call Session management automated process, it
+ * should not be called alone outside this context.
  *
  * @param   {object}    peer    Peer object
  * @param   {string}    sdp     Received (parsed) SDP string
@@ -4994,7 +5222,10 @@ function xows_cli_call_peer_accept(peer, sdp)
 }
 
 /**
- * Handle received Multimedia Call termination from the specified Peer
+ * Handles received Media Call Session termination from the specified Peer.
+ *
+ * This function is part of Media Call Session management automated process, it
+ * should not be called alone outside this context.
  *
  * @param   {object}    peer    Peer object
  * @param   {string}    reason  Received termination reason
@@ -5011,11 +5242,38 @@ function xows_cli_call_peer_hangup(peer, reason)
   xows_cli_call_clear(peer);
 }
 
-/* -------------------------------------------------------------------
- * Client API - Multimedia Calls - Jingle routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Media Call Sessions - Jingle routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles an incoming Jingle session signaling
+ * Handles result of Jingle Media Call Session signaling query
+ *
+ * @param   {string}    from      Sender JID
+ * @param   {string}    type      Result type
+ * @param   {object}    error     Error data if any
+ */
+function xows_cli_call_jing_parse(from, type, error)
+{
+  // Retreive related Peer
+  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
+  if(!peer) {
+    xows_log(1,"cli_jing_parse","unknown/unsubscribed JID",from);
+    return;
+  }
+
+  if(type === "error") {
+
+    // Forward error
+    xows_cli_fw_callerror(peer, false, error);
+
+    // Clear call session
+    xows_cli_call_clear(peer);
+  }
+}
+
+/**
+ * Handles received Jingle Media Call Session signaling (forwarded from
+ * XMPP Module)
  *
  * The data parameter content depend on Jingle action type:
  *  - session-initiate  : Parsed SDP Offer string
@@ -5119,37 +5377,12 @@ function xows_cli_call_jing_onrecv(from, id, sid, action, data)
   xows_xmp_iq_result_send(id, from);
 }
 
+/* ---------------------------------------------------------------------------
+ * Media Call Sessions - WebRTC routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for Jingle query result parsing
- *
- * @param   {string}    from      Sender JID
- * @param   {string}    type      Result type
- * @param   {object}    error     Error data if any
- */
-function xows_cli_call_jing_parse(from, type, error)
-{
-  // Retreive related Peer
-  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
-  if(!peer) {
-    xows_log(1,"cli_jing_parse","unknown/unsubscribed JID",from);
-    return;
-  }
-
-  if(type === "error") {
-
-    // Forward error
-    xows_cli_fw_callerror(peer, false, error);
-
-    // Clear call session
-    xows_cli_call_clear(peer);
-  }
-}
-
-/* -------------------------------------------------------------------
- * Client API - Multimedia Call - WebRTC routines
- * -------------------------------------------------------------------*/
-/**
- * Handle WebRTC available Session Description (SDP) for Multimedia Call
+ * Handles WebRTC available Session Description (SDP) for Media Call Session
+ * (received from RTCPeerConnection API)
  *
  * @param   {object}      rpc       Instance of RTCPeerConnection object
  * @param   {string}      sdp       SDP string, either Offer or Answer
@@ -5183,7 +5416,8 @@ function xows_cli_wrtc_onsdesc(rpc, sdp, peer)
 }
 
 /**
- * Handle WebRTC available remote media stream track for Multimedia Call
+ * Handle WebRTC available remote media stream track for Media Call Session
+ * (received from RTCPeerConnection API)
  *
  * @param   {object}      rpc       Instance of RTCPeerConnection object
  * @param   {obejct}      stream    Stream object
@@ -5215,9 +5449,10 @@ function xows_cli_wrtc_ontrack(rpc, stream, peer)
 }
 
 /**
- * Handle WebRTC state changes for Multimedia Call
+ * Handles WebRTC state changes for Media Call Session (received from
+ * RTCPeerConnection API)
  *
- * This callback receive mixed state changes from RPC connection and
+ * This callback receives mixed state changes from RPC connection and
  * ICE gathering process. Possible states are the following:
  *    - "gathering"  : ICE gathering in progress
  *    - "complete"   : ICE gargering finished
@@ -5239,7 +5474,8 @@ function xows_cli_wrtc_onstate(rpc, state, peer)
 }
 
 /**
- * Handle WebRTC error for Multimedia Call
+ * Handles WebRTC error for Media Call Session (received from RTCPeerConnection
+ * API)
  *
  * @param   {object}      rpc       Instance of RTCPeerConnection object
  * @param   {obejct}      error     Error object (DOMException)

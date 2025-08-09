@@ -33,88 +33,100 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                      WebSocket API Layer
+ * WebSocket Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 /**
- * Socket error codes
+ * Constant values for socket error codes
  */
 const XOWS_SOCK_CLOS = 0x000;
 const XOWS_SOCK_FAIL = 0x020;
 
 /**
- * Reference to created WebSocket connection object
+ * Global reference to WebSocket object (navigator WebSocket API)
  */
 let xows_sck_sock = null;
 
 /**
- * WebSocket service connection URL
+ * Configured URL for WebSocket connection
  */
 let xows_sck_url = null;
 
 /**
- * WebSocket service connection Protocol
+ * Configured Protocol for WebSocket connection
  */
 let xows_sck_prot = null;
 
+/* ---------------------------------------------------------------------------
+ *
+ * Module Events Configuration
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Reference to custom event callback function for socket open
+ * Module Event-Forwarding callback for Socket open
  */
 let xows_sck_fw_onopen = function() {};
 
 /**
- * Reference to custom event callback function for data received
+ * Module Event-Forwarding callback for Data received
  */
 let xows_sck_fw_onrecv = function() {};
 
 /**
- * Reference to callback function for received socket closed
+ * Module Event-Forwarding callback for Socket closed
  */
 let xows_sck_fw_onclose = function() {};
 
 /**
- * Set custom callback function for socket event
+ * Set callback functions for Module events.
  *
- * The possible event type are the following:
+ * The possible events are the following:
+ *
  *  - open   : Socket successfully opened
  *  - recv   : Socket received data
  *  - close  : Socket closed
  *
- * @param   {string}    type      Event type to assign callback to
+ * @param   {string}    event     Event to assign callback to
  * @param   {function}  callback  Function to set as callback
  */
-function xows_sck_set_callback(type, callback)
+function xows_sck_set_callback(event, callback)
 {
   if(!xows_isfunc(callback))
     return;
 
-  switch(type.toLowerCase()) {
+  switch(event.toLowerCase()) {
     case "open":  xows_sck_fw_onopen = callback; break;
     case "recv":  xows_sck_fw_onrecv = callback; break;
     case "close": xows_sck_fw_onclose = callback; break;
   }
 }
 
-/**
- * WebSocket object onerror callback
+/* ---------------------------------------------------------------------------
  *
- * @param   {object}    event     Error event
+ * WebSocket API events handling
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles WebSocket object error event
+ *
+ * @param   {object}    event     Event object
  */
 function xows_sck_onerror(event)
 {
   // This callback is totally pointless as event reports nothing
   // interesting and the onclose callback is call right after with
   // the few available error data.
+  //
   // I leave this here to remember to avoid trying doing something
   // with it
 }
 
 /**
- * WebSocket object onclose callback
+ * Handles WebSocket object close event
  *
- * @param   {object}    event     Close event
+ * @param   {object}    event     Event object
  */
 function xows_sck_onclose(event)
 {
@@ -122,10 +134,12 @@ function xows_sck_onclose(event)
 
   // WebSocket API is not prolix on error reporting (this become an habit with
   // JavaScript APIs).
+  //
   // Experience showed that the Event's "reason" property is usualy empty
   // (never seen anything in) while the most commons (if not only ones) error
   // codes reported are 1000 for "happy close" or 1006 for "something went
   // wrong, now, guess what".
+  //
   // The 1006 code can be reported for any connection faillure like network
   // unreachable, NXDOMAIN, connection refused, connection lost, etc.
 
@@ -167,9 +181,9 @@ function xows_sck_onclose(event)
 }
 
 /**
- * WebSocket object onopen callback
+ * Handles WebSocket object open event
  *
- * @param   {object}    event     Open event
+ * @param   {object}    event     Event object
  */
 function xows_sck_onopen(event)
 {
@@ -180,7 +194,7 @@ function xows_sck_onopen(event)
 }
 
 /**
- * WebSocket object onmessage callback
+ * Handles WebSocket object message event
  *
  * @param   {object}    event     Message event
  */
@@ -192,8 +206,13 @@ function xows_sck_onmesg(event)
   xows_sck_fw_onrecv(event.data);
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * Main Functions
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Setup a new WebSocket connection parameters
+ * Setups parameters for WebSocket connections
  *
  * @param   {string}    url       WS service URL
  * @param   {string[]}  protocols Sub-protocols to select on WS service
@@ -208,7 +227,7 @@ function xows_sck_setup(url, protocols)
 }
 
 /**
- * Create new WebSocket instance to open socket
+ * Opens new WebSocket connection
  */
 function xows_sck_connect()
 {
@@ -225,7 +244,7 @@ function xows_sck_connect()
 }
 
 /**
- * Close WebSocket connection an destroy object
+ * Closes WebSocket connection (destroy object)
  */
 function xows_sck_close()
 {
@@ -237,7 +256,7 @@ function xows_sck_close()
 }
 
 /**
- * Send data to WebSocket socket
+ * Send data through WebSocket
  *
  * @param   {string}    data      Text data to send
  */

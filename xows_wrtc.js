@@ -33,18 +33,19 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                    WebRTC Interface API Module
+ * WebRTC Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 /**
- * WebRTC instances list with parameters
+ * Storage for RTCPeerConnection sessions parameters
  */
 const xows_wrtc_db = new Map();
 
 /**
- * Generate Turn server REST API credential from secret
+ * Generates Turn server REST-API credential from suplied
+ * authentication string.
  *
  * @param   {string}    name      Username to use for generation
  * @param   {string}    secret    TURN server static secret
@@ -61,7 +62,7 @@ function xows_wrtc_gen_credential(name, secret)
 }
 
 /**
- * Callback function for WebRTC Peer Connection error
+ * Handles WebRTC Peer Connection error (forwarded from RTCPeerConnection object)
  *
  * @param   {object}      error    Error object
  */
@@ -77,7 +78,8 @@ function xows_wrtc_onerror(rpc, error)
 }
 
 /**
- * Callback function for WebRTC Peer Connection connection state changed
+ * Handles WebRTC Peer Connection state change event (forwarded from
+ * RTCPeerConnection object)
  *
  * @param   {object}      event     Event object
  */
@@ -95,7 +97,8 @@ function xows_wrtc_oncnxstate(event)
 }
 
 /**
- * Callback function for WebRTC Peer Connection negotiation required
+ * Handles WebRTC Peer Connection negotiation required event (forwarded from
+ * RTCPeerConnection object)
  *
  * @param   {object}      event     Event object
  */
@@ -111,7 +114,8 @@ function xows_wrtc_onneednego(event)
 }
 
 /**
- * Callback function for WebRTC Peer Connection ICE gathering state changed
+ * Handles WebRTC Peer Connection ICE gathering state change event (forwarded
+ * from RTCPeerConnection object)
  *
  * @param   {object}      event    Event object
  */
@@ -135,8 +139,8 @@ function xows_wrtc_onicestate(event)
 }
 
 /**
- * Callback function for WebRTC Peer Connection
- * ICE Candidate error
+ * Handles WebRTC Peer Connection ICE candidate error (forwarded from
+ * RTCPeerConnection object)
  *
  *@param   {object}      event    RTCPeerConnectionIceErrorEvent object
  */
@@ -154,7 +158,8 @@ function xows_wrtc_oniceerror(event)
 }
 
 /**
- * Callback function for WebRTC Peer Connection media stream available
+ * Handles WebRTC Peer Connection stream available event (forwarded from
+ * RTCPeerConnection object)
  *
  * @param   {object}      event    RTCP Track event (RTCTrackEvent) object
  */
@@ -176,7 +181,7 @@ function xows_wrtc_ontrack(event)
 }
 
 /**
- * Close and delete WebRTC Peer Connection
+ * Closes and delete WebRTC Peer Connection
  *
  * @param   {object}      rpc       Instance of RTCPeerConnection object
  */
@@ -190,7 +195,7 @@ function xows_wrtc_close(rpc)
 }
 
 /**
- * Create new WebRTC Peer Connection using specified STUN and TURN server list
+ * Creates new WebRTC Peer Connection using specified STUN and TURN server list.
  *
  * The ICE server description object must follow the service shema as provided
  * by the XMPP External Service Discovery (XEP-0215).
@@ -241,7 +246,7 @@ function xows_wrtc_new(icelist, onsdesc, ontrack, onstate, onerror, param)
 }
 
 /**
- * Set WebRTC Peer Connection local stream.
+ * Set the WebRTC Peer Connection local stream.
  *
  * If called in first after RPC creation, while no remote SDP available in RPC
  * object, it is assumed to be an outbound call initiation, an SDP Offer will
@@ -281,7 +286,7 @@ function xows_wrtc_set_local_stream(rpc, stream)
 }
 
 /**
- * Add Remote description to be supplied to WebRTC Peer Connection.
+ * Add the remote description (SDP) to WebRTC Peer Connection.
  *
  * If called in first after RPC creation, while no local SDP available in RPC
  * object, it is assumed to be an inbound call initiation, an SDP Offer will be

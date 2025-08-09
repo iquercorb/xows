@@ -33,20 +33,18 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         GUI API Interface
+ * GUI Module - Multi-User-Chat (MUC)
  *
- *                Multi-User-Chat Management Sub-Module
- *
- * ------------------------------------------------------------------ */
-/* -------------------------------------------------------------------
- * MUC interactions - Room Join conditions Handling
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Join
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle the received MUC Room initial Own presence (Just Joinded Room)
+ * Handles received user (self) MUC Room Join event (forwarded from CLI Module)
  *
- * @param   {object}    room      Room object
+ * @param   {object}    room      ROOM Peer object
  * @param   {object}   [code]     Optionnal list of status code
  * @param   {object}   [error]    Error data if any
  */
@@ -120,9 +118,9 @@ function xows_gui_muc_onjoin(room, code, error)
     xows_gui_muc_init_mbox_open(room);
 }
 /**
- * Handle the received MUC Room terminal Own presence (Room exit)
+ * Handles received user (self) MUC Room Exit event
  *
- * @param   {object}    room      Room object
+ * @param   {object}    room      ROOM Peer object
  * @param   {object}   [mucx]     Optionnal MUC x extra parameters
  */
 function xows_gui_muc_onexit(room, mucx)
@@ -163,7 +161,7 @@ function xows_gui_muc_onexit(room, mucx)
 }
 
 /**
- * Handle incomming room subjec from MUC room
+ * Handles received MUC Room Subject (forwarded from CLI Module)
  *
  * @param   {object}    room      Room object
  * @param   {string}    subj      Subject string
@@ -173,13 +171,13 @@ function xows_gui_muc_onsubj(room, subj)
   xows_gui_doc_update(room, XOWS_UPDT_SUBJ);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Join Room Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Join Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Join Room Input Dialog-Box on-valid callback
+ * Handles Room-Join Input-Dialog input events
  *
- * @param   {string}    value     Input content
+ * @param   {string}    value     Dialog input field content
  */
 function xows_gui_muc_join_ibox_oninput(value)
 {
@@ -195,7 +193,7 @@ function xows_gui_muc_join_ibox_oninput(value)
 }
 
 /**
- * Join Room Input Dialog-Box on-valid callback
+ * Handles Room-Join Input-Dialog validation (click on Valid button)
  *
  * @param   {string}    value     Input content
  */
@@ -206,7 +204,7 @@ function xows_gui_muc_join_ibox_onvalid(value)
 }
 
 /**
- * Open Join Room Input Dialog-Box
+ * Opens Room-Join Input-Dialog.
  */
 function xows_gui_muc_join_ibox_open()
 {
@@ -220,11 +218,11 @@ function xows_gui_muc_join_ibox_open()
     true);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Join Room failure Message-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Join Failure Message Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Open an error message dialog-box for room join context
+ * Opens Join-Failure Message Dialog
  *
  * @param   {string}    type      Error type
  * @param   {string}    text      Message to set
@@ -246,16 +244,16 @@ function xows_gui_muc_fail_mbox_open(type, text)
                      null, null);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Room initialization Message-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Initialization Message Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Room Initialization Dialog-Box parameters
+ * Storage for Room-Initialization Message-Dialog parameters
  */
 const xows_gui_muc_init_mbox = {room:null};
 
 /**
- * Room Initialization Dialog-Box on-valid callback
+ * Handles Room-Initialization Message-Dialog validation (click on Valid button)
  */
 function xows_gui_muc_init_mbox_onvalid()
 {
@@ -269,7 +267,7 @@ function xows_gui_muc_init_mbox_onvalid()
 }
 
 /**
- * Room Initialization Dialog-Box on-abort callback
+ * Handles Room-Initialization Message-Dialog abortion (click on Abort button)
  */
 function xows_gui_muc_init_mbox_onabort()
 {
@@ -278,9 +276,9 @@ function xows_gui_muc_init_mbox_onabort()
 }
 
 /**
- * Room Initialization Dialog-Box
+ * Opens Room-Initialization Message-Dialog
  *
- * @param   {object}    room      Joined Room object
+ * @param   {object}    room      Joined ROOM Peer object
  */
 function xows_gui_muc_init_mbox_open(room)
 {
@@ -295,18 +293,18 @@ function xows_gui_muc_init_mbox_open(room)
                      xows_gui_muc_init_mbox_onabort, "Ignore");
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Room register Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Register Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Register Room Input Dialog-Box parameters
+ * Storage for Room-Register Input-Dialog parameters
  */
 const xows_gui_muc_regi_ibox = {room:null};
 
 /**
- * Register Room Input Dialog-Box register result callback
+ * Handles received register result for Room-Register Input-Dialog
  *
- * @param   {object}    value     Room object
+ * @param   {object}    room      ROOM Peer object
  * @param   {string}    type      Result type string
  * @param   {object}    error     Error data if any
  */
@@ -348,7 +346,7 @@ function xows_gui_muc_regi_ibox_onresult(room, type, error)
 }
 
 /**
- * Register Room Input Dialog-Box on-valid callback
+ * Handles Room-Register Input-Dialog validation (click on Valid button)
  *
  * @param   {string}    value     Input content
  */
@@ -361,7 +359,7 @@ function xows_gui_muc_regi_ibox_onvalid(value)
 }
 
 /**
- * Open Register Room Input Dialog-Box
+ * Opens Room-Register Input-Dialog.
  *
  * @param   {object}    room      Room object
  */
@@ -378,16 +376,16 @@ function xows_gui_muc_regi_ibox_open(room)
                      null, true);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Join Room Password Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Password Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Room Password Input Dialog-Box parameters
+ * Storage for Room-Password Input-Dialog parameters
  */
 const xows_gui_muc_pswd_ibox = {room:null};
 
 /**
- * Room Password Input Dialog-Box on-valid callback
+ * Handles Room-Password Input-Dialog validation (click on Valid button)
  *
  * @param   {string}    value     Input content
  */
@@ -403,7 +401,7 @@ function xows_gui_muc_pswd_ibox_onvalid(value)
 }
 
 /**
- * Open Room Password Input Dialog-Box
+ * Opens Room-Password Input-Dialog.
  *
  * @param   {object}    room      Room object
  */
@@ -423,16 +421,16 @@ function xows_gui_muc_pswd_ibox_open(room)
   if(room.pass) xows_doc_ibox_error("The password you entered is incorrect");
 }
 
-/* -------------------------------------------------------------------
- *  MUC interactions - Join Room Conflict Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Nickname Conflict Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Room Nickname Conflict Input Dialog-Box parameters
+ * Storage for Nickname-Conflict Input-Dialog parameters
  */
 const xows_gui_muc_cflt_ibox = {room:null};
 
 /**
- * Room Nickname Conflict Input Dialog-Box on-valid callback
+ * Handles Nickname-Conflict Input-Dialog validation (click on Valid button)
  *
  * @param   {string}    value     Input content
  */
@@ -448,7 +446,7 @@ function xows_gui_muc_cflt_ibox_onvalid(value)
 }
 
 /**
- * Open Room Nickname Conflict Input Dialog-Box
+ * Opens Nickname-Conflict Input-Dialog.
  *
  * @param   {object}    room      Room object
  */
@@ -465,18 +463,18 @@ function xows_gui_muc_cflt_ibox_open(room)
     null, true);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Room Subject Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Subject Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Room subject/topic input box param
+ * Storage for Room-Subject Input-Dialog parameters
  */
 const xows_gui_muc_subj_ibox = {room:null};
 
 /**
- * Room subject/topic input box on-valid callback
+ * Handles Room-Subject Input-Dialog input events
  *
- * @param   {string}    value     Input content
+ * @param   {string}    value     Dialog input field content
  */
 function xows_gui_muc_subj_ibox_oninput(value)
 {
@@ -484,9 +482,9 @@ function xows_gui_muc_subj_ibox_oninput(value)
 }
 
 /**
- * Room subject/topic input box on-valid callback
+ * Handles Room-Subject Input-Dialog validation (click on Valid button)
  *
- * @param   {string}    value     Input content
+ * @param   {string}    value     Dialog input field content
  */
 function xows_gui_muc_subj_ibox_onvalid(value)
 {
@@ -501,7 +499,7 @@ function xows_gui_muc_subj_ibox_onvalid(value)
 }
 
 /**
- * Open Room subject/topic input box
+ * Opens Room-Subject Input-Dialog.
  */
 function xows_gui_muc_subj_ibox_open(room)
 {
@@ -519,16 +517,16 @@ function xows_gui_muc_subj_ibox_open(room)
     xows_gui_muc_subj_ibox_oninput, true);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Room Nickname Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Nickname Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Room subject/topic input box param
+ * Storage for Room-Nickname Input-Dialog parameters
  */
 const xows_gui_muc_nick_ibox = {room:null};
 
 /**
- * Room subject/topic input box on-valid callback
+ * Handles Room-Nickname Input-Dialog validation (click on Valid button)
  *
  * @param   {string}    value     Input content
  */
@@ -545,7 +543,7 @@ function xows_gui_muc_nick_ibox_onvalid(value)
 }
 
 /**
- * Open Room subject/topic input box
+ * Opens Room-Nickname Input-Dialog.
  */
 function xows_gui_muc_nick_ibox_open(room)
 {
@@ -561,16 +559,16 @@ function xows_gui_muc_nick_ibox_open(room)
     xows_gui_muc_nick_ibox_onvalid, null, null, null, null, true);
 }
 
-/* -------------------------------------------------------------------
- * MUC Interactions - Bookmark Popu-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Bookmark Popup Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Object to store Page/Dialog temporary data and parameters
+ * Storage for Room-Bookmark Popup-Dialog parameters
  */
 const xows_gui_muc_book_popu = {room:null};
 
 /**
- * Add Bookmark message box on-abort callback function
+ * Handles Room-Bookmark Popup-Dialog abortion (click on Abort button)
  */
 function xows_gui_muc_book_popu_onabort()
 {
@@ -579,7 +577,7 @@ function xows_gui_muc_book_popu_onabort()
 }
 
 /**
- * Add Bookmark message box on-valid callback function
+ * Handles Room-Bookmark Popup-Dialog validation (click on Valid button)
  */
 function xows_gui_muc_book_popu_onvalid()
 {
@@ -590,7 +588,7 @@ function xows_gui_muc_book_popu_onvalid()
 }
 
 /**
- * Add Bookmark message box open
+ * Opens Room-Bookmark Popup-Dialog
  *
  * @param   {object}    room      Room object to add Bookmark
  */
@@ -606,32 +604,34 @@ function xows_gui_muc_book_popu_open(room)
                      true);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Set Occupant Affiliation Message-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Occupant Affiliation Message Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Object to store Page/Dialog temporary data and parameters
+ * Storage for Occupant-Affiliation Message-Dialog parameters
  */
-const xows_gui_muc_affi_mbox_param = {occu:null,affi:null};
+const xows_gui_muc_affi_mbox = {occu:null,affi:null};
 
 /**
- * Room Occupant Affiliation change message box on-abort callback function
+ * Handles Occupant-Affiliation Message-Dialog abortion (click on Abort
+ * button)
  */
 function xows_gui_muc_affi_mbox_onabort() {}
 
 /**
- * Room Occupant Affiliation change message box on-valid callback function
+ * Handles Occupant-Affiliation Message-Dialog validation (click on Valid
+ * button)
  */
 function xows_gui_muc_affi_mbox_onvalid()
 {
-  const param = xows_gui_muc_affi_mbox_param;
+  const param = xows_gui_muc_affi_mbox;
 
   // query change affiliation for occupant
   xows_cli_muc_affi_set(param.occu, param.affi);
 }
 
 /**
- * Room Occupant Affiliation change message box open
+ * Opens Occupant-Affiliation Message-Dialog
  *
  * @param   {object}    occu      Occupant object
  * @param   {number}    affi      Affiliation value to set
@@ -639,7 +639,7 @@ function xows_gui_muc_affi_mbox_onvalid()
 function xows_gui_muc_affi_mbox_open(occu, affi)
 {
   // Store room, occupant and affiliation setup
-  const param = xows_gui_muc_affi_mbox_param;
+  const param = xows_gui_muc_affi_mbox;
   param.occu = occu;
   param.affi = affi;
 
@@ -670,32 +670,32 @@ function xows_gui_muc_affi_mbox_open(occu, affi)
                      xows_gui_muc_affi_mbox_onabort, "Cancel");
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Set Occupant Role Message-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Occupant Role Message Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Object to store Page/Dialog temporary data and parameters
+ * Storage for Occupant-Role Message-Dialog parameters
  */
-const xows_gui_muc_role_mbox_param = {occu:null,role:null};
+const xows_gui_muc_role_mbox = {occu:null,role:null};
 
 /**
- * Room Occupant Role change message box on-abort callback function
+ * Handles Occupant-Role Message-Dialog abortion (click on Abort button)
  */
 function xows_gui_muc_role_mbox_onabort() {}
 
 /**
- * Room Occupant Role change message box on-valid callback function
+ * Handles Occupant-Role Message-Dialog validation (click on Valid button)
  */
 function xows_gui_muc_role_mbox_onvalid()
 {
-  const param = xows_gui_muc_role_mbox_param;
+  const param = xows_gui_muc_role_mbox;
 
   // query change affiliation for occupant
   xows_cli_muc_role_set(param.occu, param.role);
 }
 
 /**
- * Room Occupant Role change message box open
+ * Opens Occupant-Role Message-Dialog.
  *
  * @param   {object}    occu      Occupant object
  * @param   {number}    role      Role value to set
@@ -703,7 +703,7 @@ function xows_gui_muc_role_mbox_onvalid()
 function xows_gui_muc_role_mbox_open(occu, role)
 {
   // Store room, occupant and affiliation setup
-  const param = xows_gui_muc_role_mbox_param;
+  const param = xows_gui_muc_role_mbox;
   param.occu = occu;
   param.role = role;
 
@@ -733,15 +733,15 @@ function xows_gui_muc_role_mbox_open(occu, role)
                      xows_gui_muc_role_mbox_onabort, "Cancel");
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Occupants list routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Occupants list
+ * ---------------------------------------------------------------------------*/
 /**
- * Chat Header on-click callback function
+ * Handles Room Occupant-List Header click events
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {object}    event     Event object
  */
-function xows_gui_mucl_head_onclick(event)
+function xows_gui_muc_head_onclick(event)
 {
   xows_cli_pres_show_back(); //< Wakeup presence
 
@@ -753,9 +753,9 @@ function xows_gui_mucl_head_onclick(event)
 }
 
 /**
- * Function to handle click on room occupant list
+ * Handles Room Occupant-List click events
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {object}    event     Event object
  */
 function xows_gui_muc_list_onclick(event)
 {
@@ -778,10 +778,10 @@ function xows_gui_muc_list_onclick(event)
 }
 
 /**
- * Find occupant <li-peer> element corresponding to specified Occupant
+ * Find MUC Occupant element (<li-peer>) matching specified occupant JID.
  *
- * @param   {object}    room      Room object
- * @param   {object}    addr      Occupant address
+ * @param   {object}    room      ROOM Peer object
+ * @param   {object}    addr      Occupant JID (MUC address)
  */
 function xows_gui_muc_list_find(room, addr)
 {
@@ -789,7 +789,10 @@ function xows_gui_muc_list_find(room, addr)
 }
 
 /**
- * Updates the Occupant list according occupants presents in room
+ * Updates Occupant-List sub-lists according elements within.
+ *
+ * This shows or hides Role and Affiliation sub-lists (<ul>) depending presence
+ * of child element (<li-peer>) within.
  *
  * @param   {object}    room      Room object
  */
@@ -813,11 +816,11 @@ function xows_gui_muc_list_update(room)
 }
 
 /**
- * Inserts given Peer's <li-peer> element in specified list following
- * ordering rules.
+ * Inserts the given MUC Occupant element (<li-peer>) into the specified
+ * Occupant-List sub-list (<ul>) following ordering rules.
  *
- * @param   {element}   dst_ul    Destination list
- * @param   {element}   li_peer   Contact <li-peer> element to insert
+ * @param   {element}   dst_ul    Destination sub-list element (<ul>)
+ * @param   {element}   li_peer   Occupant element (<li-peer>) to insert
  */
 function xows_gui_muc_list_insert(dst_ul, li_peer)
 {
@@ -832,13 +835,13 @@ function xows_gui_muc_list_insert(dst_ul, li_peer)
   dst_ul.insertBefore(li_peer, li_insr);
 }
 
-/* -------------------------------------------------------------------
- * MUC interactions - Occupants "Peer" management
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Occupant Elements
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle the received occupant from MUC Room
+ * Handles MUC Room Occupant add or changes event (forwarded from CLI Module)
  *
- * @param   {object}    occu      Occupant object
+ * @param   {object}    occu      OCCUPANT Peer object
  * @param   {object}   [mucx]     Optionnal MUX x extra parameters
  */
 function xows_gui_muc_list_onpush(occu, mucx)
@@ -908,18 +911,18 @@ function xows_gui_muc_list_onpush(occu, mucx)
 
   // Update Private Message with relatives
   if(occu.self) {
-    let i = xows_cli_priv.length;
+    let i = xows_cli_ocpm.length;
     while(i--) {
-      if(xows_cli_priv[i].room === room)
-        xows_gui_hist_update(xows_cli_priv[i], occu);
+      if(xows_cli_ocpm[i].room === room)
+        xows_gui_hist_update(xows_cli_ocpm[i], occu);
     }
   }
 }
 
 /**
- * Function to remove item from the room occupant list
+ * Handles MUC Room Occupant removed event (forwarded from CLI Module)
  *
- * @param   {object}    occu      Occupant object to remove
+ * @param   {object}    occu      OCCUPANT Peer object
  */
 function xows_gui_muc_list_onpull(occu)
 {
@@ -948,11 +951,11 @@ function xows_gui_muc_list_onpull(occu)
   xows_cli_occu_rem(occu);
 }
 
-/* -------------------------------------------------------------------
- * MUC Interactions - Occupant contextual Menu
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Occupant Contextual Menu
+ * ---------------------------------------------------------------------------*/
 /**
- * Occupant Contextual Menu on-close Callback function
+ * Handles Room-Occupant Contextual-Menu close (Menu closed)
  */
 function xows_gui_muc_occu_menu_onclose()
 {
@@ -962,10 +965,13 @@ function xows_gui_muc_occu_menu_onclose()
 }
 
 /**
- * Occupant Contextual Menu placement and config Callback function
+ * Handles Room-Occupant Contextual-Menu show (Menu shown)
  *
- * @param   {element}    button   Menu button element
- * @param   {element}    menu     Menu (itself) element
+ * This properly position the Menu elements according related
+ * Occupant's element (<li-peer>) in Occupant List.
+ *
+ * @param   {element}    button   Menu trigger button element
+ * @param   {element}    menu     Menu element
  */
 function xows_gui_muc_occu_menu_onshow(button, menu)
 {
@@ -1060,9 +1066,9 @@ function xows_gui_muc_occu_menu_onshow(button, menu)
 }
 
 /**
- * Function to handle click on room occupant contextual menu
+ * Handles Room-Occupant Contextual-Menu click events
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {object}    event     Event object
  */
 function xows_gui_muc_occu_menu_onclick(event)
 {
@@ -1126,37 +1132,34 @@ function xows_gui_muc_occu_menu_onclick(event)
   }
 }
 
-/* -------------------------------------------------------------------
- * Page Screen - Room Configuration
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Configuration (mucc) Page
+ * ---------------------------------------------------------------------------*/
 /**
- * Object to store Page/Dialog temporary data and parameters
+ * Storage for Room-Configuration (mucc) Page parameters.
  */
 const xows_gui_page_mucc = {room:null,form:null,cancel:true};
 
 /**
- * Room Configuration page query result callback function
+ * Handles received result for Room-Configuration (mucc) Page.
  *
- * @param   {object}    Room object
- * @param   {string}    Query result type
+ * This actually only closes the page on success result.
+ *
+ * @param   {object}    ROOM Peer object
+ * @param   {string}    Result type ("result" or "error")
+ * @param   {object}    Error data if any
  */
-function xows_gui_page_mucc_onresult(room, type)
+function xows_gui_page_mucc_onresult(room, type, error)
 {
   if(type === "result") {
     xows_gui_page_mucc.cancel = false;
     xows_doc_page_close();
   }
 }
-  // TODO: !
-
-  // Unless the room is configured to not broadcast presence from new occupants below
-  // a certain affiliation level (as controlled by the "muc#roomconfig_presencebroadcast"
-  // room configuration option), the service MUST also send presence from the new
-  // participant's occupant JID to the full JIDs of all the occupants (including
-  // the new occupant).
 
 /**
- * Room Configuration page on-valid callback function
+ * Handles Room-Configuration (mucc) Page validation (click on Popup-dialog
+ * Valid button).
  */
 function xows_gui_page_mucc_onvalid()
 {
@@ -1207,7 +1210,8 @@ function xows_gui_page_mucc_onvalid()
 }
 
 /**
- * Room Configuration page on-abort callback function
+ * Handles Room-Configuration (mucc) Page abortion (click on Popup-dialog
+ * Abort button).
  */
 function xows_gui_page_mucc_onabort()
 {
@@ -1262,9 +1266,13 @@ function xows_gui_page_mucc_onabort()
 }
 
 /**
- * Room Configuration page on-input event callback function
+ * Handles Room-Configuration (mucc) Page input events.
  *
- * @param   {object}    target    Target object of the triggered Event
+ * This checks for every page input fieds to compare with initial state,
+ * if one or more values changed, the "Save changes" Popup-Dialog is then
+ * opened.
+ *
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_mucc_oninput(target)
 {
@@ -1323,7 +1331,7 @@ function xows_gui_page_mucc_oninput(target)
 }
 
 /**
- * Room Configuration page on-close callback function
+ * Handles Room-Configuration (mucc) Page closed (user closed the page).
  */
 function xows_gui_page_mucc_onclose()
 {
@@ -1349,13 +1357,9 @@ function xows_gui_page_mucc_onclose()
 }
 
 /**
- * Room Configuration page open
+ * Opens Room-Configuration (mucc) Page.
  *
- * If the form parameter is not set, it is assumed this is room subject
- * changes scenario, otherwise, the Room Configuration scenario is
- * enabled.
- *
- * @param   {object}   room    Room object to be configured
+ * @param   {object}   room    ROOM Peer object
  * @param   {object}   form    Supplied form for config fields
  */
 function xows_gui_page_mucc_open(room, form)
@@ -1381,40 +1385,52 @@ function xows_gui_page_mucc_open(room, form)
                                       xows_gui_page_mucc_oninput,
                                       xows_gui_page_mucc_oninput);
 }
-/* -------------------------------------------------------------------
- * Page Screen - Room Administration
- * -------------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Administration (muca) Page
+ * ---------------------------------------------------------------------------*/
 /**
- * Object to store Page/Dialog temporary data and parameters
+ * Storage for Room-Administration (muca) Page parameters
  */
 const xows_gui_page_muca = {room:null,stage:0,items:null};
 
 /**
- * Array for affiliation list loading cycle stages
+ * Storage array for Room-Administration (muca) Page loading process
  */
 const xows_gui_page_muca_load = ["outcast","owner","admin","member"];
 
 /**
- * Room Administration page search reference item Object for <li-memb> Element
+ * Returns reference MUC item matching the given Memeber element (<li-memb>)
  *
- * @param   {element}   li        <li-memb> element to search reference for
+ * This function is used in Room-Administration (muca) Page processing. The
+ * returned item describes current Room Member affiliation as received by
+ * server and to be compared with modified state.
+ *
+ * @param   {element}   li_memb     Member element (<li-memb>) to search item for.
  *
  * #return  {object}    Reference item or null if not found
  */
-function xows_gui_page_muca_getitem(li)
+function xows_gui_page_muca_getitem(li_memb)
 {
   const items = xows_gui_page_muca.items;
 
   // Search for item in reference array
   for(let i = 0; i < items.length; ++i)
-    if(items[i].jid == li.dataset.bare)
+    if(items[i].jid == li_memb.dataset.bare)
       return items[i];
 
   return null;
 }
 
 /**
- * Room Administration Affiliation-List Loading callback function
+ * Handles received Room Member list for Room-Administration (muca) Page
+ * pre-loading.
+ *
+ * This function is used in Room-Administration (muca) Page loading process
+ * consisting of gathering full list of Room Members with their affiliation.
+ *
+ * This process in dones through multiples steps since XMPP protocol only
+ * allow to get Per-Affiliation Members list.
  *
  * @param   {string}  from    Sender Room JID
  * @param   {string}  items   Room affiliation data
@@ -1511,7 +1527,7 @@ function xows_gui_page_muca_onload(from, items)
 }
 
 /**
- * Room Administration page on-close callback function
+ * Handles Room-Administration (muca) Page close (user closed the page)
  */
 function xows_gui_page_muca_onclose()
 {
@@ -1524,7 +1540,8 @@ function xows_gui_page_muca_onclose()
 }
 
 /**
- * Room Administration page on-valid callback function
+ * Handles Room-Administration (muca) Page validation (click on Popup-Dialog
+ * Valid button)
  */
 function xows_gui_page_muca_onvalid()
 {
@@ -1572,7 +1589,8 @@ function xows_gui_page_muca_onvalid()
 }
 
 /**
- * Room Administration page on-abort callback function
+ * Handles Room-Administration (muca) Page abortion (click on Popup-Dialog
+ * Abort button)
  */
 function xows_gui_page_muca_onabort()
 {
@@ -1590,9 +1608,9 @@ function xows_gui_page_muca_onabort()
 }
 
 /**
- * Room Administration page on-input event callback function
+ * Handles Room-Administration (muca) Page input events
  *
- * @param   {object}    target    Target object of the triggered Event
+ * @param   {element}   target    Event target Element
  */
 function xows_gui_page_muca_oninput(target)
 {
@@ -1619,9 +1637,9 @@ function xows_gui_page_muca_oninput(target)
 }
 
 /**
- * Room Administration page open
+ * Opens Room-Administration (muca) Page.
  *
- * @param   {object}   room    Room object to be configured
+ * @param   {object}   room    ROOM Peer object
  */
 function xows_gui_page_muca_open(room)
 {

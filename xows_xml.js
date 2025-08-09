@@ -33,19 +33,19 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
  *                         XML API Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 
 /**
- * DOM Parser object to parse XML data
+ * Gobale reference to DOMParser object
  */
 const xows_xml_parser = new DOMParser();
 
 /**
- * XML DOM object to create XML nodes
+ * Globale reference to XML Document to create XML nodes
  */
 const xows_xml_doc = document.implementation.createDocument("jabber:client","Xows");
 
@@ -55,7 +55,7 @@ const xows_xml_doc = document.implementation.createDocument("jabber:client","Xow
 const XOWS_XML_ESCAP_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'","&apos;"],["\"","&quot;"],["\n","<br>"]]);
 
 /**
- *  Correspondence map to unescape and XML string
+ * Correspondence map to unescape and XML string
  */
 const XOWS_XML_UNESC_MAP = new Map([["&amp;","&"],["&lt;","<"],["&gt;",">"],["&apos;","'"],["&quot;","\""]]);
 
@@ -94,13 +94,13 @@ function xows_xml_unesc(str)
 }
 
 /**
- * Add the given children data to the specified node
+ * Parents the given data to the specified node
  *
- * The children data can be a single XML Element object, a DOMString,
- * or an Array of the previous types.
+ * The 'child' parameter can be either a single XML Node, a string,
+ * or an Array of the previously mentioned types.
  *
- * @param   {object}              parent  Parent XML element object
- * @param   {(object|string|[])}  child   Data to append as child
+ * @param   {element}     parent    Parent node
+ * @param   {*}           child     Data to parent
  */
 function xows_xml_parent(parent, child)
 {
@@ -129,17 +129,19 @@ function xows_xml_parent(parent, child)
 }
 
 /**
- * Creates an XML Element object with the specified attributes and
- * children data
+ * Builds up an XML Node.
  *
- * The children data can be a single XML Element object, a DOMString,
- * or an Array of the previous types.
+ * The 'attr' parameter can be null or a directory object whose properties
+ * are node attributes with their corresponding values.
  *
- * @param   {string}              name    Tag name
- * @param   {object}             [attr]   Optional attributes as dictionary
- * @param   {(object|string|[])} [child]  Optional childrend data
+ * The 'child' parameter can be either a single XML Node, a string,
+ * or an Array of the previously mentioned types.
  *
- * @return  {object}    The created XML Element object
+ * @param   {string}    name    Tag name
+ * @param   {object}   [attr]   Optional node attributes
+ * @param   {*}        [child]  Optional node children
+ *
+ * @return  {element}   XML node
  */
 function xows_xml_node(name, attr, child)
 {
@@ -160,18 +162,18 @@ function xows_xml_node(name, attr, child)
 }
 
 /**
- * Replaces XML node child content by the given one
+ * Replaces XML node child content.
  *
- * The function search for a node with the specified Tag name within
- * the given parent tree, if a node is found, its children are removed
- * then replaced by the given one otherwise  a node is created with
- * the given child.
+ * This searchs for a node with the specified Tag name within
+ * the given parent tree. If a node is found, its children are removed
+ * then replaced by the specified data. Otherwise a node is created with
+ * the specified data as child.
  *
- * @param   {object}              parent  Parent node where to search
- * @param   {string}              name    Tag name to search
- * @param   {(object|string|[])}  child   Childrend data to set
+ * @param   {element}   parent    Parent node
+ * @param   {string}    name      Tag name to search
+ * @param   {*}         child     Childrend data to set
  *
- * @return  {object}    The found or created XML node
+ * @return  {element}   The found or created XML node
  */
 function xows_xml_edit(parent, name, child)
 {
@@ -191,9 +193,11 @@ function xows_xml_edit(parent, name, child)
 }
 
 /**
- * Serialize an XML Element object tree
+ * Serializes XML tree.
  *
- * @param   {object}    node      XML Element object tree
+ * Converts the specified XML node tree into XML sample string.
+ *
+ * @param   {element}   node    XML node
  *
  * @return  {string}    Resulting string
  */
@@ -229,11 +233,13 @@ function xows_xml_serialize(node)
 }
 
 /**
- * Parse the supplied XML data string to DOM object
+ * Parses XML sample string.
  *
- * @param   {string}    str       Input string to parse as XML
+ * Converts the specified XML sample string into XML node tree.
  *
- * @return  {object}    Resuling DOM object
+ * @param   {string}    str   Input string to parse as XML
+ *
+ * @return  {element}   XML node tree.
  */
 function xows_xml_parse(str)
 {
@@ -241,11 +247,11 @@ function xows_xml_parse(str)
 }
 
 /**
- * Get inner text of an XML node
+ * Returns XML node inner text.
  *
- * @param   {object}    node      XML Element object to get inner text
+ * @param   {object}    node      XML node.
  *
- * @return  {string}    Node text content or empty string
+ * @return  {string}    Inner text.
  */
 function xows_xml_innertext(node) {
 

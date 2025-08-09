@@ -33,41 +33,32 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                      DOM Templates API Module
+ * DOM Templates Module
  *
- * ------------------------------------------------------------------ */
-
+ * ---------------------------------------------------------------------------*/
+/**
+ * Constant values for DOM Template Type
+ */
 const XOWS_TPL_NONE       = 0;
 const XOWS_TPL_IMPORT     = 1;
 const XOWS_TPL_INSTANCED  = 2;
 
 /**
- * Private parser for HTML parsing from string
+ * Global DOMParser object instance
  */
-const xows_tpl_template_parser = new DOMParser();
+const xows_tpl_parser = new DOMParser();
 
 /**
- * Callback function called once templates successfully loaded
+ * Module Event-Forwarding callback for Templates loaded
  */
 let xows_tpl_fw_onready = function() {};
 
 /**
- * Stored remaining template loading
- */
-let xows_tpl_template_parse_remain = 0;
-
-/**
- * Stored instantiable templates list
+ * Storage for instantiable Element template Models
  */
 let xows_tpl_model = [];
-
-/**
- * Temporary variable used to store template document root during
- * loading and parsing job
- */
-let xows_tpl_fragment = null;
 
 /**
  * Template URL theme folder to get template files. Finale path is
@@ -76,7 +67,7 @@ let xows_tpl_fragment = null;
 let xows_tpl_theme = "dark";
 
 /**
- * Emojis short code to unicode map
+ * Conversion Map for Emojis short-code to codepoint
  */
 const xows_tpl_emoji_sc_map = {
   "100":"1F4AF","1234":"1F522","grinning":"1F600","smiley":"1F603","smile":"1F604","grin":"1F601","laughing":"1F606","sweat_smile":"1F605","rolling_on_the_floor_laughing":"1F923","joy":"1F602","slightly_smiling_face":"1F642","upside_down_face":"1F643","wink":"1F609","blush":"1F60A","innocent":"1F607","smiling_face_with_3_hearts":"1F970",
@@ -167,57 +158,100 @@ const xows_tpl_emoticon_map = {
     ")":"1F606","D":"1F606","P":"1F61D"}
 };
 
-/**
- * Callback function for embeded media loaded
- */
-let xows_tpl_fw_onembload = function() {};
-
-/**
- * Callback function for embeded media loading error
- */
-let xows_tpl_fw_onemberror = function() {};
-
-/**
- * Set callback functions for common client events
+/* ---------------------------------------------------------------------------
  *
- * Possibles slot parameter value are the following:
+ * Module Events Configuration
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Set callback functions for Module events.
+ *
+ * The possible events are the following:
+ *
  *  - embload   : Embeded media loaded
  *  - emberror  : Embeded media loading error
  *  - embclick  : Embeded media user click
  *
- * @param   {string}    type      Callback slot
+ * @param   {string}    event     Callback slot
  * @param   {function}  callback  Callback function to set
  */
-function xows_tpl_set_callback(type, callback)
+function xows_tpl_set_callback(event, callback)
 {
   if(!xows_isfunc(callback))
     return;
 
-  switch(type.toLowerCase())
+  switch(event.toLowerCase())
   {
     case "embload":    xows_tpl_fw_onembload = callback; break;
     case "emberror":   xows_tpl_fw_onemberror = callback; break;
   }
 }
 
-/**
- * Callback function for embeded media
+/* ---------------------------------------------------------------------------
  *
- * this function is used to keep event binding consistent after minification
+ * Module Initialization
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Module Initialization.
+ *
+ * Starts the HTML assets downloading and parsing process. This function must
+ * be called only once for Library Initialization.
+ *
+ * @param   {object}    onready   Function to be called once templates successfully loaded
  */
-function xows_tpl_emld(media) {xows_tpl_fw_onembload(media);};
+function xows_tpl_init(onready)
+{
+  // Set the onready callback
+  if(onready) xows_tpl_fw_onready = onready;
+
+  // Change default root and theme folder if requested
+  if(xows_options.lib_path)
+    xows_options.lib_path = xows_options.lib_path;
+
+  if(xows_options.gui_theme)
+    xows_tpl_theme = xows_options.gui_theme;
+
+  // Load the theme CSS
+  const css = document.createElement('link');
+  css.rel = "stylesheet";
+  css.type = "text/css";
+  // Select normal or minified style file
+  let css_file;
+  if(xows_options.tpl_load_mincss) {
+    css_file = "/style.min.css";
+  } else {
+    css_file = "/style.css";
+  }
+  css.href = xows_options.lib_path+"/themes/"+xows_tpl_theme+css_file;
+
+  // Forces browser to reload (uncache) templates files by adding a
+  // random string to URL. This option is mainly for dev and debug
+  if(xows_options.tpl_force_uncache)
+    css.href += "?" + xows_gen_nonce_asc(4);
+
+  // Add the CSS <link to head
+  document.head.appendChild(css);
+
+  // Initialize for loading job
+  xows_tpl_parse_remain = 0;
+  xows_tpl_fragment = document.createDocumentFragment();
+  // Start loading the first essential template file
+  xows_tpl_template_load("body");
+}
+
+/* ---------------------------------------------------------------------------
+ * HTML Assets loading
+ * ---------------------------------------------------------------------------*/
+/**
+ * Global variable for remaining template to load.
+ */
+let xows_tpl_parse_remain = 0;
 
 /**
- * Callback function for embeded media
+ * Downloads of the specified HTML asset (template) file.
  *
- * this function is used to keep event binding consistent after minification
- */
-function xows_tpl_emer(event) {xows_tpl_fw_onemberror(event);};
-
-/**
- * Launch the download of the specified template file
- *
- * @param   {string}    name      Template name to retreive file path
+ * @param   {string}    name      Template name to resolve file path
  * @param   {number}    type      Template type (instanced or import)
  */
 function xows_tpl_template_load(name, type)
@@ -254,17 +288,24 @@ function xows_tpl_template_load(name, type)
       if(this.status === 200) {
         xows_tpl_template_parse(this.responseText, this.responseURL, this._type);
       } else {
-        xows_init_fatal(this.status, this.responseURL);
+        xows_init_failure(this.status, this.responseURL);
       }
   };
   // Increase count of template remaining to load
-  xows_tpl_template_parse_remain++;
+  xows_tpl_parse_remain++;
   xows_log(2,"tpl_template_load","loading file",path);
   xhr.send();
 }
 
 /**
- * Check for completed template loading and parsing
+ * Global temporary variable used to stores HTML asset document root.
+ *
+ * This is used for the HTML assets template loading and parsing process.
+ */
+let xows_tpl_fragment = null;
+
+/**
+ * Check for completed HTML assets loading and parsing.
  *
  * This function is called each time a template is successfully
  * parsed, once all templates are parsed, the function call the DOM
@@ -286,23 +327,27 @@ function xows_tpl_template_done()
 }
 
 /**
- * Parse the given HTML data as static template
+ * Parses the given HTML asset (template).
  *
- * Static template are intended to be added once in the document, they
- * are typically base GUI/layout templates.
+ * HTML assets can be of two types: Static (IMPORT) or Instanciable (INSTANCED)
  *
- * Intanciables templates are intended to be dynamically cloned
- * (instanced) multiple times, such as history messages or roster
+ * Static (IMPORT) HTML assets are intended to be imported and  incorporated
+ * only once into the DOM, they are typically base GUI/layout HTML elements.
+ *
+ * Instanciable (INSTANCED) HTML assets are intended to be dynamically cloned
+ * (instanced) multiple times. They are not initially incorporated into the DOM
+ * but stored as Model. They are elements such as history messages or roster
  * contacts.
  *
- * Templates are loaded recursively, each template may include
- * indirections to other child templates. Static templates are
- * included as child within the static document while the
- * instanciable templates are stored in a separate pool. However notice
- * that a static templates cannot be included within instanciables ones
- * and will be ignored in this case.
+ * HTML assets are loaded recursively, each asset may include indirections
+ * to other child assets. Static (IMPORT) assets are incorporated as child
+ * elements within the parsed document while the Instanciable (INSTANCED) ones
+ * are stored in a specific pool.
  *
- * @param   {string}    html      HTML data to parse
+ * Notice that a Static (IMPORT) asset cannot be included within instanciables
+ * ones and will be ignored in this case.
+ *
+ * @param   {string}    html      HTML asset  to parse
  * @param   {string}    path      File URL/Path the data come from
  * @param   {number}    type      Template type (instanced or import)
  */
@@ -315,8 +360,8 @@ function xows_tpl_template_parse(html, path, type)
 
   // Parse the given string as HTML to create the corresponding DOM tree
   // then returns the generated <body>.
-  const temp_plate = xows_tpl_template_parser.parseFromString(html,"text/html");
-  const template = xows_clean_dom(xows_tpl_template_parser.parseFromString(html,"text/html").body);
+  const temp_plate = xows_tpl_parser.parseFromString(html,"text/html");
+  const template = xows_clean_dom(xows_tpl_parser.parseFromString(html,"text/html").body);
 
   if(!template) {
     xows_log(0,"tpl_template_parse","template parse error",path);
@@ -386,109 +431,98 @@ function xows_tpl_template_parse(html, path, type)
   while(i--) xows_tpl_template_load(inst_load[i], XOWS_TPL_INSTANCED);
 
   // Decrease remain count
-  xows_tpl_template_parse_remain--;
+  xows_tpl_parse_remain--;
 
   // If we no remain, template parsing is finished
-  if(xows_tpl_template_parse_remain === 0) {
+  if(xows_tpl_parse_remain === 0) {
     xows_tpl_template_done();
   }
 }
 
-/**
- * Entry point to start the whole template loading and parsing job
+/* ---------------------------------------------------------------------------
  *
- * This function must be called once to load the desired set of
- * template.
+ * Media Embedding and Content Enhancement
  *
- * @param   {object}    onready   Function to be called once templates successfully loaded
+ * ---------------------------------------------------------------------------*/
+/**
+ * Module Event-Forwarding callback for embeded media loaded
  */
-function xows_tpl_init(onready)
-{
-  // Set the onready callback
-  if(onready) xows_tpl_fw_onready = onready;
-
-  // Change default root and theme folder if requested
-  if(xows_options.lib_path)
-    xows_options.lib_path = xows_options.lib_path;
-
-  if(xows_options.gui_theme)
-    xows_tpl_theme = xows_options.gui_theme;
-
-  // Load the theme CSS
-  const css = document.createElement('link');
-  css.rel = "stylesheet";
-  css.type = "text/css";
-  // Select normal or minified style file
-  let css_file;
-  if(xows_options.tpl_load_mincss) {
-    css_file = "/style.min.css";
-  } else {
-    css_file = "/style.css";
-  }
-  css.href = xows_options.lib_path+"/themes/"+xows_tpl_theme+css_file;
-
-  // Forces browser to reload (uncache) templates files by adding a
-  // random string to URL. This option is mainly for dev and debug
-  if(xows_options.tpl_force_uncache)
-    css.href += "?" + xows_gen_nonce_asc(4);
-
-  // Add the CSS <link to head
-  document.head.appendChild(css);
-
-  // Initialize for loading job
-  xows_tpl_template_parse_remain = 0;
-  xows_tpl_fragment = document.createDocumentFragment();
-  // Start loading the first essential template file
-  xows_tpl_template_load("body");
-}
+let xows_tpl_fw_onembload = function() {};
 
 /**
- * Regular expression to match alone link
+ * Module Event-Forwarding callback for embeded media loading error
  */
-const xows_tpl_reg_alone_link = /^\s*<a href=.+<\/a>\s*$/;
+let xows_tpl_fw_onemberror = function() {};
 
 /**
- * Regular expression to match HTTP url
+ * Handles embeded media loaded event.
+ *
+ * This function is configured as 'onload' callback for embeded medias via
+ * litteral with 'this' as argument in the incorporated HTML element.
+ * It is then called once an embeded media triggers the "onload" event with
+ * the related media element passed as argument.
+ *
+ * @param   {element}   media   Related embeded media element.
+ */
+function xows_tpl_emld(media) {xows_tpl_fw_onembload(media);};
+
+/**
+ * Handles embeded media error event.
+ *
+ * This function is configured as 'onerror' callback for embeded medias via
+ * litteral with 'this' as argument in the incorporated HTML element.
+ * It is then called once an embeded media triggers the "onerror" event with
+ * the related media element passed as argument.
+ *
+ * @param   {element}   media   Related embeded media element.
+ */
+function xows_tpl_emer(media) {xows_tpl_fw_onemberror(media);};
+
+/* ---------------------------------------------------------------------------
+ * Message Content Enhancement
+ * ---------------------------------------------------------------------------*/
+/**
+ * Regular expression to match an HTTP url
  */
 const xows_tpl_reg_url = /^(?:http|https):\/\/(?:[!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})+/i;
 
 /**
- * Regular expression to match code block
+ * Regular expression to match Markdown-Like code block
  */
 const xows_tpl_reg_pre = /^```(.*?)\n(.+)```(?:\s?\n|\s?$)/s;
 
 /**
- * Regular expression to match code span
+ * Regular expression to match Markdown-Like code span
  */
 const xows_tpl_reg_code = /^`(\S.+?\S)`/;
 
 /**
- * Regular expression to match strong span
+ * Regular expression to match Markdown-Like italic span
  */
 const xows_tpl_reg_italic = /(^\*\S.*?[^\s\*]\*)(?:[^\*]|$)/;
 
 /**
- * Regular expression to match strong span
+ * Regular expression to match Markdown-Like strong span
  */
 const xows_tpl_reg_strong = /(^\*{2}\S.+?\S\*{2})(?:[^\*]|$)/;
 
 /**
- * Regular expression to match strong span
+ * Regular expression to match Markdown-Like emphasis (italic or strong)
  */
 const xows_tpl_reg_emphas = /(^\*\S.+?\S\*)/;
 
 /**
- * Regular expression to match emphasis span
+ * Regular expression to match Markdown-Like underline span
  */
 const xows_tpl_reg_underl = /^_\S.+?\S_/;
 
 /**
- * Regular expression to match strike span
+ * Regular expression to match Markdown-Like strike span
  */
 const xows_tpl_reg_strike = /^~\S.+?\S~/;
 
 /**
- * Regular expression to match block quote line
+ * Regular expression to match Markdown-Like block quote line
  */
 const xows_tpl_reg_quote = /^(>+?) .+[^>](?=\n|$)/;
 
@@ -503,26 +537,34 @@ const xows_tpl_reg_emoji = /^:([\w\-+]+):/;
 const xows_tpl_reg_emoticon = /^([X8:;]|:')([()|DPXO#$.\/*sS])(?=\s|$)/i;
 
 /**
- * Map for HTML escape character from char code
+ * HTML escapement conversion Map
  */
 const xows_tpl_html_esc_map = new Map([[0x26,"&amp;"],[0x3C,"&lt;"],[0x3E,"&gt;"],[0x27,"&apos;"],[0x22,"&quot;"],[0x0A,"<br>"]]);
 
 /**
- * Array contain collected URLs from the previous parsing
- */
-const xows_tpl_parsed_url = new Array();
-
-/**
- * Parsing function that transform raw message into styled message.
+ * Transforms the supplied string into formatted and enhanced text HTML sample.
  *
- * The function also populate the xows_tpl_parse_urls array with all
- * parsed URLs
+ * The text is formatted and enhanced according markdown-like syntax and
+ * automatic URL and emotitocons detection and conversion. The handled
+ * markdown-like patterns includes the following:
+ *
+ *     *italic*  **strong**  _underline_  ~strike~ `code`
+ *
+ *     ```code
+ *     block```
+ *
+ *     > quote
+ *     > block
+ *
+ * During parsing operation, the parsed URLs are stored in the supplied Array()
+ * object specified by 'urls' parameter.
  *
  * @param   {string}    raw       Raw input string
+ * @param   {Array}    [urls]     Optional Array to be populated with parsed URLs
  *
- * @return  {string}    Formated message
+ * @return  {string}    Formatted text as HTML sample
  */
-function xows_tpl_parse_styling(raw)
+function xows_tpl_parse_styling(raw, urls)
 {
   if(!raw || !raw.length)
     return "";
@@ -537,9 +579,6 @@ function xows_tpl_parse_styling(raw)
   let result = "";
 
   let c, i = 0;
-
-  // Reset parsed URLs array
-  xows_tpl_parsed_url.length = 0;
 
   while(true) {
 
@@ -560,7 +599,7 @@ function xows_tpl_parse_styling(raw)
     // http(s):// URL
     if(c === 0x48 || c === 0x68) { //< 'H' || 'h'
       if(match = xows_tpl_reg_url.exec(raw.substring(i))) {
-        xows_tpl_parsed_url.push(match[0]); //< add to Array
+        if(urls) urls.push(match[0]); //< add to Array
         result += "<a href=\""+match[0]+"\" target=\"_blank\">"+match[0]+"</a>";
         i += match[0].length;
         continue;
@@ -749,13 +788,16 @@ function xows_tpl_parse_styling(raw)
   return result;
 }
 
+/* ---------------------------------------------------------------------------
+ * Media Embedding - Basic media elements
+ * ---------------------------------------------------------------------------*/
 /**
- * Create iframe HTML sample with the specified url as sources and common
- * attributes.
+ * Composes an HTML sample for an <iframe> element with the common attributes
+ * and the specified url as source.
  *
- * @param   {string}    href      Media original URL
+ * @param   {string}    href      Source URL to set
  *
- * @return  {string}    Iframe HTML sample
+ * @return  {string}    HTML sample
  */
 function xows_tpl_as_iframe(href)
 {
@@ -763,35 +805,36 @@ function xows_tpl_as_iframe(href)
 }
 
 /**
- * Function to create HTML sample for embeding wrapper element
+ * Composes an HTML sample for an <embd-wrap> element that surround the given
+ * embeddable element (as HTML sample).
  *
- * If the href parameter is not null, an HTML hyperlink is prepended to
- * the embeded media. If the element parameter is null, it is simply
- * ignored.
+ * If the 'href' parameter is not null, an HTML hyperlink element is prepended
+ * to the embeded element.
  *
- * @param   {string}    href      Media original URL
- * @param   {string}    media     Media or embeded element to wrap
+ * @param   {string}    href      Media source URL to set
+ * @param   {string}    sample    HTML sample of embeded element to wrap
  * @param   {string}   [style]    Optional class name to style wrapper
  * @param   {string}   [title]    Optional title to add to wrapper
  *
  * @return  {string}    Remplacement HTML sample
  */
-function xows_tpl_embed_wrap(href, media, style, title)
+function xows_tpl_embed_wrap(href, sample, style, title)
 {
   let wrap = "<embd-wrap class='"; if(style) wrap += style; wrap += "'>";
   if(title) wrap += "<a href='"+href+"' target='_blank'>"+title+"</a>";
 
   // Add envent callback and common attributes
-  wrap += media.replace(/src=/g,"loading='lazy' onload='xows_tpl_emld(this)' onerror='xows_tpl_emer(this)' src=");
+  wrap += sample.replace(/src=/g,"loading='lazy' onload='xows_tpl_emld(this)' onerror='xows_tpl_emer(this)' src=");
   wrap += "</embd-wrap>";
 
   return wrap;
 }
 
 /**
- * Function to create HTML embeded image from url
+ * Composes an HTML sample for an <img> element with common attributes
+ * and the specified url as source.
  *
- * @param   {string}    href      Image URL
+ * @param   {string}    href      Image URL (src attribute content)
  * @param   {string}    ext       Image file extension part
  *
  * @return  {string}    Replacement HTML sample
@@ -804,9 +847,10 @@ function xows_tpl_embed_image(href, ext)
 }
 
 /**
- * Function to create HTML embeded movie from url
+ * Composes an HTML sample for a <video> element with common attributes
+ * and the specified url as source.
  *
- * @param   {string}    href      Movie URL
+ * @param   {string}    href      Movie URL (src attribute content)
  * @param   {string}    ext       Movie file extension part
  *
  * @return  {string}    Replacement HTML sample
@@ -819,9 +863,10 @@ function xows_tpl_embed_movie(href, ext)
 }
 
 /**
- * Function to create HTML embeded audio from url
+ * Composes an HTML sample for a <audio> element with common attributes
+ * and the specified url as source.
  *
- * @param   {string}    href      Audio URL
+ * @param   {string}    href      Audio URL (src attribute content)
  * @param   {string}    ext       Audio file extension part
  *
  * @return  {string}    Replacement HTML sample
@@ -833,10 +878,14 @@ function xows_tpl_embed_audio(href, ext)
               "EMBD-SND");
 }
 
+/* ---------------------------------------------------------------------------
+ * Media Embedding - Third-Party platforms embedding
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to create HTML embeded Youtube movie from url
+ * Composes an HTML sample of embedded Youtube video within an <iframe>
+ * element.
  *
- * @param   {string}    href      Youtube movie URL
+ * @param   {string}    href      Youtube video URL
  * @param   {string}    domain    Matched domain substring
  *
  * @return  {string}    Replacement HTML sample
@@ -853,7 +902,8 @@ function xows_tpl_embed_youtube(href, domain)
 }
 
 /**
- * Function to create HTML embeded Dailymotion movie from url
+ * Composes an HTML sample of embedded Dailymotion video within an <iframe>
+ * element.
  *
  * @param   {string}    href      Dailymotion movie URL
  * @param   {string}    domain    Matched domain substring
@@ -869,9 +919,10 @@ function xows_tpl_embed_dailymo(href, domain)
 }
 
 /**
- * Function to create HTML embeded Dailymotion movie from url
+ * Composes an HTML sample of embedded Vimeo video within an <iframe>
+ * element.
  *
- * @param   {string}    href      Dailymotion movie URL
+ * @param   {string}    href      Vimeo video URL
  * @param   {string}    domain    Matched domain substring
  *
  * @return  {string}    Replacement HTML sample
@@ -885,7 +936,8 @@ function xows_tpl_embed_vimeo(href, domain)
 }
 
 /**
- * Function to create HTML embeded Odysee movie from url
+ * Composes an HTML sample of embedded Odysee video within an <iframe>
+ * element.
  *
  * @param   {string}    href      Odysee movie URL
  * @param   {string}    domain    Matched domain substring
@@ -901,8 +953,8 @@ function xows_tpl_embed_odysee(href, domain)
 }
 
 /**
- * Function to create HTML embeded file of unknown type to be
- * downloaded.
+ * Composes an HTML sample of a styled <a> element for unhandled type
+ * file download.
  *
  * @param   {string}    href      Dailymotion movie URL
  * @param   {string}    domain    Matched domain substring
@@ -917,8 +969,14 @@ function xows_tpl_embed_upld(href, domain)
               "EMBD-DNL",file);
 }
 
+/* ---------------------------------------------------------------------------
+ * Media Embedding - Common toolset
+ * ---------------------------------------------------------------------------*/
 /**
- * Per file extension embeding function correspondance map
+ * Correspondence Map for file-extensions to embedding functions.
+ *
+ * This gives a corresponding embedding function to be called according file
+ * extension (uppercase).
  */
 let xows_tpl_embed_files = {
   "JPG"             : xows_tpl_embed_image,
@@ -935,7 +993,10 @@ let xows_tpl_embed_files = {
 };
 
 /**
- * Per plateform embeding function correspondance map
+ * Correspondence Map for web platform to embedding functions.
+ *
+ * This gives a corresponding embedding function to be called according parsed
+ * URL's domain name.
  */
 let xows_tpl_embed_sites = {
   "www.youtube.com"       : xows_tpl_embed_youtube,
@@ -947,12 +1008,22 @@ let xows_tpl_embed_sites = {
 };
 
 /**
- * Per service URL embeding function correspondance map
+ * Correspondence Map for uploaded file to embedding functions.
+ *
+ * This gives a corresponding embedding function to be called according the
+ * parsed URL's domain name.
+ *
+ * This is intended to be used with the HTTP File Upload (XEP-0363) featured
+ * services to detects and embedded files uploaded via the service.
+ *
+ * Since HTTP File Upload (XEP-0363) service URL is only known once connected
+ * to XMPP server, this Map is populated dynamically.
  */
 let xows_tpl_embed_uplds = { };
 
 /**
- * Add or modify an embedding site/plateform with its parsing function
+ * Adds or changes an embeddable site/platform entry specifying the
+ * embedding function to use.
  *
  * @param   {string}    match     Domain name to match in the parsed URL
  * @param   {object}    parse     Function to create embd media from URL
@@ -963,7 +1034,8 @@ function xows_tpl_embed_add_site(match, parse)
 }
 
 /**
- * Add or modify an embedding site/plateform with its parsing function
+ * Adds or changes an embeddable file type (extension) entry specifying the
+ * embedding function to use.
  *
  * @param   {string}    match     File extension to match in the parsed URL
  * @param   {object}    parse     Function to create embd media from URL
@@ -974,7 +1046,8 @@ function xows_tpl_embed_add_file(match, parse)
 }
 
 /**
- * Add an embedding site for file download.
+ * Adds or changes an embeddable 'HTTP-File-Upload' URL entry specifying the
+ * embedding function to use.
  *
  * @param   {string}    match     Domain name to match in the parsed URL
  */
@@ -988,7 +1061,7 @@ function xows_tpl_embed_add_upld(match)
  *
  * @param   {string[]}  urls      List of URL to parse and embed
  *
- * @return  {string}    Formated HTML data of embedded medias
+ * @return  {string}    HTML sample of embedded elements
  */
 function xows_tpl_parse_embeds(urls)
 {
@@ -1027,14 +1100,32 @@ function xows_tpl_parse_embeds(urls)
   return embeds.length ? embeds : null;
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * Template Models instancing
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Stores the dynamically created CSS classes for avatars DataURL
+ * Threshold (time in milliseconds) used to determine whether a message must
+ * be grouped with the previous one.
+ */
+const XOWS_TPL_MESG_GROUP_TH = 600000; //< 10 min
+
+/* ---------------------------------------------------------------------------
+ * Peer Avatar specific routines
+ * ---------------------------------------------------------------------------*/
+/**
+ * Storage for dynamically created Avatar CSS classes.
  */
 let xows_tpl_avat_cls_db = new Map();
 
 /**
- * Create a new CSS class with data-url as background-image style to
- * be used as avatar
+ * Creates an Avatar CSS class.
+ *
+ * This creates an avatar image CSS class to be incorporated to current
+ * Document stylesheet. The CSS class is named according Avatar image Hash
+ * string (as used in XMPP protocol) with a 'background-image' style defined
+ * with avatar image Data-URI as 'url'.
  *
  * @param   {string}    hash      Avatar data hash
  *
@@ -1079,13 +1170,16 @@ function xows_tpl_spawn_avat_cls(peer)
   return xows_tpl_avat_cls_db.get(hash);
 }
 
+/* ---------------------------------------------------------------------------
+ * Pending (authorization) Contact Elements (<li-peer>) instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Build and returns a new instance of Subscribe Request <li-peer> Element
- * from existing template.
+ * Creates new instance of Roster-Pending-Contact <li-peer> element from
+ * existing model for the given Peer object.
  *
- * @param   {object}    cont      Contact Object
+ * @param   {object}    cont      CONTACT Peer object
  *
- * @return  {element}   Subscribe Request <li-peer> Element
+ * @return  {element}   Roster-Pending-Contact <li-peer> element
  */
 function xows_tpl_spawn_rost_subs(cont)
 {
@@ -1101,10 +1195,11 @@ function xows_tpl_spawn_rost_subs(cont)
 }
 
 /**
- * Update the specified instance of roster Contact <li-peer> Element.
+ * Updates the specified Roster-Pending-Contact <li-peer> element according
+ * the given Peer object state.
  *
- * @param   {element}   li_peer   Subscribe <li-peer> Element to update
- * @param   {object}    cont      Contact Object
+ * @param   {element}   li_peer   Roster-Pending-Contact <li-peer> element to update
+ * @param   {object}    cont      CONTACT Peer object
  */
 function xows_tpl_update_rost_subs(li_peer, cont)
 {
@@ -1113,14 +1208,17 @@ function xows_tpl_update_rost_subs(li_peer, cont)
   li_peer.querySelector("PEER-NAME").innerText = cont.addr;
 }
 
+/* ---------------------------------------------------------------------------
+ * Contact Elements (<li-peer>) instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Build and returns a new instance of roster Contact <li-peer> HTML Element
- * from existing template.
+ * Creates new instance of Roster-Contact <li-peer> element from existing model
+ * for the given Peer object.
  *
- * @param   {object}    cont      Contact Object
+ * @param   {object}    cont      CONTACT Peer object
  * @param   {string}   [text]     Optional error text
  *
- * @return  {element}   Contact <li-peer> Element
+ * @return  {element}   Roster-Contact <li-peer> element
  */
 function xows_tpl_spawn_rost_cont(cont, text)
 {
@@ -1152,47 +1250,51 @@ function xows_tpl_spawn_rost_cont(cont, text)
 }
 
 /**
- * Update the specified instance of roster Contact <li-peer> Element.
+ * Updates the specified Roster-Contact <li-peer> element according the given
+ * Peer object state.
  *
- * @param   {element}    li       Contact <li-peer> Element to update
- * @param   {object}    cont      Contact Object
+ * @param   {element}   li_peer   Roster-Contact <li-peer> element to update
+ * @param   {object}    cont      CONTACT Peer object
  * @param   {string}   [text]     Optional error text
  */
-function xows_tpl_update_rost_cont(li, cont, text)
+function xows_tpl_update_rost_cont(li_peer, cont, text)
 {
-  const badg_show = li.querySelector("BADG-SHOW");
-  const bttn_subs = li.querySelector("[name='cont_bt_rtry']");
+  const badg_show = li_peer.querySelector("BADG-SHOW");
+  const bttn_subs = li_peer.querySelector("[name='cont_bt_rtry']");
 
   // Update content
   if(cont.subs & XOWS_SUBS_TO) {
-    li.title = cont.name+" ("+cont.addr+")";
-    li.classList.remove("PEER-DENY");
-    li.querySelector("PEER-NAME").innerText = cont.name;
-    li.querySelector("PEER-META").innerText = cont.stat ? cont.stat : "";
+    li_peer.title = cont.name+" ("+cont.addr+")";
+    li_peer.classList.remove("PEER-DENY");
+    li_peer.querySelector("PEER-NAME").innerText = cont.name;
+    li_peer.querySelector("PEER-META").innerText = cont.stat ? cont.stat : "";
     badg_show.hidden = false;
     badg_show.dataset.show = cont.show || 0;
     bttn_subs.disabled = true;
     // Set proper class for avatar
-    li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
+    li_peer.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
   } else {
     // We awaits for contact subscription
-    li.title = cont.addr;
-    li.classList.add("PEER-DENY");
-    li.querySelector("PEER-NAME").innerText = cont.addr;
-    li.querySelector("PEER-META").innerText = text ? xows_l10n_get(text)
-                                                   : xows_l10n_get("Authorization pending");
+    li_peer.title = cont.addr;
+    li_peer.classList.add("PEER-DENY");
+    li_peer.querySelector("PEER-NAME").innerText = cont.addr;
+    li_peer.querySelector("PEER-META").innerText = text ? xows_l10n_get(text)
+                                                        : xows_l10n_get("Authorization pending");
     badg_show.hidden = true;
     bttn_subs.disabled = false;
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * MUC Room Elements (<li-peer>) instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Build and returns a new instance of roster Room <li-peer> Element
- * from existing template.
+ * Creates new instance of Roster-Room <li-peer> element from existing model
+ * for the given Peer object.
  *
- * @param   {object}    room      Room Object
+ * @param   {object}    room      ROOM Peer object
  *
- * @return  {element}   Room <li-peer> Element
+ * @return  {element}   Roster-Room <li-peer> element
  */
 function xows_tpl_spawn_rost_room(room)
 {
@@ -1211,29 +1313,33 @@ function xows_tpl_spawn_rost_room(room)
 }
 
 /**
- * Update the specified instance of roster Room <li-peer> Element.
+ * Updates the specified Roster-Contact <li-peer> element according the given
+ * Peer object state.
  *
- * @param   {element}   li        Room <li-peer> Element to update
- * @param   {object}    room      Room Object
+ * @param   {element}   li_peer   Roster-Room <li-peer> element to update
+ * @param   {object}    room      ROOM Peer Object
  */
-function xows_tpl_update_rost_room(li, room)
+function xows_tpl_update_rost_room(li_peer, room)
 {
   // Update content
-  li.title = room.name+" ("+room.addr+")";
-  li.querySelector("PEER-NAME").innerText = room.name;
-  li.querySelector("PEER-META").innerText = room.desc;
-  li.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
-  //const peer_avat = li.querySelector("PEER-AVAT");
+  li_peer.title = room.name+" ("+room.addr+")";
+  li_peer.querySelector("PEER-NAME").innerText = room.name;
+  li_peer.querySelector("PEER-META").innerText = room.desc;
+  li_peer.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
+  //const peer_avat = li_peer.querySelector("PEER-AVAT");
 }
 
+/* ---------------------------------------------------------------------------
+ * MUC Occupant Elements (<li-peer>) instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Build and returns a new instance of Room Occupant <li-peer> Element
- * from existing template.
+ * Creates new instance of MUC-Occupant <li-peer> element from existing model
+ * for the given Peer object.
  *
- * @param   {object}    occu      Occupant Object
- * @param   {boolean}   rost      Configure for Roster rather than MUC List
+ * @param   {object}    occu      OCCUPANT Peer object
+ * @param   {boolean}  [rost]     Indicates to configure for Roster rather than MUC List
  *
- * @return  {element}   Occupant <li-peer> Element
+ * @return  {element}   MUC-Occupant <li-peer> Element
  */
 function xows_tpl_spawn_room_occu(occu, rost = false)
 {
@@ -1258,10 +1364,11 @@ function xows_tpl_spawn_room_occu(occu, rost = false)
 }
 
 /**
- * Update the specified instance of Room Occupant <li-peer> Element.
+ * Updates the specified MUC-Occupant <li-peer> element according the given
+ * Peer object state.
  *
- * @param   {element}   li        Occupant <li-peer> Element to update
- * @param   {object}    occu      Occupant Object
+ * @param   {element}   li        MUC-Occupant <li-peer> element to update
+ * @param   {object}    occu      OCCUPANT Peer object
  */
 function xows_tpl_update_room_occu(li, occu)
 {
@@ -1274,14 +1381,25 @@ function xows_tpl_update_room_occu(li, occu)
   li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(occu);
 }
 
+/* ---------------------------------------------------------------------------
+ * History Message Elements (<li-mesg>) instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Return most suitable message identifier between id attribute origin-id
- * and stanza-id.
+ * Returns the most suitable message identifier.
  *
- * @param   {object}    peer     Related Peer object
- * @param   {element}   li_mesg  Message <li-mesg> Element to parse
+ * Selects, among message's available identifiers (base id, origin-id and
+ * stanza-id attributes) the most suitable to be used to identify the given
+ * message according context.
  *
- * @return  {string}    Message identifier
+ * This function is used to keep consistency across all process that either
+ * references or search messages in accordance with XMPP protocol
+ * recommandations. This is mainly used for Rectraction, Correction and
+ * Reply-to messages tracking.
+ *
+ * @param   {object}    peer     Related (Contextual) Peer object
+ * @param   {element}   li_mesg  Message <li-mesg> element to parse
+ *
+ * @return  {string}    Message identifier (id)
  */
 function xows_tpl_mesg_bestref(peer, li_mesg)
 {
@@ -1308,14 +1426,16 @@ function xows_tpl_mesg_bestref(peer, li_mesg)
 }
 
 /**
- * Build and returns a new instance of history Null-Message <li-mesg> Element
- * from existing template.
+ * Creates new instance of NULL-Message <li-mesg> element from existing model.
+ *
+ * The History "NULL" Messages are used incorporate tombstones or specific
+ * informations messages that does not represents a true  history message.
  *
  * @param   {string}    id          Message reference ID
  * @param   {string}    from        Message author JID
  * @param   {string}    body        Message body
  *
- * @return  {element}   History message <li-mesg> Element
+ * @return  {element}   NULL-Message <li-mesg> element
  */
 function xows_tpl_mesg_null_spawn(id, from, body) {
 
@@ -1336,17 +1456,27 @@ function xows_tpl_mesg_null_spawn(id, from, body) {
 }
 
 /**
- * Build and returns a new instance of history Message <li-mesg> Element
- * from existing template.
+ * Regular expression to matchs alone <a> link, that is, a string which is, at
+ * whole, only an alone single <a...</a> link.
+ */
+const xows_tpl_reg_alone_link = /^\s*<a href=.+<\/a>\s*$/;
+
+/**
+ * Storage for the message's parsed URLs to be embedded
+ */
+const xows_tpl_mesg_urls = new Array();
+
+/**
+ * Creates new instance of History-Message <li-mesg> element from existing model.
  *
- * @param   {object}    peer        Related Peer object
+ * @param   {object}    peer        Related (contextual) Peer object
  * @param   {object}    mesg        Message object
- * @param   {boolean}   wait        Message wait for Receipt
- * @param   {element}  [li_prv]     Optional previous message <li-mesg> Element
- * @param   {element}  [li_rep]     Optional retracted message <li-mesg> Element
- * @param   {element}  [li_rpl]     Optional replied message <li-mesg> Element
+ * @param   {boolean}   wait        Indicates that message waits for Receipt
+ * @param   {element}  [li_prv]     Optional previous message <li-mesg> element
+ * @param   {element}  [li_rep]     Optional retracted message <li-mesg> element
+ * @param   {element}  [li_rpl]     Optional replied message <li-mesg> element
  *
- * @return  {element}   History message <li-mesg> Element
+ * @return  {element}   History-Message <li-mesg> Element
  */
 function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
 {
@@ -1419,7 +1549,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
   } else if(li_prv && !li_rpl) {
     // If previous message author is different or if elapsed time is
     // greater than # minutes, we create a new full message block
-    append = ((li_prv.dataset.from === mesg.from) && ((mesg.time - li_prv.dataset.time) < XOWS_MESG_AGGR_THRESHOLD));
+    append = ((li_prv.dataset.from === mesg.from) && ((mesg.time - li_prv.dataset.time) < XOWS_TPL_MESG_GROUP_TH));
   }
 
   // Set message "Append" style
@@ -1451,18 +1581,19 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
   }
 
   // Set time stamp elements
-  inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(mesg.time);
+  inst.querySelector("MESG-HOUR").innerText = xows_l10n_houre(mesg.time, true);
   inst.querySelector("MESG-DATE").innerText = xows_l10n_date(mesg.time);
 
   const mesg_body = inst.querySelector("MESG-BODY");
   const mesg_embd = inst.querySelector("MESG-EMBD");
 
   // Parse body for styling
-  const styled = xows_tpl_parse_styling(mesg.body);
+  xows_tpl_mesg_urls.length = 0; //< reset URLs array
+  const styled = xows_tpl_parse_styling(mesg.body, xows_tpl_mesg_urls);
   mesg_body.innerHTML = styled;
 
   // Check whether we have URLs to embeds
-  const embeds = xows_tpl_parse_embeds(xows_tpl_parsed_url);
+  const embeds = xows_tpl_parse_embeds(xows_tpl_mesg_urls);
   if(embeds) {
 
     // Add embedded medias
@@ -1479,13 +1610,13 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
 }
 
 /**
- * Update the specified instance of Message <li-mesg> Element.
+ * Updates the specified History-Message <li-mesg> element.
  *
- * @param   {element}   li_msg    Message <li-mesg> Element to update
- * @param   {object}    peer      Related chat Peer object
- * @param   {object}    mesg      Message Object
- * @param   {boolean}   recp      Marks message as receipt received
- * @param   {element}  [li_rpl]   Optional replied message <li-mesg> Element
+ * @param   {element}   li_msg    History-Message <li-mesg> element to update
+ * @param   {object}    peer      Related (Contextual) Peer object
+ * @param   {object}    mesg      Message object
+ * @param   {boolean}   recp      Indicates to mark the message as Receipt received
+ * @param   {element}  [li_rpl]   Optional replied message <li-mesg> element
  */
 function xows_tpl_mesg_update(li_msg, peer, mesg, recp, li_rpl)
 {
@@ -1532,13 +1663,20 @@ function xows_tpl_mesg_update(li_msg, peer, mesg, recp, li_rpl)
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * History Message Dialog Elements instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Build and insert new <mesg-edit> Element instance into the given
- * <li-mesg> Element. The newly inserted Element is returned.
+ * Creates new instance of Message-Edit-Dialog <mesg-edit> element from
+ * existing model within the given History-Message <li-mesg> element.
  *
- * @param   {element}   li_msg      History message <li-mesg> Element
+ * This incorporates an input dialog within the message itself and set proper
+ * CSS class to hides current message  body content. This is used for
+ * Message-Correction feature.
  *
- * @return  {element}   Message editor <mesg-edit> Elements
+ * @param   {element}   li_msg      History-Message <li-mesg> element
+ *
+ * @return  {element}   Message-Edit-Dialog <mesg-edit> elements
  */
 function xows_tpl_mesg_edit_insert(li_msg)
 {
@@ -1559,9 +1697,10 @@ function xows_tpl_mesg_edit_insert(li_msg)
 }
 
 /**
- * Remove the <mesg-edit> Element from the specified <li-mesg> Element.
+ * Removes the Message-Edit-Dialog <mesg-edit> element from the
+ * specified <li-mesg> element.
  *
- * @param   {element}   li_msg    History message <li-mesg> Element
+ * @param   {element}   li_msg    History-Message <li-mesg> element
  */
 function xows_tpl_mesg_edit_remove(li_msg)
 {
@@ -1578,12 +1717,16 @@ function xows_tpl_mesg_edit_remove(li_msg)
 }
 
 /**
- * Build and insert new <mesg-trsh> Element instance into the given
- * <li-mesg> Element. The newly inserted Element is returned.
+ * Creates new instance of Message-Delete <mesg-trsh> element from
+ * existing model within the given History-Message <li-mesg> element.
  *
- * @param   {element}   li_msg     History message <li-mesg> Element
+ * This incorporates a message dialog within the message itself and set proper
+ * CSS class to hides current message  body content. This is used for
+ * Message-Retraction (deletion) feature.
  *
- * @return  {element}   Message delete <mesg-trsh> Element
+ * @param   {element}   li_msg     History-Message <li-mesg> element
+ *
+ * @return  {element}   Message-Delete <mesg-trsh> element
  */
 function xows_tpl_mesg_trsh_insert(li_msg)
 {
@@ -1602,9 +1745,10 @@ function xows_tpl_mesg_trsh_insert(li_msg)
 }
 
 /**
- * Remove the <mesg-trsh> Element from the specified <li-mesg> Element.
+ * Removes the Message-Delete <mesg-trsh> element from the specified
+ * <li-mesg> element.
  *
- * @param   {element}   li_msg     History message <li-mesg> Element
+ * @param   {element}   li_msg     History-Message <li-mesg> element
  */
 function xows_tpl_mesg_trsh_remove(li_msg)
 {
@@ -1620,14 +1764,20 @@ function xows_tpl_mesg_trsh_remove(li_msg)
   li_msg.classList.remove("MESG-TRASH");
 }
 
+/* ---------------------------------------------------------------------------
+ * MUC Member Elements (<li-memb>) instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Build and returns a new instance of Room Administration <li-memb>
- * Element from existing template.
+ * Creates new instance of Room-Member <li-memb> element from
+ * existing model according specified parameters.
  *
- * @param   {object}    item       Occupant affiliation/role data Object
- * @param   {boolean}   affi       Admin user affiliation (Admin or Owner)
+ * Room-Member elements are currently used to populate lists of the
+ * Room Administration page to edit member's affilation.
  *
- * @return  {element}   Room-Admin <li-memb> Elements
+ * @param   {object}    item       Member data object
+ * @param   {boolean}   affi       User (own) Room affiliation (Admin or Owner)
+ *
+ * @return  {element}   Room-Member <li-memb> element
  */
 function xows_tpl_admn_memb_spawn(item, affi)
 {
@@ -1675,11 +1825,11 @@ function xows_tpl_admn_memb_spawn(item, affi)
 }
 
 /**
- * Update the specified instance of Room Administration <li-memb> Element.
+ * Updates the specified Room-Member <li-memb> element.
  *
- * @param   {element}   li        <li-memb> Element to update
- * @param   {number}    affi      Affiliation to set
- * @param   {number}    aref      Affiliation reference to set/remove as Modified
+ * @param   {element}   li        Room-Member <li-memb> element to update
+ * @param   {number}    affi      New affiliation to set
+ * @param   {number}    aref      Current affiliation to set/remove as 'modified'
  */
 function xows_tpl_admn_memb_update(li, affi, aref)
 {
@@ -1711,13 +1861,19 @@ function xows_tpl_admn_memb_update(li, affi, aref)
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * Call Session Participant Elements instancing
+ * ---------------------------------------------------------------------------*/
 /**
- * Build and returns a new instance of Jingle Audio Peer <strm-video> Element
- * from existing template.
+ * Creates new instance of Audio-Participant <strm-audio> element from
+ * existing model for the given Peer object
+ *
+ * The Audio-Participant(<strm-audio>) element is used to populate the
+ * Media Call Session view frame.
  *
  * @param   {object}    peer      Peer object
  *
- * @return  {element}   Audio Peer <strm-audio> Element
+ * @return  {element}   Audio-Participant <strm-audio> element
  */
 function xows_tpl_spawn_stream_audio(peer)
 {
@@ -1739,12 +1895,15 @@ function xows_tpl_spawn_stream_audio(peer)
 }
 
 /**
- * Build and returns a new instance of Jingle Video Peer <strm-video> Element
- * from existing template.
+ * Creates new instance of Video-Participant <strm-video> element from
+ * existing model for the given Peer object
+ *
+ * The Video-Participant(<strm-video>) element is used to populate the
+ * Media Call Session view frame.
  *
  * @param   {object}    peer      Peer object
  *
- * @return  {element}   Video Peer <strm-video> Element
+ * @return  {element}   Video-Participant <strm-video> element
  */
 function xows_tpl_spawn_stream_video(peer)
 {

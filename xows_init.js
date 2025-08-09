@@ -33,14 +33,14 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         Main "Public" API
+ * Main Module ("public" interface)
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 
 /**
- * Stored default application options
+ * Storage for global Application Options (initialized with default values)
  */
 let xows_options = {
   lib_path            : "/xows",    //< Path to XOWS files (relative to HTTP base URL)
@@ -70,51 +70,11 @@ let xows_options = {
 };
 
 /**
- * Initialization function, used as callback, called once the
- * Doc (Document) module is successfully initialized
+ * Application Initialization.
  *
- * This is the last initialization callback, loading process is
- * completed and the application now effectlively start.
- */
-function xows_init_ondoc()
-{
-  // Initialize Client
-  xows_cli_init();
-
-  // Initialize GUI
-  xows_gui_init();
-
-  // Startup GUI (Auto-connect or login page)
-  xows_gui_startup();
-}
-
-/**
- * Private initialization function, used as callback, called once the
- * Tpl (template) module is successfully initialized
- */
-function xows_init_ontpl()
-{
-  // Continue the initialization process by initializing the DOM
-  // interfacing module. This is the last initialization step.
-  xows_doc_init(xows_init_ondoc);
-}
-
-/**
- * Private initialization function, used as callback, called once the
- * l10n module is successfully initialized
- */
-function xows_init_onl10n()
-{
-  // Continue the initialization process by loading the HTML templates
-  // files used for client GUI.
-  xows_tpl_init(xows_init_ontpl);
-}
-
-/**
- * Initialize and start the main_menucation using the specified parameters
- * and options
+ * This is the main initialization function that must be called from HTML
+ * page to start the application.
  *
- * @param   {string}    url       XMPP over WebSocket service URL
  * @param   {object}    options   Application option as dictionary object
  */
 function xows_init(options)
@@ -153,19 +113,84 @@ function xows_init(options)
   if(xows_options.lib_path.charAt(0) != "/")
     xows_options.lib_path = "/"+xows_options.lib_path;
 
-  xows_log(2,"init","xows init start");
+  xows_log(2,"init","Starts Library Initialization");
 
-  // Start init by the l10n module, other init will follow
-  xows_l10n_select(xows_options.gui_locale, xows_init_onl10n);
+  // Library Initialization is done through multiple stages that must be
+  // completed sequentially.
+  //
+  // We starts by defining the Localization, which require to download and
+  // parse the proper JSON file to translate content of the HTML assets.
+  //
+  // The HTML assets are then downloaded and parsed, which is a recursive
+  // operation (HTML assets may require to download other HTML assets, etc.)
+  //
+  // Once these two stages dones, the harder part is behind.
+
+  xows_l10n_select(xows_options.gui_locale, xows_init_module_tpl);
 }
 
 /**
- * Show initialization fatal error (due to asset loading error)
+ * Library Initialization: TPL Module Stage.
+ *
+ * Starts initialization of the TPL Module with proper 'onready' callback
+ * to continue the Library Initialization.
+ *
+ * This function is part of the automated Library Initialization process, has
+ * not utility outside this context and MUST NEVER be called alone outside
+ * this context.
+ */
+function xows_init_module_tpl()
+{
+  // Initializes TPL Module with 'onready' callback to the next stage
+  xows_tpl_init(xows_init_module_doc);
+}
+
+/**
+ * Library Initialization: DOC Module Stage.
+ *
+ * Starts initialization of the DOC Module with proper 'onready' callback
+ * to finalize the Library Initialization.
+ *
+ * This function is part of the automated Library Initialization process, has
+ * not utility outside this context and MUST NEVER be called alone outside
+ * this context.
+ */
+function xows_init_module_doc()
+{
+  // Initializes DOC Module with 'onready' callback to the final stage
+  xows_doc_init(xows_init_finalize);
+}
+
+/**
+ * Library Initialization: Final Stage.
+
+ * Proceeds to final initialization (CLI and GUI Modules) which will starts
+ * the application showing login page.
+ *
+ * This function is part of the automated Library Initialization process, has
+ * not utility outside this context and MUST NEVER be called alone outside
+ * this context.
+ */
+function xows_init_finalize()
+{
+  // Initializes CLI Module
+  xows_cli_init();
+
+  // Initializes GUI Module (Startup)
+  xows_gui_init();
+}
+
+/**
+ * Stops Library Initialization with error.
+ *
+ * This is called when a required file or component cannot be loaded or
+ * thrown a parse error, making Library initialization impossible
+ * to complete.
  *
  * @param   {number}    code      Loading error code (HTTP response code)
  * @param   {string}    path      URL/Path to related file.
  */
-function xows_init_fatal(code, path)
+function xows_init_failure(code, path)
 {
   let html = "<h1>XOWS init failed</h1><h4>Asset file loading error ( HTTP error "+code+" )</h4>";
   html += "<big><code>"+path.match(/(.+?)(?:\?.*|$)/)[1]+"</code></big>";

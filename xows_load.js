@@ -33,18 +33,18 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                     Agnostic Loader Module
+ * Loader Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 /**
- * Task bit identifier increment store
+ * Incrementing variable for Loading-Task bit identifier
  */
 let xows_load_next_bit = 0x1;
 
 /**
- * Get valid task bit identifier
+ * Returns a valid unique Loading-Task bit identifier
  */
 function xows_load_task_bit()
 {
@@ -54,12 +54,12 @@ function xows_load_task_bit()
 }
 
 /**
- * Map to store task callback functions
+ * Storage for Loading-Task per-Task functions
  */
 const xows_load_task_db = new Map();
 
 /**
- * Define function for task to perform
+ * Defines a function for the specified Loading-Task
  */
 function xows_load_task_set(task, ontask)
 {
@@ -67,12 +67,12 @@ function xows_load_task_set(task, ontask)
 }
 
 /**
- * Loading process per-Item stack
+ * Storage for Loading-Task per-Item stack
  */
 const xows_load_item_stk = new Map();
 
 /**
- * Initialize loading process for item.
+ * Add a Loading-Task for the given item.
  *
  * @parma   {object}    item      Peer object to initialize Loading
  * @param   {number}    mask      Bitmask for loading tasks to initialize
@@ -142,8 +142,10 @@ function xows_load_task_push(item, mask, onload, param)
 }
 
 /**
- * Set item loading task as done, if all tasks are done
- * trigger onload.
+ * Set Loading-Task done for the specified item
+ *
+ * If all item's Loading-Task are done, the configured 'onload' function
+ * is called.
  *
  * @parma   {object}    item      Peer object to validate
  * @param   {number}    task      Loading task bit to validate
@@ -189,19 +191,33 @@ function xows_load_task_done(item, task)
 }
 
 /**
- * On-Empty trigger mechanism parameters
+ * Dummy function for empty Loading-Task
+ *
+ * This function cas be used as dummy Loading-Task function for
+ * cases where there is nothing to performs but wait for a
+ * specific event to happen.
+ */
+function xows_load_await_task(item) { }
+
+/* ---------------------------------------------------------------------------
+ *
+ * On-Empty Event Trigger Feature
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Storage for On-Empty process parameters.
  */
 const xows_load_onempty_def = {onempty:null,hto:null,param:null};
 
 /**
- * Set an On-Empty trigger function to be called once load stack is
- * empty.
+ * Set an On-Empty trigger function to be called once item loading
+ * stack is empty.
  *
- * In case of load error, the specified function is called anyway
- * after the specified timeout (in miliseconds).
+ * In case of loading error or mistake, the specified function is
+ * called anyway after the specified timeout (in miliseconds).
  *
- * If timeout is set to 0, the timeout mechanism is disabled and the
- * function called ONLY once and if load stack is empty.
+ * If 'timeout' is set to 0, the timeout mechanism is disabled and the
+ * function called ONLY once and if item loading stack is empty.
  *
  * @parma   {number}    timeout   Timeout for fallback trigger
  * @param   {function}  onempty   Callback function to call
@@ -237,11 +253,11 @@ function xows_load_onempty_set(timeout, onempty, ...param)
 }
 
 /**
- * Check whether loading item stack is empty then fire the configured
- * onempty function if any.
+ * Check whether item loading stack is empty then fire the
+ * configured 'onempty' function if any.
  *
- * This function is for internal "load Module" usage and should not be
- * called
+ * This function is part of automated On-Empty processing and has no
+ * utility outside this context.
  *
  * @param   {boolean}   timeout   Indicate call come from timeout
  */
@@ -276,11 +292,3 @@ function xows_load_onempty_check(timeout)
     def.param = null;
   }
 }
-
-/**
- * Dummy function for empty loading task
- *
- * This function cas be used as dummy task function for cases where
- * there is no loading task but wait for an event.
- */
-function xows_load_await_task(item) { }

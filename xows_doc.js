@@ -33,12 +33,60 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                     DOM Managment API Module
+ * DOM Managment Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Module Initialization
+ * ---------------------------------------------------------------------------*/
+/**
+ * Module initialization.
+ *
+ * This enable required event listeners for Document Module and configure
+ * declared scrollable elements for custom scrollbar processing.
+ *
+ * @param   {object}    onready   Function to be called once initialized.
+ */
+function xows_doc_init(onready)
+{
+  // Page screen "scr_page" event listener
+  xows_doc_listener_add(xows_doc("scr_page"),   "keyup",  xows_doc_page_onkeyu);
+  // Close page button "page_exit" event listener
+  xows_doc_listener_add(xows_doc("page_exit"),  "click",  xows_doc_page_onclose);
 
+  // Modal screen "scr_void" event listener
+  xows_doc_listener_add(xows_doc("scr_void"),   "click",  xows_doc_void_onclick);
+  // Image viewer "over_view" event listener
+  xows_doc_listener_add(xows_doc("over_view"),  "click",  xows_doc_view_onclick);
+
+  // Set template callback
+  xows_tpl_set_callback("embload",  xows_doc_embd_onload);
+  xows_tpl_set_callback("emberror", xows_doc_embd_onerror);
+
+  // Set application "About" content
+  xows_doc("app_about").innerText = XOWS_APP_NAME.toUpperCase()+" v"+XOWS_APP_VERS;
+
+  // Retrieve all SCROLLABLE elements to create custom scrollbar and
+  // assing listeners
+  const scrollable = document.querySelectorAll(".SCROLLABLE");
+  for(let i = 0; i < scrollable.length; ++i) {
+    // Create custom scrollbar elements
+    xows_doc_scroll_create(scrollable[i]);
+    // Assign listeners
+    xows_doc_scroll_listen(scrollable[i]);
+  }
+
+  xows_log(2,"doc_init","document ready");
+
+  // Finaly call onready callback
+  if(xows_isfunc(onready)) onready();
+}
+
+/* ---------------------------------------------------------------------------
+ * Basic Shortcut routines
+ * ---------------------------------------------------------------------------*/
 /**
  * Get document element by Id (alias of getElementById)
  *
@@ -76,7 +124,7 @@ function xows_doc_listener_rem(element, event, callback, passive = true)
 }
 
 /**
- * Chechk whether element has class in its class list
+ * Check whether element has class in its class list
  *
  * @param   {string}    id        Document element id
  * @param   {string}    clsname   Class name
@@ -144,7 +192,7 @@ function xows_doc_hide(id, force = false)
 
 /**
  * Check whether the specified item, either element object or id is
- * hidden (has the .hidden class)
+ * hidden ('hidden' attribute)
  *
  * @param   {string}    id        Document element id
  *
@@ -155,14 +203,17 @@ function xows_doc_hidden(id)
   return document.getElementById(id).hidden;
 }
 
+/* ---------------------------------------------------------------------------
+ * Offscreen Documents (DocumentFragment) management
+ * ---------------------------------------------------------------------------*/
 /**
- * Object that stores offscreen Documents Fragments
+ * Storage Map for per-Slot (offscreen) DocumentFragments.
  */
 const xows_doc_frag_db = new Map();
 
 /**
- * Clone specified element from source offscreen slot to
- * destination offscreen slot
+ * Clone specified element from source Offscreen-Slot to destination
+ * Offscreen-Slot.
  *
  * @param   {string}    dst       Destination offscreen slot identifier
  * @param   {string}    src       Source offscreen slot identifier
@@ -182,7 +233,8 @@ function xows_doc_frag_clone(dst, src)
 }
 
 /**
- * Backup specified element content to an offscreen document fragment
+ * Move or copy the specified DOM Element's content to the specified
+ * Offscreen-Slot.
  *
  * @param   {string}    id        Source DOM element ID
  * @param   {string}    slot      Offscreen slot identifier
@@ -213,7 +265,7 @@ function xows_doc_frag_export(id, slot, clone = false)
 }
 
 /**
- * Import stored offscreen document fragment to current DOM
+ * Move or copy stored Offscreen-Slot's content into the specified DOM Element
  *
  * @param   {string}    slot      Offscreen slot identifier
  * @param   {string}    id        Destination parent DOM element ID
@@ -246,7 +298,7 @@ function xows_doc_frag_import(slot, id, clone = false)
 }
 
 /**
- * Delete specified offscreen document fragment
+ * Delete the specified Offscreen-Slot and its content.
  *
  * @param   {string}    slot      Offscreen slot identifier
  */
@@ -255,8 +307,11 @@ function xows_doc_frag_delete(slot)
   xows_doc_frag_db.delete(slot);
 }
 
+/* ---------------------------------------------------------------------------
+ * Document Selection and Caret management
+ * ---------------------------------------------------------------------------*/
 /**
- * Global reference to document's Selection object
+ * Global reference to DOM document Selection object
  */
 const xows_doc_sel = document.getSelection();
 
@@ -301,7 +356,8 @@ function xows_doc_sel_caret_around(node, before = false)
 }
 
 /**
- * Set edition caret in the specified node
+ * Set edition caret within the specified node, either at start
+ * or end of content.
  *
  * @param   {element}   node      Node to position caret in
  * @param   {boolean}   start     Place caret at beginning of content
@@ -325,7 +381,8 @@ function xows_doc_sel_caret_within(node, start = false)
 }
 
 /**
- * Pastes the specified node in the current selection range
+ * Pastes the specified node at (or in place of) the current Document
+ * selection range.
  *
  * @param   {element}   node      Node to insert in current selection
  * @param   {number}   [index]    Optional zero-based index of range
@@ -342,60 +399,15 @@ function xows_doc_sel_paste(node, index = 0)
   xows_doc_sel.collapseToEnd();
 }
 
+/* ---------------------------------------------------------------------------
+ * Embeded Media management
+ * ---------------------------------------------------------------------------*/
 /**
- * Initializes document manager and browser interactions
- *
- * This function cache the static document elements for fast access and
- * setup the nécessary listeners and the callbacks for user and client
- * interactions.
- *
- * @param   {object}    onready   Function to be called once document successfully initialized.
- */
-function xows_doc_init(onready)
-{
-  // Check whether Registering option is enabled
-  if(xows_options.gui_allow_register)
-    xows_doc_show("auth_regi"); //< The link in Login Page
-
-  // Page screen "scr_page" event listener
-  xows_doc_listener_add(xows_doc("scr_page"),   "keyup",  xows_doc_page_onkeyu);
-  // Close page button "page_exit" event listener
-  xows_doc_listener_add(xows_doc("page_exit"),  "click",  xows_doc_page_onclose);
-
-  // Modal screen "scr_void" event listener
-  xows_doc_listener_add(xows_doc("scr_void"),   "click",  xows_doc_void_onclick);
-  // Image viewer "over_view" event listener
-  xows_doc_listener_add(xows_doc("over_view"),  "click",  xows_doc_view_onclick);
-
-  // Set template callback
-  xows_tpl_set_callback("embload",  xows_doc_media_onload);
-  xows_tpl_set_callback("emberror", xows_doc_media_onerror);
-
-  // Set application "About" content
-  xows_doc("app_about").innerText = XOWS_APP_NAME.toUpperCase()+" v"+XOWS_APP_VERS;
-
-  // Retrieve all SCROLLABLE elements to create custom scrollbar and
-  // assing listeners
-  const scrollable = document.querySelectorAll(".SCROLLABLE");
-  for(let i = 0; i < scrollable.length; ++i) {
-    // Create custom scrollbar elements
-    xows_doc_scroll_create(scrollable[i]);
-    // Assign listeners
-    xows_doc_scroll_listen(scrollable[i]);
-  }
-
-  xows_log(2,"doc_init","document ready");
-
-  // Finaly call onready callback
-  if(xows_isfunc(onready)) onready();
-}
-
-/**
- * Common on-load callback function for loaded embeded medias
+ * Handles embeded media loaded (from embeded Element created in TPL Module)
  *
  * @param   {object}    media     Media object that loaded
  */
-function xows_doc_media_onload(media)
+function xows_doc_embd_onload(media)
 {
   // Remove the loading style
   media.parentNode.classList.remove("LOADPND");
@@ -403,11 +415,11 @@ function xows_doc_media_onload(media)
 }
 
 /**
- * Common on-error callback function for embeded medias loadin error
+ * Handles embeded media error (from embeded Element created in TPL Module)
  *
  * @param   {object}    media     Media object that loaded
  */
-function xows_doc_media_onerror(media)
+function xows_doc_embd_onerror(media)
 {
   // Remove the loading style
   media.parentNode.classList.remove("LOADPND");
@@ -419,10 +431,13 @@ function xows_doc_media_onerror(media)
   media.closest("MESG-MAIN").querySelector("MESG-BODY").hidden = false;
 }
 
+/* ---------------------------------------------------------------------------
+ * Element Blinking routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Apply background blink animation to the specified object
+ * Apply background blink animation to the specified Element
  *
- * @param   {string}    id        Object ID to apply blink to
+ * @param   {string}    id        Element ID to apply blink to
  * @param   {number}    duration  Blink duration in miliseconds
  */
 function xows_doc_blink_bg(id, duration)
@@ -438,9 +453,9 @@ function xows_doc_blink_bg(id, duration)
 }
 
 /**
- * Apply foreground blink animation to the specified object
+ * Apply foreground blink animation to the specified Element
  *
- * @param   {string}    id        Object ID to apply blink to
+ * @param   {string}    id        Element ID to apply blink to
  * @param   {number}    duration  Blink duration in miliseconds
  */
 function xows_doc_blink_fg(id, duration)
@@ -455,14 +470,13 @@ function xows_doc_blink_fg(id, duration)
   }
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Message Dialog-Box routines and definitions
+ * Popup Dialog-Box routines
  *
- * -------------------------------------------------------------------*/
-
+ * ---------------------------------------------------------------------------*/
 /**
- * Message Dialog-Box style codes definition
+ * Constants values for Popup Dialog-Box styles
  */
 const XOWS_STYL_ERR = -1; //< same as XOWS_SIG_ERR
 const XOWS_STYL_WRN = 0;  //< same as XOWS_SIG_WRN
@@ -470,12 +484,12 @@ const XOWS_STYL_SCS = 1;
 const XOWS_STYL_ASK = 2;
 
 /**
- * Message Dialog-Box parameters
+ * Storage for Popup Dialog-Box parameters
  */
 const xows_doc_popu_param = {onabort:null,onvalid:null};
 
 /**
- * Message Dialog-Box close.
+ * Closes Popup Dialog-Box.
  */
 function xows_doc_popu_close()
 {
@@ -497,7 +511,7 @@ function xows_doc_popu_close()
 }
 
 /**
- * Message Dialog-Box Abort (click on Abort button) callback
+ * Handles Popup Dialog-Box Abort (click on Abort button)
  *
  * @param   {object}    event     Event data
  */
@@ -510,7 +524,7 @@ function xows_doc_popu_onabort(event)
 }
 
 /**
- * Message Dialog-Box Valid (click on valid button) callback
+ * Handles Popup Dialog-Box Valid (click on Valid button)
  *
  * @param   {object}    event     Event data
  */
@@ -523,9 +537,9 @@ function xows_doc_popu_onvalid(event)
 }
 
 /**
- * Message Dialog-Box open
+ * Open Popup Dialog-Box
  *
- * @param   {number}    style     Message box style or null for default
+ * @param   {number}    style     Popup style or null for default
  * @param   {string}    text      Message to display
  * @param   {function} [onvalid]  Optional callback function for valid/save
  * @param   {string}   [valid]    Optional valid button text or null to hide
@@ -582,7 +596,7 @@ function xows_doc_popu_open(style, text, onvalid, valid, onabort, abort, modal)
 }
 
 /**
- * Message Dialog-Box open with predefined values for Save changes
+ * Open Popup Dialog-Box open with predefined values for Save changes
  *
  * @param   {function} [onvalid]  Optional callback function for valid/save
  * @param   {function} [onabort]  Optional callback function for abort/reset
@@ -596,7 +610,7 @@ function xows_doc_popu_open_for_save(onvalid, onabort)
 }
 
 /**
- * Message Dialog-Box modal check and blink
+ * Popup Dialog-Box modal check and blink
  *
  * This function is used in context where message box act as modal
  * or semi-modal dialog (eg. page cannot be closed without valid
@@ -616,18 +630,20 @@ function xows_doc_popu_modal()
   return false;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Input Dialog-Box routines and definitions
+ * Input Dialog-Box routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Input Dialog-Box parameters
+ * Storage for Input Dialog-Box parameters
  */
 const xows_doc_ibox_param = {onabort:null,onvalid:null,oninput:null,modal:false};
 
 /**
- * Input Dialog-Box function or allow or deny validation
+ * Allow or deny validation for Input Dialog-Box
+ *
+ * This enables or disables the Dialog-Box "validation" button.
  *
  * @param   {boolean}   allow     Allow or deny validation
  */
@@ -637,7 +653,9 @@ function xows_doc_ibox_allow(allow)
 }
 
 /**
- * Input Dialog-Box function to set error message
+ * Display an error message in Input Dialog-Box.
+ *
+ * This show a little error message below the input field.
  *
  * @param   {string}    text     Error text to set or null to disable
  */
@@ -648,7 +666,7 @@ function xows_doc_ibox_error(text)
 }
 
 /**
- * Input Dialog-Box close.
+ * Closes Input Dialog-Box.
  */
 function xows_doc_ibox_close()
 {
@@ -683,7 +701,23 @@ function xows_doc_ibox_close()
 }
 
 /**
- * Input Dialog-Box Input callback
+ * Handles Input Dialog-Box keyboard input
+ *
+ * @param   {object}    event     Event data
+ */
+function xows_doc_ibox_onkey(event)
+{
+  // Check for pressed Enter
+  if(event.keyCode === 13)
+    xows_doc_ibox_onvalid();
+
+  // Check for pressed Esc
+  if(event.keyCode === 27)
+    xows_doc_ibox_onabort();
+}
+
+/**
+ * Handles Input Dialog-Box character input.
  *
  * @param   {object}    event     Event data
  */
@@ -700,7 +734,7 @@ function xows_doc_ibox_oninput(event)
 }
 
 /**
- * Input Dialog-Box Abort (click on Abort button) callback
+ * Handles Input Dialog-Box Abort (click on Abort button)
  *
  * @param   {object}    event     Event data
  */
@@ -713,7 +747,7 @@ function xows_doc_ibox_onabort(event)
 }
 
 /**
- * Input Dialog-Box Valid (click on valid button) callback
+ * Handles Input Dialog-Box Valid (click on Valid button)
  *
  * @param   {object}    event     Event data
  */
@@ -726,23 +760,7 @@ function xows_doc_ibox_onvalid(event)
 }
 
 /**
- * Input Dialog-Box keyboard input callback
- *
- * @param   {object}    event     Event data
- */
-function xows_doc_ibox_onkey(event)
-{
-  // Check for pressed Enter
-  if(event.keyCode === 13)
-    xows_doc_ibox_onvalid();
-
-  // Check for pressed Esc
-  if(event.keyCode === 27)
-    xows_doc_ibox_onabort();
-}
-
-/**
- * Input Dialog-Box open
+ * Opens Input Dialog-Box.
  *
  * @param   {string}    head      Dialog head title
  * @param   {string}    hint      Input hint text
@@ -844,18 +862,18 @@ function xows_doc_ibox_modal()
   return false;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
  * Message Dialog-Box routines and definitions
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Message Dialog-Box parameters
+ * Storage for Message Dialog-Box parameters
  */
 const xows_doc_mbox_param = {onvalid:null,onabort:null,modal:false};
 
 /**
- * Message Dialog-Box close.
+ * Closes Message Dialog-Box.
  */
 function xows_doc_mbox_close()
 {
@@ -883,7 +901,7 @@ function xows_doc_mbox_close()
 }
 
 /**
- * Message Dialog-Box on-Valid callback
+ * Handle Message Dialog-Box Valid (click on Valid button)
  */
 function xows_doc_mbox_onvalid()
 {
@@ -894,7 +912,7 @@ function xows_doc_mbox_onvalid()
 }
 
 /**
- * Message Dialog-Box on-Abort callback
+ * Handle Message Dialog-Box Abort (click on Abort button)
  */
 function xows_doc_mbox_onabort()
 {
@@ -905,7 +923,7 @@ function xows_doc_mbox_onabort()
 }
 
 /**
- * Message Dialog-Box open
+ * Opens Message Dialog-Box
  *
  * @param   {number}    style     Message box style or null for default
  * @param   {string}    head      Dialog head title
@@ -976,7 +994,7 @@ function xows_doc_mbox_open(style, head, mesg, onvalid, valid, onabort, abort, m
 }
 
 /**
- * Input Dialog-Box modal check and blink
+ * Message Dialog-Box modal check and blink
  *
  * This function is used in context where input box act as modal
  * or semi-modal dialog (eg. page cannot be closed without valid
@@ -1002,20 +1020,39 @@ function xows_doc_mbox_modal()
 
   return false;
 }
-/* -------------------------------------------------------------------
+
+/* ---------------------------------------------------------------------------
  *
- * Dialog/Config Pages routines and definitions
+ * Contextual Pages routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Dialog Page parameters
+ * Storage for opened Contextual-Page parameters
  */
 const xows_doc_page_param = {pageid:null,onclose:null,oninput:null,onclick:null};
 
 /**
- * Dialog Page on-input callback
+ * Handles Contextual-Page keyboard input events
  *
- * @param   {object}    event     Event data
+ * @param   {object}    event     Event object
+ */
+function xows_doc_page_onkeyu(event)
+{
+  if(xows_doc_page_param.pageid && event.keyCode === 13) {
+    // Emulate click on Valid button
+    if(!xows_doc_hidden("over_popu") && !xows_doc_hidden("popu_valid")) {
+     xows_doc("popu_valid").click();
+   } else {
+     // Emulate click on submit button
+     const submit = xows_doc(xows_doc_page_param.pageid).querySelector("*[type='submit']");
+     if(submit) submit.click();
+   }
+  }
+}
+/**
+ * Handles Contextual-Page character input events
+ *
+ * @param   {object}    event     Event object
  */
 function xows_doc_page_oninput(event)
 {
@@ -1023,9 +1060,9 @@ function xows_doc_page_oninput(event)
 }
 
 /**
- * Dialog Page on-click callback
+ * Handles Contextual-Page click event
  *
- * @param   {object}    event     Event data
+ * @param   {object}    event     Event object
  */
 function xows_doc_page_onclick(event)
 {
@@ -1033,9 +1070,9 @@ function xows_doc_page_onclick(event)
 }
 
 /**
- * Dialog Page Close (click on close button) callback
+ * Handles Contextual-Page Close (click on Close button)
  *
- * @param   {object}    event     Event data
+ * @param   {object}    event     Event object
  */
 function xows_doc_page_onclose(event)
 {
@@ -1044,7 +1081,7 @@ function xows_doc_page_onclose(event)
 }
 
 /**
- * Dialog Page Close
+ * Closes opened Contextual-Page
  *
  * @param   {boolean}   soft      Soft close, prepare for new page to open only.
  */
@@ -1093,7 +1130,7 @@ function xows_doc_page_close()
 }
 
 /**
- * Dialog Page Open
+ * Opens the specified Contextual-Page
  *
  * @param   {string}    id        Page ID to open
  * @param   {boolean}  [close]    Optional force display or hide close button
@@ -1142,37 +1179,19 @@ function xows_doc_page_open(id, close, onclose, oninput, onclick)
   xows_doc_popu_close();
 }
 
-/**
- * Dialog Page on-keyup callback function
- *
- * @param   {object}    event     Event object associated with trigger
- */
-function xows_doc_page_onkeyu(event)
-{
-  if(xows_doc_page_param.pageid && event.keyCode === 13) {
-    // Emulate click on Valid button
-    if(!xows_doc_hidden("over_popu") && !xows_doc_hidden("popu_valid")) {
-     xows_doc("popu_valid").click();
-   } else {
-     // Emulate click on submit button
-     const submit = xows_doc(xows_doc_page_param.pageid).querySelector("*[type='submit']");
-     if(submit) submit.click();
-   }
-  }
-}
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Drop menus routines and definitions
+ * Contextual Menus Management
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Currently opened menu elements
+ * Storage for opened Contextual-Menu parameters
  */
 const xows_doc_menu_param = {bttn:null,drop:null,onclick:null,onclose:null};
 
 /**
- * Close current opened menu
+ * Closes opened Contextual-Menu
  */
 function xows_doc_menu_close()
 {
@@ -1204,10 +1223,7 @@ function xows_doc_menu_close()
 }
 
 /**
- * Toggle menu drop
- *
- * This function toggle the specified menu and show the invisible menu
- * screen to gather click event outside menu.
+ * Toggles (Open or Close) Contextual-Menu
  *
  * @param   {element}   button    Menu button element
  * @param   {string}    dropid    Menu drop-down element Id
@@ -1258,36 +1274,33 @@ function xows_doc_menu_toggle(button, dropid, onclick, onshow, onclose)
   }
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Image view routines and definitions
+ * Picture Viewer routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Media Viewer screen open
+ * Handles Picture-Viewer click events
  *
- * @param   {object}    media     DOM element that throwed event
+ * @param   {object}    event     Event object associated with trigger
  */
-function xows_doc_view_open(media)
+function xows_doc_view_onclick(event)
 {
-  // Check for image media to view
-  if(media.tagName === "IMG") {
-
-    // set proper link and references
-    xows_doc("view_img").src = media.src;
-    //xows_doc("view_open").href = media.src;
-
-    // show the media overlay element
-    xows_doc_show("over_view");
-
-    // show the 'void' screen with dark filter
-    xows_doc_cls_add("scr_void", "VOID-DARK");
-    xows_doc_show("scr_void");
+  switch(event.target.id)
+  {
+  case "view_optab":
+    // Get the <img> element and open in new tab
+    window.open(event.target.parentNode.querySelector("IMG").src, '_blank').focus();
+    break;
+  default:
+    // Close image view
+    xows_doc_view_close();
+    break;
   }
 }
 
 /**
- * Media Viewer screen close
+ * Closes Picture-Viewer screen
  */
 function xows_doc_view_close()
 {
@@ -1308,37 +1321,40 @@ function xows_doc_view_close()
 }
 
 /**
- * Media Viewer screen on-click event callback
+ * Opens Picture-Viewer screen
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {element}   media     DOM Element to be shown
  */
-function xows_doc_view_onclick(event)
+function xows_doc_view_open(media)
 {
-  switch(event.target.id)
-  {
-  case "view_optab":
-    // Get the <img> element and open in new tab
-    window.open(event.target.parentNode.querySelector("IMG").src, '_blank').focus();
-    break;
-  default:
-    // Close image view
-    xows_doc_view_close();
-    break;
+  // Check for image media to view
+  if(media.tagName === "IMG") {
+
+    // set proper link and references
+    xows_doc("view_img").src = media.src;
+    //xows_doc("view_open").href = media.src;
+
+    // show the media overlay element
+    xows_doc_show("over_view");
+
+    // show the 'void' screen with dark filter
+    xows_doc_cls_add("scr_void", "VOID-DARK");
+    xows_doc_show("scr_void");
   }
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Contact/Occupant profile Popup routines
+ * Profile-Popup routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Contact Profile Popup parameters
+ * Storge for Profile-Popup parameters
  */
 const xows_doc_prof_param = {peer:null,onclick:null};
 
 /**
- * Contact Profile Popup on-click callback
+ * Handles Profile-Popup click events
  *
  * @param   {object}    event     Event object
  */
@@ -1354,7 +1370,7 @@ function xows_doc_prof_onclick(event)
 }
 
 /**
- * Contact Profile Popup close
+ * Closes Handles Profile-Popup
  */
 function xows_doc_prof_close()
 {
@@ -1380,7 +1396,10 @@ function xows_doc_prof_close()
 }
 
 /**
- * Contact Profile Popup Update
+ * Refresh Profile-Popup Peer's informations.
+ *
+ * This function is used either for Peer's informations initial fulfill, or
+ * to refresh those informations if required.
  */
 function xows_doc_prof_update()
 {
@@ -1490,7 +1509,7 @@ function xows_doc_prof_update()
 }
 
 /**
- * Contact Profile Popup open
+ * Opens the Profile-Popup
  *
  * @param   {object}    peer      Peer Object, either Contact or Occupant
  * @param   {function} [onclick]  Optional callback function for click events
@@ -1518,16 +1537,23 @@ function xows_doc_prof_open(peer, onclick)
   over_prof.hidden = false;
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- * Void Screen routines and definitions
+ * Void Screen routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to proceed click on void 'screen'
+ * Handles Void-Screen click events
  *
- * This function is called when user click on the 'void screen', meaning
- * outside an opened menu or dialog.
+ * The Void-Screen is a fullscreen Element placed between the main interface
+ * and some interactives elements (typically, menus, Dialog-Boxes, etc) with
+ * the purposes of detecting user's clicks outside the interactive element and
+ * to prevent interfering with main interface.
+ *
+ * The Void-Screen can be either invisible or present as a dark filter that
+ * shadows the main interface. Depending context, a click in the Void-Screen
+ * (outside the interactive element) either close the interactive element, or
+ * make the interactive element blinking if it is configured as Modal.
  *
  * @param   {object}    event     Event object associated with trigger
  */
@@ -1549,13 +1575,13 @@ function xows_doc_void_onclick(event)
   xows_doc_mbox_modal();
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
  * Custom Scroll-Bars routines
  *
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Export scrollBottom property value to dataset
+ * Export scrollBottom property value to element dataset attribute
  *
  * The 'scrollBottom' property is an ad-hoc property used to store
  * element's scroll position relative to client viewport bottom. It is
@@ -1574,7 +1600,7 @@ function xows_doc_scroll_export(id)
 }
 
 /**
- * Import scrollBottom property value from dataset
+ * Import scrollBottom property value from element dataset attribute
  *
  * The 'scrollBottom' property is an ad-hoc property used to store
  * element's scroll position relative to client viewport bottom. It is

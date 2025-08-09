@@ -33,20 +33,18 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         GUI API Interface
+ * GUI Module - Edition Panel
  *
- *                    Message Edit Panel Sub-Module
- *
- * ------------------------------------------------------------------ */
- /* -------------------------------------------------------------------
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
  * Edition Panel - Main interactions
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Chat Panel on-click callback function
+ * Handles Edition Panel click events
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {object}    event     Event object
  */
 function xows_gui_edit_onclick(event)
 {
@@ -83,7 +81,7 @@ function xows_gui_edit_onclick(event)
     }
 
     default:
-      // Set input focus to message edit area
+      // Set input focus to Text-Editor input field
       xows_gui_edit_inpt_setfocus();
       break;
   }
@@ -103,11 +101,11 @@ function xows_gui_edit_onfile(event)
     xows_gui_upld_start(xows_gui_peer, file);
 }
 
-/* -------------------------------------------------------------------
- * Edition Panel - Alert banner routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Edition Panel - Alert Banner routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles click on chat navigation banner.
+ * Handles Alert-Banner click events
  *
  * @param   {object}    event      Event object
  */
@@ -119,8 +117,8 @@ function xows_gui_edit_alrt_onclick(event)
 }
 
 /**
- * Update chat navigation state and visibility according given
- * scroll position relative to client.
+ * Updates Alert-Banner state and visibility according given
+ * scroll parameters.
  *
  * @param   {object}    peer        Peer object
  * @param   {number}    scroll      Chat Scroll relative to client bottom
@@ -169,10 +167,14 @@ function xows_gui_edit_alrt_update(peer, scroll, client)
 }
 
 /**
- * Adds alert status to navigation bar.
+ * Sets or adds an 'alert' for the Alert-Banner.
  *
- * Depending current scroll position, the navigation bar may be not shown
- * and UNREAD alert may be completely ignored.
+ * The 'alert' parameter should be a predefined CSS class, either "UNREAD" or
+ * "RINGING", to be set to Alert-Banner element. The proper actions are
+ * performed accordingly.
+ *
+ * Depending current scroll position, the Alert-Banner element may be not
+ * shown and the 'UNREAD' alert may be completely ignored.
  *
  * @param   {object}    peer        Peer object
  * @param   {string}    alert       Alert to apply (RINGING or UNREAD)
@@ -196,7 +198,7 @@ function xows_gui_edit_alrt_set(peer, alert)
 }
 
 /**
- * Removes alert status from the navigation bar.
+ * Removes an 'alert' from the Alert-Banner.
  *
  * @param   {object}    peer        Peer object
  * @param   {string}    alert       Alert to reset (RINGING or UNREAD)
@@ -214,11 +216,13 @@ function xows_gui_edit_alrt_reset(peer, alert)
   xows_gui_edit_alrt_update(peer, scroll, scroll);
 }
 
-/* -------------------------------------------------------------------
- * Edition Panel - Reply banner routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Edition Panel - Message Reply-To routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Cancel or reset message reply
+ * Clears or abort Reply-To settings.
+ *
+ * This resets the Reply-To parameters and hide the Banner element.
  */
 function xows_gui_edit_rply_close()
 {
@@ -239,7 +243,9 @@ function xows_gui_edit_rply_close()
 }
 
 /**
- * Set message reply data and elements
+ * Setups Reply-To for the specified message.
+ *
+ * This set the Reply-To parameters then show the Banner element.
  *
  * @param   {element}   li_msg     Selected <li_mesg> Element to reply to
  */
@@ -280,20 +286,29 @@ function xows_gui_edit_rply_set(li_msg)
   // set replied message highlighted
   xows_gui_hist_mesg_hligh(xows_gui_peer, rpid);
 
-  // Set input focus to message edit area
+  // Set input focus to Text-Editor input field
   xows_gui_edit_inpt_setfocus();
 }
-/* -------------------------------------------------------------------
- * Edition Panel - Message input Routines
- * -------------------------------------------------------------------*/
 
+/* ---------------------------------------------------------------------------
+ * Edition Panel - Text Editor (contenteditable Input)
+ * ---------------------------------------------------------------------------*/
 /**
- * Stored input selection range
+ * Storage for last saved Text-Editor input selection range.
  */
 let xows_gui_edit_inpt_rng = document.createRange();
 
 /**
- * Stores current input selection range so it can be restored later
+ * Saves current Text-Editor input selection range.
+ *
+ * The fact is that when user clicks on an element outside the Text-Editor input
+ * the document's selection range (caret position, etc.) are cleared. It can
+ * be then usefull to restores the last previous known selection range
+ * within the Text-Editor input.
+ *
+ * This is tipically used to insert Emoji at proper position when user choose
+ * an Emoji to insert from Emoji menu. Indeed, once user clicks to open Emoji
+ * Menu, the document's selection range is de facto erased.
  */
 function xows_gui_edit_inpt_sel_save()
 {
@@ -301,10 +316,10 @@ function xows_gui_edit_inpt_sel_save()
 }
 
 /**
- * Restores previously saved input selection range. If saved range
- * is empty the caret is placed at end of input content.
+ * Restores saved Text-Editor input selection range.
  *
- * @param   {object}    event     Event object
+ * If the saved selection range is empty (no saved selection range) the caret
+ * is placed at end of Text-Editor input content.
  */
 function xows_gui_edit_inpt_sel_load()
 {
@@ -314,7 +329,7 @@ function xows_gui_edit_inpt_sel_load()
 
   // Check whether saved range is within node
   if(!edit_inpt.contains(rng.commonAncestorContainer)) {
-    // Create new selection range at end of input area
+    // Create new selection range at end of Text-Editor input content
     rng = xows_gui_edit_inpt_rng = document.createRange();
     rng.selectNodeContents(edit_inpt);
     rng.collapse(false); //< Collapse to end
@@ -326,11 +341,15 @@ function xows_gui_edit_inpt_sel_load()
 }
 
 /**
- * Handles caret position changes within the Chat Editor input area.
+ * Handles caret position changes across Text-Editor input content.
  *
- * Notice that we use 'keyup' and 'mouseup' rather than 'keydown' and
- * 'mousedown' because browser set final selection range on key or button
- * release.
+ * This actually handles "mouseup" and "keyup" events occuring within the
+ * Text-Editor input contenteditable element to track (and save and manage)
+ * caret position or selection changes.
+ *
+ * Notice that we listen to "keyup" and "mouseup" rather than "keydown" and
+ * "mousedown" because navigator set final selection range once user released
+ * mouse button or key.
  *
  * @param   {object}    event     Event object
  */
@@ -345,10 +364,9 @@ function xows_gui_edit_inpt_oncaret(event)
   xows_gui_edit_inpt_sel_save();
 }
 /**
- * Handle inputs in Chat Editor input to update caret position, send
- * writing status (chat states) and set or remove placeholder text.
+ * Handles Text-Editor input events.
  *
- * @param   {object}    event     Event object associated with trigger
+ * @param   {object}    event     Event object
  */
 function xows_gui_edit_oninput(event)
 {
@@ -377,19 +395,22 @@ function xows_gui_edit_oninput(event)
 }
 
 /**
- * Set focus and edit caret to chat message input
+ * Set focus on Text-Editor input field.
  */
 function xows_gui_edit_inpt_setfocus()
 {
-  // Set input focus to message edit area
+  // Set input focus to Text-Editor input field
   xows_doc("edit_inpt").focus();
 }
 
 /**
- * Chat Message Edition validation (enter) function, called when user
- * press the Enter key (see xows_gui_wnd_onkey() function).
+ * Handles Text-Editor input "Enter" event (forwardes from
+ * 'xows_gui_wnd_onkey').
  *
- * @param   {object}    input     Input object to validate
+ * This performs required actions when user types the Enter key, that is,
+ * sending the Text-Editor input content as a message.
+ *
+ * @param   {element}   input     Input element (Text-Editor input)
  */
 function xows_gui_edit_inpt_onenter(input)
 {
@@ -418,10 +439,10 @@ function xows_gui_edit_inpt_onenter(input)
 }
 
 /**
- * Chat message Edition Paste event handling, caled when user
- * paste content from clipload into input area.
+ * Pastes clipboard content into Text-Editor input at/within current
+ * selection range.
  *
- * @param   {object}    event     Clipboard event opbject
+ * @param   {object}    event     Event opbject (ClipboardEvent)
  */
 function xows_gui_edit_inpt_onpaste(event)
 {
@@ -449,11 +470,13 @@ function xows_gui_edit_inpt_onpaste(event)
 }
 
 /**
- * Chat Editor insert element at/within current/last selection
+ * Insert arbitrary content into Text-Editor input at/within last saved
+ * selection range.
  *
- * If 'surround' parameter is defined, the inserted text is surrounded
- * by a node with the specified tagname. If 'editable" parameter is not set to
- * true, the inserted node cannot be edited and caret automatically jumps around.
+ * If 'surround' parameter is defined, the inserted content is surrounded
+ * by a node with tagname specified by the 'tagname' parameter. Unless the
+ * 'editable" is set to true, the inserted surrounded content cannot be
+ * edited (caret automatically jumps around).
  *
  * @param   {string}    text      Text to insert
  * @param   {string}   [surround]  Optional surrounding node tagname
@@ -499,15 +522,17 @@ function xows_gui_edit_inpt_insert(text, surround, editable = false)
   edit_inpt.focus();
 }
 
-/* -------------------------------------------------------------------
- * Edition Panel - Peer writing notifications
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Edition Panel - Peer Writing Notifications
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle the received composing state from other contacts to display
- * it in the chat window
+ * Handles received composing state (Chat-State) from other Peers.
  *
- * @param   {object}    peer      Sender peer object
- * @param   {number}    chat      Chat state value
+ * This shows and updates the proper "Peer is composing..." notification below
+ * the Text-Editor input field.
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {number}    chat      Chat-State value
  */
 function xows_gui_edit_onchst(peer, chat)
 {
@@ -578,11 +603,14 @@ function xows_gui_edit_onchst(peer, chat)
   edit_stat.hidden = false;
 }
 
-/* -------------------------------------------------------------------
- * Emoji menu
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Edition Panel - Emoji Menu
+ * ---------------------------------------------------------------------------*/
 /**
- * Emojis Insertion Menu placement callback function
+ * Handles Emojis-Insertion Menu shown event (Menu shown)
+ *
+ * This properly position the Emojis-Insertion Menu according current Emoji
+ * button position.
  *
  * @param   {element}    button   Menu button element
  * @param   {element}    menu     Menu (itself) element
@@ -601,7 +629,10 @@ function xows_gui_emoj_menu_onshow(button, menu)
 }
 
 /**
- * Emojis Insertion Menu on-click callback function
+ * Handles Emojis-Insertion Menu click event
+ *
+ * This either closes the Menu or inserts the selected Emoji into the
+ * Text-Editor input field.
  *
  * @param   {object}    event     Event object
  */

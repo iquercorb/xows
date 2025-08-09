@@ -33,69 +33,62 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         SASL API Module
+ * SASL Module
  *
- * ------------------------------------------------------------------ */
-
+ * ---------------------------------------------------------------------------*/
 /**
- * Variable to store contextual data for SASL challenge process
+ * Storage variable for SASL challenge process
  */
 let xows_sasl_data = null;
 
 /**
- * Standard name of the current selected and initialized SASL
- * mechanism
+ * Storage variable for currently selected SASL mechanism
  */
 let xows_sasl_select = "";
 
+/* ---------------------------------------------------------------------------
+ * Mechanism function placeholders
+ * ---------------------------------------------------------------------------*/
 /**
- * Get the SASL initial auth request string according the current
- * initialized mechanism
+ * Returns the SASL initial auth request string according the current
+ * selected mechanism.
  *
- * This function is intended to be replaced by the proper SASL mechanism.
+ * This is a placeholder intended to be replaced by the proper SASL mechanism
+ * function.
  *
  * @return  {string}    Initial SASL auth request string
  */
 let xows_sasl_get_request = function() {return "";};
 
 /**
- * Get the SASL challenge response string according the current
- * initialized mechanism
+ * Returns the SASL challenge response string according the current
+ * selected mechanism.
  *
- * This function is intended to be replaced by the proper SASL mechanism.
+ * This is a placeholder intended to be replaced by the proper SASL mechanism
+ * function.
  *
- * @param   {string}    challenge Received SASL challenge
+ * @param   {string}    challenge   Received SASL challenge
  *
  * @return  {string}    SASL challenge response string
  */
 let xows_sasl_get_response = function(challenge) {return "";};
 
 /**
- * Checks the SASL integrity according the current
- * initialized mechanism
+ * Check SASL integrity according the current selected mechanism.
  *
- * This function is intended to be replaced by the proper SASL mechanism.
+ * This is a placeholder intended to be replaced by the proper SASL mechanism
+ * function.
  *
- * @param   {string}    signature Received SASL signature
+ * @param   {string}    signature   Received SASL signature
  *
  * @return  {string}    True if integrity check succeed, false otherwise
  */
 let xows_sasl_chk_integrity = function(signature) {return true;};
 
 /**
- * Custom callback function fired if SASL process fail
- */
-let xows_sasl_failure_cb = function() {};
-
-/**
- * Custom callback function fired if SASL process succeed
- */
-let xows_sasl_success_cb = function() {};
-
-/**
- * Return the standard name of the currently selected and initialized
+ * Returns the standard name of the currently selected and initialized
  * SASL mechanism.
  *
  * @return  {string}    Selected SASL mechanism string
@@ -105,6 +98,22 @@ function xows_sasl_get_selected()
   return xows_sasl_select;
 }
 
+/* ---------------------------------------------------------------------------
+ * Event-Forwarding callback
+ * ---------------------------------------------------------------------------*/
+/**
+ * Function Event-Forwarding callback for SASL process fail
+ */
+let xows_sasl_failure_cb = function() {};
+
+/**
+ * Function Event-Forwarding callback for SASL process succeed
+ */
+let xows_sasl_success_cb = function() {};
+
+/* ---------------------------------------------------------------------------
+ * SASL auth PLAIN Mechanism functions
+ * ---------------------------------------------------------------------------*/
 /**
  * SASL auth PLAIN mechanism auth request function
  *
@@ -125,7 +134,7 @@ function xows_sasl_plain_req()
 /**
  * SASL auth PLAIN mechanism challenge dummy function
  *
- * @param   {string}    challenge Received SASL challenge
+ * @param   {string}    challenge   Received SASL challenge
  *
  * @return  {string}    Nothing (PLAIN mechanism does not require challenge)
  */
@@ -137,7 +146,7 @@ function xows_sasl_plain_resp(challenge)
 /**
  * SASL auth PLAIN mechanism integrity check dummy function
  *
- * @param   {string}    signature Received SASL signature
+ * @param   {string}    signature   Received SASL signature
  *
  * @return  {string}    Always true (PLAIN mechanism does not check integrity)
  */
@@ -146,6 +155,9 @@ function xows_sasl_plain_chk(signature)
   return true;
 }
 
+/* ---------------------------------------------------------------------------
+ * SASL SCRAM-SHA-1 Mechanism functions
+ * ---------------------------------------------------------------------------*/
 /**
  * SASL mechanism SCRAM-SHA-1 auth request function
  *
@@ -262,6 +274,9 @@ function xows_sasl_sha1_chk(signature)
   return true;
 }
 
+/* ---------------------------------------------------------------------------
+ * SASL DIGEST-MD5 Mechanism functions
+ * ---------------------------------------------------------------------------*/
 /**
  * SASL mechanism DIGEST-MD5 auth request function
  *
@@ -349,6 +364,9 @@ function xows_sasl_md5_chk(signature)
   return true;
 }
 
+/* ---------------------------------------------------------------------------
+ * SASL main functions
+ * ---------------------------------------------------------------------------*/
 /**
  * List of implemented SASL mechanisms with corresponding
  * request and challenge function. Mechanisms are ordered by
@@ -370,8 +388,8 @@ const xows_sasl_mechanisms = [
 ];
 
 /**
- * Select and initialize the proper SASL mechanism according the
- * supplied available list with the given auth data
+ * Selects and initializes the proper SASL mechanism according the
+ * supplied available list with the given auth data.
  *
  * @param   {string[]}  candidates  List of candidate mechanisms
  * @param   {string}    authz       Authorization ID

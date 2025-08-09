@@ -33,18 +33,13 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         GUI API Interface
+ * GUI Module - User Roster
  *
- *                  User Roster Management Sub-Module
- *
- * ------------------------------------------------------------------ */
-/* -------------------------------------------------------------------
- * Roster Interactions - Peers lists Routines
- * -------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles ckick on Roster header
+ * Handles User-Roster header click events
  *
  * @param   {object}    event     Event object
  */
@@ -69,8 +64,11 @@ function xows_gui_rost_head_onclick(event)
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * User Roster - Peer lists
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles ckick on Roster Peer List
+ * Handles User-Roster Peer-List click events
  *
  * @param   {object}    event     Event object
  */
@@ -92,7 +90,7 @@ function xows_gui_rost_list_onclick(event)
       return;
     case "cont_bt_unsb": //< Remove (Unsubscribe) contact
       // Open revoke subscription dialog-box
-      xows_gui_rost_subs_revk_mbox_open(xows_cli_cont_get(li_peer.dataset.id));
+      xows_gui_rost_unsb_mbox_open(xows_cli_cont_get(li_peer.dataset.id));
       return;
     }
   }
@@ -100,7 +98,7 @@ function xows_gui_rost_list_onclick(event)
   // Special case for pending subscription
   if(li_peer.classList.contains("PEER-PEND")) {
     // Open Subscription Allow/Deny dialog
-    xows_gui_rost_subs_auth_mbox_open(li_peer.dataset.id);
+    xows_gui_rost_auth_mbox_open(li_peer.dataset.id);
   } else {
     // Select peer
     xows_gui_peer_switch_to(li_peer.dataset.id);
@@ -108,11 +106,11 @@ function xows_gui_rost_list_onclick(event)
 }
 
 /**
- * Find Roster's <li-peer> element of specified Peer object
+ * Find Peer element (<li-peer>) matching the given JID.
  *
- * @param   {object}    addr      Peer address
+ * @param   {string}    addr    Peer JID (address)
  *
- * @return  (element}   A <li-peer> element or null/undefined if not found
+ * @return  (element}   Peer element (<li-peer>) or null if not found
  */
 function xows_gui_rost_list_find(addr)
 {
@@ -120,11 +118,11 @@ function xows_gui_rost_list_find(addr)
 }
 
 /**
- * Inserts given Peer's <li-peer> element in specified list following
- * ordering rules.
+ * Inserts the given Peer element (<li-peer>) into the specified Peer-List
+ * sub-list (<ul>) following ordering rules.
  *
- * @param   {element}   dst_ul    Destination list
- * @param   {element}   li_peer   Contact <li-peer> element to insert
+ * @param   {element}   dst_ul    Destination sub-list element (<ul>)
+ * @param   {element}   li_peer   Peer element (<li-peer>) to insert
  * @param   {boolean}  [top]      Optional force insertion at top of list
  */
 function xows_gui_rost_list_insert(dst_ul, li_peer, top = false)
@@ -146,7 +144,7 @@ function xows_gui_rost_list_insert(dst_ul, li_peer, top = false)
 }
 
 /**
- * Rises the specified peer to the top of its current list
+ * Rises the Peer's matching element (<li-peer>) to the top of its sub-list.
  *
  * @param   {object}   peer     Peer object
  */
@@ -159,11 +157,14 @@ function xows_gui_rost_list_rise(peer)
     dst_ul.insertBefore(li_peer, dst_ul.firstElementChild);
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Contacts list Routines
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Roster - Contacts list
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to force query and refresh for Room list
+ * Refreshs User-Roster Contact-List.
+ *
+ * Clears the Contact-List then query to receive (from XMPP server)
+ * user Roster items list.
  */
 function xows_gui_rost_contlst_reload()
 {
@@ -182,7 +183,10 @@ function xows_gui_rost_contlst_reload()
 }
 
 /**
- * Updates the Contact list according contacts presents
+ * Updates Contact-List sub-lists according elements within.
+ *
+ * This shows or hides sub-lists (<ul>) depending presence of child
+ * element (<li-peer>) within.
  */
 function xows_gui_rost_contlst_update()
 {
@@ -202,11 +206,15 @@ function xows_gui_rost_contlst_update()
   const cont_budy = xows_doc("cont_budy");
   cont_budy.hidden = !cont_budy.childElementCount;
 }
-/* -------------------------------------------------------------------
- * Roster Interactions - Rooms list Routines
- * -------------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------
+ * User Roster - Rooms List
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to force query and refresh for Room list
+ * Refreshs User-Roster Room-List.
+ *
+ * Clears the Room-List then query to receive (from XMPP server)
+ * the public MUC Room list.
  */
 function xows_gui_rost_roomlst_reload()
 {
@@ -225,9 +233,10 @@ function xows_gui_rost_roomlst_reload()
 }
 
 /**
- * Updates the Occupant list according occupants presents in room
+ * Updates Room-List sub-lists according elements within.
  *
- * @param   {object}    room      Room object
+ * This shows or hides sub-lists (<ul>) depending presence of child
+ * element (<li-peer>) within.
  */
 function xows_gui_rost_roomlst_update()
 {
@@ -242,14 +251,13 @@ function xows_gui_rost_roomlst_update()
   room_book.hidden = !room_book.childElementCount;
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Peers Management : Contacts
- * -------------------------------------------------------------------*/
-
+/* ---------------------------------------------------------------------------
+ * User Roster - CONTACT Peer Elements
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to add or update item of the roster contact list
+ * Handles Roster Contact add or changes event (forwarded from CLI Module)
  *
- * @param   {object}    cont      Contact object to add or update
+ * @param   {object}    cont      CONTACT Peer object
  * @param   {string}   [text]     Optional Error text
  */
 function xows_gui_rost_cont_onpush(cont, text)
@@ -309,9 +317,9 @@ function xows_gui_rost_cont_onpush(cont, text)
 }
 
 /**
- * Function to remove item from the roster Contacts list
+ * Handles Roster Contact removed event (forwarded from CLI Module)
  *
- * @param   {object}    cont      Contact Object
+ * @param   {object}    cont      CONTACT Peer object
  */
 function xows_gui_rost_cont_onpull(cont)
 {
@@ -335,16 +343,14 @@ function xows_gui_rost_cont_onpull(cont)
   xows_cli_cont_rem(cont);
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Peers Management : Pending subscribe
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Roster - CONTACT Peer Elements (Pending Subscription)
+ * ---------------------------------------------------------------------------*/
 /**
- * Add subscription request to the roster
+ * Handles Roster Subscription Request/Pending add or changes event (forwarded
+ * from CLI Module)
  *
- * This function add a new Subscription request element in the
- * roster.
- *
- * @param   {object}    cont      Contact Object
+ * @param   {object}    cont      CONTACT Peer object
  */
 function xows_gui_rost_subs_onpush(cont)
 {
@@ -368,21 +374,15 @@ function xows_gui_rost_subs_onpush(cont)
   xows_gui_rost_contlst_update();
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Peers Management : Rooms
- * -------------------------------------------------------------------*/
-
+/* ---------------------------------------------------------------------------
+ * User Roster - ROOM Peer Elements
+ * ---------------------------------------------------------------------------*/
 /**
- * Function to add or update item of the roster Room list
+ * Handles Roster Room add or changes event (forwarded from CLI Module)
  *
- * The 'join' parameter indicate whether Room is about to be joined, meaning
- * that offscreen documents must be created to be updated and fulfilled during
- * join process.
- *
- * @param   {object}    room      Room object to add or update
- * @param   {boolean}   join      Indicate Room is about to be joined
+ * @param   {object}    room      ROOM Peer object
  */
-function xows_gui_rost_room_onpush(room, join)
+function xows_gui_rost_room_onpush(room)
 {
   // Check for null object, meaning previous public room query response
   if(!room) {
@@ -421,9 +421,9 @@ function xows_gui_rost_room_onpush(room, join)
 }
 
 /**
- * Function to add or update item of the roster Room list
+ * Handles Roster Room removed event (forwarded from CLI Module)
  *
- * @param   {object}    room      Room Object
+ * @param   {object}    room      ROOM Peer object
  */
 function xows_gui_rost_room_onpull(room)
 {
@@ -447,13 +447,16 @@ function xows_gui_rost_room_onpull(room)
   xows_cli_room_rem(room);
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Peers Management : Occupants
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Roster - OCCUPANT Peer Elements (Private Messages)
+ * ---------------------------------------------------------------------------*/
 /**
- * Initialize Private Conversation with Occupant
+ * Initializes Private-Conversation with MUC Occupant
  *
- * @param   {object}    occu      Occupant object
+ * This function is used to open a new Private-Conversation chat interface
+ * with the specified Peer on the user (self) initiative.
+ *
+ * @param   {object}    occu      OCCUPANT Peer object
  */
 function xows_gui_rost_occu_init(occu)
 {
@@ -469,7 +472,7 @@ function xows_gui_rost_occu_init(occu)
   }
 
   // Add Private Message session in client side
-  xows_cli_priv_add(occu);
+  xows_cli_ocpm_add(occu);
 
   // Create Occupant Private Message offscreen structure
   xows_gui_rost_occu_onpush(occu);
@@ -479,9 +482,10 @@ function xows_gui_rost_occu_init(occu)
 }
 
 /**
- * Function to add or update item of the roster Room list
+ * Handles Roster MUC Occupant (Private Message) add or changes event
+ * (forwarded from CLI Module)
  *
- * @param   {object}    occu      Occupant object to add or update
+ * @param   {object}    occu      OCCUPANT Peer object
  * @param   {object}   [mucx]     Optional MUC x extra parameters
  */
 function xows_gui_rost_occu_onpush(occu, mucx)
@@ -547,9 +551,10 @@ function xows_gui_rost_occu_onpush(occu, mucx)
 }
 
 /**
- * Function to remove or update item of the roster Room list
+ * Handles Roster MUC Occupant (Private Message) removed event (forwarded
+ * from CLI Module)
  *
- * @param   {object}    occu      Occupant object to add or update
+ * @param   {object}    occu      OCCUPANT Peer object
  */
 function xows_gui_rost_occu_onpull(occu)
 {
@@ -570,13 +575,13 @@ function xows_gui_rost_occu_onpull(occu)
   }
 }
 
-
-/* -------------------------------------------------------------------
- * Roster Interactions - Subscriptions routines
- * -------------------------------------------------------------------*/
-
+/* ---------------------------------------------------------------------------
+ * User Roster - Contact Subscription actions
+ * ---------------------------------------------------------------------------*/
 /**
- * Send new subscription authorization request and show popup
+ * (Re)sends Subscription-Authorization request to the specified Contact JID.
+ *
+ * This also shows a Popup-Dialog that inform the request was sent.
  *
  * @param   {string}     addr     Contact JID to subscribes
  */
@@ -589,13 +594,13 @@ function xows_gui_rost_subs_rqst_pupu(addr)
   xows_doc_popu_open(XOWS_STYL_SCS,"New subscription authorization request was sent");
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Subscribe Input-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Roster - Contact Subscription Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Add Contact Input Dialog-Box on-valid callback
+ * Handles Contact-Subscription Input-Dialog input events
  *
- * @param   {object}    value     Input content
+ * @param   {object}    value     Contact input field content
  */
 function xows_gui_rost_subs_ibox_oninput(value)
 {
@@ -603,7 +608,7 @@ function xows_gui_rost_subs_ibox_oninput(value)
 }
 
 /**
- * Add Contact Input Dialog-Box on-valid callback
+ * Handles Contact-Subscription Input-Dialog validation (click on Valid button)
  *
  * @param   {string}    value     Input content
  */
@@ -614,7 +619,7 @@ function xows_gui_rost_subs_ibox_onvalid(value)
 }
 
 /**
- * Open Add Contact Input Dialog-Box
+ * Opens Contact-Subscription Input-Dialog
  */
 function xows_gui_rost_subs_ibox_open()
 {
@@ -628,37 +633,37 @@ function xows_gui_rost_subs_ibox_open()
     true);
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Revoke subscription Message-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Roster - Contact Unsubscribe Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Object to store Page/Dialog temporary data and parameters
+ * Storage for Contact-Unsubscribe Input-Dialog parameters
  */
-const xows_gui_rost_subs_revk_mbox = {peer:null};
+const xows_gui_rost_unsb_mbox = {peer:null};
 
 /**
- * Contact (subscription) Add/Remove message box on-abort callback function
+ * Handles Contact-Unsubscribe Input-Dialog abortion (click on Abort button)
  */
-function xows_gui_rost_subs_revk_mbox_onabort() {}
+function xows_gui_rost_unsb_mbox_onabort() {}
 
 /**
- * Contact (subscription) Add/Remove message box on-valid callback function
+ * Handles Contact-Unsubscribe Input-Dialog validation (click on Valid button)
  */
-function xows_gui_rost_subs_revk_mbox_onvalid()
+function xows_gui_rost_unsb_mbox_onvalid()
 {
   // Revoke contact subscription
-  xows_cli_subs_revoke(xows_gui_rost_subs_revk_mbox.cont);
+  xows_cli_subs_revoke(xows_gui_rost_unsb_mbox.cont);
 }
 
 /**
- * Revoking contact subscription Message-Box Dialog open
+ * Opens Contact-Unsubscribe Input-Dialog.
  *
  * @param   {object}    cont      Contact object to revoke
  */
-function xows_gui_rost_subs_revk_mbox_open(cont)
+function xows_gui_rost_unsb_mbox_open(cont)
 {
   // Store Contact object
-  xows_gui_rost_subs_revk_mbox.cont = cont;
+  xows_gui_rost_unsb_mbox.cont = cont;
 
   // Select proper text depending current state
   let text = "Do you really want to remove contact and ";
@@ -670,49 +675,49 @@ function xows_gui_rost_subs_revk_mbox_open(cont)
 
   // Open message-box
   xows_doc_mbox_open(XOWS_STYL_WRN, "Revoke contact subscription", text,
-                     xows_gui_rost_subs_revk_mbox_onvalid, "OK",
-                     xows_gui_rost_subs_revk_mbox_onabort, "Cancel");
+                     xows_gui_rost_unsb_mbox_onvalid, "OK",
+                     xows_gui_rost_unsb_mbox_onabort, "Cancel");
 }
 
-/* -------------------------------------------------------------------
- * Roster Interactions - Subscription authorization Message-Dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * User Roster - Contact Authorization Input Dialog
+ * ---------------------------------------------------------------------------*/
 /**
- * Object to store Page/Dialog temporary data and parameters
+ * Storage for Contact-Authorization Input-Dialog parameters
  */
-const xows_gui_rost_subs_auth_mbox = {cont:null};
+const xows_gui_rost_auth_mbox = {cont:null};
 
 /**
- * Contact Subscription Allow/Deny message box on-abort callback function
+ * Handles Contact-Authorization Input-Dialog abortion (click on Abort button)
  */
-function xows_gui_rost_subs_auth_mbox_onabort()
+function xows_gui_rost_auth_mbox_onabort()
 {
   // deny contact subscribe
-  xows_cli_subs_answer(xows_gui_rost_subs_auth_mbox.cont, false);
+  xows_cli_subs_answer(xows_gui_rost_auth_mbox.cont, false);
 }
 
 /**
- * Contact Subscription Allow/Deny message box on-valid callback function
+ * Handles Contact-Authorization Input-Dialog validation (click on Valid button)
  */
-function xows_gui_rost_subs_auth_mbox_onvalid()
+function xows_gui_rost_auth_mbox_onvalid()
 {
   // allow contact subscribe
-  xows_cli_subs_answer(xows_gui_rost_subs_auth_mbox.cont, true);
+  xows_cli_subs_answer(xows_gui_rost_auth_mbox.cont, true);
 }
 
 /**
- * Contact Subscription Allow/Deny message box open
+ * Opens Contact-Authorization Input-Dialog
  *
- * @param   {string}    addr      Supplied JID address to allow or deny
+ * @param   {string}    addr      JID address to allow or deny
  */
-function xows_gui_rost_subs_auth_mbox_open(addr)
+function xows_gui_rost_auth_mbox_open(addr)
 {
   // Store Contact object to allow/deny
-  xows_gui_rost_subs_auth_mbox.cont = xows_cli_cont_get(addr);
+  xows_gui_rost_auth_mbox.cont = xows_cli_cont_get(addr);
 
   // Open message box
   xows_doc_mbox_open(XOWS_STYL_ASK, "Contact subscription request",
                      "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?",
-                     xows_gui_rost_subs_auth_mbox_onvalid, "Allow",
-                     xows_gui_rost_subs_auth_mbox_onabort, "Deny");
+                     xows_gui_rost_auth_mbox_onvalid, "Allow",
+                     xows_gui_rost_auth_mbox_onabort, "Deny");
 }

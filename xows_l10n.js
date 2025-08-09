@@ -33,35 +33,35 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         l10n API Module
+ * L10N (Localization) Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 
 /**
- * Default empty database, to be loaded
+ * Storage for string translation database
  */
 let xows_l10n_db = {};
 
 /**
- * Current selected locale, this is used for javascript built-in
- * l18n functions
+ * Globale variable for current selected locale
  */
 let xows_l10n_current = "en";
 
 /**
- * Callback function to call whene locale data is successfulluy
- * loaded and initialized
+ * Module Event-Forwarding callback for Module initialized and ready
  */
 let xows_l10n_fw_onready = function() {};
 
 /**
- * Load the specified locale data to be used for translations. If
- * the specified locale is unavailable, the default one is used
+ * Select Locale to use.
  *
- * @param   {string}    locale    Local to select
- * @param   {string}    onready   Callback to call once operateion succeed
+ * This loads the specified locale translation database. If the specified
+ * locale is unavailable, the default "en" is used.
+ *
+ * @param   {string}    locale    Locale to select
+ * @param   {function}  onready   Callback for Module Ready (Initialized) event
  */
 function xows_l10n_select(locale, onready)
 {
@@ -104,7 +104,7 @@ function xows_l10n_select(locale, onready)
         xows_log(1,"l10n_select","invalid or unavailable locale \""+locale+"\"","using default");
         xows_l10n_fw_onready();
       } else {
-        xows_init_fatal(this.status, this.responseURL);
+        xows_init_failure(this.status, this.responseURL);
       }
     }
   };
@@ -115,10 +115,15 @@ function xows_l10n_select(locale, onready)
 }
 
 /**
- * Launch the download of the specified language DB json file
+ * Downloads the translation JSON database for the specified Locale.
  *
- * @param   {string}    locale    Language DB subfolder to load
- * @param   {string}    onready   Callback to call once operateion succeed
+ * The 'local' parameter must be an existing subfolder within the
+ * library's "locale/" folder, where a 'LC_db.json' can be found. For instance,
+ * the proper value to load French database would be "fr", resolving to the
+ * "locale/fr/LC_db.json" download path.
+ *
+ * @param   {string}    locale    Locale database path
+ * @param   {function}  onready   Callback to call once operation completed.
  */
 function xows_l10n_db_load(locale, onready)
 {
@@ -161,58 +166,72 @@ function xows_l10n_db_load(locale, onready)
 }
 
 /**
- * Get the specified translated text corresponding to the current
- * selected locale
+ * Returns the corresponding translation of the given text according
+ * loaded Locale database.
  *
- * @param   {string}    msgid     Template text to get translation
+ * If the translated version of the given text is unavailable, the string
+ * supplied in 'text' parameter is then returned.
  *
- * @return  {string}    The translated text if available, the value of msgid otherwise
+ * @param   {string}    text    Text to get translation
+ *
+ * @return  {string}    The text translation or initially supplied string.
  */
-function xows_l10n_get(msgid)
+function xows_l10n_get(text)
 {
-  const str = xows_l10n_db[msgid];
-  if(str) return (str.length !== 0) ? str : msgid;
-  return msgid;
+  const str = xows_l10n_db[text];
+  return str ? str : text;
 }
 
 /**
- *  Static remplacement function for translation process
+ * Static replacement routine (String.Replace) for translation process.
+ *
+ * This callback is used for the in-Place text translation function as
+ * remplacement function for String.Replace(), it has not utility outside
+ * this context.
+ *
+ * @param   {string}    corresp   Correspondance string
+ * @param   {string}    match     Regexp extracted string to translate
+ *
+ * @return  {string}    Translated string or initial extractred string.
  */
-function xows_l10n_parseFunc(c, match)
+function xows_l10n_parse_fn(corresp, match)
 {
   const str = xows_l10n_db[match];
-  if(str) return (str.length !== 0) ? str : match;
-  return match;
+  return str ? str : match;
 }
 
 /**
- * Parse and translate the given text according the current loaded
- * locale
+ * Parse and translate the given HTML Asset according the current loaded
+ * locale.
  *
- * The function search for specific pattern to identify template texts
- * to substitute by corresponding translated text.
+ * This function scans for specific syntaxic patterns to identify strings to
+ * be translated. It is mainly used to translate theme's HTML assets inner
+ * static text, identified by the ${'...'} pattern.
  *
- * @param   {string}    text      Text to be translated
+ * @param   {string}    data      Data string to be parsed and translated.
  */
-function xows_l10n_parse(text)
+function xows_l10n_parse(data)
 {
-  return text.replace(/\${['"](.*?)['"]}/g, xows_l10n_parseFunc);
+  return data.replace(/\${['"](.*?)['"]}/g, xows_l10n_parse_fn);
 }
 
 /**
- * Check whether the specified locale is available
+ * Check whether the specified locale is available.
  *
  * @param   {string}    locale    Locale ID string
  *
  * @return  {boolean}   True if locale is available, false otherwise
  */
-function xows_l10n_hasLocale(locale)
+function xows_l10n_has(locale)
 {
   return (xows_l10n_db[locale] !== null && xows_l10n_db[locale] !== undefined);
 }
 
 /**
- * Create the properly formated date string from the supplied timestamp
+ * Creates properly formated date string from the supplied timestamp using
+ * the currently selected locale.
+ *
+ * Notice that this function uses navigator's Date Standard built-in object.
  *
  * @param   {string}    stamp     Standard formated timestamp
  *
@@ -237,16 +256,23 @@ function xows_l10n_date(stamp)
 }
 
 /**
- * Create the properly formated houre string from the supplied timestamp
+ * Returns the formated houre string from the supplied timestamp using
+ * the currently selected locale.
+ *
+ * The 'timestamp' parameter can be full date with year, only the houre
+ * component will be extracted.
+ *
+ * Notice that this function uses navigator's Date Standard built-in object.
  *
  * @param   {string}    stamp     Standard formated timestamp
+ * @param   {boolean}   short     Indicates to remove trailing PM/AM mention
  *
- * @return  {string}    Simple houre string extrated from fulle timestamp
+ * @return  {string}    Extracted houre string.
  */
-function xows_l10n_houre(stamp)
+function xows_l10n_houre(stamp, short)
 {
   const date = new Date(stamp);
-
-  return date.toLocaleTimeString(xows_l10n_current,{hour:'2-digit',minute:'2-digit'}).replace(/AM|PM/,'');
+  const hour = date.toLocaleTimeString(xows_l10n_current,{hour:'2-digit',minute:'2-digit'});
+  return short ? hour.replace(/AM|PM/,'') : hour;
 }
 

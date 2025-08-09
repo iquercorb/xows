@@ -33,18 +33,16 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                            Base API
+ * Base Library Module
  *
- * ------------------------------------------------------------------ */
-
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *       Applications constants and common utilities fonctions
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Applications constants
+ * ---------------------------------------------------------------------------*/
 /**
- * Global application (client) constants
+ * Global application constants
  */
 const XOWS_APP_NAME = "Xows";
 const XOWS_APP_VERS = "0.9.9";
@@ -55,12 +53,15 @@ const XOWS_APP_NODE = "https://github.com/iquercorb/xows";
  */
 const XOWS_LOGO_SVG = new Path2D("m7.39 0.00182c-0.949 0.0386-1.99 0.696-2.81 1.54l2.42 3.79c-2.24 1.41-3.3 3.4-3.98 5.57-2.24 0.214-0.682-4.16-0.836-5.17 0 0-3.6 5.7-1.55 7.3 1.46 1.15 3.94 1.59 3.94 1.59l-3.15 3.99c2.14 0.72 6.9 0.794 6.9 0.794l2.73-4.25h1.91l2.73 4.25s4.76-0.0743 6.9-0.794l-3.15-3.99s2.47-0.444 3.94-1.59c2.04-1.6-1.65-7.3-1.65-7.3-0.152 1.01 1.5 5.38-0.739 5.17-0.675-2.17-1.74-4.16-3.98-5.57l2.42-3.79c-0.827-0.845-1.86-1.5-2.81-1.54-0.135-0.00482-0.27 0.00193-0.401 0.0232l-3.64 4.52h-1.14l-3.64-4.52a2.01 2.01 0 0 0-0.401-0.0232zm1.42 8.17c1.69 0 1.44 2.58 1.44 2.58s-0.968 0.027-1.88 0.027-1.54-0.0482-1.54-0.726c0-0.678 0.285-1.88 1.97-1.88zm6.39 0c1.69 0 1.97 1.2 1.97 1.88 0 0.678-0.63 0.726-1.54 0.726a77.5 77.5 0 0 1-1.88-0.027s-0.241-2.58 1.44-2.58z");
 
+/* ---------------------------------------------------------------------------
+ * Common base utilities
+ * ---------------------------------------------------------------------------*/
 /**
  * Parse number value or string to boolean
  *
- * @param   {(number|string)} value Value to parse as boolean
+ * @param   {number|string}   value   Value to parse as boolean
  *
- * @return  {boolean}   parsed boolean value
+ * @return  {boolean}   Boolean value
  */
 function xows_asbool(value)
 {
@@ -90,8 +91,8 @@ function xows_isfunc(obj) {
 /**
  * Define readonly object property
  *
- * @param   {object}    obj       Object to define property to
- * @param   {string}    prop      Property name to define
+ * @param   {object}    obj       Object to be modified
+ * @param   {string}    prop      Property name to set
  * @param   {*}         value     Property value to set
  */
 function xows_def_readonly(obj, prop, value)
@@ -142,11 +143,9 @@ function xows_log(level, scope, message, details, color)
     break;
   }
 }
-
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *          low-level strings and bytes conversion functions
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
+/* ---------------------------------------------------------------------------
+ * Strings and Bytes conversion utilities
+ * ---------------------------------------------------------------------------*/
 /**
  * Character map for bytes to hexadecimal string conversions
  */
@@ -195,12 +194,12 @@ function xows_str_to_utf8(str)
 }
 
 /**
- * Get the length in bytes of the given UTF-16 DOMstring as encoded
+ * Get the size in bytes of the given UTF-16 DOMstring as encoded
  * to its UTF-8 equivalent
  *
- * @param   {string}    str       DOMString (UTF-16) to compute length
+ * @param   {string}    str       DOMString (UTF-16) to compute size
  *
- * @return  {string}    Encoded UTF-8 equivalent length in bytes
+ * @return  {string}    Encoded UTF-8 equivalent size in bytes
  */
 function xows_str_bytes_len(str)
 {
@@ -224,7 +223,7 @@ function xows_str_bytes_len(str)
  * @param   {string}    str       Input string to encode
  * @param   {number}    len       Optional length of the returned Uint8Array
  *
- * @return  {Uint8Array} UTF-8 encoded string as Uint8Array
+ * @return  {Uint8Array}    UTF-8 encoded string as Uint8Array
  */
 function xows_str_to_bytes(str, len)
 {
@@ -359,10 +358,9 @@ function xows_bytes_to_int(uint8, offset = 0)
         | (uint8[3+offset] << 24);
 }
 
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *                hash and crypto utilities functions
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
+/* ---------------------------------------------------------------------------
+ * Hash and Crypto utilities
+ * ---------------------------------------------------------------------------*/
  /**
  * Generate a Version 4 UUID string
  *
@@ -455,7 +453,7 @@ function xows_gen_nonce_num(len)
 /**
  * Generate MD5 Hash of a given string or bytes array
  *
- * @param   {(string|Uint8Array)} input Input data to compute hash
+ * @param   {string|Uint8Array}   input   Input data to compute hash
  *
  * @return  {Uint8Array}  16 bytes MD5 hash
  */
@@ -584,7 +582,7 @@ function xows_hash_md5(input)
 /**
  * Generate SHA-1 Hash of a given string or bytes array
  *
- * @param   {(string|Uint8Array)} input Input data to compute hash
+ * @param   {string|Uint8Array}   input   Input data to compute hash
  *
  * @return  {Uint8Array}  20 bytes SHA-1 hash
  */
@@ -679,8 +677,8 @@ function xows_hash_sha1(input)
 /**
  * Calculate the HMAC-SHA1 using the given key and data
  *
- * @param   {(string|Uint8Array)} key  Key to calculate HMAC
- * @param   {(string|Uint8Array)} data Data to calculate HMAC
+ * @param   {string|Uint8Array}   key   Key to calculate HMAC
+ * @param   {string|Uint8Array}   data  Data to calculate HMAC
  *
  * @return  {Uint8Array}  20 bytes of the HMAC-SHA1 result
  */
@@ -718,7 +716,7 @@ function xows_hmac_sha1(key, data)
 /**
  * Generate SHA-256 Hash of a given string or bytes array
  *
- * @param   {(string|Uint8Array)} input Input data to compute hash
+ * @param   {string|Uint8Array} input Input data to compute hash
  *
  * @return  {Uint8Array}  32 bytes SHA-256 hash
  */
@@ -849,10 +847,9 @@ function xows_hash_sdbm(input)
 
   return hash;
 }
-
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *          common string validation and parsing functions
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
+/* ---------------------------------------------------------------------------
+ * String manipulation utilities
+ * ---------------------------------------------------------------------------*/
 /**
  * Collator object for string comparison
  */
@@ -877,11 +874,11 @@ function xows_strcmp(a, b)
 const XOWS_REG_TEST_JID = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 
 /**
- * Check whether given string is a valid JID
+ * Check whether given string is a valid XMPP/Jabber address
  *
  * @param   {string}    str       String to check
  *
- * @return  {boolean}   True if supplied string is a valid JID, false otherwise
+ * @return  {boolean}   True if string is a valid JID, false otherwise
  */
 function xows_isjid(str)
 {
@@ -889,13 +886,13 @@ function xows_isjid(str)
 }
 
 /**
- * Get bare JID from full JID
+ * Obtain bare JID from full JID address
  *
- * 'user@sever/resource' => 'user@sever'
+ * 'user@domain/resource' => 'user@sever'
  *
- * @param   {string}    jid       JID to get the bare part
+ * @param   {string}    jid       JID address
  *
- * @return  {string}    Extracted bare JID
+ * @return  {string}    Bare JID
  */
 function xows_jid_bare(jid)
 {
@@ -904,13 +901,13 @@ function xows_jid_bare(jid)
 }
 
 /**
- * Get Username from JID
+ * Obtain username (node) from JID address
  *
- * 'user@sever/resource' => 'user'
+ * 'user@domain/resource' => 'user'
  *
- * @param   {string}    jid       JID to get the bare part
+ * @param   {string}    jid       JID address
  *
- * @return  {string}    Extracted bare JID
+ * @return  {string}    JID node (username) part
  */
 function xows_jid_node(jid)
 {
@@ -919,13 +916,13 @@ function xows_jid_node(jid)
 }
 
 /**
- * Get Username from JID
+ * Obtain host/server from JID address
  *
- * 'user@sever/resource' => 'user'
+ * 'user@domain/resource' => 'domain'
  *
- * @param   {string}    jid       JID to get the bare part
+ * @param   {string}    jid       JID address
  *
- * @return  {string}    Extracted bare JID
+ * @return  {string}    JID hostname part
  */
 function xows_jid_host(jid)
 {
@@ -938,13 +935,13 @@ function xows_jid_host(jid)
 }
 
 /**
- * Get nickname or ressource from full JID
+ * Obtain ressource or nickname part of full JID
  *
- * * 'user@sever/resource' => 'resource'
+ * * 'user@domain/resource' => 'resource'
  *
- * @param   {string}    jid       JID to get the nick or resource part
+ * @param   {string}    jid       JID address
  *
- * @return  {string}    Extracted nick, resource or null if unavailable
+ * @return  {string}    Resource part or null if unavailable
  */
 function xows_jid_resc(jid)
 {
@@ -953,47 +950,31 @@ function xows_jid_resc(jid)
 }
 
 /**
- * Get the data part of the given Data-URL string
+ * Obtain the Base64 data part of the given Data URI string
  *
- * @param   {string}    url       Data-URL to parse
+ * @param   {string}    uri       Data URI string
  *
- * @return  {string}    Parsed data or null.
+ * @return  {string}    Base64 data or null
  */
-function xows_url_to_data(url)
+function xows_uri_to_data(uri)
 {
-  if(url.indexOf("data:") === 0) {
-    return url.substring(url.indexOf(",")+1);
+  if(uri.indexOf("data:") === 0) {
+    return uri.substring(uri.indexOf(",")+1);
   }
   return null;
 }
 
 /**
- * Get the decoded data from the given Data-URL string,
- * assuming data is base64 encoded
+ * Obtain the MIME type part of the given Data URI string
  *
- * @param   {string}    url       Data-URL to parse
+ * @param   {string}    uri       Data URI string
  *
- * @return  {string}    Decoded data as bytes sting or null
+ * @return  {string}    MIME type or null
  */
-function xows_url_to_bytes(url)
+function xows_uri_to_type(uri)
 {
-  if(url.indexOf("data:") === 0) {
-    return atob(url.substring(url.indexOf(",")+1));
-  }
-  return null;
-}
-
-/**
- * Get the MIME type part of the given Data-URL string
- *
- * @param   {string}    url       Data-URL to parse
- *
- * @return  {string}    Parsed MIME type or null
- */
-function xows_url_to_type(url)
-{
-  if(url.indexOf("data:") === 0) {
-    return url.substring(5,url.indexOf(";"));
+  if(uri.indexOf("data:") === 0) {
+    return uri.substring(5,uri.indexOf(";"));
   }
   return null;
 }
@@ -1009,25 +990,22 @@ const XOWS_HTML_ESC_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'",
 function xows_html_esc_func(m) {return XOWS_HTML_ESC_MAP.get(m);}
 
 /**
- * Rewrites the given string with HTML escapes for reserved or special
- * characters
+ * Rewrites the given string with escaped HTML reserved or special characters
  *
- * @param   {string}    str       String to be escaped
+ * @param   {string}    str       String to rewrite
  *
- * @return  {string}    Escaped string
+ * @return  {string}    String with proper HTML escape sequences
  */
 function xows_html_escape(str)
 {
   return str.replace(/[\&<>'"\n]/g, xows_html_esc_func);
 }
 
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *            DOM elements and tree manipulation functions
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
+/* ---------------------------------------------------------------------------
+ * DOM Tree utilities
+ * ---------------------------------------------------------------------------*/
 /**
- * Remove empty or useless text nodes such as CR/LF
- * from DOM tree
+ * Removes empty or useless text nodes such as CR/LF from DOM tree
  *
  * @param   {object}    node      Root node of DOM tree to clean
  *
@@ -1048,10 +1026,9 @@ function xows_clean_dom(node)
   return node;
 }
 
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *             graphics and picture manipulation functions
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
+/* ---------------------------------------------------------------------------
+ * Graphics and Picture utilities
+ * ---------------------------------------------------------------------------*/
 /**
  *  Static color pallet for Avatar generation
  */
@@ -1059,13 +1036,17 @@ const xows_avat_pallete = ["#22A849","#24ABC1","#F2C40C","#395BBF","#9B54B3","#E
                            "#395BBF","#F2C40C","#22A849","#24ABC1","#9B54B3","#CF3838","#E97333"];
 
 /**
- *  Draw an icon with the specified paramers
+ * Creates an icon or image thumbnail (avatar) according the specified
+ * parameters.
  *
- * @param   {number}    size      Icon size in pixels
- * @param   {Image}     image     Optional background image
+ * If the 'image' parameter is not specified, the 'seed' parameter is used
+ * to select color from predefined pallete in a pseudo-random way.
+ *
+ * @param   {number}    size      Size of incon/thumbnail to be created
+ * @param   {Image}    [image]    Optional background image
  * @param   {number}   [seed]     Optional seed number for pseudo-random color
  *
- * @return  {string}    Resulting icon as Data-URL string
+ * @return  {string}    Resulting image as Data URI string
  */
 function xows_gen_avatar(size, image, seed)
 {
@@ -1172,16 +1153,15 @@ function xows_gen_avatar(size, image, seed)
   return cv.toDataURL("image/png");
 }
 
-/* --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
- *                       SDP protocol parsing
- * --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- */
-
+/* ---------------------------------------------------------------------------
+ * SDP Protocol parsing utilities
+ * ---------------------------------------------------------------------------*/
 /**
- * Parse raw SDP data into JSON descriptor
+ * Parses raw SDP string to convert it into JSON descriptor object
  *
- * @param   {string}    raw       Raw SDP data to parse
+ * @param   {string}    raw       Raw SDP string to parse
  *
- * @return  {object}    Parsed SDP as JSON descriptor
+ * @return  {object}    Generated JSON descriptor object
  */
 function xows_sdp_parse(raw)
 {
@@ -1332,11 +1312,14 @@ function xows_sdp_parse(raw)
 }
 
 /**
- * Get medias type list from SDP string
+ * Obtain enumerated media types from SDP raw string.
  *
- * @param   {string}    raw       Raw SDP data to parse
+ * The returned object is in the same form of MediaStreamConstraints dictionary
+ * used for navigator WebRTC API.
  *
- * @return  {object}    Media types
+ * @param   {string}    raw       Raw SDP string to parse
+ *
+ * @return  {object}    Parsed media types as dictionary
  */
 function xows_sdp_get_medias(raw)
 {
@@ -1361,11 +1344,11 @@ function xows_sdp_get_medias(raw)
 }
 
 /**
- * Get Session ID from SDP string
+ * Obtain session ID from SDP raw string
  *
- * @param   {string}    raw       Raw SDP data to parse
+ * @param   {string}    raw       Raw SDP string to parse
  *
- * @return  {string}    SDP origin Session ID
+ * @return  {string}    SDP 'origin' Session ID
  */
 function xows_sdp_get_sid(raw)
 {

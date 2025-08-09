@@ -33,42 +33,46 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                        Audio API Layer
+ * Sound & Audio Module
  *
- * ------------------------------------------------------------------ */
-
+ * ---------------------------------------------------------------------------*/
 /**
- * Browser audio API Context
+ * Globale reference to Web Audio API Context object
  */
 let xows_snd_ctx = null;
 
 /**
- * Master audio output volume node
+ * Globale reference to Master Output Gain node
  */
 let xows_snd_out_mastr_vol = null;
 
 /**
- * Master output media source data base
+ * Storage for connected Output Audio sources
  */
 const xows_snd_out_src_db = new Map();
 
 /**
- * Master input stream source data base
+ * Storage for connected Input Audio sources
  */
 const xows_snd_inp_src_db = new Map();
 
 /**
- * Sound library for audio effects
+ * Storage for loaded Sound files
  */
 const xows_snd_lib = new Map();
 
 /**
- * Constant FFT size value for VU-Meter process
+ * Constant value for VU-Meter process FFT size
  */
 const XOWS_VUMTR_FFTSIZE = 2048;
 
+/* ---------------------------------------------------------------------------
+ *
+ * Module Initialization
+ *
+ * ---------------------------------------------------------------------------*/
 /**
  * Module initialization
  *
@@ -104,15 +108,21 @@ function xows_snd_init()
   }
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * Module Events Configuration
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback function for client connected
+ * Module Event-Forwarding callback for VU-Meter data
  */
 let xows_snd_fw_onvmtr = function() {};
 
 /**
- * Set callback functions for common sound events
+ * Set callback functions for Module events.
  *
- * Possibles slot parameter value are the following:
+ * The possible events are the following:
+ *
  *  - onvmtr     : Vu-Meter analysis
  *
  * @param   {string}    type      Callback slot
@@ -128,6 +138,11 @@ function xows_snd_set_callback(type, callback)
   }
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * Output and Input gain control
+ *
+ * ---------------------------------------------------------------------------*/
 /**
  * Set master output volume
  *
@@ -156,8 +171,13 @@ function xows_snd_input_gain_set(value)
   }
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * Output and Input sources
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Create new output slot and connect audio source to master output
+ * Creates new output slot and connect audio source to master output
  * with intermediary volume control.
  *
  * @param   {*}         slot      Slot identifier
@@ -225,7 +245,7 @@ function xows_snd_outpt_vumtr(slot, enable, param)
 }
 
 /**
- * Disconnect audio source from master output and delete output slot
+ * Disconnects audio source from master output and delete output slot.
  *
  * @param   {*}         slot      Slot identifier
  * @param   {boolean}   stop      Indicate to stops the related stream tracks
@@ -258,7 +278,7 @@ function xows_snd_outpt_delete(slot, stop)
 }
 
 /**
- * Set output source gain
+ * Set output source gain.
  *
  * @param   {*}         slot      Slot identifier
  * @param   {number}    value     Volume to set (0.0 to 1.0)
@@ -273,7 +293,7 @@ function xows_snd_outpt_gain_set(slot, value)
 }
 
 /**
- * Create input slot using specified audio source with intermediary
+ * Creates input slot using specified audio source with intermediary
  * volume control and destination stream.
  *
  * @param   {*}         slot      Slot identifier
@@ -379,7 +399,7 @@ function xows_snd_input_dest(slot)
 }
 
 /**
- * Disconnect Media Stream source from master input
+ * Disconnects Media Stream source from master input
 
  * @param   {*}         slot      Slot identifier
  * @param   {boolean}   stop      Indicate to stops the related stream tracks
@@ -411,6 +431,11 @@ function xows_snd_input_delete(slot, stop)
   xows_snd_inp_src_db.delete(slot);
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * VU-Meter analyzer routines
+ *
+ * ---------------------------------------------------------------------------*/
 /**
  * VU-Meter animation 'setInterval' handle
  */
@@ -484,8 +509,13 @@ function xows_snd_vumtr_proc()
   }
 }
 
+/* ---------------------------------------------------------------------------
+ *
+ * Sound Samples functions
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Handle audio file loading error
+ * Handles audio file loading error
  *
  * @param   {object}    event     Event object
  */
@@ -497,7 +527,7 @@ function xows_snd_sample_onfailed(event)
 }
 
 /**
- * Handle audio file loading success
+ * Handles audio file loading success
  *
  * @param   {object}    event     Event object
  */
@@ -518,7 +548,7 @@ function xows_snd_sample_onloaded(event)
 }
 
 /**
- * Load audio file to sound library at specified slot
+ * Loads audio file to sound library at specified slot
  *
  * @param   {string}    name    Sound slot name
  * @param   {string}    file    Sound file name
@@ -546,7 +576,7 @@ function xows_snd_sample_load(name, file)
 }
 
 /**
- * Play the specified sound from sound library
+ * Plays the specified sound from sound library
  *
  * @param   {string}    name    Sound slot name
  */
@@ -560,7 +590,7 @@ function xows_snd_sample_play(name)
 }
 
 /**
- * Play the specified sound from sound library
+ * Plays the specified sound from sound library
  *
  * @param   {string}    name    Sound slot name
  */
@@ -574,7 +604,7 @@ function xows_snd_sample_loop(name)
 }
 
 /**
- * Stop the specified sound from sound library
+ * Stops the specified sound from sound library
  *
  * @param   {string}    name    Sound slot name
  */

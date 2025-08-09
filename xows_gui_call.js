@@ -33,17 +33,18 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                         GUI API Interface
+ * GUI Module - Media Call Sessions
  *
- *                       Media Call Sub-Module
- *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
 /**
- * Handles VU-Meter data from audio sources
+ * Handles VU-Meter data from audio sources (forwarded from SND Module)
  *
- * @param   {number}    peek      Valume peak for last audio sample
+ * This change border color of Audio Call Sessions paraticipants according
+ * detected audio.
+ *
+ * @param   {number}    peak      Valume peak for last audio sample
  * @param   {element}   element   HTML element to change style
  */
 function xows_gui_snd_onvmtr(peak, element)
@@ -56,13 +57,15 @@ function xows_gui_snd_onvmtr(peak, element)
   }
 }
 
-/* -------------------------------------------------------------------
- * Calls Interactions - Call View
- * -------------------------------------------------------------------*/
-/**
- * Chat Call frame on-click callback function
+/* ---------------------------------------------------------------------------
  *
- * @param   {object}    event     Event object associated with trigger
+ * Media Call Sessions - Chat Call-View frame
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles Chat Call-View Frame click events
+ *
+ * @param   {object}    event     Event object
  */
 function xows_gui_call_view_onclick(event)
 {
@@ -114,7 +117,10 @@ function xows_gui_call_view_onclick(event)
 }
 
 /**
- * Chat Call Volume slider on-input callback function
+ * Handles Chat Call-View Frame input events
+ *
+ * This actually only handles input events on volume slider to
+ * changes the output volume.
  *
  * @param   {object}    event     Event object associated with trigger
  */
@@ -138,7 +144,7 @@ function xows_gui_call_view_oninput(event)
 }
 
 /**
- * Function to open the Chat Multimedia Call Session layout
+ * Opens Chat Call-View Frame
  *
  * @param   {object}    peer    Peer object
  */
@@ -196,7 +202,7 @@ function xows_gui_call_view_open(peer)
 }
 
 /**
- * Function to close Multimedia Call Session layout
+ * Closes Chat Call-View Frame
  *
  * @param   {object}    peer    Peer object
  */
@@ -225,8 +231,17 @@ function xows_gui_call_view_close(peer)
 }
 
 /**
- * Function to add peer to the Chat Multimedia session (Call view)
- * interface
+ * Add session participant to Chat Call-View Frame
+ *
+ * This creates proper elements (Video or audio visual representation) related
+ * to the specified participant and configure required audio and video stream
+ * bindings for volume controls and Vu-Meter animations.
+ *
+ * The 'peer' parameter must always be the "remote" Peer involved in the
+ * Media Call Session, that is, the one whose chat interface belong to.
+ *
+ * The 'part' parameter represents a participant, it can be either the remote
+ * Peer, or user itself (or maybe others in future implementations).
  *
  * @param   {object}    peer      Call Peer object
  * @param   {object}    part      Participant Peer object
@@ -279,18 +294,20 @@ function xows_gui_call_view_part_add(peer, part, stream)
   }
 }
 
-/* -------------------------------------------------------------------
- * Calls Interactions - Ringing dialog
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ *
+ * Media Call Sessions - Ringing Dialog
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Constants for Ring dialog type
+ * Constant values for Ringing-Dialog type
  */
 const XOWS_RING_TERM = 0;
 const XOWS_RING_NEGO = 1;
 const XOWS_RING_RING = 2;
 
 /**
- * History Call Ringing dialog on-click callback
+ * Handles Ringing Dialog click events
  *
  * @param   {object}    event      Event object
  */
@@ -321,7 +338,7 @@ function xows_gui_hist_ring_onclick(event)
 }
 
 /**
- * Show the History Call Ringing dialog of the specified Peer
+ * Shows Ringing Dialog of the specified Peer's chat interface
  *
  * @param   {object}    peer          Contact Peer object.
  * @param   {number}    type          Dialog type.
@@ -434,7 +451,7 @@ function xows_gui_hist_ring_show(peer, type, reason)
 }
 
 /**
- * History Call Ringing dialog of the specified Peer
+ * Closes Ringing Dialog of the specified Peer's chat interface
  *
  * @param   {object}    peer          Contact Peer object.
  */
@@ -457,13 +474,16 @@ function xows_gui_hist_ring_close(peer)
   xows_gui_edit_alrt_reset(peer, "RINGING");
 }
 
-/* -------------------------------------------------------------------
- * Calls Interactions - General functions
- * -------------------------------------------------------------------*/
-/**
- * Multimedia Calls clear and reset GUI element for the specified Peer
+/* ---------------------------------------------------------------------------
  *
- * @param   {object}     peer       Related Peer object
+ * Media Call Sessions - General process
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Clears and reset all Media Call Sessions related GUI Elements
+ * for the specified Peer
+ *
+ * @param   {object}     peer       Peer object
  */
 function xows_gui_call_exit(peer)
 {
@@ -481,18 +501,20 @@ function xows_gui_call_exit(peer)
   xows_gui_doc_update(peer, XOWS_UPDT_BUZY);
 }
 
-/* -------------------------------------------------------------------
- * Calls Interactions - User actions (Outbound)
- * -------------------------------------------------------------------*/
-/**
- * User invite (outbound Offer) the specified Peer for a call
+/* ---------------------------------------------------------------------------
  *
- * This function is a transition function that only starts user input devices
+ * Media Call Sessions - User (Outbound) Actions
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Invites (Offer) the specified Peer for a Media Call Session
+ *
+ * This is a transition function that only starts user input devices
  * access permissions request. Once user authorized devices and stream acquired,
  * 'xows_gui_call_self_invite_onmedia' is called to launch proper routines for
  * call initiation (Offer).
  *
- * @param   {object}     peer         Related Peer object
+ * @param   {object}     peer         Peer object
  * @param   {object}     constr       Constraints for media aquisition
  */
 function xows_gui_call_self_invite(peer, constr)
@@ -502,8 +524,12 @@ function xows_gui_call_self_invite(peer, constr)
 }
 
 /**
- * Callback for User invite (outbound Offer) Peer for a call, once local
- * stream acquired (after getUserMedia).
+ * Handles local stream acquisition (user media access) for Media Call Session
+ * Invite (Offer).
+ *
+ * This function is called (via callback) by user media access process once
+ * user granted permission to use input media devices. It then sends Media Call
+ * Session invitation (Offer) to the specified Peer.
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Acquired local input Stream
@@ -527,18 +553,18 @@ function xows_gui_call_self_invite_onmedia(peer, stream)
 }
 
 /**
- * User accept (outbound Answer) an inbound call from the specified Peer
+ * Accept (Answer) a Media Call Session from the specified Peer
  *
- * This function is a transition function that only starts user input devices
+ * This is a transition function that only starts user input devices
  * access permissions request. Once user authorized devices and stream acquired,
  * 'xows_gui_call_self_accept_onmedia' is called to launch proper routines for
  * call accept (Answer).
  *
- * If the constr parameter is set to null, the function automatically
- * determines proper media constraints according peer's medias and current
- * available inputs.
+ * If the 'constr' parameter is set to null, the function automatically
+ * determines proper media constraints according Peer's medias and current
+ * available devices.
  *
- * @param   {object}     peer         Related Peer object
+ * @param   {object}     peer         Peer object
  * @param   {object}     constr       Constraints for media aquisition
  */
 function xows_gui_call_self_accept(peer, constr)
@@ -549,8 +575,8 @@ function xows_gui_call_self_accept(peer, constr)
     constr = xows_cli_call_medias(peer);
 
     // keep only the full-duplex ables medias.
-    constr.audio = constr.audio && xows_gui_devices_has("audioinput");
-    constr.video = constr.video && xows_gui_devices_has("videoinput");
+    constr.audio = constr.audio && xows_gui_devs_has("audioinput");
+    constr.video = constr.video && xows_gui_devs_has("videoinput");
   }
 
   // Send media request to User
@@ -558,8 +584,12 @@ function xows_gui_call_self_accept(peer, constr)
 }
 
 /**
- * Callback for User accept (outbound Answer) an inbound call, once local
- * stream acquired (after getUserMedia).
+ * Handles local stream acquisition (user media access) for Media Call Session
+ * Accept (Answer).
+ *
+ * This function is called (via callback) by user media access process once
+ * user granted permission to use input media devices. It then sends Media Call
+ * Session accept (Answer) to the specified Peer.
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Acquired local input Stream
@@ -582,19 +612,20 @@ function xows_gui_call_self_accept_onmedia(peer, stream)
   const constr = xows_cli_call_medias(peer);
 
   // keep only medias that are reciprocal
-  constr.audio = constr.audio && xows_gui_devices_has("audioinput");
-  constr.video = constr.video && xows_gui_devices_has("videoinput");
+  constr.audio = constr.audio && xows_gui_devs_has("audioinput");
+  constr.video = constr.video && xows_gui_devs_has("videoinput");
 
   // Add local participant (ourself) to Call View
   xows_gui_call_view_part_add(peer, xows_cli_self, stream);
 }
 
 /**
- * User cancel call, either directly or indirectly.
+ * Cancel or decline Media Call Session.
  *
- * This function is called:
- * - Directly if user explicitely canceled or declined call from Ring dialog.
- * - As Callback if user input devices access ahs failed or was denied.
+ * This function is involved in multiple scenarios. It may be called "directely"
+ * if user explicitely cancel or decline Media Call Session via the
+ * Ringing-Dialog or as callback if media devices access permission failed
+ * or denied.
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}    [error]       Optional forwarded error (DOMException)
@@ -635,11 +666,13 @@ function xows_gui_call_self_cancel(peer, error)
 }
 
 /**
- * User terminate call for the specified Peer. This function is
- * called when user takes the initiative to hang-up.
+ * Terminates Media Call Session with the specified Peer.
  *
- * If not 'reason' is provided, data for the specified Remote peer is cleared
- * without sending session terminate signaling.
+ * This function is used for scenario where user takes the initiative to
+ * hang-up with Peer.
+ *
+ * If the 'reason' parameter is null or undefined, the "success" reason
+ * is used by default.
  *
  * @param   {object}     peer       Related Peer object
  * @param   {string}    [reason]    Optionnal reason to HangUp
@@ -656,11 +689,14 @@ function xows_gui_call_self_hangup(peer, reason)
   xows_snd_sample_play("hangup");
 }
 
-/* -------------------------------------------------------------------
- * Calls Interactions - Remote events (Inbound)
- * -------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ *
+ * Media Call Sessions - Peer (Inbound) events
+ *
+ * ---------------------------------------------------------------------------*/
 /**
- * Callback for received call invite (inbound Offer) from a Peer
+ * Handles received Media Call Session Invite (Offer) from the Peer (forwarded
+ * from CLI Module)
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Remote media stream
@@ -679,7 +715,8 @@ function xows_gui_call_onoffer(peer, stream)
 }
 
 /**
- * Callback for received call accept (inbound Answer) from a Peer
+ * Handles received Media Call Session Accept (Answer) from the Peer (forwarded
+ * from CLI Module)
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Remote media stream
@@ -691,7 +728,8 @@ function xows_gui_call_onanwse(peer, stream)
 }
 
 /**
- * Callback for Multimedia-Call negotiation state changes
+ * Handles received Media Call Session negotiation state changes (forwarded
+ * from CLI Module)
  *
  * @param   {object}     peer         Related Peer object
  * @param   {object}     stream       Remote media stream
@@ -724,7 +762,8 @@ function xows_gui_call_onstate(peer, state)
 }
 
 /**
- * Callback for Multimedia-Call received call termination
+ * Handles received Media Call Session termination from Peer (forwarded from
+ * CLI Module)
  *
  * @param   {object}     peer     Related Peer object
  * @param   {string}     reason   Termination reason string
@@ -742,9 +781,9 @@ function xows_gui_call_ontermd(peer, reason)
 }
 
 /**
- * Callback for Multimedia-Call received call error
+ * Handles received Media Call Session error (forwarded from CLI Module)
  *
- * An internal parameter set to true mean error was generated by local
+ * An 'internal' parameter set to true mean error was generated by local
  * WebRTC/Transport processing, otherwise, this is a remote XMPP/Jingle
  * query error response.
  *

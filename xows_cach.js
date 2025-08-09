@@ -33,38 +33,29 @@
  * @licend
  */
 "use strict";
-/* ------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  *
- *                  Local Storage Managment API Module
+ * Caching and local Storage Management Module
  *
- * ------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------
+ * Avatar image data storage and caching routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Returns the most suitable identifier for Peer, it can be either Contact or
- * Occupant JID or Occupant Unique ID if available.
- *
- * @param   {object}    peer      Peer object to get most suitable ID
- *
- * @return  {string}    Peer identifier
- */
-function xows_cach_peer_iden(peer)
-{
-  if(peer.type === XOWS_PEER_OCCU && peer.ocid)
-    return peer.ocid;
-
-  return peer.addr;
-}
-
-/**
- * Map for cached avatar data stored by SAH-1 hash
+ * Map for cached avatar data, stored per SAH-1 hash
  */
 const xows_cach_avat_db = new Map();
 
 /**
- * Save avatar data-URL to localStorage and live DB
+ * Save avatar Data URI to localStorage and live DB
  *
- * @param   {string}    data      Image data-URL to save.
+ * The 'hash' value can be specified either to store data using an arbitrary
+ * key or to bypass data hash computation in case the proper hash value is
+ * already available.
+ *
+ * @param   {string}    data      Image Data URI to store
  * @param   {string}   [hash]     Optional precomputed hash to use as key
- * @param   {boolean}  [temp]     Avoid saving data in localStorage
+ * @param   {boolean}  [temp]     Optional flag indicating data must not be saved in localStorage
  *
  * @return  {string}    Avatar data SHA-1 hash used as key
  */
@@ -72,7 +63,7 @@ function xows_cach_avat_save(data, hash, temp)
 {
   // Use the supplied ID or compute SHA-1 hash of data
   if(!hash) {
-    const base64 = xows_url_to_data(data);
+    const base64 = xows_uri_to_data(data);
     // The 'xows_hash_sha1' function takes strings as UTF-16 (2-bytes) encoded
     // to be converted to UTF-8, then to Uint8Array. On the other hand, atob()
     // produces an bytes array **ersatz** where each character is to be taken as
@@ -90,11 +81,11 @@ function xows_cach_avat_save(data, hash, temp)
 }
 
 /**
- * Check whether avatar hash exists in localStorage or live DB
+ * Checks whether avatar hash exists in localStorage or live DB
  *
  * @param   {string}    hash      Avatar data hash to search
  *
- * @return  {boolean}   True if data exists, false otherwise
+ * @return  {boolean}   True if exists, false otherwise
  */
 function xows_cach_avat_has(hash)
 {
@@ -107,11 +98,11 @@ function xows_cach_avat_has(hash)
 }
 
 /**
- * Load avatar data-URL corresponding to the given hash
+ * Returns avatar Data URI corresponding to the given hash
  *
  * @param   {string}    hash      Avatar data hash to search
  *
- * @return  {string}    Avatar data-URL
+ * @return  {string}    Avatar Data URI string
  */
 function xows_cach_avat_get(hash)
 {
@@ -129,21 +120,28 @@ function xows_cach_avat_get(hash)
 }
 
 /**
- * Load or generate temporary avatar data-URL corresponding to the
- * given seed
+ * Obtain temporary avatar Data URI corresponding to the given seed
  *
- * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
- * @param   {string}   [hash]     Optional pre-computed hash to store avatar
+ * The temporary-avatar image is either generated (then stored) or retrieved
+ * from a previous generation based on the same 'iden' parameter.
+ *
+ * In order to make them clearly distinguishable from the true avatar images,
+ * the temporary-avatar images data are not stored per computed image-data
+ * SHA-1 hash, but per computed SDBM hash value (way shorter) from the 'iden'
+ * parameter.
+ *
+ * @param   {string}    iden      Peer JID or Occupant UID
+ * @param   {string}   [hash]     Optional precomputed hash to use as key
  *
  * @return  {string}    Avatar data-URL
  */
 function xows_cach_avat_temp_data(iden, hash)
 {
-  // Generate 4-bytes DJB2 hash from identity
-  const djb2 = xows_hash_sdbm(iden);
+  // Generate 4-bytes SDBM hash from identity
+  const sdbm = xows_hash_sdbm(iden);
 
   // Create hex-string version of hash number
-  if(!hash) hash = xows_bytes_to_hex(djb2);
+  if(!hash) hash = xows_bytes_to_hex(sdbm);
 
   // Check whether temp avatar already exist
   if(xows_cach_avat_db.has(hash)) {
@@ -152,8 +150,8 @@ function xows_cach_avat_temp_data(iden, hash)
 
   } else {
 
-    // Generate dummy avatar using DJB2 number as seed
-    const data = xows_gen_avatar(XOWS_AVAT_SIZE, null, xows_bytes_to_int(djb2));
+    // Generate dummy avatar using SDBM number as seed
+    const data = xows_gen_avatar(XOWS_AVAT_SIZE, null, xows_bytes_to_int(sdbm));
 
     // Store in live DB and localStorage
     xows_cach_avat_db.set(hash, data);
@@ -163,30 +161,49 @@ function xows_cach_avat_temp_data(iden, hash)
 }
 
 /**
- * Generates hash string for temporary avatar storage from
- * the specified Peer identity (or any other string).
+ * Obtain hash string for temporary avatar storage from the specified
+ * Peer identity (or any other string).
  *
- * Use this function to keep consistency accross generated
- * temporary avatars in conjonction with xows_cach_avat_temp_data()
+ * Use this function to keep consistency accross generated temporary avatars
+ * in conjonction with xows_cach_avat_temp_data()
  *
- * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
+ * @param   {string}    iden      Peer JID or Occupant UID
  *
- * @return  {string}    DJb2 Hash value as hexadecimal string representation
+ * @return  {string}    SDBM Hash value as hexadecimal string
  */
 function xows_cach_avat_temp_hash(iden)
 {
   return xows_bytes_to_hex(xows_hash_sdbm(iden));
 }
 
+/* ---------------------------------------------------------------------------
+ * Peer informations storage and caching routines
+ * ---------------------------------------------------------------------------*/
 /**
- * Map for cached peer data stored by JID
+ * Map for cached Peer informations
  */
 const xows_cach_peer_db = new Map();
 
 /**
- * Save Contact, Room or Occupant data to localStorage and live DB
+ * Returns the most suitable identifier for Peer, it can be either
+ * Peer JID or Occupant Unique ID if available.
  *
- * @param   {object}    peer      Peer Object to save data
+ * @param   {object}    peer      Peer object
+ *
+ * @return  {string}    Peer identifier (JID or Occupant-UID)
+ */
+function xows_cach_peer_iden(peer)
+{
+  if(peer.type === XOWS_PEER_OCCU && peer.ocid)
+    return peer.ocid;
+
+  return peer.addr;
+}
+
+/**
+ * Stores Self or Peer informations to localStorage and live DB
+ *
+ * @param   {object}    peer      Peer Object
  */
 function xows_cach_peer_save(peer)
 {
@@ -228,9 +245,9 @@ function xows_cach_peer_save(peer)
 }
 
 /**
- * Check whether peer JID exists in localStorage or live DB
+ * Checks whether Peer informations exists in localStorage or live DB
  *
- * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
+ * @param   {string}    iden      Peer JID or Occupant UID
  *
  * @return  {string}    True if cached data exists, false otherwise
  */
@@ -245,12 +262,11 @@ function xows_cach_peer_has(iden)
 }
 
 /**
- * Retreive User, Room or Occupant data stored in localStorage
- * or live DB.
+ * Retrieve Self or Peer informations stored in localStorage or live DB
  *
- * @param   {string}    iden      User, Room, Occupant JID or Anonymous UID
+ * @param   {string}    iden      Peer JID or Occupant UID
  *
- * @return  {object}    Peer data or null if not found
+ * @return  {object}    Peer informations or null if not found
  */
 function xows_cach_peer_get(iden)
 {
@@ -275,7 +291,7 @@ function xows_cach_peer_get(iden)
 }
 
 /**
- * Update Peer object with cached data if available
+ * Updates the given Peer's informations from its stored data if available
  *
  * @param   {object}    peer      Peer object to update
  */
@@ -290,13 +306,16 @@ function xows_cach_peer_fetch(peer)
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * Entity Capabilities (XEP-0115) storage and caching routines
+ * ---------------------------------------------------------------------------*/
 /**
  * Array to store discovered entities's capabilities (XEP-0115)
  */
 const xows_cach_caps_db = new Map();
 
 /**
- * Save entity capabilities (features)
+ * Stores the given entity-capabilities (features)
  *
  * @param   {string}    node      Entity caps node (url)
  * @param   {string[]}  feat      Entity caps feature list
@@ -309,7 +328,7 @@ function xows_cach_caps_save(node, feat)
 }
 
 /**
- * Check whether entity capabilities (features) is available
+ * Check whether stored entity-capabilities is available
  *
  * @param   {string}    node      Entity caps node (url) to check
  *
@@ -326,7 +345,7 @@ function xows_cach_caps_has(node)
 }
 
 /**
- * Retreive entity capabilities (features)
+ * Retrieve stored entity-capabilities (features)
  *
  * @param   {string}    node      Entity caps node (url)
  *
