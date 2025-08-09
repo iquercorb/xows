@@ -1836,6 +1836,60 @@ function xows_cli_pres_onrecv(from, show, prio, stat, node, phot)
 }
 
 /* ---------------------------------------------------------------------------
+ * Presence errors handling
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles received MUC presence error (forwarded from XMPP Module)
+ *
+ * This function handle received presence error occuring in response to
+ * an attempt to join a Room.
+ *
+ * @param   {string}    from      Sender JID
+ * @param   {object}    error     Error generic data
+ */
+function xows_cli_pres_onfail(from, error)
+{
+  if(xows_cli_isself_addr(from))
+    return;
+
+  // Retreive related Peer (Contact or Room)
+  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_ROOM);
+  if(!peer) {
+    xows_log(1,"cli_pres_onfail","unknown/unsubscribed JID",from);
+    return;
+  }
+
+  // Check for Romm join error
+  if(peer.type === XOWS_PEER_ROOM) {
+
+    // Forward join error
+    xows_cli_fw_mucjoin(peer, null, error);
+
+  } else if(peer.type === XOWS_PEER_CONT) {
+
+    let text;
+    switch(error.name)
+    {
+    case "remote-server-not-found":
+      text = "Remote server not found";
+      break;
+    case "recipient-unavailable":
+      // Stanza was sent to wrong recipient, this may happen if
+      // client interact with offline user that doesn't have properly
+      // leave session.
+      xows_cli_fw_onerror(from, error.name);
+      return;
+    default:
+      text = "Server error";
+      break;
+    }
+
+    // Forward contact error
+    xows_cli_fw_contpush(peer, text);
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * Contacts subscription routines
  * ---------------------------------------------------------------------------*/
 /**
@@ -4125,48 +4179,6 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
   // Fetch data and push Occupant
   xows_load_task_push(occu, load_mask, xows_cli_peer_push, mucx);
-}
-
-/**
- * Handles received MUC presence error (forwarded from XMPP Module)
- *
- * This function handle received presence error occuring in response to
- * an attempt to join a Room.
- *
- * @param   {string}    from      Sender JID
- * @param   {object}    error     Error generic data
- */
-function xows_cli_pres_onfail(from, error)
-{
-  // Retreive related Peer (Contact or Room)
-  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_ROOM);
-  if(!peer) {
-    xows_log(1,"cli_pres_onfail","unknown/unsubscribed JID",from);
-    return;
-  }
-
-  // Check for Romm join error
-  if(peer.type === XOWS_PEER_ROOM) {
-
-    // Forward join error
-    xows_cli_fw_mucjoin(peer, null, error);
-
-  } else if(peer.type === XOWS_PEER_CONT) {
-
-    let text;
-    switch(error.name)
-    {
-    case "remote-server-not-found":
-      text = "Remote server not found";
-      break;
-    default:
-      text = "Server error";
-      break;
-    }
-
-    // Forward contact error
-    xows_cli_fw_contpush(peer, text);
-  }
 }
 
 /* ---------------------------------------------------------------------------
