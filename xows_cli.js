@@ -1839,10 +1839,7 @@ function xows_cli_pres_onrecv(from, show, prio, stat, node, phot)
  * Presence errors handling
  * ---------------------------------------------------------------------------*/
 /**
- * Handles received MUC presence error (forwarded from XMPP Module)
- *
- * This function handle received presence error occuring in response to
- * an attempt to join a Room.
+ * Handles received presence error (forwarded from XMPP Module)
  *
  * @param   {string}    from      Sender JID
  * @param   {object}    error     Error generic data
