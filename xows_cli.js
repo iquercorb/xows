@@ -785,7 +785,7 @@ function xows_cli_peer_subsste(peer)
  *
  * This function is used to retrieve Peer object corresponding to a message's
  * author in chat context. The author can be the user itself or any other
- * party of conversation, either Contact or MUC occumant.
+ * party of conversation, either Contact or MUC occupant.
  *
  * The Peer object specified in 'peer' parameter define the context and
  * must be the Peer corresponding to current chat context. Therfore
@@ -794,7 +794,7 @@ function xows_cli_peer_subsste(peer)
  * If 'peer' is a CONTACT, the corresponding CONTACT or SELF is returned.
  *
  * If 'peer' is a ROOM, the corresponding OCCUPANT Peer object is returned, it
- * can the OCCUPANT corresponding to user itself (as Room Occupant) or any
+ * can be the OCCUPANT corresponding to user itself (as Room Occupant) or any
  * other Occupant.
  *
  * if 'peer' is an OCCUPANT (Private Conversation), the corresponding OCCUPANT
