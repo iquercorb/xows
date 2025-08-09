@@ -1,8 +1,16 @@
 <!doctype html>
-<html lang="fr">
+<!-- Example HTML file to run XOWS Client (Debug Mode)
+
+Notice that Xows Library files (JavaScript files and subfolders) can be stored
+in a subfolder rather than the same level of the (this) HTML file.
+
+In this case simply set proper path to the JavaScript file(s) to load, and
+change the "lib_path" option value. -->
+<html lang="en">
 
   <head>
     <meta charset="utf-8">
+    <!-- For proper GUI display, it is strongly recommended to keep this configuration -->
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Xows debug</title>
     <link rel="icon" href="favicon.png"/>
@@ -28,14 +36,14 @@
     <script src="xows_gui_muc.js"></script>   <!-- GUI MUC Sub-module -->
     <script src="xows_gui_call.js"></script>  <!-- GUI Media Call Sub-module -->
     <script src="xows_init.js"></script> <!-- Main "public" API -->
-
   </head>
 
   <body>
-    <!-- leave that empty -->
+    <!-- IMPORTANT! leave that empty, application GUI will be incorporated here -->
   </body>
 
   <script>
+
   // Set options
   const options = {
     // Base configuration
@@ -82,8 +90,10 @@
                                 port:"3478",
                                 secret:"7d77f8a6ac0bc041959af2abe460" } ],
   };
+
   // Initialize
   xows_init(options);
+
   </script>
 
 </html>
