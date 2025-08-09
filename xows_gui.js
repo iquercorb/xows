@@ -456,6 +456,9 @@ function xows_gui_reset()
   xows_doc("self_meta").innerText = "";
   xows_doc("self_avat").className = "";
 
+  // Reset previous self parameters
+  Object.assign(xows_gui_self_prev, {name:null,addr:null,avat:null,stat:null});
+
   // Clear all Peer's offscreen elements
   xows_gui_frag_clear();
 }
