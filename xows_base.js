@@ -1327,7 +1327,7 @@ function xows_sdp_get_medias(raw)
  */
 function xows_sdp_get_sid(raw)
 {
-  const o = raw.indexOf("o=");
+  let o = raw.indexOf("o=");
   if(o > 0) {
     o += 2;
     const lf = raw.indexOf("\n", o);
