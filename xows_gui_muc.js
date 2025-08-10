@@ -391,13 +391,8 @@ const xows_gui_muc_pswd_ibox = {room:null};
  */
 function xows_gui_muc_pswd_ibox_onvalid(value)
 {
-  const room = xows_gui_muc_pswd_ibox.room;
-
-  // Update Room password
-  room.pass = value;
-
   // Try join again
-  xows_cli_muc_join(room);
+  xows_cli_muc_join(xows_gui_muc_pswd_ibox.room, value);
 }
 
 /**
