@@ -693,9 +693,9 @@ function xows_hmac_sha1(key, data)
   const ipad = new Uint8Array(64 + data.length);
   const opad = new Uint8Array(84); // 64 + 20
 
-  let i, p, n;
+  let p = 0;
 
-  for(p = 0, n = key.length; p < n; ++p) {
+  for( ; p < key.length; ++p) {
     ipad[p] = key[p] ^ 0x36;
     opad[p] = key[p] ^ 0x5C;
   }
@@ -707,9 +707,9 @@ function xows_hmac_sha1(key, data)
   if(typeof data === "string")
     data = xows_str_to_bytes(data);
 
-  for(i = 0, n = data.length; i < n; ++i) ipad[p++] = data[i];
+  for(let i = 0; i < data.length; ++i) ipad[p++] = data[i];
   const hash = xows_hash_sha1(ipad);
-  for(i = 0, p = 64; i < 20; ++i) opad[p++] = hash[i];
+  for(let i = 0, p = 64; i < 20; ++i) opad[p++] = hash[i];
   return xows_hash_sha1(opad);
 }
 
@@ -1067,15 +1067,13 @@ function xows_gen_avatar(size, image, seed)
       const box = Math.round(u); // src box size (to get pixels in)
       const v = 1.0 / (box * box); // factor to average dst pixel
 
-      let i, j, x, y, c, r, g, b, a, p;
-
-      for(i = 0; i < size; ++i) { // Destination col
-        for(j = 0; j < size; ++j) { // Destination row
-          c = (Math.round(j*u)*max) + Math.round(i*u);
-          r = 0; g = 0; b = 0; a = 0;
-          for(y = 0; y < box; ++y) { // Box row
-            for(x = 0; x < box; ++x) { // Box col
-              p = src_data[c+((y*max)+x)];
+      for(let i = 0; i < size; ++i) { // Destination col
+        for(let j = 0; j < size; ++j) { // Destination row
+          const c = (Math.round(j*u)*max) + Math.round(i*u);
+          let r = 0, g = 0, b = 0, a = 0;
+          for(let y = 0; y < box; ++y) { // Box row
+            for(let x = 0; x < box; ++x) { // Box col
+              const p = src_data[c+((y*max)+x)];
               a += (p >> 24) & 0xff; b += (p >> 16) & 0xff;
               g += (p >>  8) & 0xff; r +=  p        & 0xff;
             }
