@@ -2286,7 +2286,7 @@ function xows_cli_chst_onrecv(id, from, type, state, ocid)
   } else { // groupchat
     peer = xows_cli_room_get(from);
     // Check whether message is an echo send by own account
-    if(peer.join === from)
+    if(peer && peer.join === from)
       return;
   }
 
