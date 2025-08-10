@@ -1165,7 +1165,7 @@ function xows_gui_page_mucc_onvalid()
   const form = xows_gui_page_mucc.form;
 
   // Fill configuration from with input values
-  for(let i = 0, n = form.length; i < n; ++i) {
+  for(let i = 0; i < form.length; ++i) {
 
     // Reference to value array
     const value = form[i].value;
@@ -1216,7 +1216,7 @@ function xows_gui_page_mucc_onabort()
   const form = xows_gui_page_mucc.form;
 
   // Setup page inputs according received config from
-  for(let i = 0, n = form.length; i < n; ++i) {
+  for(let i = 0; i < form.length; ++i) {
 
     // Reference to value array
     const value = form[i].value;
@@ -1284,7 +1284,7 @@ function xows_gui_page_mucc_oninput(target)
   if(!prot) xows_doc("mucc_pass").value = "";
 
   // Compare page inputs and received form values
-  for(let i = 0, n = form.length; i < n; ++i) {
+  for(let i = 0; i < form.length; ++i) {
 
     // Reference to value array
     const value = form[i].value;
@@ -1363,7 +1363,7 @@ function xows_gui_page_mucc_onclose()
 function xows_gui_page_mucc_open(room, form)
 {
   // Initialize config form with default value if not defined
-  for(let i = 0, n = form.length; i < n; ++i)
+  for(let i = 0; i < form.length; ++i)
     if(!form[i].value) form[i].value = [0];
 
   // Set the Room ID in the page header frame

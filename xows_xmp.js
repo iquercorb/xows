@@ -1067,7 +1067,7 @@ function xows_xmp_stream_features_recv(stanza)
 
     // Get list of available mechanisms name
     xows_xmp_sasl_mechanisms.length = 0;
-    for(let i = 0, n = mechanisms.length; i < n; ++i)
+    for(let i = 0; i < mechanisms.length; ++i)
       xows_xmp_sasl_mechanisms.push(xows_xml_innertext(mechanisms[i]));
 
     xows_log(2,"xmp_stream_features_recv","received authentication mechanisms",xows_xmp_sasl_mechanisms.join(", "));
@@ -1928,7 +1928,7 @@ function xows_xmp_rost_get_parse(stanza, onparse)
   } else {
     // Turn <item> to object's array
     const nodes = stanza.getElementsByTagName("item");
-    for(let i = 0, n = nodes.length; i < n; ++i) {
+    for(let i = 0; i < nodes.length; ++i) {
       items.push({"jid"   : nodes[i].getAttribute("jid"),
                   "name"  : nodes[i].getAttribute("name"),
                   "subs"  : xows_xmp_subs_val.get(nodes[i].getAttribute("subscription")),
@@ -2470,7 +2470,7 @@ function xows_xmp_disco_items_parse(stanza, onparse)
   } else {
     // Turn <item> elements into object's array
     const nodes = stanza.getElementsByTagName("item");
-    for(let i = 0, n = nodes.length; i < n; ++i) {
+    for(let i = 0; i < nodes.length; ++i) {
       items.push({ "jid"   : nodes[i].getAttribute("jid"),
                    "name"  : nodes[i].getAttribute("name")});
     }
@@ -2656,7 +2656,7 @@ function xows_xmp_xdata_make(field)
   if(field && field.length) {
     // Add <field> elements with proper values to <x> node
     let node;
-    for(let i = 0, n = field.length; i < n; ++i) {
+    for(let i = 0; i < field.length; ++i) {
       // Create base <field> node
       node = xows_xml_node("field");
       // Add available informations to node
@@ -3146,7 +3146,7 @@ function xows_xmp_pubsub_recv(from, event)
 
   // Get each item child
   const item = [];
-  for(let i = 0, n = items.childNodes.length; i < n; ++i) {
+  for(let i = 0; i < items.childNodes.length; ++i) {
     item.push({ "id"      : items.childNodes[i].getAttribute("id"),
                 "child"   : items.childNodes[i].firstChild});
   }
@@ -3684,8 +3684,7 @@ function xows_xmp_mam_result_recv(result)
   // next or previous archives.
 
   // Loop over children
-  const n = message.childNodes.length;
-  for(let i = 0; i < n; ++i) {
+  for(let i = 0; i < message.childNodes.length; ++i) {
 
     const node = message.childNodes[i];
 
@@ -4280,7 +4279,7 @@ function xows_xmp_muc_affi_get_parse(stanza, onparse)
     error = xows_xmp_error_parse(stanza);
   } else {
     const query = stanza.querySelector("query").childNodes;
-    for(let i = 0, n = query.length; i < n; ++i) {
+    for(let i = 0; i < query.length; ++i) {
       items.push({"affi"  :xows_xmp_affi_val.get(query[i].getAttribute("affiliation")),
                   "jid"   :query[i].getAttribute("jid"),
                   "nick"  :query[i].getAttribute("nick")});
@@ -4395,7 +4394,7 @@ function xows_xmp_muc_role_get_parse(stanza, onparse)
     error = xows_xmp_error_parse(stanza);
   } else {
     const query = stanza.querySelector("query").childNodes;
-    for(let i = 0, n = query.length; i < n; ++i) {
+    for(let i = 0; i < query.length; ++i) {
       items.push({"role"  :xows_xmp_role_val.get(query[i].getAttribute("role")),
                   "nick"  :query[i].getAttribute("nick")});
     }

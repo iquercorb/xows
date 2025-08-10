@@ -1093,7 +1093,7 @@ function xows_tpl_parse_embeds(urls)
 
   let match, k, href, media, embeds = "";
 
-  for(let i = 0, n = urls.length; i < n; ++i) {
+  for(let i = 0; i < urls.length; ++i) {
 
     href = urls[i];
     media = null;

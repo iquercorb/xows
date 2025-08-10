@@ -670,8 +670,7 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
 
   let li_rep, li_rpl, li_prv, added = 0;
 
-  const n = result.length;
-  for(let i = 0; i < n; ++i) {
+  for(let i = 0; i < result.length; ++i) {
 
     const mesg = result[i];
 

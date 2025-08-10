@@ -188,11 +188,11 @@ function xows_sasl_sha1_req()
  */
 function xows_sasl_sha1_resp(challenge)
 {
-  let i, k, n, nonce, salt, iter;
+  let nonce, salt, iter;
 
   // Parse attributes of challenge string (comma separated attributes)
   let parse, attrib = challenge.split(",");
-  for(i = 0, n = attrib.length; i < n; ++i) {
+  for(let i = 0; i < attrib.length; ++i) {
     parse = attrib[i].match(/([a-z]+)=(.+)/); //< a=Value
     if(parse[1] === "r") nonce = parse[2];
     if(parse[1] === "s") salt  = parse[2];
@@ -217,9 +217,9 @@ function xows_sasl_sha1_resp(challenge)
   // Comptute salted password
   let slat_pass, tmp;
   slat_pass = tmp = xows_hmac_sha1(xows_sasl_data.passw, atob(salt)+"\x00\x00\x00\x01");
-  for(i = 1; i < iter; ++i) {
+  for(let i = 1; i < iter; ++i) {
     tmp = xows_hmac_sha1(xows_sasl_data.passw, tmp);
-    for(k = 0; k < 20; ++k) slat_pass[k] ^= tmp[k];
+    for(let k = 0; k < 20; ++k) slat_pass[k] ^= tmp[k];
   }
 
   // Create client and server keys
@@ -229,7 +229,7 @@ function xows_sasl_sha1_resp(challenge)
   // Compute cproof : ckey XOR HMAC(H(ckey), Auth)
   const hkey = xows_hash_sha1(ckey);
   const csign = xows_hmac_sha1(hkey, auth_mesg);
-  for(k = 0; k < 20; k++) ckey[k] ^= csign[k];
+  for(let k = 0; k < 20; k++) ckey[k] ^= csign[k];
 
   // clear auth data
   xows_sasl_data = {};
@@ -303,7 +303,7 @@ function xows_sasl_md5_resp(challenge)
 
   // Parse attributes of challenge string (comma separated attributes)
   let parse, attrib = challenge.split(",");
-  for(let i = 0, n = attrib.length; i < n; ++i) {
+  for(let i = 0; i < attrib.length; ++i) {
     parse = attrib[i].match(/([a-z]+)="?([^"]+)/); //< attr=Value or attr="Value"
     if(parse[1] === "realm"  ) realm = parse[2];
     if(parse[1] === "nonce"  ) nonce = parse[2];
@@ -404,7 +404,7 @@ function xows_sasl_init(candidates, authz, authc, passw, onsuccess, onfailure)
 {
   // Try to find a suitable SASL mechanism
   let mech_idx = -1;
-  for(let i = 0, n = xows_sasl_mechanisms.length; i < n; ++i) {
+  for(let i = 0; i < xows_sasl_mechanisms.length; ++i) {
     if(candidates.includes(xows_sasl_mechanisms[i].name)) {
       xows_sasl_select = xows_sasl_mechanisms[i].name;
       mech_idx = i;
