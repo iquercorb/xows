@@ -170,9 +170,8 @@ const xows_tpl_emoticon_map = {
  */
 function xows_tpl_clean(node)
 {
-  let child, i = node.childNodes.length;
-  while(i--) {
-    child = node.childNodes[i];
+  for(let i = 0; i < node.childNodes.length; ++i) {
+    const child = node.childNodes[i];
     if(child.nodeType === 8 || (child.nodeType === 3 && !/\S/.test(child.nodeValue))) {
       node.removeChild(child);
     } else if(child.nodeType === 1) {
@@ -383,8 +382,7 @@ function xows_tpl_template_parse(html, path, type)
   // Translate HTML content to desired locale
   html = xows_l10n_parse(html);
 
-  // Parse the given string as HTML to create the corresponding DOM tree
-  // then returns the generated <body>.
+  // Parse string as HTML to create the corresponding DOM tree
   const template = xows_tpl_clean(xows_tpl_parser.parseFromString(html,"text/html").body);
 
   if(!template) {
@@ -392,7 +390,7 @@ function xows_tpl_template_parse(html, path, type)
     return;
   }
 
-  let i, nodes;
+  let nodes;
   const stat_load = [];
   const inst_load = [];
 
@@ -400,8 +398,7 @@ function xows_tpl_template_parse(html, path, type)
     // Search for element with "XOWS_TPL_IMPORT" attribute, meaning
     // its inner content must be loaded from another template file
     nodes = template.querySelectorAll("[XOWS_TPL_IMPORT]");
-    i = nodes.length;
-    while(i--) {
+    for(let i = 0; i < nodes.length; ++i) {
       if(!nodes[i].id) {
         xows_log(0,"tpl_template_parse","instance declared without id",path);
         continue;
@@ -415,8 +412,7 @@ function xows_tpl_template_parse(html, path, type)
   // its inner content is made of instantiable (clonable) element
   // and must be loaded from another template file
   nodes = template.querySelectorAll("[XOWS_TPL_INSTANCED]");
-  i = nodes.length;
-  while(i--) {
+  for(let i = 0; i < nodes.length; ++i) {
     if(!nodes[i].id) {
       xows_log(0,"tpl_template_parse","instance declared without id",path);
       continue;
@@ -429,32 +425,33 @@ function xows_tpl_template_parse(html, path, type)
   let name = path.substring(path.lastIndexOf("/")+1).split(".")[0];
 
   if(type === XOWS_TPL_INSTANCED) {
-    if(template.firstChild) {
+    if(template.firstElementChild) {
       // Store instantiable data
       xows_tpl_model[name] = document.createDocumentFragment();
-      xows_tpl_model[name].appendChild(template.firstChild);
+      xows_tpl_model[name].appendChild(template.firstElementChild);
     } else {
       xows_log(1,"tpl_template_parse","empty instanciable",name);
-      //const temp_plate = xows_tpl_parser.parseFromString(html,"text/html");
-      //document.head.appendChild(temp_plate.head.firstChild);
     }
   } else {
     // Search for an element the id that matches the name to append data
     // if an element is found, we place parsed data within it, otherwise
     // the parsed data is placed at root of document fragment
     let parent = xows_tpl_fragment.querySelector("#"+name);
-    if(!parent) parent = xows_tpl_fragment;
 
-    while(template.childNodes.length > 0) {
-      parent.appendChild(template.firstChild);
-    }
+    if(!parent)
+      parent = xows_tpl_fragment;
+
+    while(template.children.length > 0)
+      parent.appendChild(template.firstElementChild);
+
     // Start loading the needed static template files
-    i = stat_load.length;
-    while(i--) xows_tpl_template_load(stat_load[i], XOWS_TPL_IMPORT);
+    for(let i = 0; i < stat_load.length; ++i)
+      xows_tpl_template_load(stat_load[i], XOWS_TPL_IMPORT);
   }
+
   // Start loading the needed instantiable template files
-  i = inst_load.length;
-  while(i--) xows_tpl_template_load(inst_load[i], XOWS_TPL_INSTANCED);
+  for(let i = 0; i < inst_load.length; ++i)
+    xows_tpl_template_load(inst_load[i], XOWS_TPL_INSTANCED);
 
   // Decrease remain count
   xows_tpl_parse_remain--;
@@ -1490,7 +1487,7 @@ const xows_tpl_reg_alone_link = /^\s*<a href=.+<\/a>\s*$/;
 /**
  * Storage for the message's parsed URLs to be embedded
  */
-const xows_tpl_mesg_urls = new Array();
+const xows_tpl_mesg_urls = [];
 
 /**
  * Creates new instance of History-Message <li-mesg> element from existing model.

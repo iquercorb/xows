@@ -911,11 +911,9 @@ function xows_gui_muc_list_onpush(occu, mucx)
 
   // Update Private Message with relatives
   if(occu.self) {
-    let i = xows_cli_ocpm.length;
-    while(i--) {
+    for(let i = 0; i < xows_cli_ocpm.length; ++i)
       if(xows_cli_ocpm[i].room === room)
         xows_gui_hist_update(xows_cli_ocpm[i], occu);
-    }
   }
 }
 

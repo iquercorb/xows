@@ -162,37 +162,6 @@ function xows_xml_node(name, attr, child)
 }
 
 /**
- * Replaces XML node child content.
- *
- * This searchs for a node with the specified Tag name within
- * the given parent tree. If a node is found, its children are removed
- * then replaced by the specified data. Otherwise a node is created with
- * the specified data as child.
- *
- * @param   {element}   parent    Parent node
- * @param   {string}    name      Tag name to search
- * @param   {*}         child     Childrend data to set
- *
- * @return  {element}   The found or created XML node
- */
-function xows_xml_edit(parent, name, child)
-{
-  // search for alrady existing node
-  let node = parent.querySelector(name);
-
-  if(node) {
-    // Remove all children and parent the given one
-    while(node.firstChild) node.removeChild(node.lastChild);
-    xows_xml_parent(node, child);
-  } else {
-    // Create new node with child
-    node = xows_xml_node(name, null, child);
-  }
-
-  return node;
-}
-
-/**
  * Serializes XML tree.
  *
  * Converts the specified XML node tree into XML sample string.
@@ -243,7 +212,6 @@ function xows_xml_serialize(node)
  */
 function xows_xml_parse(str)
 {
-  //return xows_tpl_clean(xows_xml_parser.parseFromString(str,"text/xml"));
   return xows_xml_parser.parseFromString(str,"text/xml");
 }
 

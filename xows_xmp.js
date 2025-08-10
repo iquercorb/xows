@@ -452,16 +452,6 @@ function xows_xmp_onuload()
   xows_sck_sock.send("<close xmlns='urn:ietf:params:xml:ns:xmpp-framing'/>");
 }
 
-/**
- * Returns whether XMPP session is established (open and authenticated).
- *
- * @return  {boolean}   True if session established, false otherwise
- */
-function xows_xmp_connected()
-{
-  return xows_xmp_sess;
-}
-
 /* ---------------------------------------------------------------------------
  *
  * Socket Management
@@ -1016,7 +1006,6 @@ function xows_xmp_sm3_resume_query()
  */
 const XOWS_NS_IETF_SASL    = "urn:ietf:params:xml:ns:xmpp-sasl";
 const XOWS_NS_IETF_BIND    = "urn:ietf:params:xml:ns:xmpp-bind";
-const XOWS_NS_IETF_SESSION = "urn:ietf:params:xml:ns:xmpp-session"; //< Obsoleted RFC-3921
 const XOWS_NS_IETF_STREAMS = "urn:ietf:params:xml:ns:xmpp-streams";
 
 /**
@@ -1569,8 +1558,8 @@ function xows_xmp_message_recv(stanza)
 
   let time, body, cstt, repl, rpid, rpto, orid, szid, ocid, mucx;
 
-  let i = stanza.childNodes.length;
-  while(i--) {
+  for(let i = 0; i < stanza.childNodes.length; ++i) {
+
     const node = stanza.childNodes[i];
 
     // Skip the non-object nodes
@@ -2122,8 +2111,8 @@ function xows_xmp_presence_recv(stanza)
   // Additionnal <presence> informations or data
   let prio, stat, caps, ocid, mucx, phot = null;
 
-  let i = stanza.childNodes.length;
-  while(i--) {
+  for(let i = 0; i < stanza.childNodes.length; ++i) {
+
     const node = stanza.childNodes[i];
 
     if(node.nodeType !== 1)
@@ -2869,8 +2858,7 @@ function xows_xmp_regi_server_get_parse(from, data, xform, error)
   // we handle both cases.
   if(xform) {
     // For each fied of form, find know var name and fulfill
-    let i = xform.length;
-    while(i--) {
+    for(let i = 0; i < xform.length; ++i) {
       if(xform[i]["var"] === "username") xform[i].value = [xows_xmp_auth.user];
       if(xform[i]["var"] === "password") xform[i].value = [xows_xmp_auth.pass];
     }

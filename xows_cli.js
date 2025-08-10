@@ -174,35 +174,6 @@ const XOWS_PEER_ROOM  = 0x2;
 const XOWS_PEER_OCCU  = 0x4;
 const XOWS_PEER_ANY   = 0x7;  //< Search bitmask shortcut
 
-/**
- * Array.find() test callback function to search Peer per address.
- *
- * @param   {object}   peer       Array element
- * @param   {number}   index      Array index
- * @param   {number}   array      Array object
- *
- * @return  {boolean}  True if Peer address matches the "this" value
- */
-function xows_cli_test_addr(peer, index, array)
-{
-  return (peer.addr == this);
-}
-
-/**
- * Array.find() test callback function to search Peer with a
- * valid (non-null) 'self' property.
- *
- * @param   {object}   peer       Array element
- * @param   {number}   index      Array index
- * @param   {number}   array      Array object
- *
- * @return  {boolean}  True if bare matches the "this" value
- */
-function xows_cli_test_self(peer, index, array)
-{
-  return (peer.self != null);
-}
-
 /* ---------------------------------------------------------------------------
  * Data structures - Self CONTACT Peer Object
  * ---------------------------------------------------------------------------*/
@@ -318,7 +289,19 @@ function xows_cli_cont_rem(cont)
  */
 function xows_cli_cont_get(addr)
 {
-  return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(addr));
+  // After some benchmarking, it appear that the regular for loop is
+  // near to two times faster than Array.find() and for...of methods.
+  //
+  // So, please, keep your regulat for loop, JavaScript built-in methods
+  // and syntax sugar are TRAPS.
+
+  const bare = xows_jid_bare(addr);
+
+  for(let i = 0; i < xows_cli_cont.length; ++i)
+    if(xows_cli_cont[i].addr === bare)
+      return xows_cli_cont[i];
+
+  return null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -411,7 +394,13 @@ function xows_cli_room_rem(room)
  */
 function xows_cli_room_get(addr)
 {
-  return xows_cli_room.find(xows_cli_test_addr, xows_jid_bare(addr));
+  const bare = xows_jid_bare(addr);
+
+  for(let i = 0; i < xows_cli_room.length; ++i)
+    if(xows_cli_room[i].addr === bare)
+      return xows_cli_room[i];
+
+  return null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -470,6 +459,7 @@ function xows_cli_occu_new(room, addr, ocid, jful, avat, self)
   Object.seal(occu); //< prevet structure modification
 
   room.occu.push(occu);
+
   return occu;
 }
 
@@ -497,11 +487,11 @@ function xows_cli_occu_rem(occu)
  */
 function xows_cli_occu_get(room, addr, ocid)
 {
-  let i = room.occu.length;
-  while(i--) {
+  for(let i = 0; i < room.occu.length; ++i) {
     if(room.occu[i].ocid === ocid || room.occu[i].addr === addr)
       return room.occu[i];
   }
+
   return null;
 }
 
@@ -526,8 +516,7 @@ function xows_cli_occu_get(room, addr, ocid)
 function xows_cli_occu_get_or_new(room, addr, ocid)
 {
   // Try to find existing/online Occupant
-  let i = room.occu.length;
-  while(i--) {
+  for(let i = 0; i < room.occu.length; ++i) {
     if(room.occu[i].ocid === ocid || room.occu[i].addr === addr)
       return room.occu[i];
   }
@@ -550,7 +539,10 @@ function xows_cli_occu_get_or_new(room, addr, ocid)
  */
 function xows_cli_occu_self(room)
 {
-  return room.occu.find(xows_cli_test_self);
+  for(let i = 0; i < room.occu.length; ++i) {
+    if(room.occu[i].self !== null)
+      return room.occu[i];
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -645,28 +637,41 @@ function xows_cli_peer_get(addr, type)
   if(bare == xows_cli_self.addr)
     return xows_cli_self;
 
-  // Check for Contact
+  // Search Contact
   if(type & XOWS_PEER_CONT) {
-    const cont = xows_cli_cont.find(xows_cli_test_addr, bare);
-    if(cont) return cont;
+    for(let i = 0; i < xows_cli_cont.length; ++i)
+      if(xows_cli_cont[i].addr === bare)
+        return xows_cli_cont[i];
   }
 
-  // Check Room
+  // Search Room
   if(type & (XOWS_PEER_ROOM|XOWS_PEER_OCCU)) {
-    let room = xows_cli_room.find(xows_cli_test_addr, bare);
-    if(room) {
-      // Check for Occupant
-      let occu;
-      if(type & XOWS_PEER_OCCU && addr.includes("/")) {
-        occu = room.occu.find(xows_cli_test_addr, addr);
-        if(occu) {
-          return occu;
-        } else {
-          return xows_cli_ocpm.find(xows_cli_test_addr, addr);
-        }
+
+    let room = null;
+
+    for(let i = 0; i < xows_cli_room.length; ++i) {
+      if(xows_cli_room[i].addr === bare) {
+        room = xows_cli_room[i]; break;
       }
+    }
+
+    // Search Occupant
+    if(type & XOWS_PEER_OCCU && addr.includes("/")) {
+
+      if(room) {
+        for(let i = 0; i < room.occu.length; ++i)
+          if(room.occu[i].addr === addr)
+            return room.occu[i];
+      }
+
+      for(let i = 0; i < xows_cli_ocpm.length; ++i)
+        if(xows_cli_ocpm[i].addr === addr)
+          return xows_cli_ocpm[i];
+
+    } else {
       return room;
     }
+
   }
 
   return null;
@@ -761,7 +766,13 @@ function xows_cli_peer_subsste(peer)
 
   case XOWS_PEER_OCCU:
     if(peer.jbar !== null) {
-      cont = xows_cli_cont.find(xows_cli_test_addr, peer.jbar);
+
+      for(let i = 0; i < xows_cli_cont.length; ++i) {
+        if(xows_cli_cont[i].addr === peer.jbar) {
+          cont = xows_cli_cont[i]; break;
+        }
+      }
+
     } else {
       return 2; //< no JID, subscription unavailable
     }
@@ -791,16 +802,17 @@ function xows_cli_peer_subsste(peer)
  * must be the Peer corresponding to current chat context. Therfore
  * it can NEVER be the user itself.
  *
- * If 'peer' is a CONTACT, the corresponding CONTACT or SELF is returned.
+ * If 'peer' is a CONTACT, the corresponding CONTACT Peer object or SELF Peer
+ * object is returned.
  *
  * If 'peer' is a ROOM, the corresponding OCCUPANT Peer object is returned, it
  * can be the OCCUPANT corresponding to user itself (as Room Occupant) or any
  * other Occupant.
  *
  * if 'peer' is an OCCUPANT (Private Conversation), the corresponding OCCUPANT
- * or SELF is returned.
+ * Peer object is returned, it can be user itself (as Room Occupant) or other.
  *
- * @param   {string}    peer      Peer object Room or Contact
+ * @param   {string}    peer      Peer object
  * @param   {string}    addr      User, Room or Occupant JID
  * @param   {string}   [ocid]     Occupant Anonymous UID
  *
@@ -812,7 +824,8 @@ function xows_cli_author_get(peer, addr, ocid)
   {
   case XOWS_PEER_ROOM:
     if(addr === peer.join) {
-      return peer.occu.find(xows_cli_test_self);
+      for(let i = 0; i < peer.occu.length; ++i)
+        if(peer.occu[i].self !== null) return peer.occu[i];
     } else {
       return xows_cli_occu_get_or_new(peer, addr, ocid);
     }
@@ -821,12 +834,24 @@ function xows_cli_author_get(peer, addr, ocid)
     if(addr.startsWith(xows_cli_self.addr)) {
       return xows_cli_self;
     } else {
-      return xows_cli_cont.find(xows_cli_test_addr, xows_jid_bare(addr));
+      const bare = xows_jid_bare(addr);
+      for(let i = 0; i < xows_cli_cont.length; ++i)
+        if(xows_cli_cont[i].addr === bare)
+          return xows_cli_cont[i];
     }
 
-  default: //< TODO: Optimize that for proper Private Message Occupant handling
-    return xows_cli_peer_get(addr, XOWS_PEER_ANY);
+  case XOWS_PEER_OCCU:
+    if(addr === peer.room.join) {
+      for(let i = 0; i < peer.room.occu.length; ++i)
+        if(peer.room.occu[i].self !== null) return peer.room.occu[i];
+    } else {
+      for(let i = 0; i < xows_cli_ocpm.length; ++i)
+        if(xows_cli_ocpm[i].addr === addr)
+          return xows_cli_ocpm[i];
+    }
   }
+
+  return null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1579,8 +1604,7 @@ function xows_cli_session_start(resume)
     if(!resume) {
 
       // We must re-join joigned rooms after reconnect
-      let i = xows_cli_room.length;
-      while(i--) {
+      for(let i = 0; i < xows_cli_room.length; ++i) {
         if(xows_cli_room[i].live) {
           xows_cli_room[i].join = null; //< need to join room again
           // Await for Room subject to be received
@@ -1670,8 +1694,7 @@ function xows_cli_rost_onpush(addr, name, subs, group)
  */
 function xows_cli_rost_reset()
 {
-  let i = xows_cli_cont.length;
-  while(i--) {
+  for(let i = 0; i < xows_cli_cont.length; ++i) {
     const cont = xows_cli_cont[i];
 
     // Remove all resources and reset presence and status
@@ -2428,8 +2451,8 @@ function xows_cli_pres_update()
   xows_xmp_presence_send(null, type, show, stat, null, null, phot);
 
   // Presence to all joined rooms
-  let i = xows_cli_room.length;
-  while(i--) {
+  for(let i = 0; i < xows_cli_room.length; ++i) {
+
     if(xows_cli_room[i].join) {
 
       // XEP-0045 says:
@@ -3301,27 +3324,27 @@ function xows_cli_mam_fetch_parse(from, bare, result, count, complete)
     return;
   }
 
-  // Store list of retracted message USID
+  // Creates a list of retracted message Unique ID
   const retrac = [];
-  let i = result.length;
-  while(i--) if(result[i].retract) retrac.push(result[i].retract);
+  for(let i = 0; i < result.length; ++i)
+    if(result[i].retract)
+      retrac.push(result[i].retract);
 
-  // Notice for future implementation :
-  //
   // It is important to NOT delete any received archive result, even
   // "invisibles" ones such as Chat States, Receipts and Retractions in order
   // to keep consistant sequence with precise timestamp to properly gather
   // next or previous archives.
-  i = result.length;
-  if(peer.type === XOWS_PEER_CONT) {
-    while(i--) {
-      //< Delete body of retracted message to exclude it from final counting
-      if(retrac.includes(result[i].orid)) result[i].discard = true;
-    }
-  } else { //<  === XOWS_PEER_ROOM
-    while(i--) {
-      //< Delete body of retracted message to exclude it from final counting
-      if(retrac.includes(result[i].szid)) result[i].discard = true;
+
+  if(retrac.length) {
+    //< Mark retracted message as discarded to exclude it from final counting
+    if(peer.type === XOWS_PEER_CONT) {
+      for(let i = 0; i < result.length; ++i)
+        if(retrac.includes(result[i].orid)) //< Compare with origin-id
+          result[i].discard = true;
+    } else { //<  === XOWS_PEER_ROOM
+      for(let i = 0; i < result.length; ++i)
+        if(retrac.includes(result[i].szid))  //< Compare with stanza-id
+          result[i].discard = true;
     }
   }
 
@@ -3344,8 +3367,7 @@ function xows_cli_mam_fetch_parse(from, bare, result, count, complete)
 
   // Comput count of visible messages excluding replacements
   let visibles = 0;
-  i = pool.length;
-  while(i--)
+  for(let i = 0; i < pool.length; ++i)
     if(pool[i].body && !pool[i].discard && !pool[i].replace)
       visibles++;
 
@@ -3432,7 +3454,7 @@ function xows_cli_mam_fetch(peer, count, start, end, onresult)
     "start":    start,
     "end":      end,
     "onresult": onresult,
-    "pool":     new Array()
+    "pool":     []
   };
 
   // Initialize history pull parameters

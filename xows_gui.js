@@ -635,20 +635,16 @@ function xows_gui_cli_onready(user, resume)
     if(!resume) {
 
       // Update history for openned chat
-      let i = xows_cli_cont.length;
-      while(i--) {
-        const cont = xows_cli_cont[i];
+      for(let i = 0; i < xows_cli_cont.length; ++i) {
         // Update only if history already preloaded
-        if(xows_gui_doc_has(cont))
-          xows_load_task_push(cont, XOWS_FETCH_NEWR, xows_gui_hist_resume);
+        if(xows_gui_doc_has(xows_cli_cont[i]))
+          xows_load_task_push(xows_cli_cont[i], XOWS_FETCH_NEWR, xows_gui_hist_resume);
       }
 
-      i = xows_cli_room.length;
-      while(i--) {
-        const room = xows_cli_room[i];
+      for(let i = 0; i < xows_cli_room.length; ++i) {
         // Update only if history already preloaded
-        if(xows_gui_doc_has(room))
-          xows_load_task_push(room, XOWS_FETCH_NEWR, xows_gui_hist_resume);
+        if(xows_gui_doc_has(xows_cli_room[i]))
+          xows_load_task_push(xows_cli_room[i], XOWS_FETCH_NEWR, xows_gui_hist_resume);
       }
     }
 

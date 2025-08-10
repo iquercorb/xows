@@ -230,12 +230,11 @@ function xows_gui_hist_update(peer, author)
   // Get peer ID
   const ident =  xows_cli_peer_iden(author);
 
-  let i;
-
   // Set new content for all elements
   const from_nodes = hist_ul.querySelectorAll("MESG-FROM[data-peer='"+ident+"'],RPLY-FROM[data-peer='"+ident+"']");
-  i = from_nodes.length;
-  while(i--) if(author.name != from_nodes[i].innerText) from_nodes[i].innerText = author.name;
+  for(let i = 0; i < from_nodes.length; ++i)
+    if(author.name != from_nodes[i].innerText)
+      from_nodes[i].innerText = author.name;
 
   if(!author.avat)
     return;
@@ -245,8 +244,9 @@ function xows_gui_hist_update(peer, author)
 
   // Set new CSS class to all corresponding elements
   const avat_nodes = hist_ul.querySelectorAll("MESG-AVAT[data-peer='"+ident+"'],RPLY-AVAT[data-peer='"+ident+"']");
-  i = avat_nodes.length;
-  while(i--) if(avat_cls != avat_nodes[i].className) avat_nodes[i].className = avat_cls;
+  for(let i = 0; i < avat_nodes.length; ++i)
+    if(avat_cls != avat_nodes[i].className)
+      avat_nodes[i].className = avat_cls;
 }
 
 /**
