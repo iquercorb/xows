@@ -129,6 +129,10 @@
   src: url("fonts/Rubik-Italic-VariableFont_wght.ttf") format("truetype");
   font-style: italic;
 }
+@font-face {
+  font-family: 'Twemoji';
+  src: url("fonts/Twemoji-Mozilla.ttf") format("truetype");
+}
 [hidden] {
   display: none !important;
 }
@@ -162,7 +166,7 @@ a:active {
 
 emo-ji {
   display: inline-block;
-  font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
+  font-family: 'Twemoji', Twemoji Mozilla, Apple Color Emoji, Segoe Ui Emoji, Segoe Ui Symbol, Noto Color Emoji, Serif;
   font-size: 1.4em;
   line-height: 20px;
   vertical-align: middle;
@@ -397,7 +401,6 @@ peer-list {
   display: block;
   width: 100%; height: 100%;
   overflow-x: hidden;
-  overflow-y: scroll;
   padding: 0 7px;
 }
 peer-list ul {
@@ -3425,7 +3428,6 @@ chat-inpt[placeholder]:empty::before {
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0,0,0,0.2);
   background-color: var(--base-tone5);
-  overflow-y: scroll;
   overflow-x: hidden;
   margin-bottom: 8px;
   margin-right: -5px;
@@ -3452,7 +3454,6 @@ chat-inpt[placeholder]:empty::before {
   padding-right: 14px;
   margin: 0;
   white-space: normal;
-  font-family: twemoji mozilla, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji, serif;
 }
 #drop_emoj li {
   display: inline-block;
@@ -3463,6 +3464,7 @@ chat-inpt[placeholder]:empty::before {
   border-radius: 4px;
   cursor:pointer;
   vertical-align: middle;
+  font-family: 'Twemoji', Twemoji Mozilla, Apple Color Emoji, Segoe Ui Emoji, Segoe Ui Symbol, Noto Color Emoji, Serif;
 }
 #drop_emoj li:hover {
   background: var(--base-tone6);
