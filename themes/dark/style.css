@@ -1277,7 +1277,7 @@ dbox-icon.STYL-ASK {
 /* Message Dialog-Box */
 /* ------------------------------------------------------------------ */
 #mbox_text {
-  font-size: 1.1em;
+  font-size: 1.0em;
   color: var(--text-tone1);
 }
 
