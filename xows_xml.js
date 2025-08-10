@@ -172,19 +172,18 @@ function xows_xml_node(name, attr, child)
  */
 function xows_xml_serialize(node)
 {
-  let i, n, result = "<" + node.nodeName;
+  let result = "<" + node.nodeName;
 
   // Append attributes list
-  n = node.attributes.length;
-  for(i = 0; i < n; ++i)
+  for(let i = 0; i < node.attributes.length; ++i)
     result += " " + node.attributes[i].nodeName + "='" +
                     node.attributes[i].nodeValue + "'";
 
   // Append children
-  n = node.childNodes.length;
+  const n = node.childNodes.length;
   if(n !== 0) {
     result += ">";
-    for(i = 0; i < n; ++i) {
+    for(let i = 0; i < n; ++i) {
       if(node.childNodes[i].nodeType === 1) {
         //< node, this go recursive
         result += xows_xml_serialize(node.childNodes[i]);
