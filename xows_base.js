@@ -67,10 +67,10 @@ function xows_asbool(value)
 {
   if(value.length) {
     const number = parseInt(value);
-    if(number !== NaN) {
-      return Boolean(number);
-    } else {
+    if(Number.isNaN(number)) {
       return (value.toUpperCase() === "TRUE");
+    } else {
+      return Boolean(number);
     }
   } else {
     return Boolean(value);
