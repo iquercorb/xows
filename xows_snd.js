@@ -563,7 +563,7 @@ function xows_snd_sample_load(name, file)
   xows_snd_lib.set(name,{"node":null,"audio":audio});
 
   // Creating path to sound
-  const path = xows_options.lib_path+"/sounds/"+file;
+  const path = xows_options.lib_path+"sounds/"+file;
 
   xows_log(2,"aud_snd_load","loading '"+name+"' sound",path);
 

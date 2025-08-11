@@ -229,10 +229,6 @@ function xows_tpl_init(onready)
   // Set the onready callback
   if(onready) xows_tpl_fw_onready = onready;
 
-  // Change default root and theme folder if requested
-  if(xows_options.lib_path)
-    xows_options.lib_path = xows_options.lib_path;
-
   if(xows_options.gui_theme)
     xows_tpl_theme = xows_options.gui_theme;
 
@@ -247,7 +243,7 @@ function xows_tpl_init(onready)
   } else {
     css_file = "/style.css";
   }
-  css.href = xows_options.lib_path+"/themes/"+xows_tpl_theme+css_file;
+  css.href = xows_options.lib_path+"themes/"+xows_tpl_theme+css_file;
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
@@ -281,7 +277,7 @@ let xows_tpl_parse_remain = 0;
 function xows_tpl_template_load(name, type)
 {
   // build download path URL
-  let path = xows_options.lib_path+"/themes/"+xows_tpl_theme;
+  let path = xows_options.lib_path+"themes/"+xows_tpl_theme;
 
   // Select proper subfolder according template type
   switch(type)

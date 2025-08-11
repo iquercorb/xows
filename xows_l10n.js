@@ -70,7 +70,7 @@ function xows_l10n_select(locale, onready)
     xows_l10n_fw_onready = onready;
 
   // We first load the available locale/lang list
-  let path = xows_options.lib_path+"/locale/LC_list.json";
+  let path = xows_options.lib_path+"locale/LC_list.json";
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug
@@ -132,7 +132,7 @@ function xows_l10n_db_load(locale, onready)
     xows_l10n_fw_onready = onready;
 
   // build download path URL
-  let path = xows_options.lib_path+"/locale/"+locale+"/LC_db.json";
+  let path = xows_options.lib_path+"locale/"+locale+"/LC_db.json";
 
   // Forces browser to reload (uncache) templates files by adding a
   // random string to URL. This option is mainly for dev and debug

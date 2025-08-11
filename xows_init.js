@@ -108,10 +108,24 @@ function xows_init(options)
     if(options.hasOwnProperty("cli_extern_services"))   xows_options.cli_extern_services = options.cli_extern_services;
   }
 
-  // If missing, add  a leading slash to root path to make it
-  // absolute (i.e. relative to URL root)
-  if(xows_options.lib_path.charAt(0) != "/")
-    xows_options.lib_path = "/"+xows_options.lib_path;
+  // Add proper slash / to library path if missing
+  if(xows_options.lib_path) {
+
+    let path = xows_options.lib_path;
+
+    if(path.length === 1 && path.charAt(0) === "/") {
+
+      // Browsers doesn't like double slash '//"...
+      xows_options.lib_path = "";
+
+    } else {
+
+      if(path.charAt(path.length-1) !== "/")
+        path = path+"/";
+
+      xows_options.lib_path = path;
+    }
+  }
 
   xows_log(2,"init","Starts Library Initialization");
 
