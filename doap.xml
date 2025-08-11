@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns='http://usefulinc.com/ns/doap#'>
+  <Project xml:lang='en'>
+    <name>Xows</name>
+
+    <category rdf:resource='https://linkmauve.fr/ns/xmpp-doap#category-client'/>
+
+    <shortdesc xml:lang='en'>XMPP over WebSocket Web Client</shortdesc>
+
+    <homepage rdf:resource='https://github.com/iquercorb/xows'/>
+    <download-page rdf:resource='https://github.com/iquercorb/xows/releases'/>
+    <bug-database rdf:resource='https://github.com/iquercorb/xows/issues'/>
+
+    <license rdf:resource='https://raw.githubusercontent.com/iquercorb/xows/refs/heads/main/LICENSE.TXT'/>
+
+    <schema:logo rdf:resource='https://raw.githubusercontent.com/iquercorb/xows/refs/heads/main/logo.svg'/>
+    <schema:screenshot rdf:resource='https://raw.githubusercontent.com/iquercorb/xows/refs/heads/main/snapshots/01.png'/>
+
+    <programming-language>JavaScript</programming-language>
+
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc6120.html'/>
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc6121.html'/>
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc6122.html'/>
+    <implements rdf:resource='https://xmpp.org/rfcs/rfc7395.html'/>
+
+    <release>
+      <Version>
+        <revision>0.9.9</revision>
+        <created>2025-08-11</created>
+        <file-release rdf:resource='https://github.com/iquercorb/xows/releases/download/0.9.9/Xows_0.9.9.zip'/>
+      </Version>
+    </release>
+
+    <os>Linux</os>
+    <os>Windows</os>
+    <os>Browser</os>
+  </Project>
+</rdf:RDF>
