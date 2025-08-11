@@ -5,9 +5,8 @@ XOWS XMPP Web-Client
 XMPP Over WebSocket
 
 
-Version: 0.9.9 (it begins to have good shape)
+Version: 0.9.9
 ----------------------------------------------------------------------------------------
-
 
 Presentation
 ----------------------------------------------------------------------------------------
@@ -66,6 +65,16 @@ Screenshots
 ![Chat Window with Menu](snapshots/03.png)
 
 ![Contact Profile Popup](snapshots/04.png)
+
+Installation guide
+----------------------------------------------------------------------------------------
+You will find documentations to deploy and configure your own instance of Xows Web
+Client in the following GitHub Xows Wiki pages:
+
+* [Installation guide](https://github.com/iquercorb/xows/wiki/Installation-guide)
+* [Client options](https://github.com/iquercorb/xows/wiki/Client-options)
+
+Little more documentation will come over time.
 
 One word about the code itself
 ----------------------------------------------------------------------------------------
