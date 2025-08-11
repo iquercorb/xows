@@ -854,6 +854,8 @@ function xows_cli_author_get(peer, addr, ocid)
     break;
   }
 
+  xows_log(0,"cli_author_get","author not found",addr+" ("+xows_jid_bare(addr)+")");
+
   return null;
 }
 
