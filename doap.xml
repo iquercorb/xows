@@ -31,8 +31,7 @@
       </Version>
     </release>
 
-    <os>Linux</os>
-    <os>Windows</os>
     <os>Browser</os>
+
   </Project>
 </rdf:RDF>
