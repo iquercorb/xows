@@ -2073,7 +2073,7 @@ function xows_xmp_presence_recv(stanza)
   const from = stanza.getAttribute("from"); //< Sender JID/Ress
 
   // Usual presence informations
-  let show;
+  let show = XOWS_SHOW_ON; //< In case <show> node is not present (ejaberd do that)
 
   // Check whether presence has "type" attribute
   if(stanza.hasAttribute("type")) {
@@ -2085,7 +2085,6 @@ function xows_xmp_presence_recv(stanza)
     case "unavailable":
       show = XOWS_SHOW_OFF;
       break;
-
     case "subscribe":
     case "unsubscribe":
     case "subscribed":
