@@ -847,6 +847,33 @@ function xows_hash_sdbm(input)
 
   return hash;
 }
+
+/**
+ * Create SCRAM Salt bytes array from given base64.
+ *
+ * @param   {string}    base64    Base64 encoded SCRAM Salt
+ *
+ * @return  {Uint8Array}  Decoded Salte with trailing integer
+ */
+function xows_b64_to_salt(base64)
+{
+  const bstr = atob(base64);
+
+  // We need 4 more bytes to append an integer
+  const bytes = new Uint8Array(bstr.length + 4);
+
+  let i = 0;
+  for( ; i < bstr.length; i++)
+    bytes[i] = bstr.charCodeAt(i);
+
+  // Append 4-bytes integer equal to '1'
+  bytes[i++] = 0;
+  bytes[i++] = 0;
+  bytes[i++] = 0;
+  bytes[i++] = 1;
+
+  return bytes;
+}
 /* ---------------------------------------------------------------------------
  * String manipulation utilities
  * ---------------------------------------------------------------------------*/

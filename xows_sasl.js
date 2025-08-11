@@ -215,16 +215,17 @@ function xows_sasl_sha1_resp(challenge)
   auth_mesg += "," + challenge + "," + response;
 
   // Comptute salted password
-  let slat_pass, tmp;
-  slat_pass = tmp = xows_hmac_sha1(xows_sasl_data.passw, atob(salt)+"\x00\x00\x00\x01");
+  let salt_pass, tmp;
+  salt_pass = tmp = xows_hmac_sha1(xows_sasl_data.passw, xows_b64_to_salt(salt));
+
   for(let i = 1; i < iter; ++i) {
     tmp = xows_hmac_sha1(xows_sasl_data.passw, tmp);
-    for(let k = 0; k < 20; ++k) slat_pass[k] ^= tmp[k];
+    for(let k = 0; k < 20; ++k) salt_pass[k] ^= tmp[k];
   }
 
   // Create client and server keys
-  let ckey = xows_hmac_sha1(slat_pass, "Client Key");
-  const skey = xows_hmac_sha1(slat_pass, "Server Key");
+  let ckey = xows_hmac_sha1(salt_pass, "Client Key");
+  const skey = xows_hmac_sha1(salt_pass, "Server Key");
 
   // Compute cproof : ckey XOR HMAC(H(ckey), Auth)
   const hkey = xows_hash_sha1(ckey);
