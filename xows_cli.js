@@ -829,6 +829,7 @@ function xows_cli_author_get(peer, addr, ocid)
     } else {
       return xows_cli_occu_get_or_new(peer, addr, ocid);
     }
+    break;
 
   case XOWS_PEER_CONT:
     if(addr.startsWith(xows_cli_self.addr)) {
@@ -839,6 +840,7 @@ function xows_cli_author_get(peer, addr, ocid)
         if(xows_cli_cont[i].addr === bare)
           return xows_cli_cont[i];
     }
+    break;
 
   case XOWS_PEER_OCCU:
     if(addr === peer.room.join) {
@@ -849,6 +851,7 @@ function xows_cli_author_get(peer, addr, ocid)
         if(xows_cli_ocpm[i].addr === addr)
           return xows_cli_ocpm[i];
     }
+    break;
   }
 
   return null;
@@ -1665,7 +1668,7 @@ function xows_cli_rost_onpush(addr, name, subs, group)
 
   if(cont) {
 
-    if(name) cont.name;
+    if(name) cont.name = name;
     cont.subs = subs;
 
   } else {
@@ -2061,7 +2064,7 @@ function xows_cli_subs_answer(cont, allow)
     // process rules, but in the common USER's perspective, this is way
     // more logical than allowing subscription to contact THEN asking for
     // contact authorization.
-    if(cont.subs != XOWS_SUBS_BOTH)
+    if(cont.subs !== XOWS_SUBS_BOTH)
       xows_cli_subs_request(cont.addr);
 
   } else {
@@ -3182,7 +3185,7 @@ function xows_cli_pep_avat_publ(access)
 function xows_cli_pep_avat_meta_publ(from, type, error)
 {
   // If data publish succeed, follow by sending meta-data
-  if(type != "result") {
+  if(type !== "result") {
     xows_log(1,"cli_pep_avat_meta_publ","data publication error");
     return;
   }
@@ -4773,7 +4776,7 @@ function xows_cli_call_best_resc(peer)
     return peer.addr;
 
   // Check for chat session locked JID
-  if(peer.jlck != peer.jbar) {
+  if(peer.jlck !== peer.jbar) {
 
     return peer.jlck;
 

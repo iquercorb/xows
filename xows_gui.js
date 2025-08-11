@@ -2040,7 +2040,7 @@ function xows_gui_self_menu_onclick(event)
 function xows_gui_self_stat_ibox_onvalid(value)
 {
   // If changed, inform of the new status
-  if(value != xows_cli_self.stat)
+  if(value !== xows_cli_self.stat)
     xows_cli_pres_stat_set(value);
 }
 
@@ -2495,7 +2495,7 @@ function xows_gui_page_user_oninput(target)
   case "user_accs": //< Checkbox for Data in open access
     changed = !xows_doc("user_accs").checked; break;
   case "user_name": //< Nickname input text field
-    changed = (xows_doc("user_name").value != xows_cli_self.name);
+    changed = (xows_doc("user_name").value !== xows_cli_self.name);
   }
 
   // Open Message Box dialog

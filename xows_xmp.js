@@ -688,7 +688,7 @@ const XOWS_NS_IETF_FRAMING = "urn:ietf:params:xml:ns:xmpp-framing";
 function xows_xmp_fram_open_recv(stanza)
 {
   // Check for proper version & XMLNS
-  if(stanza.getAttribute("version") != "1.0" || stanza.namespaceURI != XOWS_NS_IETF_FRAMING) {
+  if(stanza.getAttribute("version") !== "1.0" || stanza.namespaceURI !== XOWS_NS_IETF_FRAMING) {
     xows_log(0,"xmp_fram_open_recv", "invalid server framing");
     xows_xmp_failure(XOWS_XMPP_FAIL, "invalid server framing");
   }
@@ -3836,11 +3836,11 @@ function xows_xmp_mam_parse(stanza, onparse)
     if(node) last = xows_xml_innertext(node);
 
     // Extract messages from stack
-    let i, result;
+    let result, i = 0;
     const n = stack.length;
 
     // Align index to the first page
-    for(i = 0; i < n; i++)
+    for( ; i < n; i++)
       if(stack[i].page === first) break;
 
     if(i >= n) {
@@ -3848,7 +3848,8 @@ function xows_xmp_mam_parse(stanza, onparse)
       result = []; //< create empty result
     } else {
       // Get messages untile we found the last page
-      let start = i, size = 0;
+      const start = i;
+      let size = 0;
       do {
         if(i === n) {
           xows_log(1, "xmp_mam_parse","last result page not found (reached end of stack)",last);
