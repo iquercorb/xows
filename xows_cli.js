@@ -1799,11 +1799,11 @@ function xows_cli_pres_onrecv(from, show, prio, stat, node, phot)
 
   const cont = xows_cli_cont_get(from);
   if(!cont) {
-    xows_log(1,"cli_xmp_onpresence","unknown/unsubscribed Contact",from);
+    xows_log(1,"cli_pres_onrecv","unknown/unsubscribed Contact",from);
     return;
   }
 
-  xows_log(2,"cli_xmp_onpresence","received presence",from);
+  xows_log(2,"cli_pres_onrecv","received presence show="+show,from);
 
   // Reset the locked resource as defined in XEP-0296
   cont.jlck = cont.jbar;
