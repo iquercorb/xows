@@ -217,7 +217,6 @@ function xows_sasl_sha1_resp(challenge)
   // Comptute salted password
   let salt_pass, tmp;
   salt_pass = tmp = xows_hmac_sha1(xows_sasl_data.passw, xows_b64_to_salt(salt));
-
   for(let i = 1; i < iter; ++i) {
     tmp = xows_hmac_sha1(xows_sasl_data.passw, tmp);
     for(let k = 0; k < 20; ++k) salt_pass[k] ^= tmp[k];

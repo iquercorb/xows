@@ -849,7 +849,10 @@ function xows_hash_sdbm(input)
 }
 
 /**
- * Create SCRAM Salt bytes array from given base64.
+ * Creates SCRAM Salt bytes array from SASL challenge salt.
+ *
+ * This decodes base64 encoded salt from SASL challenge to its
+ * bytes array version with the proper trailing 4-bytes integer ('1').
  *
  * @param   {string}    base64    Base64 encoded SCRAM Salt
  *
@@ -859,7 +862,7 @@ function xows_b64_to_salt(base64)
 {
   const bstr = atob(base64);
 
-  // We need 4 more bytes to append an integer
+  // We need 4 more bytes to append the trailing integer
   const bytes = new Uint8Array(bstr.length + 4);
 
   let i = 0;
