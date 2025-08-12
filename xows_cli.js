@@ -3686,7 +3686,7 @@ function xows_cli_upld_onprogr(peer, event)
   const param = xows_cli_upld_stk.get(peer);
 
   // Forward progression infos
-  xows_cli_fw_upldprog(peer, param.file, (event.loaded / event.total) * 100);
+  xows_cli_fw_upldprog(peer, (event.loaded / event.total) * 100);
 }
 
 /**
