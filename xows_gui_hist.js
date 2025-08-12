@@ -510,7 +510,8 @@ function xows_gui_hist_onrecv(peer, mesg, wait, self, error)
 
     // For MUC we avoid notification unless explicit mention
     if(peer.type === XOWS_PEER_ROOM) {
-      if(!(mesg.rpto && xows_cli_occu_self(peer).addr === mesg.rpto))
+      //if(!(mesg.rpto && xows_cli_occu_self(peer).addr === mesg.rpto))
+      if(!(mesg.rpto && xows_cli_comp(xows_cli_occu_self(peer).addr, mesg.rpto)))
         alert = false;
     }
 

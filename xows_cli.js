@@ -126,6 +126,26 @@ function xows_cli_extservs_get(...type)
   return result;
 }
 
+/**
+ * Collator object for JID comparison
+ */
+const xows_cli_collat = new Intl.Collator(undefined,{sensitivity:'accent'});
+
+/**
+ * Compare two strings in case-normalized way.
+ *
+ * This is used to compare two JID/Address in a case insensitive way.
+ *
+ * @param   {string}  a   First string to compare
+ * @param   {string}  b   Second string to compare
+ *
+ * @return  {number}  True is string are identical, false otherwise
+ */
+function xows_cli_comp(a, b)
+{
+  return (xows_cli_collat.compare(a, b) === 0);
+}
+
 /* ---------------------------------------------------------------------------
  *
  *                  PEER structures and related routines
@@ -212,7 +232,7 @@ Object.seal(xows_cli_self); //< prevet structure modification
  */
 function xows_cli_isself_addr(addr)
 {
-  return addr.startsWith(xows_cli_self.addr);
+  return xows_cli_comp(xows_cli_self.addr, xows_jid_bare(addr));
 }
 
 /* ---------------------------------------------------------------------------
@@ -298,7 +318,8 @@ function xows_cli_cont_get(addr)
   const bare = xows_jid_bare(addr);
 
   for(let i = 0; i < xows_cli_cont.length; ++i)
-    if(xows_cli_cont[i].addr === bare)
+    //if(xows_cli_cont[i].addr === bare)
+    if(xows_cli_comp(xows_cli_cont[i].addr, bare))
       return xows_cli_cont[i];
 
   return null;
@@ -397,7 +418,8 @@ function xows_cli_room_get(addr)
   const bare = xows_jid_bare(addr);
 
   for(let i = 0; i < xows_cli_room.length; ++i)
-    if(xows_cli_room[i].addr === bare)
+    //if(xows_cli_room[i].addr === bare)
+    if(xows_cli_comp(xows_cli_room[i].addr, bare))
       return xows_cli_room[i];
 
   return null;
@@ -488,7 +510,7 @@ function xows_cli_occu_rem(occu)
 function xows_cli_occu_get(room, addr, ocid)
 {
   for(let i = 0; i < room.occu.length; ++i) {
-    if(room.occu[i].ocid === ocid || room.occu[i].addr === addr)
+    if(room.occu[i].ocid === ocid || xows_cli_comp(room.occu[i].addr, addr))
       return room.occu[i];
   }
 
@@ -517,7 +539,7 @@ function xows_cli_occu_get_or_new(room, addr, ocid)
 {
   // Try to find existing/online Occupant
   for(let i = 0; i < room.occu.length; ++i) {
-    if(room.occu[i].ocid === ocid || room.occu[i].addr === addr)
+    if(room.occu[i].ocid === ocid || xows_cli_comp(room.occu[i].addr, addr))
       return room.occu[i];
   }
 
@@ -640,7 +662,8 @@ function xows_cli_peer_get(addr, type)
   // Search Contact
   if(type & XOWS_PEER_CONT) {
     for(let i = 0; i < xows_cli_cont.length; ++i)
-      if(xows_cli_cont[i].addr === bare)
+      //if(xows_cli_cont[i].addr === bare)
+      if(xows_cli_comp(xows_cli_cont[i].addr, bare))
         return xows_cli_cont[i];
   }
 
@@ -650,7 +673,8 @@ function xows_cli_peer_get(addr, type)
     let room = null;
 
     for(let i = 0; i < xows_cli_room.length; ++i) {
-      if(xows_cli_room[i].addr === bare) {
+      //if(xows_cli_room[i].addr === bare) {
+      if(xows_cli_comp(xows_cli_room[i].addr, bare)) {
         room = xows_cli_room[i]; break;
       }
     }
@@ -660,12 +684,14 @@ function xows_cli_peer_get(addr, type)
 
       if(room) {
         for(let i = 0; i < room.occu.length; ++i)
-          if(room.occu[i].addr === addr)
+          //if(room.occu[i].addr === addr)
+          if(xows_cli_comp(room.occu[i].addr, addr))
             return room.occu[i];
       }
 
       for(let i = 0; i < xows_cli_ocpm.length; ++i)
-        if(xows_cli_ocpm[i].addr === addr)
+        //if(xows_cli_ocpm[i].addr === addr)
+        if(xows_cli_comp(xows_cli_ocpm[i].addr, addr))
           return xows_cli_ocpm[i];
 
     } else {
@@ -768,7 +794,8 @@ function xows_cli_peer_subsste(peer)
     if(peer.jbar !== null) {
 
       for(let i = 0; i < xows_cli_cont.length; ++i) {
-        if(xows_cli_cont[i].addr === peer.jbar) {
+        //if(xows_cli_cont[i].addr === peer.jbar) {
+        if(xows_cli_comp(xows_cli_cont[i].addr, peer.jbar)) {
           cont = xows_cli_cont[i]; break;
         }
       }
@@ -831,16 +858,18 @@ function xows_cli_author_get(peer, addr, ocid)
     }
     break;
 
-  case XOWS_PEER_CONT:
-    if(addr.startsWith(xows_cli_self.addr)) {
-      return xows_cli_self;
-    } else {
+  case XOWS_PEER_CONT: {
       const bare = xows_jid_bare(addr);
-      for(let i = 0; i < xows_cli_cont.length; ++i)
-        if(xows_cli_cont[i].addr === bare)
-          return xows_cli_cont[i];
-    }
-    break;
+      //if(addr.startsWith(xows_cli_self.addr)) {
+      if(xows_cli_comp(xows_cli_self.addr, bare)) {
+        return xows_cli_self;
+      } else {
+        for(let i = 0; i < xows_cli_cont.length; ++i)
+          //if(xows_cli_cont[i].addr === bare)
+          if(xows_cli_comp(xows_cli_cont[i].addr, bare))
+            return xows_cli_cont[i];
+      }
+    } break;
 
   case XOWS_PEER_OCCU:
     if(addr === peer.room.join) {
@@ -848,7 +877,8 @@ function xows_cli_author_get(peer, addr, ocid)
         if(peer.room.occu[i].self !== null) return peer.room.occu[i];
     } else {
       for(let i = 0; i < xows_cli_ocpm.length; ++i)
-        if(xows_cli_ocpm[i].addr === addr)
+        //if(xows_cli_ocpm[i].addr === addr)
+        if(xows_cli_comp(xows_cli_ocpm[i].addr, addr))
           return xows_cli_ocpm[i];
     }
     break;
