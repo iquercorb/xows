@@ -60,6 +60,11 @@ function xows_cli_entity_has(entity, feat)
 }
 
 /**
+ * Storage for XMPP host server features (Carbon, MAM, etc)
+ */
+const xows_cli_features = [];
+
+/**
  * Per-services (HTTP Upload, MUC, etc) availables entities (JID) storage.
  */
 const xows_cli_services = new Map();
@@ -951,6 +956,7 @@ function xows_cli_reset()
   // Clear databases
   xows_cli_entities.clear();
   xows_cli_services.clear();
+  xows_cli_features.length = 0;
   xows_cli_extservs.length = 0;
 
   // Clean the client data
@@ -1357,6 +1363,11 @@ function xows_cli_warmup_discnfo_self(from, node, idens, feats, xform, error)
   // Add account features
   xows_cli_entities.set(from, {"iden":idens,"feat":feats,"item":[]});
 
+  // Did you know that JavaScript has no method to copy array content
+  // unless creating a new Array() instance ? It's fascinating...
+  for(let i = 0; i < feats.length; ++i)
+    xows_cli_features.push(feats[i]);
+
   // Query for host (server) infos/features
   xows_xmp_disco_info_query(xows_xmp_host, null, xows_cli_warmup_discnfo_host);
 }
@@ -1536,10 +1547,10 @@ function xows_cli_warmup_config()
   xows_cli_peer_push(xows_cli_self);
 
   // Check for main XMPP server features
-  const serv_infos = xows_cli_entities.get(xows_xmp_host);
+  const host_infos = xows_cli_entities.get(xows_xmp_host);
 
   // Check for message carbons
-  if(serv_infos.feat.includes(XOWS_NS_CARBONS)) {
+  if(host_infos.feat.includes(XOWS_NS_CARBONS)) {
     xows_log(2,"cli_warmup_config","Enable Messages Carbons");
     xows_xmp_carbons_query(true, null);
   }
@@ -3438,6 +3449,11 @@ function xows_cli_mam_fetch_parse(from, bare, result, count, complete)
  */
 function xows_cli_mam_fetch_query(peer)
 {
+  if(!xows_cli_features.includes(XOWS_NS_MAM)) {
+    xows_log(0,"cli_mam_fetch_query","MAM feature not available");
+    return;
+  }
+
   if(!xows_cli_mam_fetch_param.has(peer))
     return;
 
@@ -3467,6 +3483,17 @@ function xows_cli_mam_fetch_query(peer)
  */
 function xows_cli_mam_fetch(peer, count, start, end, onresult)
 {
+  if(!xows_cli_features.includes(XOWS_NS_MAM)) {
+
+    xows_log(1,"cli_mam_fetch","MAM feature not available");
+
+    // We bypass query and send empty (complete) result
+    if(xows_isfunc(onresult))
+      onresult(peer, (start !== null), [], 0, true);
+
+    return;
+  }
+
   if(xows_cli_mam_fetch_param.has(peer))
     return;
 
