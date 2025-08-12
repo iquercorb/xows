@@ -374,7 +374,7 @@ function xows_gui_edit_oninput(event)
 
   // Set composing
   if(xows_gui_peer)
-    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
+    xows_cli_chst_self_set(xows_gui_peer, XOWS_CHAT_COMP);
 
   // Save carret position
   xows_gui_edit_inpt_sel_save();
@@ -435,7 +435,7 @@ function xows_gui_edit_inpt_onenter(input)
   xows_gui_edit_inpt_sel_save();
 
   // Reset chatsate to active
-  xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_ACTI);
+  xows_cli_chst_self_set(xows_gui_peer, XOWS_CHAT_ACTI);
 }
 
 /**
@@ -460,7 +460,7 @@ function xows_gui_edit_inpt_onpaste(event)
   event.preventDefault();
 
   // Set composing
-  xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_COMP);
+  xows_cli_chst_self_set(xows_gui_peer, XOWS_CHAT_COMP);
 
   // Paste node in current selection range
   xows_doc_sel_paste(document.createTextNode(text));

@@ -1174,7 +1174,7 @@ function xows_gui_peer_switch_to(addr)
     }
 
     // Send chat state to notify current user
-    xows_cli_chst_set(xows_gui_peer, XOWS_CHAT_GONE);
+    xows_cli_chst_self_set(xows_gui_peer, XOWS_CHAT_GONE);
 
     // export document elements to offscreen fragment
     xows_gui_doc_export(xows_gui_peer);
