@@ -856,9 +856,9 @@ function xows_hash_sdbm(input)
  *
  * @param   {string}    base64    Base64 encoded SCRAM Salt
  *
- * @return  {Uint8Array}  Decoded Salte with trailing integer
+ * @return  {Uint8Array}  Decoded Salt with trailing 4-bytes integer
  */
-function xows_b64_to_salt(base64)
+function xows_scram_mksalt(base64)
 {
   const bstr = atob(base64);
 
