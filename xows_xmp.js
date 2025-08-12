@@ -2100,7 +2100,8 @@ function xows_xmp_presence_recv(stanza)
   const from = stanza.getAttribute("from"); //< Sender JID/Ress
 
   // Usual presence informations
-  let show = XOWS_SHOW_ON; //< In case <show> node is not present (ejaberd do that)
+  let show = XOWS_SHOW_ON; //< In case <show> node is not present
+  let prio = 0; //< In case <priority> node is not present
 
   // Check whether presence has "type" attribute
   if(stanza.hasAttribute("type")) {
@@ -2135,7 +2136,7 @@ function xows_xmp_presence_recv(stanza)
   }
 
   // Additionnal <presence> informations or data
-  let prio, stat, caps, ocid, mucx, phot = null;
+  let stat, caps, ocid, mucx, phot = null;
 
   for(let i = 0; i < stanza.childNodes.length; ++i) {
 
@@ -2156,7 +2157,7 @@ function xows_xmp_presence_recv(stanza)
       continue; }
 
     case "priority":
-      prio = xows_xml_innertext(node);
+      prio = parseInt(xows_xml_innertext(node));
       continue;
 
     case "status":
