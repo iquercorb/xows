@@ -3908,12 +3908,12 @@ function xows_cli_muc_info_parse(from, node, idens, feats, xform, error)
 
   // Check room features
   for(let i = 0; i < feats.length; ++i) {
-    // Password protection
-    if(feats[i] === "muc_passwordprotected") room.prot = true;
-    if(feats[i] === "muc_unsecured") room.prot = false;
     // Public / Private
     if(feats[i] === "muc_public") room.publ = true;
     if(feats[i] === "muc_hidden") room.publ = false;
+    // Password protection
+    if(feats[i] === "muc_passwordprotected") room.prot = true;
+    if(feats[i] === "muc_unsecured") room.prot = false;
     // Members-Only
     if(feats[i] === "muc_membersonly") room.open = false;
     if(feats[i] === "muc_open") room.open = true;
