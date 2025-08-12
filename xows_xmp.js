@@ -1556,7 +1556,7 @@ function xows_xmp_message_recv(stanza)
     return true;
   }
 
-  let time, body, cstt, repl, rpid, rpto, orid, szid, ocid, mucx;
+  let time, body, chst, repl, rpid, rpto, orid, szid, ocid, mucx;
 
   for(let i = 0; i < stanza.childNodes.length; ++i) {
 
@@ -1635,7 +1635,7 @@ function xows_xmp_message_recv(stanza)
 
     // Check for chat state notification
     if(xmlns === XOWS_NS_CHATSTATES) {
-      cstt = xows_xmp_chatstate_value.get(tname);
+      chst = xows_xmp_chatstate_value.get(tname);
       continue;
     }
 
@@ -1679,21 +1679,27 @@ function xows_xmp_message_recv(stanza)
     }
   }
 
+  // Notice : Some clients embeds chatstates along the <body>, in this case
+  // we must forward both events.
+  let handled = false;
 
   if(body) {
     xows_xmp_fw_msg_onrecv(xows_xmp_message_forge(id, to, from, type, body, time,
                                                  null, null, repl, rpid, rpto,
                                                  orid, szid, ocid));
-    return true;
-  } else if(cstt !== undefined) {
-    xows_xmp_fw_msg_onchst(id, from, type, cstt, ocid);
-    return true;
+    handled = true;
+  }
+
+  if(chst !== undefined) {
+    xows_xmp_fw_msg_onchst(id, from, type, chst, ocid);
+    handled = true;
   }
 
   // Write log
-  xows_log(1,"xmp_message_recv","unhandled message ("+from+")",type);
+  if(!handled)
+    xows_log(1,"xmp_message_recv","unhandled message ("+from+")",type);
 
-  return false;
+  return handled;
 }
 
 /**
@@ -1794,8 +1800,21 @@ function xows_xmp_message_chatstate_send(to, type, chat)
 {
   const state = xows_xmp_chatstate_string[chat];
 
-  xows_xmp_send(xows_xml_node("message",{"to":to,"type":type},
-                  xows_xml_node(state,{"xmlns":XOWS_NS_CHATSTATES})));
+  // Generate id to create origin-id
+  const id = xows_gen_uuid();
+
+  // Base stanza
+  const message = xows_xml_node("message",{"id":id,"to":to,"type":type},
+                    xows_xml_node(state,{"xmlns":XOWS_NS_CHATSTATES}));
+
+  // Add <no-store> node to prevent message to be stored in MAM
+  xows_xml_parent(message, xows_xml_node("no-store",{"xmlns":"urn:xmpp:hints"}));
+
+  // Add <origin-id> node
+  xows_xml_parent(message, xows_xml_node("origin-id",{"id":id,"xmlns":XOWS_NS_SID}));
+
+    // Send message
+  xows_xmp_send(message);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1824,7 +1843,7 @@ function xows_xmp_message_receipt_send(to, id)
 }
 
 /* ---------------------------------------------------------------------------
- * Message semantics - Last Message Correction (XEP-0308)
+ * Message semantics - Message Retraction (XEP-0424)
  * ---------------------------------------------------------------------------*/
 /**
  * Constant for Message Retraction (XEP-0424) XMLNS
@@ -1846,16 +1865,24 @@ let xows_xmp_fw_msg_onretr = function() {};
  */
 function xows_xmp_message_retract_send(to, type, usid)
 {
+  // Generate id to create origin-id
+  const id = xows_gen_uuid();
+
   // Base stanza
-  const message = xows_xml_node("message",{"to":to,"type":type},
+  const message = xows_xml_node("message",{"id":id,"to":to,"type":type},
                     xows_xml_node("retract",{"id":usid,"xmlns":XOWS_NS_RETRACT}));
 
   // Add <store> node to ensure message to be stored in MAM
   xows_xml_parent(message, xows_xml_node("store",{"xmlns":"urn:xmpp:hints"}));
+
   // Add <fallback> node
   //xows_xml_parent(message, xows_xml_node("fallback",{"xmlns":"urn:xmpp:fallback:0","for":XOWS_NS_RETRACT}));
+
   // Add <body> node
   //xows_xml_parent(message, xows_xml_node("body",null,"/me retracted a previous message, but it's unsupported by your client."));
+
+  // Add <origin-id> node
+  xows_xml_parent(message, xows_xml_node("origin-id",{"id":id,"xmlns":XOWS_NS_SID}));
 
   // Send message
   xows_xmp_send(message);
