@@ -318,7 +318,6 @@ function xows_cli_cont_get(addr)
   const bare = xows_jid_bare(addr);
 
   for(let i = 0; i < xows_cli_cont.length; ++i)
-    //if(xows_cli_cont[i].addr === bare)
     if(xows_cli_comp(xows_cli_cont[i].addr, bare))
       return xows_cli_cont[i];
 
@@ -418,7 +417,6 @@ function xows_cli_room_get(addr)
   const bare = xows_jid_bare(addr);
 
   for(let i = 0; i < xows_cli_room.length; ++i)
-    //if(xows_cli_room[i].addr === bare)
     if(xows_cli_comp(xows_cli_room[i].addr, bare))
       return xows_cli_room[i];
 
@@ -509,10 +507,9 @@ function xows_cli_occu_rem(occu)
  */
 function xows_cli_occu_get(room, addr, ocid)
 {
-  for(let i = 0; i < room.occu.length; ++i) {
-    if(room.occu[i].ocid === ocid || xows_cli_comp(room.occu[i].addr, addr))
+  for(let i = 0; i < room.occu.length; ++i)
+    if((ocid && room.occu[i].ocid === ocid) || xows_cli_comp(room.occu[i].addr, addr))
       return room.occu[i];
-  }
 
   return null;
 }
@@ -539,7 +536,7 @@ function xows_cli_occu_get_or_new(room, addr, ocid)
 {
   // Try to find existing/online Occupant
   for(let i = 0; i < room.occu.length; ++i) {
-    if(room.occu[i].ocid === ocid || xows_cli_comp(room.occu[i].addr, addr))
+    if((ocid && room.occu[i].ocid === ocid) || xows_cli_comp(room.occu[i].addr, addr))
       return room.occu[i];
   }
 
@@ -662,7 +659,6 @@ function xows_cli_peer_get(addr, type)
   // Search Contact
   if(type & XOWS_PEER_CONT) {
     for(let i = 0; i < xows_cli_cont.length; ++i)
-      //if(xows_cli_cont[i].addr === bare)
       if(xows_cli_comp(xows_cli_cont[i].addr, bare))
         return xows_cli_cont[i];
   }
@@ -673,7 +669,6 @@ function xows_cli_peer_get(addr, type)
     let room = null;
 
     for(let i = 0; i < xows_cli_room.length; ++i) {
-      //if(xows_cli_room[i].addr === bare) {
       if(xows_cli_comp(xows_cli_room[i].addr, bare)) {
         room = xows_cli_room[i]; break;
       }
@@ -684,13 +679,11 @@ function xows_cli_peer_get(addr, type)
 
       if(room) {
         for(let i = 0; i < room.occu.length; ++i)
-          //if(room.occu[i].addr === addr)
           if(xows_cli_comp(room.occu[i].addr, addr))
             return room.occu[i];
       }
 
       for(let i = 0; i < xows_cli_ocpm.length; ++i)
-        //if(xows_cli_ocpm[i].addr === addr)
         if(xows_cli_comp(xows_cli_ocpm[i].addr, addr))
           return xows_cli_ocpm[i];
 
@@ -794,7 +787,6 @@ function xows_cli_peer_subsste(peer)
     if(peer.jbar !== null) {
 
       for(let i = 0; i < xows_cli_cont.length; ++i) {
-        //if(xows_cli_cont[i].addr === peer.jbar) {
         if(xows_cli_comp(xows_cli_cont[i].addr, peer.jbar)) {
           cont = xows_cli_cont[i]; break;
         }
@@ -850,7 +842,7 @@ function xows_cli_author_get(peer, addr, ocid)
   switch(peer.type)
   {
   case XOWS_PEER_ROOM:
-    if(addr === peer.join) {
+    if(xows_cli_comp(addr, peer.join)) {
       for(let i = 0; i < peer.occu.length; ++i)
         if(peer.occu[i].self !== null) return peer.occu[i];
     } else {
@@ -860,31 +852,28 @@ function xows_cli_author_get(peer, addr, ocid)
 
   case XOWS_PEER_CONT: {
       const bare = xows_jid_bare(addr);
-      //if(addr.startsWith(xows_cli_self.addr)) {
       if(xows_cli_comp(xows_cli_self.addr, bare)) {
         return xows_cli_self;
       } else {
         for(let i = 0; i < xows_cli_cont.length; ++i)
-          //if(xows_cli_cont[i].addr === bare)
           if(xows_cli_comp(xows_cli_cont[i].addr, bare))
             return xows_cli_cont[i];
       }
     } break;
 
   case XOWS_PEER_OCCU:
-    if(addr === peer.room.join) {
+    if(xows_cli_comp(addr, peer.room.join)) {
       for(let i = 0; i < peer.room.occu.length; ++i)
         if(peer.room.occu[i].self !== null) return peer.room.occu[i];
     } else {
       for(let i = 0; i < xows_cli_ocpm.length; ++i)
-        //if(xows_cli_ocpm[i].addr === addr)
         if(xows_cli_comp(xows_cli_ocpm[i].addr, addr))
           return xows_cli_ocpm[i];
     }
     break;
   }
 
-  xows_log(0,"cli_author_get","author not found",addr+" ("+xows_jid_bare(addr)+")");
+  xows_log(0,"cli_author_get","author not found",addr);
 
   return null;
 }
@@ -1234,13 +1223,13 @@ function xows_cli_cnx_close()
   // Send "Gone" chatstat to all active chats
   for(let i = 0; i < xows_cli_cont.length; ++i) {
     if(xows_cli_cont[i].jlck !== xows_cli_cont[i].addr)
-      xows_cli_chst_set(xows_cli_cont[i], XOWS_CHAT_GONE);
+      xows_cli_chst_self_set(xows_cli_cont[i], XOWS_CHAT_GONE);
   }
 
   // Send "Gone" chatstat to all joined rooms
   for(let i = 0; i < xows_cli_room.length; ++i) {
     if(xows_cli_room[i].join)
-      xows_cli_chst_set(xows_cli_room[i], XOWS_CHAT_GONE);
+      xows_cli_chst_self_set(xows_cli_room[i], XOWS_CHAT_GONE);
   }
 
   // Say goodbye
@@ -2306,7 +2295,7 @@ let xows_cli_fw_msgchst = function() {};
  * @param   {string}    from      Sender JID
  * @param   {string}    type      Message type
  * @param   {number}    state     Chat state
- * @param   {string}   [ocid]   Occumant Anonymous UID
+ * @param   {string}   [ocid]     Optional Occupant Anonymous UID
  */
 function xows_cli_chst_onrecv(id, from, type, state, ocid)
 {
@@ -2330,6 +2319,7 @@ function xows_cli_chst_onrecv(id, from, type, state, ocid)
     return;
   }
 
+  // Updates Contact or Occupant chat state
   switch(peer.type)
   {
   case XOWS_PEER_ROOM: {
@@ -2372,7 +2362,7 @@ let xows_cli_chst_hto = null;
  * @param   {object}    peer      Peer object to send notification
  * @param   {object}    stat      New chat state to set
  */
-function xows_cli_chst_set(peer, stat)
+function xows_cli_chst_self_set(peer, stat)
 {
   // This may happen with Private Conversation
   if(peer.type === XOWS_PEER_OCCU && peer.show == 0)
@@ -2392,7 +2382,7 @@ function xows_cli_chst_set(peer, stat)
     }
 
     // Create/reset a timeout to end typing state after delay
-    xows_cli_chst_hto = setTimeout(xows_cli_chst_set,4000,peer,XOWS_CHAT_PAUS);
+    xows_cli_chst_hto = setTimeout(xows_cli_chst_self_set,4000,peer,XOWS_CHAT_PAUS);
 
   } else {
 
