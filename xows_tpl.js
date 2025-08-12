@@ -1611,6 +1611,13 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
   const styled = xows_tpl_parse_styling(mesg.body, xows_tpl_mesg_urls);
   mesg_body.innerHTML = styled;
 
+  // Check for Out Of Band Data
+  if(mesg.xoob) {
+    // If URL was not already parsed, add it to list
+    if(!xows_tpl_mesg_urls.includes(mesg.xoob))
+      xows_tpl_mesg_urls.push(mesg.xoob);
+  }
+
   // Check whether we have URLs to embeds
   const embeds = xows_tpl_parse_embeds(xows_tpl_mesg_urls);
   if(embeds) {
@@ -1619,9 +1626,14 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
     mesg_embd.innerHTML = embeds;
     mesg_embd.hidden = false;
 
-    // check whether message is an alone link
-    if(xows_tpl_reg_alone_link.test(styled))
+    // check wehther message is only Out Of Band link
+    if(mesg.body === mesg.xoob) {
       mesg_body.hidden = true;
+    } else {
+      // check whether message is an alone link
+      if(xows_tpl_reg_alone_link.test(styled))
+        mesg_body.hidden = true;
+    }
   }
 
   // Return final tree

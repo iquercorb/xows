@@ -2240,8 +2240,9 @@ function xows_gui_upld_onload(peer, stat, data)
     } return; //< do not close dialog
 
   case XOWS_UPLD_SUCC:
-    // Send a message to current selected contact with URL to download
-    xows_cli_msg_send(peer, data);
+    // Send a message to current selected contact with URL as
+    // body and Out Of Band Data
+    xows_cli_msg_send(peer, data, null, null, null, data);
     break;
 
   default: //< XOWS_UPLD_ABRT

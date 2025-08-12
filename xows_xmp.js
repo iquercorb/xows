@@ -144,6 +144,7 @@ function xows_xmp_set_callback(event, callback)
  * @param   {string}    from    Message 'from' attribute
  * @param   {string}    type    Message 'type' attribute
  * @param   {string}   [body]   Optional Message <body> node text content
+ * @param   {string}   [xoob]   Optional Out Of Band Data URI
  * @param   {string}   [time]   Optional Message parsed or created time
  * @param   {string}   [recp]   Optional Receipt <received> node 'id' attribute
  * @param   {string}   [retr]   Optional Retract <retract> node 'id' attribute
@@ -155,7 +156,7 @@ function xows_xmp_set_callback(event, callback)
  * @param   {string}   [ocid]   Optional MUC <occupant-id> node 'id' attribute
  * @param   {string}   [page]   Optional MAM Result (Page) 'id' attribute
  */
-function xows_xmp_message_forge(id, to, from, type, body, time, recp, retr, repl, rpid, rpto, orid, szid, ocid, page)
+function xows_xmp_message_forge(id, to, from, type, body, xoob, time, recp, retr, repl, rpid, rpto, orid, szid, ocid, page)
 {
   // Set default time
   if(!time) time = new Date().getTime();
@@ -167,6 +168,7 @@ function xows_xmp_message_forge(id, to, from, type, body, time, recp, retr, repl
     "from":from,    //< Message sender
     "type":type,    //< Message type
     "body":body,    //< Body content
+    "xoob":xoob,    //< Out Of Band URI
     "time":time,    //< Message time
     "recp":recp,    //< Message Receipt
     "retr":retr,    //< Retract message ID
@@ -1523,6 +1525,14 @@ const XOWS_NS_OCCUID = "urn:xmpp:occupant-id:0";
  */
 const XOWS_NS_STYLING = "urn:xmpp:styling:0";
 
+/* ---------------------------------------------------------------------------
+ * XMPP API - Message semantics - Out of Band Data (XEP-0066)
+ * ---------------------------------------------------------------------------*/
+/**
+ * Constant value for Out of Band Data (XEP-0066) XMLNS
+ */
+const XOWS_NS_XOOB = "jabber:x:oob";
+
 /**
  * Module Event-Forwarding callback for Received Chat Message (with Body content)
  */
@@ -1556,7 +1566,7 @@ function xows_xmp_message_recv(stanza)
     return true;
   }
 
-  let time, body, chst, repl, rpid, rpto, orid, szid, ocid, mucx;
+  let time, body, xoob, chst, repl, rpid, rpto, orid, szid, ocid, mucx;
 
   for(let i = 0; i < stanza.childNodes.length; ++i) {
 
@@ -1672,6 +1682,13 @@ function xows_xmp_message_recv(stanza)
       continue;
     }
 
+    // Check for Out Of Band Data URI
+    if(xmlns === XOWS_NS_XOOB) {
+      const url = node.querySelector("url"); //< search for <url>
+      xoob = xows_xml_innertext(url);
+      continue;
+    }
+
     // Check for <body> node
     if(tname === "body") {
       body = xows_xml_innertext(node);
@@ -1684,7 +1701,7 @@ function xows_xmp_message_recv(stanza)
   let handled = false;
 
   if(body) {
-    xows_xmp_fw_msg_onrecv(xows_xmp_message_forge(id, to, from, type, body, time,
+    xows_xmp_fw_msg_onrecv(xows_xmp_message_forge(id, to, from, type, body, xoob ,time,
                                                  null, null, repl, rpid, rpto,
                                                  orid, szid, ocid));
     handled = true;
@@ -1712,10 +1729,11 @@ function xows_xmp_message_recv(stanza)
  * @param   {string}   [repl]     Optionnal message ID this one Replace
  * @param   {string}   [rpid]     Optionnal replyed message ID
  * @param   {string}   [rpto]     Optionnal replyed message author JID
+ * @param   {string}   [xoob]     Optionnal Out of Band Data URI
  *
  * @return  {string}    Sent message ID
  */
-function xows_xmp_message_body_send(type, to, body, recp, repl, rpid, rpto)
+function xows_xmp_message_body_send(type, to, body, recp, repl, rpid, rpto, xoob)
 {
   // Generate 'custom' id to allow sender to track message
   const id = xows_gen_uuid();
@@ -1723,6 +1741,11 @@ function xows_xmp_message_body_send(type, to, body, recp, repl, rpid, rpto)
   // Create message stanza
   const stanza =  xows_xml_node("message",{"id":id,"to":to,"type":type},
                     xows_xml_node("body",null,body));
+
+  // Add Out of Band Data URI
+  if(xoob)
+    xows_xml_parent(stanza, xows_xml_node("x",{"xmlns":XOWS_NS_XOOB},
+                              xows_xml_node("url",null,xoob)));
 
   // Add Origin ID (XEP-0359)
   xows_xml_parent(stanza, xows_xml_node("origin-id",{"id":id,"xmlns":XOWS_NS_SID}));
@@ -3701,7 +3724,7 @@ function xows_xmp_mam_result_recv(result)
   const from = message.getAttribute("from");
   const to = message.getAttribute("to");
 
-  let body, recp, repl, retr, rpid, rpto, orid, szid, ocid;
+  let body, xoob, recp, repl, retr, rpid, rpto, orid, szid, ocid;
 
   // Notice for future implementation :
   //
@@ -3764,6 +3787,13 @@ function xows_xmp_mam_result_recv(result)
       continue;
     }
 
+    // Check for Out Of Band Data URI
+    if(xmlns === XOWS_NS_XOOB) {
+      const url = node.querySelector("url"); //< search for <url>
+      xoob = xows_xml_innertext(url);
+      continue;
+    }
+
     // Check for <body> node
     if(tname === "body") {
       body = node.hasChildNodes() ? xows_xml_innertext(node) : "";
@@ -3782,7 +3812,7 @@ function xows_xmp_mam_result_recv(result)
   if(!szid) szid = page;
 
   // Add archived message to stack
-  xows_xmp_mam_stack.get(qid).push(xows_xmp_message_forge(id, to, from, type, body, time,
+  xows_xmp_mam_stack.get(qid).push(xows_xmp_message_forge(id, to, from, type, body, xoob, time,
                                                           recp, retr, repl, rpid, rpto,
                                                           orid, szid, ocid, page));
 

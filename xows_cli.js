@@ -2210,8 +2210,9 @@ function xows_cli_msg_onrecv(mesg, error)
  * @param   {string}   [repl]     Optionnal message ID this one replace
  * @param   {string}   [rpid]     Optionnal replyed message ID
  * @param   {string}   [rpto]     Optionnal replyed message author JID
+ * @param   {string}   [xoob]     Optionnal Out of Band Data URI
  */
-function xows_cli_msg_send(peer, body, repl, rpid, rpto)
+function xows_cli_msg_send(peer, body, repl, rpid, rpto, xoob)
 {
   let type, from, wait = true;
 
@@ -2246,10 +2247,10 @@ function xows_cli_msg_send(peer, body, repl, rpid, rpto)
   const to = peer.jlck;
 
   // Send message with body
-  const id = xows_xmp_message_body_send(type, to, body, wait, repl, rpid, rpto);
+  const id = xows_xmp_message_body_send(type, to, body, wait, repl, rpid, rpto, xoob);
 
   // Create message object
-  const mesg = xows_xmp_message_forge(id, to, from, type, body, null, null, null, repl, rpid, rpto, id);
+  const mesg = xows_xmp_message_forge(id, to, from, type, body, xoob, null, null, null, repl, rpid, rpto, id);
 
   // Forward echo sent message
   xows_cli_fw_msgrecv(peer, mesg, wait, true);
