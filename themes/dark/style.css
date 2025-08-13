@@ -561,6 +561,7 @@ btn-close:hover {
   border-style: solid;
   border-color: var(--ctrl-base);
   border-radius: 6px;
+  margin-bottom: 15px;
 }
 .chkitem {
   display: block;
