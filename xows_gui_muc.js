@@ -1136,7 +1136,7 @@ function xows_gui_muc_occu_menu_onclick(event)
 /**
  * Storage for Room-Configuration (mucc) Page parameters.
  */
-const xows_gui_page_mucc = {room:null,form:null,cancel:true};
+const xows_gui_page_mucc = {room:null,xform:null,cancel:true};
 
 /**
  * Handles received result for Room-Configuration (mucc) Page.
@@ -1162,49 +1162,94 @@ function xows_gui_page_mucc_onresult(room, type, error)
 function xows_gui_page_mucc_onvalid()
 {
   const room = xows_gui_page_mucc.room;
-  const form = xows_gui_page_mucc.form;
+  const xform = xows_gui_page_mucc.xform;
+
+  // If Password field is empty, disable password-protected
+  const mucc_pass = xows_doc("mucc_pass");
+
+  if(!xows_doc("mucc_pass").value)
+    xows_doc("mucc_prot").checked = false;
 
   // Fill configuration from with input values
-  for(let i = 0; i < form.length; ++i) {
+  for(let i = 0; i < xform.length; ++i) {
+
+    // Create value array if necessary
+    if(!xform[i].value)
+      xform[i].value = [];
 
     // Reference to value array
-    const value = form[i].value;
+    const xvalue = xform[i].value;
 
-    switch(form[i]["var"])
+    switch(xform[i]["var"])
     {
     case "muc#roomconfig_roomname":
-      value[0] = xows_doc("mucc_titl").value; break;
-    case "muc#roomconfig_roomdesc":
-      value[0] = xows_doc("mucc_desc").value; break;
-    case "muc#roomconfig_persistentroom":
-      value[0] = xows_doc("mucc_pers").checked?"1":"0"; break;
-    case "muc#roomconfig_publicroom":
-      value[0] = xows_doc("mucc_publ").checked?"1":"0"; break;
-    case "muc#roomconfig_roomsecret":
-      value[0] = xows_doc("mucc_prot").checked ? xows_doc("mucc_pass").value : ""; break;
-    case "muc#roomconfig_membersonly":
-      value[0] = xows_doc("mucc_mbon").checked?"1":"0"; break;
-    case "muc#roomconfig_moderatedroom":
-      value[0] = xows_doc("mucc_modo").checked?"1":"0"; break;
-    case "muc#roomconfig_whois":
-      value[0] = xows_doc("mucc_anon").value; break;
-    case "muc#roomconfig_presencebroadcast":
-      value.length = 0;
-      if(xows_doc("mucc_lsvi").checked) value.push("visitor");
-      if(xows_doc("mucc_lspa").checked) value.push("participant");
-      if(xows_doc("mucc_lsmo").checked) value.push("moderator");
+      xvalue[0] = xows_doc("mucc_titl").value;
       break;
+
+    case "muc#roomconfig_roomdesc":
+      xvalue[0] = xows_doc("mucc_desc").value;
+      break;
+
+    case "muc#roomconfig_persistentroom":
+      xvalue[0] = xows_doc("mucc_pers").checked ? "1" : "0";
+      break;
+
+    case "muc#roomconfig_publicroom":
+      xvalue[0] = xows_doc("mucc_publ").checked ? "1" : "0";
+      break;
+
+    case "muc#roomconfig_passwordprotectedroom":
+      xvalue[0] = xows_doc("mucc_prot").checked ? "1" : "0";
+      break;
+
+    case "muc#roomconfig_roomsecret":
+      xvalue[0] = xows_doc("mucc_prot").checked ? xows_doc("mucc_pass").value : "";
+      break;
+
+    case "muc#roomconfig_membersonly":
+      xvalue[0] = xows_doc("mucc_mbon").checked ? "1" : "0";
+      break;
+
+    case "muc#roomconfig_moderatedroom":
+      xvalue[0] = xows_doc("mucc_modo").checked ? "1" : "0";
+      break;
+
+    case "muc#roomconfig_whois":
+      xvalue[0] = xows_doc("mucc_anon").value;
+      break;
+
+    case "muc#roomconfig_presencebroadcast":
+      xvalue.length = 0;
+      if(xows_doc("mucc_lsvi").checked) xvalue.push("visitor");
+      if(xows_doc("mucc_lspa").checked) xvalue.push("participant");
+      if(xows_doc("mucc_lsmo").checked) xvalue.push("moderator");
+      break;
+
     case "muc#roomconfig_historylength":
-      value[0] = xows_doc("mucc_hmax").value; break;
+      xvalue[0] = xows_doc("mucc_hmax").value;
+      break;
+
     case "muc#roomconfig_defaulthistorymessages":
-      value[0] = xows_doc("mucc_hdef").value; break;
+      xvalue[0] = xows_doc("mucc_hdef").value;
+      break;
+
     case "muc#roomconfig_enablearchiving":
-      value[0] = xows_doc("mucc_arch").checked?"1":"0"; break;
+    case "mam": //< Ejabberd specific
+      xvalue[0] = xows_doc("mucc_arch").checked ? "1" : "0";
+      break;
+
+    case "muc#roomconfig_maxusers":
+      xvalue[0] = xows_doc("mucc_maxo").value;
+      break;
+
+    case "muc#roomconfig_allowpm":
+      xvalue[0] = xows_doc("mucc_alpm").value;
+      break;
     }
   }
 
   // Submit fulfilled configuration form
-  xows_cli_muc_cfg_set(room, form, xows_gui_page_mucc_onresult);
+  xows_cli_muc_cfg_set(room, xform, xows_gui_page_mucc_onresult);
 }
 
 /**
@@ -1215,55 +1260,93 @@ function xows_gui_page_mucc_onabort()
 {
   // TODO: show or hide sections according available options
 
-  const form = xows_gui_page_mucc.form;
+  const xform = xows_gui_page_mucc.xform;
 
   // Setup page inputs according received config from
-  for(let i = 0; i < form.length; ++i) {
+  for(let i = 0; i < xform.length; ++i) {
 
     // Reference to value array
-    const value = form[i].value;
+    const xvalue = xform[i].value;
 
-    switch(form[i]["var"])
+    switch(xform[i]["var"])
     {
     case "muc#roomconfig_roomname":
-      xows_doc("mucc_titl").value = value[0] ? value[0] : ""; break;
-    case "muc#roomconfig_roomdesc":
-      xows_doc("mucc_desc").value = value[0]; break;
-    case "muc#roomconfig_lang": break;  //< TODO
-    case "muc#roomconfig_persistentroom":
-      xows_doc("mucc_pers").checked = xows_asbool(value[0]); break;
-    case "muc#roomconfig_publicroom":
-      xows_doc("mucc_publ").checked = xows_asbool(value[0]); break;
-    case "muc#roomconfig_passwordprotectedroom": break;  //< TODO
-    case "muc#roomconfig_roomsecret": {
-      const enabled = xows_asbool(value[0]);
-      xows_doc("mucc_prot").checked = enabled;
-      xows_doc("mucc_pass").disabled = !enabled;
-      xows_doc("mucc_pass").value = value[0];
-      break; }
-    case "muc#roomconfig_membersonly":
-      xows_doc("mucc_mbon").checked = xows_asbool(value[0]); break;
-    case "muc#roomconfig_moderatedroom":
-      xows_doc("mucc_modo").checked = xows_asbool(value[0]); break;
-    case "muc#roomconfig_whois":
-      xows_doc("mucc_anon").value = value; break;
-    case "muc#roomconfig_presencebroadcast":
-      xows_doc("mucc_lsvi").checked = value.includes("visitor");
-      xows_doc("mucc_lspa").checked = value.includes("participant");
-      xows_doc("mucc_lsmo").checked = value.includes("moderator");
+      xows_doc("mucc_titl").value = xvalue ? xvalue[0] : "";
       break;
+
+    case "muc#roomconfig_roomdesc":
+      xows_doc("mucc_desc").value = xvalue ? xvalue[0] : "";
+      break;
+
+    case "muc#roomconfig_lang":
+      //< TODO: really ?
+      break;
+
+    case "muc#roomconfig_persistentroom":
+      xows_doc("mucc_pers").checked = xvalue ? xows_asbool(xvalue[0]) : false;
+      break;
+
+    case "muc#roomconfig_publicroom":
+      xows_doc("mucc_publ").checked = xvalue ? xows_asbool(xvalue[0]) : false;
+      break;
+
+    case "muc#roomconfig_passwordprotectedroom":
+      //< TODO: This field is not mandatory but act as toggle in ejabberd
+      break;
+
+    case "muc#roomconfig_roomsecret": {
+        const enabled = xvalue ? xows_asbool(xvalue[0]) : false;
+        xows_doc("mucc_prot").checked = enabled;
+        xows_doc("mucc_pass").disabled = !enabled;
+        xows_doc("mucc_pass").value = xvalue ? xvalue[0] : "";
+      } break;
+
+    case "muc#roomconfig_membersonly":
+      xows_doc("mucc_mbon").checked = xvalue ? xows_asbool(xvalue[0]) : false;
+      break;
+
+    case "muc#roomconfig_moderatedroom":
+      xows_doc("mucc_modo").checked = xvalue ? xows_asbool(xvalue[0]) : false;
+      break;
+
+    case "muc#roomconfig_whois":
+      xows_doc("mucc_anon").value = xvalue[0];
+      break;
+
+    case "muc#roomconfig_presencebroadcast":
+      xows_doc("mucc_lsvi").checked = xvalue.includes("visitor");
+      xows_doc("mucc_lspa").checked = xvalue.includes("participant");
+      xows_doc("mucc_lsmo").checked = xvalue.includes("moderator");
+      break;
+
     case "muc#roomconfig_historylength":
-      xows_doc("mucc_hmax").value = value[0]; break;
+      xows_doc("mucc_hmax").value = xvalue[0];
+      break;
+
     case "muc#roomconfig_defaulthistorymessages":
-      xows_doc("mucc_hdef").value = value[0]; break;
+      xows_doc("mucc_hdef").value = xvalue[0];
+      break;
+
     case "muc#roomconfig_enablearchiving":
-      xows_doc("mucc_arch").checked = xows_asbool(value[0]); break;
-    case "muc#roomconfig_maxusers": break; //< TODO
-    case "muc#roomconfig_changesubject": break; //< TODO
-    case "muc#roomconfig_allowpm":  break; //< TODO
-    //case "muc#roomconfig_allowmemberinvites":
-    //  xows_doc("room_invt").checked = form[i].value[0];
-    //  break;
+    case "mam": //< Ejabberd specific
+      xows_doc("mucc_arch").checked = xows_asbool(xvalue[0]);
+      break;
+
+    case "muc#roomconfig_maxusers":
+      xows_doc("mucc_maxo").value = xvalue[0];
+      break;
+
+    case "muc#roomconfig_allowpm":
+      xows_doc("mucc_alpm").value = xvalue[0];
+      break;
+
+    case "muc#roomconfig_changesubject":
+      // TODO: todo or not todo ?
+      break;
+
+    case "muc#roomconfig_allowmemberinvites":
+      // TODO: one day...
+      break;
     }
   }
 }
@@ -1281,56 +1364,146 @@ function xows_gui_page_mucc_oninput(target)
 {
   let change = false;
 
-  const form = xows_gui_page_mucc.form;
+  const xform = xows_gui_page_mucc.xform;
 
   // Enable or disable Password input
-  const prot = xows_doc("mucc_prot").checked;
-  xows_doc("mucc_pass").disabled = !prot;
-  if(!prot) xows_doc("mucc_pass").value = "";
+  const mucc_pass = xows_doc("mucc_pass");
+  if(xows_doc("mucc_prot").checked) {
+    mucc_pass.disabled = false;
+  } else {
+    mucc_pass.disabled = true;
+    mucc_pass.value = "";
+  }
 
   // Compare page inputs and received form values
-  for(let i = 0; i < form.length; ++i) {
+  for(let i = 0; i < xform.length; ++i) {
 
     // Reference to value array
-    const value = form[i].value;
+    const xvalue = xform[i].value;
 
-    switch(form[i]["var"])
+    switch(xform[i]["var"])
     {
     case "muc#roomconfig_roomname":
-      if(value[0] !== xows_doc("mucc_titl").value) change = true; break;
-    case "muc#roomconfig_roomdesc":
-      if(value[0] !== xows_doc("mucc_desc").value) change = true; break;
-    case "muc#roomconfig_persistentroom":
-      if(xows_asbool(value[0]) !== xows_doc("mucc_pers").checked) change = true; break;
-    case "muc#roomconfig_publicroom":
-      if(xows_asbool(value[0]) !== xows_doc("mucc_publ").checked) change = true; break;
-    case "muc#roomconfig_roomsecret":
-      if(value[0] !== xows_doc("mucc_pass").value) change = true; break;
-    case "muc#roomconfig_membersonly":
-      if(xows_asbool(value[0]) !== xows_doc("mucc_mbon").checked) change = true; break;
-    case "muc#roomconfig_moderatedroom":
-      if(xows_asbool(value[0]) !== xows_doc("mucc_modo").checked) change = true; break;
-    case "muc#roomconfig_whois":
-      if(value[0] !== xows_doc("mucc_anon").value) change = true; break;
-    case "muc#roomconfig_presencebroadcast":
-      if(value.includes("visitor") !== xows_doc("mucc_lsvi").checked) change = true;
-      if(value.includes("participant") !== xows_doc("mucc_lspa").checked) change = true;
-      if(value.includes("moderator") !== xows_doc("mucc_lsmo").checked) change = true;
+      if(xvalue) {
+        if(xvalue[0] !== xows_doc("mucc_titl").value) change = true;
+      } else {
+        if(xows_doc("mucc_titl").value) change = true;
+      }
       break;
+
+    case "muc#roomconfig_roomdesc":
+      if(xvalue) {
+        if(xvalue[0] !== xows_doc("mucc_desc").value) change = true;
+      } else {
+        if(xows_doc("mucc_desc").value) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_persistentroom":
+      if(xvalue) {
+        if(xows_asbool(xvalue[0]) !== xows_doc("mucc_pers").checked) change = true;
+      } else {
+        if(xows_doc("mucc_pers").checked) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_publicroom":
+      if(xvalue) {
+        if(xows_asbool(xvalue[0]) !== xows_doc("mucc_publ").checked) change = true;
+      } else {
+        if(xows_doc("mucc_publ").checked) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_passwordprotectedroom":
+      if(xvalue) {
+        if(xows_asbool(xvalue[0]) !== xows_doc("mucc_prot").checked) change = true;
+      } else {
+        if(xows_doc("mucc_prot").checked) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_roomsecret":
+      if(xvalue) {
+        if(xvalue[0] !== xows_doc("mucc_pass").value) change = true;
+      } else {
+        if(xows_doc("mucc_pass").value) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_membersonly":
+      if(xvalue) {
+        if(xows_asbool(xvalue[0]) !== xows_doc("mucc_mbon").checked) change = true;
+      } else {
+        if(xows_doc("mucc_mbon").checked) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_moderatedroom":
+      if(xvalue) {
+        if(xows_asbool(xvalue[0]) !== xows_doc("mucc_modo").checked) change = true;
+      } else {
+        if(xows_doc("mucc_modo").checked) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_whois":
+      if(xvalue[0] !== xows_doc("mucc_anon").value) change = true;
+      break;
+
+    case "muc#roomconfig_presencebroadcast":
+      if(xvalue.includes("visitor") !== xows_doc("mucc_lsvi").checked) change = true;
+      if(xvalue.includes("participant") !== xows_doc("mucc_lspa").checked) change = true;
+      if(xvalue.includes("moderator") !== xows_doc("mucc_lsmo").checked) change = true;
+      break;
+
     case "muc#roomconfig_historylength":
-      if(value[0] !== xows_doc("mucc_hmax").value) change = true; break;
+      if(xvalue) {
+        if(xvalue[0] !== xows_doc("mucc_hmax").value) change = true;
+      } else {
+        if(xows_doc("mucc_hmax").value) change = true;
+      }
+      break;
+
     case "muc#roomconfig_defaulthistorymessages":
-      if(value[0] !== xows_doc("mucc_hdef").value) change = true; break;
+      if(xvalue) {
+        if(xvalue[0] !== xows_doc("mucc_hdef").value) change = true;
+      } else {
+        if(xows_doc("mucc_hdef").value) change = true;
+      }
+      break;
+
     case "muc#roomconfig_enablearchiving":
-      if(xows_asbool(value[0]) !== xows_doc("mucc_arch").checked) change = true; break;
+    case "mam": //< Ejabberd specific
+      if(xvalue) {
+        if(xows_asbool(xvalue[0]) !== xows_doc("mucc_arch").checked) change = true;
+      } else {
+        if(xows_doc("mucc_arch").checked) change = true;
+      }
+      break;
+
+    case "muc#roomconfig_maxusers":
+      if(xvalue[0] !== xows_doc("mucc_maxo").value) change = true;
+      break;
+
+    case "muc#roomconfig_allowpm":
+      if(xvalue[0] !== xows_doc("mucc_alpm").value) change = true;
+      break;
     }
 
-    if(change) break;
+    if(change) {
+      console.log("changed: "+xform[i]["var"]+": "+xvalue[0]);
+      break;
+    }
   }
 
   // Open Message Box for save changes
-  if(change) xows_doc_popu_open_for_save(xows_gui_page_mucc_onvalid,
-                                         xows_gui_page_mucc_onabort);
+  if(change) {
+    xows_doc_popu_open_for_save(xows_gui_page_mucc_onvalid,
+                                xows_gui_page_mucc_onabort);
+  } else {
+    xows_doc_popu_close();
+  }
 }
 
 /**
@@ -1355,7 +1528,7 @@ function xows_gui_page_mucc_onclose()
   }
 
   // unreference data
-  param.form = null;
+  param.xform = null;
   param.room = null;
 }
 
@@ -1363,22 +1536,68 @@ function xows_gui_page_mucc_onclose()
  * Opens Room-Configuration (mucc) Page.
  *
  * @param   {object}   room    ROOM Peer object
- * @param   {object}   form    Supplied form for config fields
+ * @param   {object}   xform   Supplied form for config fields
  */
-function xows_gui_page_mucc_open(room, form)
+function xows_gui_page_mucc_open(room, xform)
 {
-  // Initialize config form with default value if not defined
-  for(let i = 0; i < form.length; ++i)
-    if(!form[i].value) form[i].value = [0];
-
+  const x = xows_xml_parse("<x type='form' xmlns='jabber:x:data'><title>Configuration of room xowstest@chat.f-hub.org</title><field var='FORM_TYPE' type='hidden'><value>http://jabber.org/protocol/muc#roomconfig</value></field><field var='muc#roomconfig_roomname' type='text-single' label='Room title'/><field var='muc#roomconfig_roomdesc' type='text-single' label='Room description'/><field var='muc#roomconfig_lang' type='text-single' label='Natural Language for Room Discussions'><value>en</value></field><field var='muc#roomconfig_persistentroom' type='boolean' label='Make room persistent'><value>1</value></field><field var='muc#roomconfig_publicroom' type='boolean' label='Make room public searchable'><value>0</value></field><field var='public_list' type='boolean' label='Make participants list public'><value>0</value></field><field var='muc#roomconfig_passwordprotectedroom' type='boolean' label='Make room password protected'><value>0</value></field><field var='muc#roomconfig_roomsecret' type='text-private' label='Password'/><field var='muc#roomconfig_maxusers' type='list-single' label='Maximum Number of Occupants'><value>200</value><option label='5'><value>5</value></option><option label='10'><value>10</value></option><option label='20'><value>20</value></option><option label='30'><value>30</value></option><option label='50'><value>50</value></option><option label='100'><value>100</value></option><option label='200'><value>200</value></option><option label='400'><value>400</value></option></field><field var='muc#roomconfig_whois' type='list-single' label='Present real Jabber IDs to'><value>moderators</value><option label='Moderators Only'><value>moderators</value></option><option label='Anyone'><value>anyone</value></option></field><field var='muc#roomconfig_presencebroadcast' type='list-multi' label='Roles for which Presence is Broadcasted'><value>moderator</value><value>participant</value><value>visitor</value><option label='Moderator'><value>moderator</value></option><option label='Participant'><value>participant</value></option><option label='Visitor'><value>visitor</value></option></field><field var='muc#roomconfig_membersonly' type='boolean' label='Make room members-only'><value>0</value></field><field var='muc#roomconfig_moderatedroom' type='boolean' label='Make room moderated'><value>0</value></field><field var='members_by_default' type='boolean' label='Default users as participants'><value>1</value></field><field var='muc#roomconfig_changesubject' type='boolean' label='Allow users to change the subject'><value>0</value></field><field var='muc#roomconfig_allowpm' type='list-single' label='Roles that May Send Private Messages'><value>anyone</value><option label='Anyone'><value>anyone</value></option><option label='Anyone with Voice'><value>participants</value></option><option label='Moderators Only'><value>moderators</value></option><option label='Nobody'><value>none</value></option></field><field var='allow_private_messages_from_visitors' type='list-single' label='Allow visitors to send private messages to'><value>anyone</value><option label='Nobody'><value>nobody</value></option><option label='Moderators Only'><value>moderators</value></option><option label='Anyone'><value>anyone</value></option></field><field var='allow_query_users' type='boolean' label='Allow users to query other users'><value>1</value></field><field var='muc#roomconfig_allowinvites' type='boolean' label='Allow users to send invites'><value>1</value></field><field var='allow_visitor_status' type='boolean' label='Allow visitors to send status text in presence updates'><value>1</value></field><field var='allow_visitor_nickchange' type='boolean' label='Allow visitors to change nickname'><value>1</value></field><field var='allow_voice_requests' type='boolean' label='Allow visitors to send voice requests'><value>1</value></field><field var='allow_subscription' type='boolean' label='Allow subscription'><value>1</value></field><field var='voice_request_min_interval' type='text-single' label='Minimum interval between voice requests (in seconds)'><value>1800</value></field><field var='muc#roomconfig_pubsub' type='text-single' label='XMPP URI of Associated Publish-Subscribe Node'><value/></field><field var='enable_hats' type='boolean' label='Enable hats'><value>0</value></field><field var='mam' type='boolean' label='Enable message archiving'><value>1</value></field></x>").firstChild;
+  xform = xows_xmp_xdata_parse(x);
   // Set the Room ID in the page header frame
   xows_doc("mucc_room").innerText = "# "+room.name +" ("+room.addr+")";
 
   // Initialize parameters
   const param = xows_gui_page_mucc;
   param.room = room;
-  param.form = form;
+  param.xform = xform;
   param.cancel = true;
+
+  // Available parameters may differ depending service implementation and
+  // options, so we must show or hide page's fieldset elements according ones
+  // present in the supplied xform.
+  const page_mucc = xows_doc("page_mucc");
+
+  // Hide all fieldset elements fieldset
+  const fieldsets = page_mucc.querySelectorAll("FIELDSET");
+  for(let i = 0; i < fieldsets.length; ++i)
+    fieldsets[i].hidden = true;
+
+  // Show only fieldset that are in the xform
+  for(let i = 0; i < xform.length; ++i) {
+
+    const xvar = xform[i]["var"];
+
+    if(!xvar)
+      continue;
+
+    const fieldset = xows_doc(xvar);
+
+    if(fieldset)
+      fieldset.hidden = false;
+
+    // Specific case for Max Occupants options. Since available options may
+    // differ from one implementation to another, we must build the option
+    // list dynamically.
+    if(xvar === "muc#roomconfig_maxusers") {
+
+      const xoption = xform[i].option;
+      const mucc_maxo = xows_doc("mucc_maxo");
+      mucc_maxo.innerHtml = "";
+
+      // Add available options
+      for(let j = 0; j < xoption.length; ++j) {
+        const option = document.createElement("option");
+        option.setAttribute("value", xoption[j].value);
+        option.innerText = xoption[j].label;
+        mucc_maxo.appendChild(option);
+      }
+    }
+
+    // Specific case for "mam" nammed field. This is an Ejabberd specific
+    // field equivalent to the standard "muc#roomconfig_enablearchiving"
+    if(xvar === "mam") {
+      xows_doc("muc#roomconfig_enablearchiving").hidden = false;
+    }
+  }
 
   // Initialize inputs
   xows_gui_page_mucc_onabort();
