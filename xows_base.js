@@ -65,7 +65,7 @@ const XOWS_LOGO_SVG = new Path2D("m7.39 0.00182c-0.949 0.0386-1.99 0.696-2.81 1.
  */
 function xows_asbool(value)
 {
-  if(value.length) {
+  if(typeof value === "string") {
     const number = parseInt(value);
     if(Number.isNaN(number)) {
       return (value.toUpperCase() === "TRUE");
