@@ -202,8 +202,7 @@ function xows_sasl_sha1_resp(challenge)
   // Verify the server nonce begins by our cnonce
   if(nonce.substring(0, 24) !== xows_sasl_data.cnonce) {
     xows_sasl_data = {}; //< clear auth data
-    xows_log(0, "sasl_sha1_resp","SCRAM-SHA-1 challenge error",
-                "missing cnonce in server nonce");
+    xows_log(0, "sasl_sha1_resp","SCRAM-SHA-1 challenge error","missing cnonce in server nonce");
     if(xows_isfunc(xows_sasl_failure_cb))
       xows_sasl_failure_cb();
     return "";
