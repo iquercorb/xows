@@ -1326,7 +1326,8 @@ function xows_tpl_spawn_rost_room(room)
   inst.querySelector("PEER-NAME").innerText = room.name;
   inst.querySelector("PEER-META").innerText = room.desc;
   inst.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
-  //const peer_avat = inst.querySelector("PEER-AVAT");
+  inst.querySelector("[name='room_bt_unsb']").disabled = (room.affi < XOWS_AFFI_MEMB);
+  inst.querySelector("[name='room_bt_retr']").disabled = !room.book;
 
   return inst;
 }
@@ -1345,7 +1346,8 @@ function xows_tpl_update_rost_room(li_peer, room)
   li_peer.querySelector("PEER-NAME").innerText = room.name;
   li_peer.querySelector("PEER-META").innerText = room.desc;
   li_peer.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
-  //const peer_avat = li_peer.querySelector("PEER-AVAT");
+  li_peer.querySelector("[name='room_bt_unsb']").disabled = (room.affi < XOWS_AFFI_MEMB);
+  li_peer.querySelector("[name='room_bt_retr']").disabled = !room.book;
 }
 
 /* ---------------------------------------------------------------------------

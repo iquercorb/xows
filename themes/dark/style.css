@@ -1876,12 +1876,6 @@ peer-acts button:hover {
 peer-acts button:disabled {
   opacity: .3;
 }
-.cont-bt-rtry {
-  background-image: url("images/refresh.svg");
-}
-.cont-bt-unsb {
-  background-image: url("images/delete.svg");
-}
 /* ------------------------------------------------------------------ */
 /* Roster Contacts - <li-peer> Contact instance */
 /* ------------------------------------------------------------------ */
@@ -1900,6 +1894,12 @@ li-peer.PEER-CONT.PEER-DENY peer-name {
 }
 li-peer.PEER-CONT.PEER-DENY peer-meta {
   color: var(--text-error);
+}
+.cont-bt-rtry {
+  background-image: url("images/refresh.svg");
+}
+.cont-bt-unsb {
+  background-image: url("images/delete.svg");
 }
 /* ------------------------------------------------------------------ */
 /* Roster Contacts - <li-peer> Subscribe Request instance */
@@ -1925,12 +1925,21 @@ li-peer.PEER-PEND peer-meta {
 /* ------------------------------------------------------------------ */
 /* Roster Channels - <li-peer> Room instance */
 /* ------------------------------------------------------------------ */
+li-peer.PEER-ROOM button:disabled {
+  display: none;
+}
 li-peer.PEER-ROOM peer-avat {
   background-color: transparent;
   background-position: center;
   background-repeat: no-repeat;
   background-size: 26px;
   background-image: url("images/sharp.svg");
+}
+.room-bt-unsb {
+  background-image: url("images/refresh.svg");
+}
+.room-bt-retr {
+  background-image: url("images/delete.svg");
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control panel */

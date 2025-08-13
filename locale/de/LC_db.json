@@ -143,6 +143,12 @@
   "Server error":
   "Serverfehler",
 
+  "Remove bookmark":
+  "",
+
+  "Unsubscribe Channel":
+  "",
+
   "Channels":
   "Kanäle",
 
@@ -430,6 +436,12 @@
 
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "Ein neuer Kontakt fragt nach Abbomentautorisierung. Willst du diese autorisieren und den Kontakt hinzufügen ?",
+
+  "Remove Channel bookmark":
+  "",
+
+  "Do you really want to remove Channel bookmark?":
+  "",
 
   "Allow":
   "Erlauben",

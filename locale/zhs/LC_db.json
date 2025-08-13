@@ -143,6 +143,12 @@
   "Server error":
   "服务器错误",
 
+  "Remove bookmark":
+  "",
+
+  "Unsubscribe Channel":
+  "",
+
   "Channels":
   "群聊",
 
@@ -430,6 +436,12 @@
 
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "新的联系人添加申请，您是否同意并添加到联系人列表？",
+
+  "Remove Channel bookmark":
+  "",
+
+  "Do you really want to remove Channel bookmark?":
+  "",
 
   "Allow":
   "同意",

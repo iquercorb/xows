@@ -2802,9 +2802,10 @@ function xows_cli_vcardt_query(peer)
  *
  * @param   {string}    from      Sender JID
  * @param   {string}    node      PubSub node
- * @param   {object[]}  items     Received items
+ * @param   {object[]}  items     Received item elements
+ * @param   {object[]}  retrs     Received retract elements
  */
-function xows_cli_msg_onpubs(from, node, items)
+function xows_cli_msg_onpubs(from, node, items, retrs)
 {
   xows_log(2,"cli_xmp_onpubsub","received notification",node);
 
@@ -2834,9 +2835,9 @@ function xows_cli_msg_onpubs(from, node, items)
 
   // Checks for bookmarks notification
   if(node === XOWS_NS_BOOKMARKS) {
-    if(items.length) {
+    if(items.length || retrs.length) {
       // Send to bookmark parsing function
-      xows_cli_pep_book_parse(from, items);
+      xows_cli_pep_book_parse(from, items, retrs);
     }
   }
 }
@@ -3276,10 +3277,12 @@ function xows_cli_pep_avat_disable()
  *
  * @param   {string}    from      Query result Sender JID
  * @param   {object[]}  items     List of <item> nodes
+ * @param   {object[]}  items     List of <retract> nodes
  */
-function xows_cli_pep_book_parse(from, items)
+function xows_cli_pep_book_parse(from, items, retrs)
 {
-  for(let i = 0, n = items.length; i < n; ++i) {
+  // Added bookmarks
+  for(let i = 0; i < items.length; ++i) {
 
     let addr = items[i].id;
     let name = items[i].child.getAttribute("name");
@@ -3312,12 +3315,31 @@ function xows_cli_pep_book_parse(from, items)
     // Fetch info and push Room
     xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_peer_push);
   }
+
+  // Retracted (removed) bookmarks
+  for(let i = 0; i < retrs.length; ++i) {
+
+    const addr = retrs[i].id;
+
+    // Check whether Room already exists
+    const room = xows_cli_room_get(addr);
+    if(!room) {
+      xows_log(1,"cli_pep_book_parse","bookmark room not found",addr);
+      continue;
+    }
+
+    // This room is bookmarked
+    room.book = false;
+
+    // Push Room
+    xows_cli_peer_push(room);
+  }
 }
 
 /**
  * Publish (add) user (own) PEP Native Bookmark.
  *
- * @param   {object}    room      Room object to add bookmark
+ * @param   {object}    room      ROOM Peer object
  * @param   {string}   [name]     Optional alternative bookmark name
  * @param   {string}   [auto]     Optional set auto-join to bookmark
  * @param   {string}   [nick]     Optional alternative preferend nickname
@@ -3328,6 +3350,16 @@ function xows_cli_pep_book_publ(room, auto, name, nick)
   const mrk_nick = nick ? nick : xows_jid_resc(room.join);
 
   xows_xmp_bookmark_publish(room.addr, mrk_name, auto, mrk_nick, null);
+}
+
+/**
+ * Retract (remove) user (own) PEP Native Bookmark.
+ *
+ * @param   {object}    room      ROOM Peer object
+ */
+function xows_cli_pep_book_retr(room)
+{
+  xows_xmp_bookmark_retract(room.addr);
 }
 
 /* ---------------------------------------------------------------------------
@@ -3946,7 +3978,7 @@ function xows_cli_muc_info_parse(from, node, idens, feats, xform, error)
     }
   }
 
-  if(room.load) {
+  if(room.load & XOWS_FETCH_INFO) {
     xows_load_task_done(room, XOWS_FETCH_INFO);
   } else {
     xows_cli_peer_push(room);
@@ -4135,6 +4167,9 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
         } else {
 
+          // Fetch room infos
+          xows_cli_muc_info_query(room);
+
           // Await for Room subject to be received
           xows_load_task_push(room, XOWS_AWAIT_SUBJ, xows_cli_fw_mucjoin);
         }
@@ -4309,7 +4344,9 @@ function xows_cli_muc_onsubj(id, from, subj)
   // Subject is the last thing sent after room join, we use it as
   // signal that we received all presences and history messages
   // following a newly joined room.
-  xows_load_task_done(room, XOWS_AWAIT_SUBJ);
+  if(room.load & XOWS_AWAIT_SUBJ) {
+    xows_load_task_done(room, XOWS_AWAIT_SUBJ);
+  }
 }
 
 /**

@@ -143,6 +143,12 @@
   "Server error":
   "Erreur serveur",
 
+  "Remove bookmark":
+  "",
+
+  "Unsubscribe Channel":
+  "",
+
   "Channels":
   "Salons",
 
@@ -430,6 +436,12 @@
 
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "Un nouveau contact demande une autorisation d'abonnement. Voulez-vous l'autoriser et ajouter ce contact ?",
+
+  "Remove Channel bookmark":
+  "Supprimer le favoris de Salon",
+
+  "Do you really want to remove Channel bookmark?":
+  "Souhaitez-vous vraiment supprimer le favoris de Salon?",
 
   "Allow":
   "Autoriser",

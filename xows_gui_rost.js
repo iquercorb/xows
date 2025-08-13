@@ -92,6 +92,10 @@ function xows_gui_rost_list_onclick(event)
       // Open revoke subscription dialog-box
       xows_gui_rost_unsb_mbox_open(xows_cli_cont_get(li_peer.dataset.id));
       return;
+    case "room_bt_retr": //< Remove Room Bookmark
+      // Open remove bookmark dialog-box
+      xows_gui_rost_bkrm_mbox_open(xows_cli_room_get(li_peer.dataset.id));
+      return;
     }
   }
 
@@ -639,7 +643,7 @@ function xows_gui_rost_subs_ibox_open()
 /**
  * Storage for Contact-Unsubscribe Input-Dialog parameters
  */
-const xows_gui_rost_unsb_mbox = {peer:null};
+const xows_gui_rost_unsb_mbox = {cont:null};
 
 /**
  * Handles Contact-Unsubscribe Input-Dialog abortion (click on Abort button)
@@ -680,15 +684,15 @@ function xows_gui_rost_unsb_mbox_open(cont)
 }
 
 /* ---------------------------------------------------------------------------
- * User Roster - Contact Authorization Input Dialog
+ * User Roster - Contact Authorization Message Dialog
  * ---------------------------------------------------------------------------*/
 /**
- * Storage for Contact-Authorization Input-Dialog parameters
+ * Storage for Contact-Authorization Message-Dialog parameters
  */
 const xows_gui_rost_auth_mbox = {cont:null};
 
 /**
- * Handles Contact-Authorization Input-Dialog abortion (click on Abort button)
+ * Handles Contact-Authorization Message-Dialog abortion (click on Abort button)
  */
 function xows_gui_rost_auth_mbox_onabort()
 {
@@ -697,7 +701,7 @@ function xows_gui_rost_auth_mbox_onabort()
 }
 
 /**
- * Handles Contact-Authorization Input-Dialog validation (click on Valid button)
+ * Handles Contact-Authorization Message-Dialog validation (click on Valid button)
  */
 function xows_gui_rost_auth_mbox_onvalid()
 {
@@ -706,7 +710,7 @@ function xows_gui_rost_auth_mbox_onvalid()
 }
 
 /**
- * Opens Contact-Authorization Input-Dialog
+ * Opens Contact-Authorization Message-Dialog
  *
  * @param   {string}    addr      JID address to allow or deny
  */
@@ -720,4 +724,45 @@ function xows_gui_rost_auth_mbox_open(addr)
                      "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?",
                      xows_gui_rost_auth_mbox_onvalid, "Allow",
                      xows_gui_rost_auth_mbox_onabort, "Deny");
+}
+
+/* ---------------------------------------------------------------------------
+ * User Roster - Remove Bookmark Dialog
+ * ---------------------------------------------------------------------------*/
+/**
+ * Storage for Contact-Unsubscribe Message-Dialog parameters
+ */
+const xows_gui_rost_bkrm_mbox = {room:null};
+
+/**
+ * Handles Contact-Unsubscribe Message-Dialog abortion (click on Abort button)
+ */
+function xows_gui_rost_bkrm_mbox_onabort() {}
+
+/**
+ * Handles Contact-Unsubscribe Message-Dialog validation (click on Valid button)
+ */
+function xows_gui_rost_bkrm_mbox_onvalid()
+{
+  // Revoke contact subscription
+  xows_cli_pep_book_retr(xows_gui_rost_bkrm_mbox.room);
+}
+
+/**
+ * Opens Contact-Unsubscribe Message-Dialog.
+ *
+ * @param   {object}    cont      Contact object to revoke
+ */
+function xows_gui_rost_bkrm_mbox_open(room)
+{
+  // Store Contact object
+  xows_gui_rost_bkrm_mbox.room = room;
+
+  // Select proper text depending current state
+  let text = xows_l10n_get("Do you really want to remove Channel bookmark?")+"<br><b># "+room.name+"</b>";
+
+  // Open message-box
+  xows_doc_mbox_open(XOWS_STYL_WRN, "Remove Channel bookmark", text,
+                     xows_gui_rost_bkrm_mbox_onvalid, "OK",
+                     xows_gui_rost_bkrm_mbox_onabort, "Cancel");
 }

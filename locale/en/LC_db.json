@@ -143,6 +143,12 @@
   "Server error":
   "",
 
+  "Remove bookmark":
+  "",
+
+  "Unsubscribe Channel":
+  "",
+
   "Channels":
   "",
 
@@ -429,6 +435,12 @@
   "",
 
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
+  "",
+
+  "Remove Channel bookmark":
+  "",
+
+  "Do you really want to remove Channel bookmark?":
   "",
 
   "Allow":

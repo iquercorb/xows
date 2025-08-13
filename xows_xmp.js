@@ -3191,18 +3191,23 @@ function xows_xmp_pubsub_recv(from, event)
   const items = event.querySelector("items");
   if(!items) return false;
 
-  // Get Event node
-  const node = items.getAttribute("node");
-
-  // Get each item child
+  // Get each <item>
   const item = [];
-  for(let i = 0; i < items.childNodes.length; ++i) {
-    item.push({ "id"      : items.childNodes[i].getAttribute("id"),
-                "child"   : items.childNodes[i].firstChild});
+  const allitem = items.querySelectorAll("item");
+  for(let i = 0; i < allitem.length; ++i) {
+    item.push({ "id"      : allitem[i].getAttribute("id"),
+                "child"   : allitem[i].firstChild});
+  }
+
+  // Get each <retract>
+  const retr = [];
+  const allretr = items.querySelectorAll("retract");
+  for(let i = 0; i < allretr.length; ++i) {
+    retr.push({ "id"      : allretr[i].getAttribute("id")});
   }
 
   // Forward event
-  xows_xmp_fw_msg_onpubs(from, node, item);
+  xows_xmp_fw_msg_onpubs(from, items.getAttribute("node"), item, retr);
 
   return true; //< stanza processed
 }
@@ -3320,7 +3325,7 @@ function xows_xmp_pubsub_retract(node, id, onparse)
   // Create the query
   const iq =  xows_xml_node("iq",{"type":"set"},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
-                  xows_xml_node("retract",{"node":node},item)));
+                  xows_xml_node("retract",{"node":node,"notify":"true"},item)));
 
   // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
@@ -3358,6 +3363,17 @@ function xows_xmp_bookmark_publish(jid, name, auto, nick, onparse)
 
   // Publish PEP node
   xows_xmp_pubsub_publish(XOWS_NS_BOOKMARKS, publish, "whitelist", onparse);
+}
+
+/**
+ * Sends PEP-Node-Publish IQ query for Native-Bookmarks node.
+ *
+ * @param   {string}    jid       Bookmark Room JID
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_bookmark_retract(jid, onparse)
+{
+  xows_xmp_pubsub_retract(XOWS_NS_BOOKMARKS, jid, onparse);
 }
 
 /* ---------------------------------------------------------------------------
