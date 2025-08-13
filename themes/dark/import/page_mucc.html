@@ -3,53 +3,68 @@
   <span id="mucc_room"></span>
 </header>
 
-<fieldset>
+<fieldset id="muc#roomconfig_roomname">
   <h2>${'Channel title'}</h2>
   <input id="mucc_titl" placeholder="${'title'}" type="text"></input>
 </fieldset>
 
-<fieldset>
+<fieldset id="muc#roomconfig_roomdesc">
   <h2>${'Channel description'}</h2>
   <input id="mucc_desc" placeholder="${'description'}" type="text"></input>
 </fieldset>
 
 <section>
   <h2>${'Access &amp; moderation'}</h2>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_persistentroom">
     <label for="mucc_pers">${'Persistent Channel'}</label>
     <label class="switch"><input id="mucc_pers" type="checkbox" checked><span></span></label>
     <p>${'Unless this option is enabled, Channel will be automatically deleted once all occupants have left it'}</p>
   </fieldset>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_publicroom">
     <label for="mucc_publ">${'Public Channel'}</label>
     <label class="switch"><input id="mucc_publ" type="checkbox" checked><span></span></label>
     <p>${'A public Channel can be found by any user through normal means such as searching and service discovery'}</p>
   </fieldset>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_roomsecret">
     <label for="mucc_prot">${'Protected by password'}</label>
     <label class="switch"><input id="mucc_prot" type="checkbox"><span></span></label>
     <input id="mucc_pass" placeholder="${'Enter a password...'}" type="text" disabled></input>
     <p>${'A password-protected Channel requires to provide a password to join it'}</p>
   </fieldset>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_membersonly">
     <label for="mucc_mbon">${'Allowed to members only'}</label>
     <label class="switch"><input id="mucc_mbon" type="checkbox" checked><span></span></label>
     <p>${'Enable this to restrict Channel access and only allow those that have at least the Member affiliation'}</p>
   </fieldset>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_moderatedroom">
     <label for="mucc_modo">${'Moderated Channel'}</label>
     <label class="switch"><input id="mucc_modo" type="checkbox" checked><span></span></label>
     <p>${'In moderated Channels, occupants must be given permission to speak by a Channel moderator'}</p>
   </fieldset>
-  <fieldset>
-    <label>${'Occupants anonymity'}</label> <!-- muc#roomconfig_whois -->
+
+  <fieldset id="muc#roomconfig_maxusers">
+    <label for="mucc_maxo">${'Maximum Occupants Count'}</label>
+    <select id="mucc_maxo">
+      <!-- this is (must be) dynamically populated -->
+    </select>
+    <p>${'Set the maximum number of occupants the Channel may accept'}</p>
+  </fieldset>
+
+  <fieldset id="muc#roomconfig_whois">
+    <label>${'Occupants anonymity'}</label>
     <select id="mucc_anon">
       <option value="moderators">${'Semi-Anonymous'}</option>
       <option value="anyone">${'Non-Anonymous'}</option>
     </select>
     <p>${'In a Non-Anonymous Channel, occupants address is exposed to others, otherwise only Moderators can view occupants address'}</p>
   </fieldset>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_presencebroadcast">
     <label>${'Occupants visibility'}</label>
     <div class="chklist">
       <label class="chkitem"><input id="mucc_lsmo" type="checkbox" checked><span>${'Moderators'}</span></label>
@@ -58,11 +73,24 @@
     </div>
     <p>${'Set Channel occupants visibility according their assigned Role'}</p>
   </fieldset>
+
+  <fieldset id="muc#roomconfig_allowpm">
+    <label>${'Allow Private Messages'}</label>
+    <select id="mucc_alpm">
+      <option value="anyone">${'Anyone'}</option>
+      <option value="participants">${'Participants'}</option>
+      <option value="moderators">${'Moderators'}</option>
+      <option value="none">${'None'}</option>
+    </select>
+    <p>${'Set Channel occupants that are allowed to send private messages according their assigned Role'}</p>
+  </fieldset>
+
 </section>
 
 <section>
   <h2>${'Other options'}</h2>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_historylength">
     <label for="mucc_hmax">${'History max length'}</label>
     <div class="spinnb">
       <button class="spin-sub" onclick="this.parentNode.querySelector('input').stepDown()"></button>
@@ -71,7 +99,8 @@
     </div>
     <p>${'Specify the maximum number of previous messages that should be sent to users when they join the Channel'}</p>
   </fieldset>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_defaulthistorymessages">
     <label for="mucc_hdef">${'History default length'}</label>
     <div class="spinnb">
       <button class="spin-sub" onclick="this.parentNode.querySelector('input').stepDown()"></button>
@@ -80,11 +109,13 @@
     </div>
     <p>${'Specify the number of previous messages sent to new users when they join the Channel'}</p>
   </fieldset>
-  <fieldset>
+
+  <fieldset id="muc#roomconfig_enablearchiving">
     <label class="switch"><input id="mucc_arch" type="checkbox" checked><span></span></label>
     <label for="mucc_arch">${'Enable messages archiving'}</label>
     <p>${'Stores messages in persistent way using Message Archive Management'}</p>
   </fieldset>
+
 </section>
 
 

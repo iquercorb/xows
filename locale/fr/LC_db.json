@@ -542,6 +542,12 @@
   "In moderated Channels, occupants must be given permission to speak by a Channel moderator":
   "Dans les Salons modérés, les occupants doivent être autorisés à parler par un modérateur de Salon",
 
+  "Maximum Occupants Count":
+  "",
+
+  "Set the maximum number of occupants the Channel may accept":
+  "",
+
   "Occupants anonymity":
   "Anonymat des occupants",
 
@@ -559,6 +565,12 @@
 
   "Set Channel occupants visibility according their assigned Role":
   "Définir la visibilité des occupants du Salon en fonction du rôle qui leur est attribué",
+
+  "Allow Private Messages":
+  "",
+
+  "Set Channel occupants that are allowed to send private messages according their assigned Role":
+  "",
 
   "History max length":
   "Taille maximum de l'historique",
