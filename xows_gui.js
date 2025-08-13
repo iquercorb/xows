@@ -2358,6 +2358,9 @@ function xows_gui_page_auth_open()
   xows_doc("auth_cnct").disabled = !(xows_doc("auth_user").value.length &&
                                      xows_doc("auth_pass").value.length);
 
+  // Show or hide register link
+  xows_doc("auth_regi").hidden = !xows_options.gui_allow_register;
+
   // Open dialog page
   xows_doc_page_open("page_auth", false, null,
                      xows_gui_page_auth_oninput,
