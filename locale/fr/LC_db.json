@@ -543,10 +543,10 @@
   "Dans les Salons modérés, les occupants doivent être autorisés à parler par un modérateur de Salon",
 
   "Maximum Occupants Count":
-  "",
+  "Nombre Maximum d'Occupants",
 
   "Set the maximum number of occupants the Channel may accept":
-  "",
+  "Définit le nombre maximum d'occupants que le Salon accepte",
 
   "Occupants anonymity":
   "Anonymat des occupants",
@@ -564,13 +564,25 @@
   "Visibilité des occupants",
 
   "Set Channel occupants visibility according their assigned Role":
-  "Définir la visibilité des occupants du Salon en fonction du rôle qui leur est attribué",
+  "Définir la visibilité des occupants du Salon en fonction du Rôle qui leur est attribué",
 
   "Allow Private Messages":
-  "",
+  "Autoriser les Messages Privés",
+
+  "Anyone":
+  "N'importe qui",
+
+  "Participants":
+  "Participants",
+
+  "Moderators":
+  "Modérateurs",
+
+  "None":
+  "Aucun",
 
   "Set Channel occupants that are allowed to send private messages according their assigned Role":
-  "",
+  "Définit les occupants du Salon autorisés à envoyer des messages privés en fonction du Rôle qui leur est attribué",
 
   "History max length":
   "Taille maximum de l'historique",
