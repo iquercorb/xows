@@ -383,6 +383,27 @@
   "Configure":
   "Configurer",
 
+  "Channel acces":
+  "Accès au Salon",
+
+  "Channel creation":
+  "Creation de Salon",
+
+  "Channel join error":
+  "Erreur d'accès au Salon",
+
+  "You cannot join this Channel because you are banned.":
+  "Vous ne pouvez pas rejoindre ce Salon car vous avez été banis.",
+
+  "The specified Channel does not exists and Channel creation is restricted.":
+  "Le Salon spécifié n'existe pas et la création de Salon est restreinte.",
+
+  "The specified Channel does not exists or is currently locked waiting for configuration.":
+  "Le Salon spécifié n'existe pas ou est actuellement verrouilé en attente de configuration.",
+
+  "The Channel is temporarily unavailable because it have reached maximum number of occupants.":
+  "Le Salon est temporairement indisponible car il a atteint le nombre maximum d'occupants.",
+
   "You were banned from the Channel":
   "Vous avez été bannis du Salon",
 

@@ -383,6 +383,27 @@
   "Configure":
   "配置",
 
+  "Channel acces":
+  "",
+
+  "Channel creation":
+  "",
+
+  "Channel join error":
+  "",
+
+  "You cannot join this Channel because you are banned.":
+  "",
+
+  "The specified Channel does not exists and Channel creation is restricted.":
+  "",
+
+  "The specified Channel does not exists or is currently locked waiting for configuration.":
+  "",
+
+  "The Channel is temporarily unavailable because it have reached maximum number of occupants.":
+  "",
+
   "You were banned from the Channel":
   "您被该群管理封禁",
 
