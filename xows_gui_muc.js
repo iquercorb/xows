@@ -81,7 +81,7 @@ function xows_gui_muc_onjoin(room, code, error)
         xows_gui_muc_fail_mbox_open("create","The specified Channel does not exists and Channel creation is restricted.");
         return;
       }
-      // TODO: Nickname conflict
+      // Nickname conflict
       if(error.name == "conflict") {
         // Open Room Nickname Conflict input dialog
         xows_gui_muc_cflt_ibox_open(room);
@@ -89,12 +89,17 @@ function xows_gui_muc_onjoin(room, code, error)
       }
       // TODO: Room not available
       if(error.name == "item-not-found") {
+        xows_gui_muc_fail_mbox_open("auth","The specified Channel does not exists or is currently locked waiting for configuration.");
+        return;
       }
     }
 
     if(error.type == "wait") {
       // TODO:
       if(error.name == "service-unavailable") {
+        // Open error message dialog
+        xows_gui_muc_fail_mbox_open("auth","The Channel is temporarily unavailable because it have reached maximum number of occupants.");
+        return;
       }
     }
 
@@ -1208,6 +1213,8 @@ function xows_gui_page_mucc_onvalid()
  */
 function xows_gui_page_mucc_onabort()
 {
+  // TODO: show or hide sections according available options
+
   const form = xows_gui_page_mucc.form;
 
   // Setup page inputs according received config from
@@ -1222,22 +1229,20 @@ function xows_gui_page_mucc_onabort()
       xows_doc("mucc_titl").value = value[0] ? value[0] : ""; break;
     case "muc#roomconfig_roomdesc":
       xows_doc("mucc_desc").value = value[0]; break;
+    case "muc#roomconfig_lang": break;  //< TODO
     case "muc#roomconfig_persistentroom":
       xows_doc("mucc_pers").checked = xows_asbool(value[0]); break;
     case "muc#roomconfig_publicroom":
       xows_doc("mucc_publ").checked = xows_asbool(value[0]); break;
+    case "muc#roomconfig_passwordprotectedroom": break;  //< TODO
     case "muc#roomconfig_roomsecret": {
-      const enabled = xows_asbool(value[0].length);
+      const enabled = xows_asbool(value[0]);
       xows_doc("mucc_prot").checked = enabled;
       xows_doc("mucc_pass").disabled = !enabled;
       xows_doc("mucc_pass").value = value[0];
       break; }
-    //case "muc#roomconfig_allowmemberinvites":
-    //  xows_doc("room_invt").checked = form[i].value[0];
-    //  break;
     case "muc#roomconfig_membersonly":
       xows_doc("mucc_mbon").checked = xows_asbool(value[0]); break;
-    case "muc#roomconfig_changesubject":
     case "muc#roomconfig_moderatedroom":
       xows_doc("mucc_modo").checked = xows_asbool(value[0]); break;
     case "muc#roomconfig_whois":
@@ -1247,13 +1252,18 @@ function xows_gui_page_mucc_onabort()
       xows_doc("mucc_lspa").checked = value.includes("participant");
       xows_doc("mucc_lsmo").checked = value.includes("moderator");
       break;
-    //  xows_doc("room_ocls").value = value; break;
     case "muc#roomconfig_historylength":
       xows_doc("mucc_hmax").value = value[0]; break;
     case "muc#roomconfig_defaulthistorymessages":
       xows_doc("mucc_hdef").value = value[0]; break;
     case "muc#roomconfig_enablearchiving":
       xows_doc("mucc_arch").checked = xows_asbool(value[0]); break;
+    case "muc#roomconfig_maxusers": break; //< TODO
+    case "muc#roomconfig_changesubject": break; //< TODO
+    case "muc#roomconfig_allowpm":  break; //< TODO
+    //case "muc#roomconfig_allowmemberinvites":
+    //  xows_doc("room_invt").checked = form[i].value[0];
+    //  break;
     }
   }
 }
