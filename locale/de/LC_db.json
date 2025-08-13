@@ -1,0 +1,847 @@
+{
+  "unsername already exists":
+  "Benutzername existiert bereits",
+
+  "username contains illegal characters":
+  "Benutzername enthält illegale Zeichen",
+
+  "unable to register":
+  "Kann nicht registrieren",
+
+  "invalid username (JID domain missing)":
+  "Inkorrekter Benutzername (JID Domain fehlt)",
+
+  "invalid server framing":
+  "Inkorrekter Serverbezugsrahmen",
+
+  "the server closed the stream":
+  "Der Server hat den Steam geschlossen",
+
+  "the server reported stream error":
+  "Der Server meldet einen Stream Fehler",
+
+  "account registration is not allowed by the server":
+  "Kontoeröffnung ist nicht verfügbar auf diesem Server",
+
+  "unable to find a suitable authentication mechanism":
+  "Konnte keinen passenden Authentifizierungsmechanismus finden",
+
+  "Server does not provide required stream features":
+  "Der Server unterstützt nicht die benötigten Streamfunktionen",
+
+  "wrong username or password":
+  "Falscher Benutzername oder Passwort",
+
+  "authentication error":
+  "Authentifizierungsfehler",
+
+  "server integrity check failed":
+  "Serverintegritätskontrolle ist fehlgeschlagen",
+
+  "bind resource error":
+  "Resourcenbindungsfehler",
+
+  "session establishment failure":
+  "Sitzungsaufbaufehler",
+
+  "unable to connect to remote server":
+  "Verbindungsfehler mit dem entfernten Server",
+
+  "Connection lost (recovery failed)":
+  "Verbindung abgebrochen (Wiederherstellung fehlgeschlagen)",
+
+  "Network error":
+  "Netzwerkfehler",
+
+  "Authentication failure":
+  "Authentifizierungsfehler",
+
+  "Registration failure":
+  "Registrierungsfehler",
+
+  "Connection failure":
+  "Verbindungsfehler",
+
+  "Login":
+  "Anmelden",
+
+  "Please enter your username and password":
+  "Benutzername und Passwort eingeben",
+
+  "Login automatically":
+  "Automatisch anmelden",
+
+  "Username":
+  "Benutzername",
+
+  "Password":
+  "Passwort",
+
+  "Connect":
+  "Verbinden",
+
+  "Register a new account":
+  "Registriere ein neues Konto",
+
+  "Account creation":
+  "Kontoerstellung",
+
+  "Please enter new account username and password":
+  "Bitte den neuen Benutzernamen und Passwort eingeben",
+
+  "I am not a robot":
+  "Ich bin kein Roboter",
+
+  "Register":
+  "Registrieren",
+
+  "Login with an existing account":
+  "Mit bestehendem Konto anmelden",
+
+  "It remains unsaved changes":
+  "Es bestehen nicht gespeicherte Änderungen",
+
+  "Save changes":
+  "Änderungen speichern",
+
+  "Reset":
+  "Zurücksetzen",
+
+  "Loading...":
+  "Läd...",
+
+  "Connecting...":
+  "Verbindet...",
+
+  "Please wait...":
+  "Bitte warten...",
+
+  "Contacts":
+  "Kontakte",
+
+  "Subscribes to contact":
+  "Kontakt abbonieren",
+
+  "Authorized":
+  "Autorisiert",
+
+  "Resend authorization request":
+  "Autorisierungsanfrage wiederholen",
+
+  "Remove contact":
+  "Kontakt entfernen",
+
+  "Waiting for authorization":
+  "Warte auf Autorisierung",
+
+  "Authorization pending":
+  "Autorisierung ausstehend",
+
+  "Remote server not found":
+  "Entfernter Server nicht gefunden",
+
+  "Server error":
+  "Serverfehler",
+
+  "Channels":
+  "Kanäle",
+
+  "Join or create a Channel":
+  "Kanal beitreten oder erstellen",
+
+  "Query public Channels list":
+  "Öffentliche Kanälliste abfragen",
+
+  "Bookmarks":
+  "Lesezeichen",
+
+  "Public Channels":
+  "Öffentliche Kanäle",
+
+  "Private Channels":
+  "Private Kanäle",
+
+  "Private messages":
+  "Private Nachrichten",
+
+  "Room occupant":
+  "Teilnehmer*in",
+
+  "Edit user profile":
+  "Benutzerprofil bearbeiten",
+
+  "Status message":
+  "Statusnachricht",
+
+  "Define a status message...":
+  "Eine Statusnachricht festlegen...",
+
+  "Edit status message":
+  "Statusnachricht bearbeiten",
+
+  "Indicate anything you want to mention about your current situation.":
+  "Beschreibe irgendetwas bezüglich deiner derzeitigen Situation.",
+
+  "Enter a status message...":
+  "Statusnachricht eingeben...",
+
+  "Available For Chat":
+  "Frei zu chatten",
+
+  "Available":
+  "Verfügbar",
+
+  "Away":
+  "Abwesend",
+
+  "Extended Away":
+  "Länger Abwesend",
+
+  "Do Not Disturb":
+  "Bitte nicht stören",
+
+  "Disconnect":
+  "Abgemeldet",
+
+  "Set topic of":
+  "Thema festlegen",
+
+  "Enter a topic...":
+  "Thema eingeben...",
+
+  "Set the message of the day, a welcome message or the discussion subject.":
+  "Eine Nachricht des Tages, eine Willkommensnachricht oder das Gesprächsthema festlegen.",
+
+  "Nickname for":
+  "Spitzname für",
+
+  "Specify your new nickname for this Channel.":
+  "Lege deinen neuen Spitznamen für diesen Kanal fest.",
+
+  "Enter a nickname...":
+  "Spitznamen eingeben...",
+
+  "Video call":
+  "Videoanruf",
+
+  "Audio call":
+  "Anruf",
+
+  "Add Channel to Bookmarks":
+  "Kanal zu den Lesezeichen hinzufügen",
+
+  "Change nickname":
+  "Spitzname wechseln",
+
+  "Edit Channel topic":
+  "Kanalthema editieren",
+
+  "Enable notifications":
+  "Benachrichtigungen aktivieren",
+
+  "Disable notifications":
+  "Benachrichtigungen deaktivieren",
+
+  "Channel occupants list":
+  "Kanalteilnehmerliste",
+
+  "Back to recent messages":
+  "Zurück zu den kürzlichen Nachrichten",
+
+  "New unread messages":
+  "Neue ungelesende Nachricht",
+
+  "New incomming call":
+  "Neuer Anruf",
+
+  "Upload a file":
+  "Datei hochladen",
+
+  "Send a message ...":
+  "Nachricht senden ...",
+
+  "Insert an emoji":
+  "Emoji einfügen",
+
+  "Profil":
+  "Profil",
+
+  "Send a message":
+  "Sende eine Nachricht",
+
+  "Contact profile":
+  "Kontaktprofil",
+
+  "Subscribe":
+  "Abboniere",
+
+  "Pending...":
+  "Austehend...",
+
+  "This user have no status message":
+  "Dieser Benutzer hat keine Statusnachricht",
+
+  "Contact subscription":
+  "Kontaktabboment",
+
+  "Mutual":
+  "Gemeinsam",
+
+  "Pending":
+  "Austehend",
+
+  "Unavailable":
+  "Nicht verfügbar",
+
+  "Affiliation to Channel":
+  "Kanalaffiliation",
+
+  "Role in Channel":
+  "Rolle im Kanal",
+
+  "Occupant options":
+  "Teilnehmeroptionen",
+
+  "Affiliation":
+  "Affiliation",
+
+  "Owner":
+  "Besitzer*in",
+
+  "Administrator":
+  "Administrator*in",
+
+  "Member":
+  "Mitglied",
+
+  "Unaffiliated":
+  "Keine",
+
+  "Role":
+  "Rolle",
+
+  "Moderator":
+  "Moderator*in",
+
+  "Participant":
+  "Teilnehmer*in",
+
+  "Visitor":
+  "Besucher*in",
+
+  "Kick":
+  "Hinauswerfen",
+
+  "Ban":
+  "Verbannen",
+
+  "Occupants":
+  "Teilnehmer",
+
+  "Change occupant role":
+  "Teilnehmerrolle wechseln",
+
+  "Assign the Channel role":
+  "Kanalrolle festlegen",
+
+  "Kick occupant":
+  "Teilnehmer hinauswerfen",
+
+  "Change occupant affiliation":
+  "Teilnehmeraffiliation wechseln",
+
+  "Grant Channel affiliation":
+  "Kanalaffiliation vergeben",
+
+  "Ban occupant":
+  "Teilnehmer verbannen",
+
+  "to occupant":
+  "Als Teilnehmer",
+
+  "Add this Contact":
+  "Kontakt hinzufügen",
+
+  "Enter Channel name or address...":
+  "Kanalname oder Addresse eingeben",
+
+  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
+  "Falls der Kanal nicht existiert und Kanalerstellung vom Server erlaubt ist, wird ein Kanal mir dir als der Besitzer erstellt.",
+
+  "Join":
+  "Beitreten",
+
+  "Channel initialization":
+  "Kanalinitialisierung",
+
+  "You just created a new Channel, would you want to configure it right now ?":
+  "Du hast grade einen neuen Kanal erstellt, willst du ihn nun konfigurieren ?",
+
+  "Ignore":
+  "Ignorieren",
+
+  "Configure":
+  "Konfigurieren",
+
+  "Channel acces":
+  "Kanalzugang",
+
+  "Channel creation":
+  "Kanalerstellung",
+
+  "Channel join error":
+  "Fehler beim Kanalbeitritt",
+
+  "You cannot join this Channel because you are banned.":
+  "Du kannst diesem Kanal nicht beitreten da du verbannt wurdest.",
+
+  "The specified Channel does not exists and Channel creation is restricted.":
+  "Der spezifizierte Kanal existiert nicht und Kanalerstellung ist eingeschränkt.",
+
+  "The specified Channel does not exists or is currently locked waiting for configuration.":
+  "Der spezifizierte Kanal existiert nicht oder ist derzeit blockiert und wartet auf Konfiguration.",
+
+  "The Channel is temporarily unavailable because it have reached maximum number of occupants.":
+  "Der Kanal ist zeitweilig nicht verfügbar da die maximale Anzahl der Teilnehmer erreicht wurde.",
+
+  "You were banned from the Channel":
+  "Du wurdest vom Kanal verbannt",
+
+  "You were kicked from the Channel":
+  "Du wurdest aus dem Kanal hinausgeworfen",
+
+  "Rules changes caused you to leave the Channel":
+  "Eine Regeländerung verursachte das du den Kanal verlassen hast",
+
+  "Server error caused you to leave the Channel":
+  "Ein Serverfehler verursachte das du den Kanal verlassen hast",
+
+  "Revoke contact subscription":
+  "Kontaktabboment zurückziehen",
+
+  "Do you really want to remove contact and revoke subscription authorization ?":
+  "Willst du wirklich den Kontakt entfernen und die autorisierung des Abboments zurückziehen ?",
+
+  "Do you really want to remove contact and abort subscription authorization request ?":
+  "Willst du wirklich den Kontakt entfernen und die Abbomentanfrage abbrechen ?",
+
+  "Contact subscription request":
+  "Kontaktabbomentanfrage",
+
+  "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
+  "Ein neuer Kontakt fragt nach Abbomentautorisierung. Willst du diese autorisieren und den Kontakt hinzufügen ?",
+
+  "Allow":
+  "Erlauben",
+
+  "Deny":
+  "Ablehen",
+
+  "New subscription authorization request was sent":
+  "Neue Abbomentautorisierungsanfrage wurde versendet",
+
+  "Send a message to":
+  "Eine Nachricht versenden an",
+
+  "is currently writing":
+  "schreibt gerade",
+
+  "and":
+  "und",
+
+  "other(s)":
+  "andere",
+
+  "are currently writing":
+  "schreiben gerade",
+
+  "Start of history":
+  "Beginn der Aufzeichnung",
+
+  "at":
+  "bei",
+
+  "Contact address (JID)":
+  "Kontaktaddresse (JID)",
+
+  "Enter contact XMPP address...":
+  "XMPP Kontaktaddresse eingeben...",
+
+  "A subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
+  "Eine Abbomentautorisierungsanfrage wird zur angegebenen Addresse versendet; du musst nun darauf warten das der Kontakt dieser zustimmt.",
+
+  "Submit":
+  "Abschicken",
+
+  "Configure Channel...":
+  "Kanal konfigurieren...",
+
+  "Set Channel subject...":
+  "Kanalthema festlegen...",
+
+  "Add Channel to bookmarks ?":
+  "Kanal zu den Lesezeichen hinzufügen ?",
+
+  "Add Bookmark":
+  "Lesezeichen hinzufügen",
+
+  "Channel configuration":
+  "Kanalkonfiguration",
+
+  "Channel subject":
+  "Kanalthema",
+
+  "Channel informations":
+  "Kanalinformationen",
+
+  "Access &amp; moderation":
+  "Zugang &amp; moderation",
+
+  "Other options":
+  "Andere Optionen",
+
+  "Channel title":
+  "Kanaltitel",
+
+  "Channel description":
+  "Kanalbeschreibung",
+
+  "Persistent Channel":
+  "Permanenter Kanal",
+
+  "Unless this option is enabled, Channel will be automatically deleted once all occupants have left it":
+  "Wenn diese Option deakiviert ist wird der Kanal automatisch gelöscht sobald ihn alle Teilnehmer verlassen",
+
+  "Public Channel":
+  "Öffentlicher Kanal",
+
+  "A public Channel can be found by any user through normal means such as searching and service discovery":
+  "Ein öffentlicher Kanal kann von jedem Benutzer durch Kanalsuche und Servicediscovery gefunden werden",
+
+  "Protected by password":
+  "Passwortgeschüzt",
+
+  "Password":
+  "Passwort",
+
+  "Enter a password...":
+  "Passwort eingeben...",
+
+  "A password-protected Channel requires to provide a password to join it":
+  "Ein passwortgeschüzter Kanal erfordert ein Passwort um ihm beizutreten",
+
+  "Allowed to members only":
+  "Nur für Mitglieder",
+
+  "Enable this to restrict Channel access and only allow those that have at least the Member affiliation":
+  "Dieses aktivieren um den Kanalzugang nur für Mitglieder zu erlauben",
+
+  "Moderated Channel":
+  "Moderierter Kanal",
+
+  "In moderated Channels, occupants must be given permission to speak by a Channel moderator":
+  "In moderierten Kanälen müssen Teilnehmer erst Erlaubnis von den Kanalmoderatoren herhalten um etwas zu schreiben",
+
+  "Maximum Occupants Count":
+  "Maximale Teilnehmeranzahl",
+
+  "Set the maximum number of occupants the Channel may accept":
+  "Setze die maximale Teilnehmeranzahl dieses Kanals fest",
+
+  "Occupants anonymity":
+  "Teilnehmeranonymität",
+
+  "In a Non-Anonymous Channel, occupants address is exposed to others, otherwise only Moderators can view occupants address":
+  "In einem nicht anonymen Kanal sind die Teilnehmeraddressen für andere sichtbar, ansonsten dürfen nur Moderatoren diese sehen",
+
+  "Semi-Anonymous":
+  "Teilanonym",
+
+  "Non-Anonymous":
+  "Nicht anonym",
+
+  "Occupants visibility":
+  "Teilnehmersichtbarkeit",
+
+  "Set Channel occupants visibility according their assigned Role":
+  "Kanalteilnehmersichtbarkeit nach ihrer zugewiesenen Rolle festlegen",
+
+  "Allow Private Messages":
+  "Private Nachrichten zulassen",
+
+  "Anyone":
+  "Jeder",
+
+  "Participants":
+  "Teilnehmer",
+
+  "Moderators":
+  "Moderatoren",
+
+  "None":
+  "Keiner",
+
+  "Set Channel occupants that are allowed to send private messages according their assigned Role":
+  "Kanalteilnehmer festlegen denen es erlaubt ist private Nachrichten basierend auf ihrer Rolle zu versenden",
+
+  "History max length":
+  "Maximale Aufzeichnunglänge",
+
+  "Specify the maximum number of previous messages that should be sent to users when they join the Channel":
+  "Die maximale Anzahl an vorherigen Nachrichten festlegen die an neue Teilnehmer bei Beitritt gesendet wird",
+
+  "History default length":
+  "Standard Aufzeichnungslänge",
+
+  "Specify the number of previous messages sent to new users when they join the Channel":
+  "Die Anzahl an vorherigen Nachrichten festlegen die an neue Teilnehmer bei Beitritt gesendet wird",
+
+  "Enable messages archiving":
+  "Nachrichtenarchivierung aktivieren",
+
+  "Stores messages in persistent way using Message Archive Management":
+  "Speichert die Nachrichten in längerer Weise mit Message Archive Management",
+
+  "Channel administration":
+  "Kanaladministration",
+
+  "List is empty":
+  "Liste ist leer",
+
+  "Banned users":
+  "Verbannte Nutzer",
+
+  "Ban list":
+  "Verbannungsliste",
+
+  "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
+  "Verbannte Nutzer dürfen den Kanal nicht betreten oder sich als Mitglieder registrieren. Du kannst die Verbannung aufheben so dass dies wieder möglich ist falls die Serverregeln das zulassen.",
+
+  "Occupants affiliation":
+  "Teilnehmeraffiliation",
+
+  "Members list":
+  "Mitgleiderliste",
+
+  "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
+  "Affiliation erlaubt es eine Liste von Mitgliedern festzulegen denen es erlaubt ist einen privaten Kanal zu betreten sowie die Besitzer und Administrator rollen zu vergeben. Ein Nichtmitglied kann den Kanal betreten sollange dieser öffentlich ist.",
+
+  "User profile":
+  "Benutzerprofil",
+
+  "Display name":
+  "Anzeigename",
+
+  "My Nickname":
+  "Mein Spitzname",
+
+  "The nickname associated with your account to interact with other users, if none is defined, your account username is used.":
+  "Der Spitzname der mit deinem Konto verbunden ist um mit anderen Nutzern zu interagieren. Falls keiner festgelegt ist wird der Kontoname verwendet",
+
+  "Avatar image":
+  "Avatarbild",
+
+  "Remove":
+  "Entferne",
+
+  "Change":
+  "Wechsele",
+
+  "Your account's profile picture displayed to other users, if none is defined, a default image will be shown.":
+  "Dein Kontoprofilbild das anderen Nutzern gezeigt wird. Falls keines festgelegt ist wird ein Standardbild gezeigt.",
+
+  "Profile access":
+  "Profilzugang",
+
+  "Set access rules for your profile data, if restricted, only subscribed users can see your avatar and access profile data.":
+  "Zugangsregeln für deine Profildaten festlegen. Falls eingeschränkt, werden nur abbonierte Nutzer deinen Avatar und Profildaten sehen können.",
+
+  "Profile data in open access":
+  "Profildaten sind öffentlich",
+
+  "Account options":
+  "Kontooptionen",
+
+  "Account password":
+  "Kontopasswort",
+
+  "Current password":
+  "Derzeitiges Passwort",
+
+  "New password":
+  "Neues Passwort",
+
+  "Confirm password":
+  "Passwort bestätigen",
+
+  "To change your account password, enter your current password, then specify and confirm the new password to set.":
+  "Um das Kontopasswort zu ändern, bitte das derzeitige Passwort eingeben und dann das neue Passwort eingeben und bestätigen.",
+
+  "Change Password":
+  "Passwort wechseln",
+
+  "The current password you entered is wrong":
+  "Das derzeitige Passwort das du eingegeben hast ist falsch",
+
+  "The password confirmation does not match":
+  "Die Passwortbestätigung stimmt nicht überein",
+
+  "Password has been changed successfully":
+  "Das Passwort wurde erfolgreich geändert",
+
+  "Password change failed":
+  "Passwortänderung fehlgeschlagen",
+
+  "Account deletion":
+  "Kontolöschung",
+
+  "Cancel registration with current server and delete your account data permanently.":
+  "Registrierung mit derzeitigem Server beenden und alle Kontodaten löschen.",
+
+  "Delete your account":
+  "Lösche dein Konto",
+
+  "Are you sure you want to delete your XMPP/Jabber account on this server ? This action cannot be reversed.":
+  "Bist du sicher das du dein XMPP/Jabber Konto auf diesem Server löschen willst ? Dies kann nicht rückgängig gemacht werden.",
+
+  "Yes, farewell":
+  "Ja, Tschüss",
+
+  "God damn, NO !":
+  "Nein, doch nicht",
+
+  "Uploading file":
+  "Datei hochladen",
+
+  "Upload denied":
+  "Datei hochladen verboten",
+
+  "Upload failed":
+  "Datei hochladen fehlgeschlagen",
+
+  "HTTP server unreachable":
+  "HTTP server nicht erreichbar",
+
+  "Error":
+  "Fehler",
+
+  "Unhandled error":
+  "Unbekannter Fehler",
+
+  "Apply":
+  "Bestätigen",
+
+  "Abort":
+  "Abbruch",
+
+  "Close":
+  "Schließen",
+
+  "Cancel":
+  "Abbrechen",
+
+  "Retry":
+  "Widerholen",
+
+  "Add":
+  "Hinzufügen",
+
+  "Input devices access":
+  "Eingabegerätzugriff",
+
+  "Getting access to input devices failed, would you like to retry ?":
+  "Zugiff auf die Eingabegeräte ist fehgeschlagen, möchtest du es noch einmal versuchen ?",
+
+  "Enable or disable the camera":
+  "Kamera ein- oder ausschalten",
+
+  "Mute or unmute the microphone":
+  "Mikrofon ein- oder ausschalten",
+
+  "Mute or unmute sound":
+  "Ton ein- oder ausschalten",
+
+  "Volume":
+  "Lautstärke",
+
+  "Hang up":
+  "Auflegen",
+
+  "Expand/Reduce":
+  "Erweitern/Verringern",
+
+  "Incoming call...":
+  "Eingehender Anruf...",
+
+  "Incoming video call...":
+  "Eingehender Videoanruf...",
+
+  "Incoming audio call...":
+  "Eingehender Tonanruf",
+
+  "The call has been declined":
+  "Der Anruf wurde abgelehnt",
+
+  "The other party is buzy":
+  "Die andere Seite ist beschäftigt",
+
+  "The other party hung up":
+  "Die andere Seite hat aufgelegt",
+
+  "Network negotiation...":
+  "Netzwerkverhandlung...",
+
+  "Call in progress...":
+  "Anruf im gange...",
+
+  "You missed a call":
+  "Du hast einen Anruf verpasst",
+
+  "The other party encountered error":
+  "Die andere Seite hatten einen Fehler",
+
+  "The other party lacks suitable devices":
+  "Die andere Seite hat keine passenden Geräte",
+
+  "Input devices access failed":
+  "Eingabegerätezugriff fehlgeschlagen",
+
+  "Call failure":
+  "Anruf fehlgeschlagen",
+
+  "Access to input devices is required for call session, configure your browser to allow it and try again.":
+  "Zugriff auf Eingabegeräte ist erforderlich für Anrufe; bitte den Webbrowser konfigurieren um dies zu erlauben.",
+
+  "modified":
+  "bearbeitet",
+
+  "Edit message":
+  "Nachricht bearbeiten",
+
+  "Delete message":
+  "Nachricht löschen",
+
+  "Delete message ?":
+  "Nachricht löschen ?",
+
+  "Reply":
+  "Antwort",
+
+  "Reply to":
+  "Antwort auf",
+
+  "The message is unreachable":
+  "Diese Nachricht ist nicht erreichbar",
+
+  "The message was deleted":
+  "Diese Nachricht wurde gelöscht",
+
+  "Do you really want to disconnect current session ?":
+  "Willst du wirklich die derzeitige Verbindung unterbrechen ?",
+
+  "has left the conversation":
+  "hat die Unterhaltung verlassen",
+
+  "joined the conversation":
+  "hat die Unterhaltung betreten"
+}
