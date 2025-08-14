@@ -362,7 +362,7 @@ function xows_cli_room_new(addr, name)
     "desc": "",             //< Room description
     "subj": null,           //< Room subject (set to null for signal purpose)
     // Room features
-    "publ": false,          //< Room is public
+    "publ": true,           //< Room is public
     "prot": false,          //< Room is protected by password
     "pass": null,           //< Romm saved password
     "modr": false,          //< Room is moderated
