@@ -146,9 +146,6 @@
   "Remove bookmark":
   "",
 
-  "Unsubscribe Channel":
-  "",
-
   "Channels":
   "Salons",
 
@@ -235,6 +232,15 @@
 
   "Add Channel to Bookmarks":
   "Ajouter le Salon aux Favoris",
+
+  "Register to Channel":
+  "S'enregistrer au Salon",
+
+  "Unregister from Channel":
+  "Se désenregistrer du Salon",
+
+  "Leave the Channel":
+  "Quitter le Salon",
 
   "Change nickname":
   "Changer de pseudonyme",
@@ -437,11 +443,17 @@
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "Un nouveau contact demande une autorisation d'abonnement. Voulez-vous l'autoriser et ajouter ce contact ?",
 
-  "Remove Channel bookmark":
+  "Delete Channel bookmark":
   "Supprimer le favoris de Salon",
 
-  "Do you really want to remove Channel bookmark?":
-  "Souhaitez-vous vraiment supprimer le favoris de Salon?",
+  "Do you really want to delete Channel bookmark ?":
+  "Souhaitez-vous vraiment supprimer le favoris de Salon ?",
+
+  "Channel unregister":
+  "Désincription du Salon",
+
+  "Do you really want to unregister from Channel ?":
+  "Souhaitez-vous vraiment vous désinscrir du Salon ?",
 
   "Allow":
   "Autoriser",

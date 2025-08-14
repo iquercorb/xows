@@ -833,6 +833,9 @@ function xows_gui_doc_reset(peer)
   if(xows_doc_frag_db.has(peer.addr))
     xows_doc_frag_db.delete(peer.addr);
 
+  // Peer is no longer "live"
+  peer.live = false;
+
   xows_gui_doc_init(peer);
 }
 
@@ -1057,7 +1060,9 @@ function xows_gui_doc_update(peer, mask = 0xff)
       // Chat header room-specific buttons
       xows_gui_doc(peer,"chat_bkmk").hidden = (peer.book || peer.publ);
       xows_gui_doc(peer,"chat_nick").hidden = false;
-      xows_gui_doc(peer,"chat_subj").hidden = (peer.role < XOWS_ROLE_MODO) && (peer.affi < XOWS_AFFI_ADMN);
+      xows_gui_doc(peer,"chat_regi").hidden = (peer.affi > XOWS_AFFI_NONE);
+      xows_gui_doc(peer,"chat_unrg").hidden = (peer.affi !== XOWS_AFFI_MEMB);
+      xows_gui_doc(peer,"chat_subj").hidden = (peer.role < XOWS_ROLE_MODO && peer.affi < XOWS_AFFI_ADMN);
       xows_gui_doc(peer,"chat_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
     }
 
@@ -2085,6 +2090,10 @@ function xows_gui_chat_head_onclick(event)
 
   switch(event.target.id)
   {
+  case "chat_exit":
+    // Leave Room
+    xows_cli_muc_leave(xows_gui_peer);
+    break;
   case "chat_subj":
     // Open Room topic input box
     xows_gui_muc_subj_ibox_open(xows_gui_peer);
@@ -2092,6 +2101,14 @@ function xows_gui_chat_head_onclick(event)
   case "chat_nick":
     // Open Nickname input box
     xows_gui_muc_nick_ibox_open(xows_gui_peer);
+    break;
+  case "chat_regi":
+    // Open Register input box
+    xows_gui_muc_regi_ibox_open(xows_gui_peer);
+    break;
+  case "chat_unrg":
+    // Open Register input box
+    xows_gui_muc_unrg_mbox_open(xows_gui_peer);
     break;
   case "chat_bkmk":
     // Open confirmation dialog
@@ -2757,7 +2774,7 @@ function xows_gui_acct_unrg_mbox_onabort() {}
  */
 function xows_gui_acct_unrg_mbox_onvalid()
 {
-  xows_cli_regi_remove(null, null);
+  xows_cli_regi_remove(null, null, null);
 }
 
 /**

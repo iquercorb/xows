@@ -146,9 +146,6 @@
   "Remove bookmark":
   "",
 
-  "Unsubscribe Channel":
-  "",
-
   "Channels":
   "Kanäle",
 
@@ -235,6 +232,15 @@
 
   "Add Channel to Bookmarks":
   "Kanal zu den Lesezeichen hinzufügen",
+
+  "Register to Channel":
+  "",
+
+  "Unregister from Channel":
+  "",
+
+  "Leave the Channel":
+  "",
 
   "Change nickname":
   "Spitzname wechseln",
@@ -437,10 +443,16 @@
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "Ein neuer Kontakt fragt nach Abbomentautorisierung. Willst du diese autorisieren und den Kontakt hinzufügen ?",
 
-  "Remove Channel bookmark":
+  "Delete Channel bookmark":
   "",
 
-  "Do you really want to remove Channel bookmark?":
+  "Do you really want to delete Channel bookmark ?":
+  "",
+
+  "Channel unregister":
+  "",
+
+  "Do you really want to unregister from Channel ?":
   "",
 
   "Allow":

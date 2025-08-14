@@ -382,6 +382,44 @@ function xows_gui_muc_regi_ibox_open(room)
 }
 
 /* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Channel Unregister Dialog
+ * ---------------------------------------------------------------------------*/
+/**
+ * Storage for Channel-Unregister Message-Dialog parameters
+ */
+const xows_gui_muc_unrg_mbox = {room:null};
+
+/**
+ * Handles Channel-Unregister Message-Dialog abortion (click on Abort button)
+ */
+function xows_gui_muc_unrg_mbox_onabort() {}
+
+/**
+ * Handles Channel-Unregister Message-Dialog validation (click on Valid button)
+ */
+function xows_gui_muc_unrg_mbox_onvalid()
+{
+  // Revoke contact subscription
+  xows_cli_regi_remove(xows_gui_muc_unrg_mbox.room, null, null);
+}
+
+/**
+ * Opens Channel-Unregister Message-Dialog.
+ *
+ * @param   {object}    cont      Contact object to revoke
+ */
+function xows_gui_muc_unrg_mbox_open(room)
+{
+  // Store Contact object
+  xows_gui_muc_unrg_mbox.room = room;
+
+  // Open message-box
+  xows_doc_mbox_open(XOWS_STYL_WRN, "Channel unregister", "Do you really want to unregister from Channel ?",
+                     xows_gui_muc_unrg_mbox_onvalid, "OK",
+                     xows_gui_muc_unrg_mbox_onabort, "Cancel");
+}
+
+/* ---------------------------------------------------------------------------
  * Multi-User-Chat - Room Password Input Dialog
  * ---------------------------------------------------------------------------*/
 /**

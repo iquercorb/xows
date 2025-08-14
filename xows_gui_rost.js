@@ -85,15 +85,12 @@ function xows_gui_rost_list_onclick(event)
     switch(event.target.name)
     {
     case "cont_bt_rtry": //< Retry request subscribe permission
-      // Send subscription request
       xows_gui_rost_subs_rqst_pupu(li_peer.dataset.id);
       return;
     case "cont_bt_unsb": //< Remove (Unsubscribe) contact
-      // Open revoke subscription dialog-box
       xows_gui_rost_unsb_mbox_open(xows_cli_cont_get(li_peer.dataset.id));
       return;
     case "room_bt_retr": //< Remove Room Bookmark
-      // Open remove bookmark dialog-box
       xows_gui_rost_bkrm_mbox_open(xows_cli_room_get(li_peer.dataset.id));
       return;
     }
@@ -727,20 +724,20 @@ function xows_gui_rost_auth_mbox_open(addr)
 }
 
 /* ---------------------------------------------------------------------------
- * User Roster - Remove Bookmark Dialog
+ * User Roster - Delete Bookmark Dialog
  * ---------------------------------------------------------------------------*/
 /**
- * Storage for Contact-Unsubscribe Message-Dialog parameters
+ * Storage for Delete-Bookmark Message-Dialog parameters
  */
 const xows_gui_rost_bkrm_mbox = {room:null};
 
 /**
- * Handles Contact-Unsubscribe Message-Dialog abortion (click on Abort button)
+ * Handles Delete-Bookmark Message-Dialog abortion (click on Abort button)
  */
 function xows_gui_rost_bkrm_mbox_onabort() {}
 
 /**
- * Handles Contact-Unsubscribe Message-Dialog validation (click on Valid button)
+ * Handles Delete-Bookmark Message-Dialog validation (click on Valid button)
  */
 function xows_gui_rost_bkrm_mbox_onvalid()
 {
@@ -749,7 +746,7 @@ function xows_gui_rost_bkrm_mbox_onvalid()
 }
 
 /**
- * Opens Contact-Unsubscribe Message-Dialog.
+ * Opens Delete-Bookmark Message-Dialog.
  *
  * @param   {object}    cont      Contact object to revoke
  */
@@ -759,10 +756,11 @@ function xows_gui_rost_bkrm_mbox_open(room)
   xows_gui_rost_bkrm_mbox.room = room;
 
   // Select proper text depending current state
-  let text = xows_l10n_get("Do you really want to remove Channel bookmark?")+"<br><b># "+room.name+"</b>";
+  let text = "Do you really want to delete Channel bookmark ?";
 
   // Open message-box
-  xows_doc_mbox_open(XOWS_STYL_WRN, "Remove Channel bookmark", text,
+  xows_doc_mbox_open(XOWS_STYL_WRN, "Delete Channel bookmark", text,
                      xows_gui_rost_bkrm_mbox_onvalid, "OK",
                      xows_gui_rost_bkrm_mbox_onabort, "Cancel");
 }
+

@@ -893,7 +893,8 @@ function xows_cli_author_get(peer, addr, ocid)
  */
 const XOWS_FETCH_AVAT = xows_load_task_bit();
 const XOWS_FETCH_NICK = xows_load_task_bit();
-const XOWS_FETCH_INFO = xows_load_task_bit();
+const XOWS_FETCH_MUCI = xows_load_task_bit();
+const XOWS_FETCH_MUCN = xows_load_task_bit();
 const XOWS_AWAIT_SUBJ = xows_load_task_bit();
 
 /**
@@ -931,7 +932,8 @@ function xows_cli_init()
   // Setup Load taks callback functions
   xows_load_task_set(XOWS_FETCH_AVAT, xows_cli_pep_avat_fetch);
   xows_load_task_set(XOWS_FETCH_NICK, xows_cli_pep_nick_fetch);
-  xows_load_task_set(XOWS_FETCH_INFO, xows_cli_muc_info_query);
+  xows_load_task_set(XOWS_FETCH_MUCI, xows_cli_muc_info_query);
+  xows_load_task_set(XOWS_FETCH_MUCN, xows_cli_muc_nick_query);
   xows_load_task_set(XOWS_AWAIT_SUBJ, xows_load_await_task);
 }
 
@@ -2380,8 +2382,19 @@ function xows_cli_chst_self_set(peer, stat)
   if(peer.type === XOWS_PEER_OCCU && peer.show == 0)
     return;
 
-  // Send message stype according Peer type
-  const type = (peer.type === XOWS_PEER_ROOM) ? "groupchat" : "chat";
+  let type;
+
+  // Set message type according Peer type
+  if(peer.type === XOWS_PEER_ROOM) {
+
+    // Do not set chatsate to no-joined room
+    if(!peer.join)
+      return;
+
+    type = "groupchat";
+  } else {
+    type = "chat";
+  }
 
   if(stat > XOWS_CHAT_PAUS) { //< composing
 
@@ -3313,7 +3326,7 @@ function xows_cli_pep_book_parse(from, items, retrs)
     if(auto) xows_cli_muc_join(room);
 
     // Fetch info and push Room
-    xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_peer_push);
+    xows_load_task_push(room, XOWS_FETCH_MUCI, xows_cli_peer_push);
   }
 
   // Retracted (removed) bookmarks
@@ -3858,8 +3871,8 @@ function xows_cli_muc_list_parse(from, item)
     // Create new room in local list
     const room = xows_cli_room_new(item[i].jid);
 
-    // Fetch infos and push Room
-    xows_load_task_push(room, XOWS_FETCH_INFO, xows_cli_peer_push);
+    // Fetch infos then push room
+    xows_load_task_push(room, XOWS_FETCH_MUCI, xows_cli_peer_push);
   }
 
   const param = xows_cli_muc_list_param;
@@ -3978,8 +3991,8 @@ function xows_cli_muc_info_parse(from, node, idens, feats, xform, error)
     }
   }
 
-  if(room.load & XOWS_FETCH_INFO) {
-    xows_load_task_done(room, XOWS_FETCH_INFO);
+  if(room.load & XOWS_FETCH_MUCI) {
+    xows_load_task_done(room, XOWS_FETCH_MUCI);
   } else {
     xows_cli_peer_push(room);
   }
@@ -3997,19 +4010,16 @@ function xows_cli_muc_info_query(room)
 }
 
 /* ---------------------------------------------------------------------------
- * MUC - Room Join and Occupants management
+ * MUC - Room registered nick management
  * ---------------------------------------------------------------------------*/
 /**
  * Handles received result of MUC Room user (own) reserved nickname query.
- *
- * This function is part of MUC Join automated process and has no utility
- * outside this context.
  *
  * @param   {string}    from      Sender Room JID
  * @param   {string}    nick      Received reserved nickname or null
  * @param   {object}   [error]    Error data if any
  */
-function xows_cli_muc_join_nick(from, nick, error)
+function xows_cli_muc_nick_parse(from, nick, error)
 {
   // Get room object (should exist)
   let room = xows_cli_room_get(from);
@@ -4019,12 +4029,35 @@ function xows_cli_muc_join_nick(from, nick, error)
   }
 
   // Set own nickname for this Room
-  room.nick = (nick !== null) ? nick : "";
+  if(nick !== null) {
+    room.nick = nick;
+    room.affi = XOWS_AFFI_MEMB; //< Affiliation is at least Membership
+  } else {
+    room.nick = ""; //< Empty string to indicate query done without result
+  }
 
-  // Send presence to join
-  xows_cli_muc_join(room);
+  if(room.load & XOWS_FETCH_MUCN) {
+    xows_load_task_done(room, XOWS_FETCH_MUCN);
+  } else {
+    xows_cli_peer_push(room);
+  }
 }
 
+/**
+ * Query reserved nickname for the specified MUC Room
+ *
+ * @param   {string}    from      ROOM Peer object
+ * @param   {string}    nick      Received reserved nickname or null
+ * @param   {object}   [error]    Error data if any
+ */
+function xows_cli_muc_nick_query(room)
+{
+  // Query for own reserved nickname, then join room
+  xows_xmp_muc_nick_query(room.addr, xows_cli_muc_nick_parse);
+}
+/* ---------------------------------------------------------------------------
+ * MUC - Room Join and Occupants management
+ * ---------------------------------------------------------------------------*/
 /**
  * Attempts to join a MUC Room.
  *
@@ -4034,7 +4067,7 @@ function xows_cli_muc_join_nick(from, nick, error)
  * The 'room' parameter can bei either ROOM Peer object or MUC Room JID to
  * create new or join non-discovered Room.
  *
- * @param   {object|string}   [room]     Room object or Room identifier or JID
+ * @param   {object|string}   [room]     ROOM Peer object, identifier or JID
  * @param   {string}          [pass]     Optional password to join room
  */
 function xows_cli_muc_join(room, pass)
@@ -4077,7 +4110,7 @@ function xows_cli_muc_join(room, pass)
   if(room.nick === null) {
 
     // Query for own reserved nickname, then join room
-    xows_xmp_muc_nick_query(room.addr, xows_cli_muc_join_nick);
+    xows_load_task_push(room, XOWS_FETCH_MUCN, xows_cli_muc_join);
 
   } else {
 
@@ -4104,6 +4137,16 @@ function xows_cli_muc_join(room, pass)
     // Send initial presence to Room to join
     xows_xmp_presence_send(to, null, xows_cli_self.show, xows_cli_self.stat, null, mucx, xows_cli_self.avat);
   }
+}
+/**
+ * Leave the specified MUC Room.
+ *
+ * @param   {object}           room     ROOM Peer object
+ */
+function xows_cli_muc_leave(room)
+{
+  // Send unavailable presence to Room
+  xows_xmp_presence_send(room.join, "unavailable");
 }
 
 /**
@@ -4156,6 +4199,8 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
         // Check for Room creation
         if(mucx.code.includes(201)) {
 
+          xows_log(2,"cli_muc_onpres","own room creation",from);
+
           // Room is awaiting configuration
           room.init = true;
 
@@ -4166,6 +4211,8 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
           xows_cli_fw_mucjoin(room);
 
         } else {
+
+          xows_log(2,"cli_muc_onpres","own room join",from);
 
           // Fetch room infos
           xows_cli_muc_info_query(room);
@@ -4180,6 +4227,8 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
       // Check whether this is nickname change rather than true departure
       if(!mucx.code.includes(303)) {
+
+        xows_log(2,"cli_muc_onpres","own room leave",from);
 
         // We leaved the Room for some reasons
         room.join = null;
@@ -4261,8 +4310,12 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
   // Update self Role and Affiliation with Room
   if(self) {
-    room.affi = mucx.affi;
     room.role = mucx.role;
+    // If own affiliation changed we must update roster element
+    if(room.affi !== mucx.affi) {
+      room.affi = mucx.affi;
+      xows_cli_fw_roompush(room);
+    }
   }
 
   let load_mask = 0;
@@ -4626,7 +4679,7 @@ function xows_cli_muc_regi_get_result(from, data, form, error)
  * steps. The first is to query for a Registration form, the second is to
  * submit the properly fulfilled form.
  *
- * @param   {object}    room      Room object to join
+ * @param   {object}    room      ROOM Peer object
  * @param   {object}    nick      Reserved nickname to register
  * @param   {function}  onresult  Callback to parse received result
  */
@@ -4783,17 +4836,18 @@ function xows_cli_regi_remove_parse(type, form, error)
 */
 
 /**
- * Query to cancel user (own) Registration with server.
+ * Query to cancel user (own) Registration with dentity.
  *
- * Canceling registration mean XMPP account suppression, this is
- * not undoable, use this carefully.
+ * If 'peer' parameter is set to null, this order to cancel XMPP account
+ * with "home" server. This is not undoable, use this carefully.
  *
+ * @param   {object}   peer       Peer object or null
  * @param   {object[]} [xform]    Optional x-data form to submit
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_cli_regi_remove(xform, onparse)
+function xows_cli_regi_remove(peer, xform, onparse)
 {
-  xows_xmp_regi_remove_query(xform, onparse);
+  xows_xmp_regi_remove_query(peer ? peer.addr : null, xform, onparse);
 }
 
 /* ---------------------------------------------------------------------------

@@ -1935,9 +1935,6 @@ li-peer.PEER-ROOM peer-avat {
   background-size: 26px;
   background-image: url("images/sharp.svg");
 }
-.room-bt-unsb {
-  background-image: url("images/refresh.svg");
-}
 .room-bt-retr {
   background-image: url("images/delete.svg");
 }
@@ -2123,8 +2120,11 @@ peer-meta[placeholder]:empty::before {
 }
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
+#chat_fram.CHAT-BUDY #chat_exit,
 #chat_fram.CHAT-BUDY #chat_subj,
 #chat_fram.CHAT-BUDY #chat_nick,
+#chat_fram.CHAT-BUDY #chat_regi,
+#chat_fram.CHAT-BUDY #chat_unrg,
 #chat_fram.CHAT-ROOM #chat_calv,
 #chat_fram.CHAT-ROOM #chat_cala,
 #chat_fram.CHAT-BUDY #chat_cnfg,
@@ -2179,11 +2179,20 @@ head-info badg-show {
   position: unset;
   border: none;
 }
+#chat_exit {
+  background-image: url("images/exit.svg");
+}
 #chat_subj {
   background-image: url("images/topic.svg");
 }
 #chat_nick {
   background-image: url("images/arobase.svg");
+}
+#chat_regi {
+  background-image: url("images/mucregi.svg");
+}
+#chat_unrg {
+  background-image: url("images/mucunrg.svg");
 }
 #chat_noti {
   background-image: url("images/notify_on.svg");

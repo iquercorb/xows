@@ -146,9 +146,6 @@
   "Remove bookmark":
   "",
 
-  "Unsubscribe Channel":
-  "",
-
   "Channels":
   "群聊",
 
@@ -235,6 +232,15 @@
 
   "Add Channel to Bookmarks":
   "把群聊保存到书签",
+
+  "Register to Channel":
+  "",
+
+  "Unregister from Channel":
+  "",
+
+  "Leave the Channel":
+  "",
 
   "Change nickname":
   "更改昵称",
@@ -437,10 +443,16 @@
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "新的联系人添加申请，您是否同意并添加到联系人列表？",
 
-  "Remove Channel bookmark":
+  "Delete Channel bookmark":
   "",
 
-  "Do you really want to remove Channel bookmark?":
+  "Do you really want to delete Channel bookmark ?":
+  "",
+
+  "Channel unregister":
+  "",
+
+  "Do you really want to unregister from Channel ?":
   "",
 
   "Allow":

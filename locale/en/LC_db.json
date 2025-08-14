@@ -146,9 +146,6 @@
   "Remove bookmark":
   "",
 
-  "Unsubscribe Channel":
-  "",
-
   "Channels":
   "",
 
@@ -234,6 +231,15 @@
   "",
 
   "Add Channel to Bookmarks":
+  "",
+
+  "Register to Channel":
+  "",
+
+  "Unregister from Channel":
+  "",
+
+  "Leave the Channel":
   "",
 
   "Change nickname":
@@ -437,10 +443,16 @@
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
   "",
 
-  "Remove Channel bookmark":
+  "Delete Channel bookmark":
   "",
 
-  "Do you really want to remove Channel bookmark?":
+  "Do you really want to delete Channel bookmark ?":
+  "",
+
+  "Channel unregister":
+  "",
+
+  "Do you really want to unregister from Channel ?":
   "",
 
   "Allow":

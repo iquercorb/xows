@@ -3029,21 +3029,26 @@ function xows_xmp_regi_remove_parse(stanza, onparse)
  * This function is part of the Account Registration Cancel (Account deletion)
  * process.
  *
+ * @param   {string}    to        Entity JID or null
  * @param   {object[]}  xform     Fulfilled x-data form or null to ignore
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_regi_remove_query(xform, onparse)
+function xows_xmp_regi_remove_query(to, xform, onparse)
 {
   const query = xows_xml_node("query",{"xmlns":XOWS_NS_REGISTER});
 
-  if(xform !== null) {
+  if(xform) {
     xows_xml_parent(query, xows_xmp_xdata_make(xform));
   } else {
     xows_xml_parent(query, xows_xml_node("remove"));
   }
 
+  // Build attribute list
+  const attr = {"type":"set"};
+  if(to) attr.to = to;
+
   // Create and launch the query
-  const iq =  xows_xml_node("iq",{"type":"set"},query);
+  const iq =  xows_xml_node("iq",attr,query);
 
   // We use generical iq parse function to get potential error message
   xows_xmp_send(iq, xows_xmp_regi_remove_parse, onparse);
