@@ -2379,7 +2379,7 @@ let xows_cli_chst_hto = null;
 function xows_cli_chst_self_set(peer, stat)
 {
   // This may happen with Private Conversation
-  if(peer.type === XOWS_PEER_OCCU && peer.show == 0)
+  if(peer.type === XOWS_PEER_OCCU && peer.show === 0)
     return;
 
   let type;
@@ -2387,11 +2387,12 @@ function xows_cli_chst_self_set(peer, stat)
   // Set message type according Peer type
   if(peer.type === XOWS_PEER_ROOM) {
 
-    // Do not set chatsate to no-joined room
+    // Do not set chatsate to not joined room
     if(!peer.join)
       return;
 
     type = "groupchat";
+
   } else {
     type = "chat";
   }

@@ -3235,7 +3235,9 @@ function xows_xmp_pubsub_publish(node, publish, access, onparse)
                     xows_xmp_xdata_make([ {"var":"FORM_TYPE","type":"hidden",
                                             "value":[XOWS_NS_PUBSUBOPTS]},
                                           {"var":"pubsub#access_model",
-                                            "value":[access]}])));
+                                            "value":[access]},
+                                          {"var":"pubsub#persist_items",
+                                            "value":["true"]}])));
   }
 
   // Create the query
