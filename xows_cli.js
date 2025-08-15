@@ -1593,7 +1593,7 @@ function xows_cli_warmup_config()
 
   // If MUC service available, we take one more step to discover public
   // Rooms and fetching informations about all of them.
-  if(xows_cli_services.has(XOWS_NS_MUC)) {
+  if(xows_cli_services.has(XOWS_NS_MUC) && xows_options.cli_muc_autodisco) {
 
     // Query for MUC room list
     xows_cli_muc_list_query(xows_cli_warmup_finish);
