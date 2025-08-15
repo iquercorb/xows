@@ -3197,22 +3197,22 @@ function xows_xmp_pubsub_recv(from, event)
   if(!items) return false;
 
   // Get each <item>
-  const item = [];
+  const itemls = [];
   const allitem = items.querySelectorAll("item");
   for(let i = 0; i < allitem.length; ++i) {
-    item.push({ "id"      : allitem[i].getAttribute("id"),
-                "child"   : allitem[i].firstChild});
+    itemls.push({ "id"      : allitem[i].getAttribute("id"),
+                  "child"   : allitem[i].firstChild});
   }
 
   // Get each <retract>
-  const retr = [];
+  const retrls = [];
   const allretr = items.querySelectorAll("retract");
   for(let i = 0; i < allretr.length; ++i) {
-    retr.push({ "id"      : allretr[i].getAttribute("id")});
+    retrls.push({ "id"      : allretr[i].getAttribute("id")});
   }
 
   // Forward event
-  xows_xmp_fw_msg_onpubs(from, items.getAttribute("node"), item, retr);
+  xows_xmp_fw_msg_onpubs(from, items.getAttribute("node"), itemls, retrls);
 
   return true; //< stanza processed
 }
@@ -3404,6 +3404,57 @@ function xows_xmp_bookmark_retract(jid, onparse)
   xows_xmp_pubsub_retract(XOWS_NS_BOOKMARKS, jid, onparse);
 }
 
+/**
+ * Parses received IQ result of PEP-Node-Get query for Native-Bookmarks node.
+ *
+ * @param   {element}   stanza    Received <iq> stanza
+ * @param   {function}  onparse   Callback for parsed result forwarding
+ */
+function xows_xmp_bookmark_get_parse(stanza, onparse)
+{
+  const type = stanza.getAttribute("type");
+
+  // Check for unhandled error
+  if(xows_xmp_iq_unhandled(stanza,type,onparse))
+    return;
+
+  if(!xows_isfunc(onparse))
+    return;
+
+  let error;
+  const itemls = [];
+
+  if(type === "error") {
+    xows_xmp_error_log(stanza,1,"xmp_nick_get_parse");
+    error = xows_xmp_error_parse(stanza);
+  } else {
+    // Get each <item>
+    const allitem = stanza.querySelectorAll("item");
+    for(let i = 0; i < allitem.length; ++i) {
+      itemls.push({ "id"      : allitem[i].getAttribute("id"),
+                    "child"   : allitem[i].firstChild});
+    }
+  }
+
+  // Forward parse result
+  onparse(stanza.getAttribute("from"), itemls, null, error);
+}
+
+/**
+ * Sends a PEP-Node-Get IQ query for Native-Bookmarks node.
+ *
+ * @param   {function}  onparse   Callback for parsed result forwarding
+ */
+function xows_xmp_bookmark_get_query(onparse)
+{
+  // Create the query
+  const iq =  xows_xml_node("iq",{"type":"get"},
+                xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
+                  xows_xml_node("items",{"node":XOWS_NS_BOOKMARKS})));
+  // Send query
+  xows_xmp_send(iq, xows_xmp_bookmark_get_parse, onparse);
+}
+
 /* ---------------------------------------------------------------------------
  * Publish-Subscribe - vCard4 Over XMPP (XEP-0292)
  * ---------------------------------------------------------------------------*/
@@ -3540,10 +3591,16 @@ function xows_xmp_nick_get_parse(stanza, onparse)
 function xows_xmp_nick_get_query(to, onparse)
 {
   // Create the query
+  /*
   const iq =  xows_xml_node("iq",{"type":"get","to":to},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
                   xows_xml_node("items",{"node":XOWS_NS_NICK},
                     xows_xml_node("item",null))));
+  */
+  const iq =  xows_xml_node("iq",{"type":"get","to":to},
+                xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
+                  xows_xml_node("items",{"node":XOWS_NS_NICK})));
+
   // Send query
   xows_xmp_send(iq, xows_xmp_nick_get_parse, onparse);
 }
