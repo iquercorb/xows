@@ -3319,6 +3319,27 @@ function xows_xmp_pubsub_conf_set_query(node, xform, onparse)
 }
 
 /**
+ * Sends a PEP-Node-Configure-Set Cancel IQ query.
+ *
+ * This is used to cancel PEP node configuration.
+ *
+ * @param   {string}    node      PEP node (xmlns)
+ * @param   {function} [onparse]  Optional callback to receive query result
+ */
+function xows_xmp_pubsub_conf_set_cancel(node, onparse)
+{
+  const x = xows_xmp_xdata_cancel();
+
+  // Create the query
+  const iq =  xows_xml_node("iq",{"type":"set"},
+                xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUBOWNER},
+                  xows_xml_node("configure",{"node":node},x)));
+
+  // Use generic iq parse function to forward  unhandled error
+  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+}
+
+/**
  * Sends a PEP-Node-Retract-Set IQ query.
  *
  * @param   {string}    node      PEP node (xmlns)
