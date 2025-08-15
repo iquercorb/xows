@@ -2890,9 +2890,19 @@ function xows_cli_pep_chmod_parse(from, node, xform, error)
 
   // Browse Form Data and modify access_model
   if(xform) {
-    // Fulfill the form with proper informations
+    // Search for access_model parameter to changes (or cancel)
     for(let i = 0, n = xform.length; i <n; ++i) {
-      if(xform[i]["var"] === "pubsub#access_model") xform[i].value = [param.access];
+      // Fulfill the form with proper informations
+      if(xform[i]["var"] === "pubsub#access_model") {
+        if(xform[i].value[0] === param.access) {
+          // Cancel configuration (we have nothing to modify)
+          xows_xmp_pubsub_conf_set_cancel(node, param.onresult);
+          return;
+        } else {
+          xform[i].value = [param.access];
+        }
+        break;
+      }
     }
   }
 
@@ -3208,13 +3218,11 @@ function xows_cli_pep_avat_publ(access)
   const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
 
   // Publish data, the onparse function is set to send metadata
-  xows_xmp_avat_data_publish(hash, base64, access, xows_cli_pep_avat_meta_publ);
+  xows_xmp_avat_data_publish(hash, base64, null, xows_cli_pep_avat_meta_publ);
 
-  /*
   // If requested, change access model Avatar-Metadata
   if(access)
     xows_cli_pep_chmod(XOWS_NS_AVATAR_DATA, access);
-  */
 
   // Keep complient with XEP-0153, also publish vcard-temp
   xows_cli_vcardt_publish();
@@ -3257,16 +3265,14 @@ function xows_cli_pep_avat_meta_publ(from, type, error)
   const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
 
   xows_xmp_avat_meta_publish(hash, xows_uri_to_type(datauri), binary.length,
-                             XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, access, null);
+                             XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, null, null);
 
   // Advert new avatar
   xows_cli_pres_update();
 
-  /*
   // If requested, change access model Avatar-Data and Avatar-Metadata
   if(access)
     xows_cli_pep_chmod(XOWS_NS_AVATAR_META, access);
-  */
 }
 
 /**
