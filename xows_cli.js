@@ -891,11 +891,11 @@ function xows_cli_author_get(peer, addr, ocid)
 /**
  * Loading process tasks bits
  */
-const XOWS_FETCH_AVAT = xows_load_task_bit();
-const XOWS_FETCH_NICK = xows_load_task_bit();
-const XOWS_FETCH_MUCI = xows_load_task_bit();
-const XOWS_FETCH_MUCN = xows_load_task_bit();
-const XOWS_AWAIT_SUBJ = xows_load_task_bit();
+const XOWS_FETCH_AVAT = xows_load_task_bit();   //< 0x01
+const XOWS_FETCH_NICK = xows_load_task_bit();   //< 0x02
+const XOWS_FETCH_MUCI = xows_load_task_bit();   //< 0x04
+const XOWS_FETCH_MUCN = xows_load_task_bit();   //< 0x08
+const XOWS_AWAIT_SUBJ = xows_load_task_bit();   //< 0x10
 
 /**
  * Module initialization.
@@ -1664,7 +1664,7 @@ function xows_cli_session_start(resume)
     xows_cli_pres_show_set(XOWS_SHOW_ON);
 
   // Wait for Room Join to finish and Show Up !
-  xows_load_onempty_set(3000, xows_cli_fw_onready, xows_cli_self, resume);
+  xows_load_onempty_set(2000, xows_cli_fw_onready, xows_cli_self, resume);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1716,7 +1716,7 @@ function xows_cli_rost_onpush(addr, name, subs, group)
 
   let load_mask = 0;
 
-  if(cont.subs & XOWS_SUBS_TO)
+  if((cont.subs & XOWS_SUBS_TO) && xows_isjid(addr)) //< Some may put other things than Contact in their roster...
     load_mask |= XOWS_FETCH_AVAT|XOWS_FETCH_NICK;
 
   // Fetch data and push Contact
@@ -2784,7 +2784,7 @@ function xows_cli_vcardt_parse(from, vcard, error)
     }
   }
 
-  if(peer.load) {
+  if(peer.load & XOWS_FETCH_AVAT) {
     xows_load_task_done(peer, XOWS_FETCH_AVAT);
   } else {
     xows_cli_peer_push(peer);
@@ -2946,10 +2946,13 @@ function xows_cli_pep_nick_parse(from, item, error)
   if(error) {
     xows_log(1,"cli_nick_parse","error parse nickname",from);
   } else {
-    peer.name = xows_xml_innertext(item);
+    // nickname may be empty string, in this case we keep the
+    // automatically generated one
+    const nick = xows_xml_innertext(item);
+    if(nick) peer.name = nick;
   }
 
-  if(peer.load) {
+  if(peer.load & XOWS_FETCH_NICK) {
     xows_load_task_done(peer, XOWS_FETCH_NICK);
   } else {
     xows_cli_peer_push(peer);
@@ -3037,7 +3040,7 @@ function xows_cli_pep_avat_data_parse(from, hash, data, error)
 
   xows_log(2,"cli_pep_avat_data_parse","data fetched",from);
 
-  if(peer.load) {
+  if(peer.load & XOWS_FETCH_AVAT) {
     xows_load_task_done(peer, XOWS_FETCH_AVAT);
   } else {
     xows_cli_peer_push(peer);
@@ -3071,13 +3074,11 @@ function xows_cli_pep_avat_meta_parse(from, item, error)
 
   let fallback = false;
 
-  if(!info) {
-    xows_log(1,"cli_pep_avat_meta_parse","avatar unavailable",peer.addr);
-    fallback = true;
-  }
-
   if(error) {
     xows_log(1,"cli_pep_avat_meta_parse","error result",peer.addr);
+    fallback = true;
+  } else if(!info) {
+    xows_log(1,"cli_pep_avat_meta_parse","avatar unavailable",peer.addr);
     fallback = true;
   }
 
@@ -3163,7 +3164,7 @@ function xows_cli_pep_avat_fetch(peer)
 
     xows_log(1,"cli_avat_fetch","peer already in stack",peer.addr);
 
-    if(peer.load)
+    if(peer.load & XOWS_FETCH_AVAT)
       xows_load_task_done(peer, XOWS_FETCH_AVAT);
 
     return;
