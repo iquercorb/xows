@@ -74,7 +74,7 @@ const xows_load_item_stk = new Map();
 /**
  * Add a Loading-Task for the given item.
  *
- * @parma   {object}    item      Peer object to initialize Loading
+ * @parma   {object}    item      Loading task target item
  * @param   {number}    mask      Bitmask for loading tasks to initialize
  * @param   {function}  onload    Function to call once load finished
  * @param   {*}        [param]    Optional parameter to pass to Onload
@@ -92,18 +92,18 @@ function xows_load_task_push(item, mask, onload, param)
 
     // Check for alrady planed task
     if(item.load & mask) {
-      xows_log(2,"load_task_push","Ignoring already planed tasks 0x"+item.load, item.name);
+      xows_log(2,"load_task_push","Ignoring already planed tasks 0x"+item.load, item.addr || item.name);
       return;
     }
 
-    xows_log(2,"load_task_push","Updating tasks mask 0x"+item.load+"|0x"+mask, item.name);
+    xows_log(2,"load_task_push","Updating tasks mask 0x"+item.load+"|0x"+mask, item.addr || item.name);
 
     // Get existing stack
     stack = xows_load_item_stk.get(item);
 
   } else {
 
-    xows_log(2,"load_task_push","Setting tasks mask 0x"+item.load+"|0x"+mask, item.name);
+    xows_log(2,"load_task_push","Setting tasks mask 0x"+item.load+"|0x"+mask, item.addr || item.name);
 
     // Create new load stack for this item
     stack = [];
@@ -126,11 +126,17 @@ function xows_load_task_push(item, mask, onload, param)
       const ontask = xows_load_task_db.get(bit);
 
       if(xows_isfunc(ontask)) {
-        ontask(item); //< Launch function
+
+        // Add timeout for item's task
+        xows_load_hto_set(item, bit);
+
+        // Launch task function
+        ontask(item);
+
       } else {
         // Something is not correct, either provided mask is invalid
         // or loading tasks functions were not properly pre-configured.
-        xows_log(1,"load_task_push","No task for bit 0x"+bit, item.name);
+        xows_log(1,"load_task_push","No task for bit 0x"+bit, item.addr || item.name);
         // Set task as done already to prevent waiting infinitely
         xows_load_task_done(item, bit);
       }
@@ -147,20 +153,23 @@ function xows_load_task_push(item, mask, onload, param)
  * If all item's Loading-Task are done, the configured 'onload' function
  * is called.
  *
- * @parma   {object}    item      Peer object to validate
+ * @parma   {object}    item      Loading task target item
  * @param   {number}    task      Loading task bit to validate
  */
 function xows_load_task_done(item, task)
 {
-  xows_log(2,"load_task_done","Task 0x"+task+" done",item.name);
+  xows_log(2,"load_task_done","Task 0x"+task+" done",item.addr || item.name);
 
   // Remove load task bit
   item.load &= ~task;
 
+  // Clear timeout for item's task
+  xows_load_hto_clear(item, task);
+
   // Get item's loading stack
   const stack = xows_load_item_stk.get(item);
   if(!stack) {
-   xows_log(1,"load_task_done","No stack for item",item.name);
+   xows_log(1,"load_task_done","No stack for item",item.addr || item.name);
    return;
   }
 
@@ -187,6 +196,115 @@ function xows_load_task_done(item, task)
 
     // Check for firing of onempty function
     xows_load_onempty_check();
+  }
+}
+
+/**
+ * Storage for Loading-Task Timeout handles
+ */
+const xows_load_hto_stk = new Map();
+
+/**
+ * Set Loading-Task timeout
+ *
+ * This creates a timeout for the specified Item Loadin-Task so if a Task is
+ * not done before timeout, it is set as "done" anyway.
+ *
+ * This function is part of automated Loading-Task management and should not
+ * be used alone outside this context.
+ *
+ * @parma   {object}    item      Loading task target item
+ * @param   {number}    task      Loading task bit to validate
+ */
+function xows_load_hto_set(item, task)
+{
+  let hto;
+
+  xows_log(2,"load_hto_set","Set Task 0x"+task+" timeout",item.addr || item.name);
+
+  // Check whether item has pending timeout
+  if(xows_load_hto_stk.has(item)) {
+
+    // Get timeout handle map (per-task timeout handles) for this item
+    hto = xows_load_hto_stk.get(item);
+
+    // Check whether timeout already pending for this task
+    if(hto.has(task)) {
+
+      // Reset current pending timeout
+      clearTimeout(hto.get(task));
+    }
+
+  } else {
+
+    // create new timeout handle map for this item
+    hto = new Map();
+    xows_load_hto_stk.set(item, hto);
+
+  }
+
+  // Add new pending timeout
+  hto.set(task, setTimeout(xows_load_hto_timeout, 500, item, task));
+}
+
+/**
+ * Handles Loading-Task timeout.
+ *
+ * This handles Loading-Task that has timeout. The task is set as done.
+ *
+ * This function is part of automated Loading-Task management and should not
+ * be used alone outside this context.
+ *
+ * @parma   {object}    item      Loading task target item
+ * @param   {number}    task      Loading task bit to validate
+ */
+function xows_load_hto_timeout(item, task)
+{
+  xows_log(1,"load_hto_timeout","Task 0x"+task+" timed out",item.addr || item.name);
+
+  xows_load_task_done(item, task);
+}
+
+/**
+ * Clear Loading-Task timeout.
+ *
+ * This clears any pending timeout for the specified Item Loadin-Task.
+ *
+ * This function is part of automated Loading-Task management and should not
+ * be used alone outside this context.
+ *
+ * @parma   {object}    item      Loading task target item
+ * @param   {number}    task      Loading task bit to validate
+ */
+function xows_load_hto_clear(item, task)
+{
+  // Check whether item has pending timeout
+  if(xows_load_hto_stk.has(item)) {
+
+    xows_log(2,"load_hto_clear","Clear Task 0x"+task+" timeout",item.addr || item.name);
+
+    // Get timeout handle map (per-task timeout handles) for this item
+    const hto = xows_load_hto_stk.get(item);
+
+    // Check whether timeout already pending for this task
+    if(hto.has(task)) {
+
+      // Reset current pending timeout
+      clearTimeout(hto.get(task));
+
+      // Delete map entry
+      hto.delete(task);
+
+      // Check whether timeout stack is empty for item
+      if(!hto.size) {
+        xows_load_hto_stk.delete(item);
+        xows_log(2,"load_hto_clear","Delete empty timeout DB",item.addr || item.name);
+      }
+    }
+
+  } else {
+
+    xows_log(1,"load_hto_clear","No timeout DB",item.addr || item.name);
   }
 }
 
@@ -282,13 +400,17 @@ function xows_load_onempty_check(timeout)
     if(timeout)
       xows_log(1,"load_onempty_check","Timed out");
 
-    xows_log(2,"load_onempty_check","Fireing onempty",def.onempty.name);
+    const onempty = def.onempty;
+    const param = def.param;
 
-    // Call defined callback
-    def.onempty(...def.param);
-
-    // Reset parameters
+    // Reset parameters, BEFORE calling the onempty function since it may
+    // configure another ontempty within.
     def.onempty = null;
     def.param = null;
+
+    xows_log(2,"load_onempty_check","Fireing onempty",onempty.name);
+
+    // Call defined callback
+    onempty(...param);
   }
 }
