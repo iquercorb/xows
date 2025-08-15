@@ -3437,7 +3437,7 @@ function xows_xmp_bookmark_get_parse(stanza, onparse)
   }
 
   // Forward parse result
-  onparse(stanza.getAttribute("from"), itemls, null, error);
+  onparse(stanza.getAttribute("from"), itemls, [], error);
 }
 
 /**

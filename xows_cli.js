@@ -3313,61 +3313,57 @@ function xows_cli_pep_book_parse(from, items, retrs, error)
   }
 
   // Added bookmarks
-  if(items) {
-    for(let i = 0; i < items.length; ++i) {
+  for(let i = 0; i < items.length; ++i) {
 
-      let addr = items[i].id;
-      let name = items[i].child.getAttribute("name");
-      let auto = items[i].child.getAttribute("autojoin");
+    let addr = items[i].id;
+    let name = items[i].child.getAttribute("name");
+    let auto = items[i].child.getAttribute("autojoin");
 
-      // TODO: What is that ?
-      //const temp = items[i].child.querySelector("nick");
-      //if(temp) nick = xows_xml_innertext(temp);
+    // TODO: What is that ?
+    //const temp = items[i].child.querySelector("nick");
+    //if(temp) nick = xows_xml_innertext(temp);
 
-      // Check whether Room already exists
-      let room = xows_cli_room_get(addr);
-      if(room) {
+    // Check whether Room already exists
+    let room = xows_cli_room_get(addr);
+    if(room) {
 
-        // Checks whether this is a public room, in this case we ignore
-        // the bookmark, Room stay in 'PUBLIC ROOMS' section.
-        if(room.publ) return;
+      // Checks whether this is a public room, in this case we ignore
+      // the bookmark, Room stay in 'PUBLIC ROOMS' section.
+      if(room.publ) return;
 
-      } else {
+    } else {
 
-        // Create new Room object to reflect Bookmark
-        room = xows_cli_room_new(addr, name);
-      }
-
-      // This room is bookmarked
-      room.book = true;
-
-      // Auto-join room
-      if(auto) xows_cli_muc_join(room);
-
-      // Fetch info and push Room
-      xows_load_task_push(room, XOWS_FETCH_MUCI, xows_cli_peer_push);
+      // Create new Room object to reflect Bookmark
+      room = xows_cli_room_new(addr, name);
     }
+
+    // This room is bookmarked
+    room.book = true;
+
+    // Auto-join room
+    if(auto) xows_cli_muc_join(room);
+
+    // Fetch info and push Room
+    xows_load_task_push(room, XOWS_FETCH_MUCI, xows_cli_peer_push);
   }
 
   // Retracted (removed) bookmarks
-  if(retrs) {
-    for(let i = 0; i < retrs.length; ++i) {
+  for(let i = 0; i < retrs.length; ++i) {
 
-      const addr = retrs[i].id;
+    const addr = retrs[i].id;
 
-      // Check whether Room already exists
-      const room = xows_cli_room_get(addr);
-      if(!room) {
-        xows_log(1,"cli_pep_book_parse","bookmark room not found",addr);
-        continue;
-      }
-
-      // This room is bookmarked
-      room.book = false;
-
-      // Push Room
-      xows_cli_peer_push(room);
+    // Check whether Room already exists
+    const room = xows_cli_room_get(addr);
+    if(!room) {
+      xows_log(1,"cli_pep_book_parse","bookmark room not found",addr);
+      continue;
     }
+
+    // This room is bookmarked
+    room.book = false;
+
+    // Push Room
+    xows_cli_peer_push(room);
   }
 }
 
