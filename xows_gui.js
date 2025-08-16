@@ -1331,7 +1331,7 @@ function xows_gui_wnd_onback(event)
     history.forward();
 
     // open confirmation dialog
-    xows_gui_wnd_exit_popu_open();
+    xows_gui_wnd_exit_mbox_open();
   }
 }
 
@@ -1618,7 +1618,7 @@ function xows_gui_wnd_onkey(event)
 /**
  * Handles Disconnect Confirmation Popup abortion (click on abort button)
  */
-function xows_gui_wnd_exit_popu_onabort()
+function xows_gui_wnd_exit_mbox_onabort()
 {
   // Nothing to do
 }
@@ -1626,10 +1626,10 @@ function xows_gui_wnd_exit_popu_onabort()
 /**
  * Handles Disconnect Confirmation Popup validation (click on OK button)
  */
-function xows_gui_wnd_exit_popu_onvalid()
+function xows_gui_wnd_exit_mbox_onvalid()
 {
   // Disconnect
-  xows_cli_onuload();
+  xows_cli_cnx_close();
 
   // Back nav history
   history.back();
@@ -1638,12 +1638,12 @@ function xows_gui_wnd_exit_popu_onvalid()
 /**
  * Opens Disconnect Confirmation Popup Dialog
  */
-function xows_gui_wnd_exit_popu_open()
+function xows_gui_wnd_exit_mbox_open()
 {
   // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(XOWS_STYL_WRN, "Do you really want to disconnect current session ?",
-                     xows_gui_wnd_exit_popu_onvalid, "Yes",
-                     xows_gui_wnd_exit_popu_onabort, "No",
+  xows_doc_mbox_open(XOWS_STYL_WRN, "Disconnect", "Do you really want to disconnect current session ?",
+                     xows_gui_wnd_exit_mbox_onvalid, "Yes",
+                     xows_gui_wnd_exit_mbox_onabort, "No",
                      true);
 }
 
@@ -2629,7 +2629,7 @@ function xows_gui_page_user_open()
  *
  * (placeholder, not yet used)
  */
-function xows_gui_page_acct_onabort() {}
+//function xows_gui_page_acct_onabort() {}
 
 /**
  * Handles Account Options (acct) Page validation (click on Popup-Dialog Valid
@@ -2637,7 +2637,7 @@ function xows_gui_page_acct_onabort() {}
  *
  * (placeholder, not yet used)
  */
-function xows_gui_page_acct_onvalid() {}
+//function xows_gui_page_acct_onvalid() {}
 
 /**
  * Handles Account Options (acct) Page character input events
