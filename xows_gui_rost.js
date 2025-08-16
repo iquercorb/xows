@@ -162,28 +162,6 @@ function xows_gui_rost_list_rise(peer)
  * User Roster - Contacts list
  * ---------------------------------------------------------------------------*/
 /**
- * Refreshs User-Roster Contact-List.
- *
- * Clears the Contact-List then query to receive (from XMPP server)
- * user Roster items list.
- */
-function xows_gui_rost_contlst_reload()
-{
-  xows_gui_peer_switch_to(null);
-  // Empty the lists
-  xows_doc("cont_pend").hidden = true;
-  xows_doc("cont_pend").innerText = "";
-  xows_doc("cont_budy").hidden = true;
-  xows_doc("cont_budy").innerText = "";
-
-  // Add loading spinner at top of list
-  xows_doc_cls_add("cont_list","LOADING");
-
-  // Query for roster content
-  xows_cli_rost_fetch();
-}
-
-/**
  * Updates Contact-List sub-lists according elements within.
  *
  * This shows or hides sub-lists (<ul>) depending presence of child

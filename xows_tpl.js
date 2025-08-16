@@ -41,7 +41,6 @@
 /**
  * Constant values for DOM Template Type
  */
-const XOWS_TPL_NONE       = 0;
 const XOWS_TPL_IMPORT     = 1;
 const XOWS_TPL_INSTANCED  = 2;
 
