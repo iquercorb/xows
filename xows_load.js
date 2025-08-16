@@ -128,7 +128,7 @@ function xows_load_task_push(item, mask, onload, param)
       if(xows_isfunc(ontask)) {
 
         // Add timeout for item's task
-        xows_load_hto_set(item, bit);
+        xows_load_timeout_run(item, bit);
 
         // Launch task function
         ontask(item);
@@ -164,7 +164,7 @@ function xows_load_task_done(item, task)
   item.load &= ~task;
 
   // Clear timeout for item's task
-  xows_load_hto_clear(item, task);
+  xows_load_timeout_clear(item, task);
 
   // Get item's loading stack
   const stack = xows_load_item_stk.get(item);
@@ -202,10 +202,10 @@ function xows_load_task_done(item, task)
 /**
  * Storage for Loading-Task Timeout handles
  */
-const xows_load_hto_stk = new Map();
+const xows_load_timeout_stk = new Map();
 
 /**
- * Set Loading-Task timeout
+ * Run new Loading-Task timeout
  *
  * This creates a timeout for the specified Item Loadin-Task so if a Task is
  * not done before timeout, it is set as "done" anyway.
@@ -215,54 +215,35 @@ const xows_load_hto_stk = new Map();
  *
  * @parma   {object}    item      Loading task target item
  * @param   {number}    task      Loading task bit to validate
+ * @param   {number}   [timeout]  Optional timeout value (miliseconds)
  */
-function xows_load_hto_set(item, task)
+function xows_load_timeout_run(item, task, timeout = 1000)
 {
-  let hto;
-
-  xows_log(2,"load_hto_set","Set Task 0x"+task+" timeout",item.addr || item.name);
+  let task_timeout_stk;
 
   // Check whether item has pending timeout
-  if(xows_load_hto_stk.has(item)) {
+  if(xows_load_timeout_stk.has(item)) {
 
     // Get timeout handle map (per-task timeout handles) for this item
-    hto = xows_load_hto_stk.get(item);
+    task_timeout_stk = xows_load_timeout_stk.get(item);
 
     // Check whether timeout already pending for this task
-    if(hto.has(task)) {
+    if(task_timeout_stk.has(task)) {
 
       // Reset current pending timeout
-      clearTimeout(hto.get(task));
+      clearTimeout(task_timeout_stk.get(task));
     }
 
   } else {
 
-    // create new timeout handle map for this item
-    hto = new Map();
-    xows_load_hto_stk.set(item, hto);
+    // create new per-Task timeout stack (Map) for this item
+    task_timeout_stk = new Map();
+    xows_load_timeout_stk.set(item, task_timeout_stk);
 
   }
 
   // Add new pending timeout
-  hto.set(task, setTimeout(xows_load_hto_timeout, 500, item, task));
-}
-
-/**
- * Handles Loading-Task timeout.
- *
- * This handles Loading-Task that has timeout. The task is set as done.
- *
- * This function is part of automated Loading-Task management and should not
- * be used alone outside this context.
- *
- * @parma   {object}    item      Loading task target item
- * @param   {number}    task      Loading task bit to validate
- */
-function xows_load_hto_timeout(item, task)
-{
-  xows_log(1,"load_hto_timeout","Task 0x"+task+" timed out",item.addr || item.name);
-
-  xows_load_task_done(item, task);
+  task_timeout_stk.set(task, setTimeout(xows_load_task_done, timeout, item, task));
 }
 
 /**
@@ -276,35 +257,33 @@ function xows_load_hto_timeout(item, task)
  * @parma   {object}    item      Loading task target item
  * @param   {number}    task      Loading task bit to validate
  */
-function xows_load_hto_clear(item, task)
+function xows_load_timeout_clear(item, task)
 {
   // Check whether item has pending timeout
-  if(xows_load_hto_stk.has(item)) {
-
-    xows_log(2,"load_hto_clear","Clear Task 0x"+task+" timeout",item.addr || item.name);
+  if(xows_load_timeout_stk.has(item)) {
 
     // Get timeout handle map (per-task timeout handles) for this item
-    const hto = xows_load_hto_stk.get(item);
+    const task_timeout_stk = xows_load_timeout_stk.get(item);
 
     // Check whether timeout already pending for this task
-    if(hto.has(task)) {
+    if(task_timeout_stk.has(task)) {
 
       // Reset current pending timeout
-      clearTimeout(hto.get(task));
+      clearTimeout(task_timeout_stk.get(task));
 
       // Delete map entry
-      hto.delete(task);
+      task_timeout_stk.delete(task);
 
       // Check whether timeout stack is empty for item
-      if(!hto.size) {
-        xows_load_hto_stk.delete(item);
-        xows_log(2,"load_hto_clear","Delete empty timeout DB",item.addr || item.name);
+      if(!task_timeout_stk.size) {
+        xows_log(2,"load_timeout_clear","Clear timeout DB",item.addr || item.name);
+        xows_load_timeout_stk.delete(item);
       }
     }
 
   } else {
 
-    xows_log(1,"load_hto_clear","No timeout DB",item.addr || item.name);
+    xows_log(1,"load_timeout_clear","No timeout DB",item.addr || item.name);
   }
 }
 
