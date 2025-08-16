@@ -63,7 +63,6 @@ let xows_options = {
 
   cli_archive_count   : 50,         //< Minimum count of history message to fetch each query
   cli_avat_autopub    : true,       //< Auto-publish the default Avatar if none exists for user
-  cli_muc_autodisco   : true,       //< Automatically discover and lists all available public MUC Rooms
   cli_pepnotify_bkms  : true,       //< Request for Native Bookmarks (XEP-0402) PEP notifications
   cli_pepnotify_nick  : true,       //< Request for User Nickname (XEP-0172) PEP notifications
   cli_pepnotify_avat  : true,       //< Request for User Avatar (XEP-0084) PEP notifications
@@ -105,7 +104,6 @@ function xows_init(options)
     if(options.hasOwnProperty("cli_pepnotify_nick"))    xows_options.cli_pepnotify_nick = options.cli_pepnotify_nick;
     //if(options.hasOwnProperty("vcard4_notify"))    xows_options.vcard4_notify = options.vcard4_notify;
     if(options.hasOwnProperty("cli_avat_autopub"))      xows_options.cli_avat_autopub = options.cli_avat_autopub;
-    if(options.hasOwnProperty("cli_muc_autodisco"))     xows_options.cli_muc_autodisco =  options.cli_muc_autodisco;
     if(options.hasOwnProperty("cli_pepnotify_avat"))    xows_options.cli_pepnotify_avat = options.cli_pepnotify_avat;
     if(options.hasOwnProperty("cli_extern_services"))   xows_options.cli_extern_services = options.cli_extern_services;
   }

@@ -745,7 +745,7 @@ function xows_cli_peer_push(peer, param)
     } break;
 
     case XOWS_PEER_ROOM: {
-      // Forward Contact update
+      // Forward Room update
       xows_cli_fw_roompush(peer, param);
     } break;
   }
@@ -1528,7 +1528,8 @@ function xows_cli_warmup_roster(items, error)
   xows_cli_rost_parse(items, error);
 
   // Fetch for bookmarks
-  xows_cli_pep_book_fetch();
+  if(!xows_options.cli_pepnotify_bkms)
+    xows_cli_pep_book_fetch();
 
   // Fetch own data from server and go configure client
   xows_load_task_push(xows_cli_self, XOWS_FETCH_AVAT|XOWS_FETCH_NICK, xows_cli_warmup_config);
@@ -1593,7 +1594,7 @@ function xows_cli_warmup_config()
 
   // If MUC service available, we take one more step to discover public
   // Rooms and fetching informations about all of them.
-  if(xows_cli_services.has(XOWS_NS_MUC) && xows_options.cli_muc_autodisco) {
+  if(xows_cli_services.has(XOWS_NS_MUC)) {
 
     // Query for MUC room list
     xows_cli_muc_list_query(xows_cli_warmup_finish);
@@ -3329,7 +3330,8 @@ function xows_cli_pep_book_parse(from, items, retrs, error)
 
       // Checks whether this is a public room, in this case we ignore
       // the bookmark, Room stay in 'PUBLIC ROOMS' section.
-      if(room.publ) return;
+      if(room.publ)
+        return;
 
     } else {
 
@@ -3378,9 +3380,17 @@ function xows_cli_pep_book_parse(from, items, retrs, error)
 function xows_cli_pep_book_publ(room, auto, name, nick)
 {
   const mrk_name = name ? name : room.name;
-  const mrk_nick = nick ? nick : xows_jid_resc(room.join);
+  const mrk_nick = nick ? nick :
+                          room.nick ? room.nick :
+                                      xows_jid_resc(room.join);
 
   xows_xmp_bookmark_publish(room.addr, mrk_name, auto, mrk_nick, null);
+
+  // If bookmarks notify is disabled, force updating Room
+  if(!xows_options.cli_pepnotify_bkms) {
+    room.book = true;
+    xows_cli_peer_push(room);
+  }
 }
 
 /**
@@ -3391,6 +3401,12 @@ function xows_cli_pep_book_publ(room, auto, name, nick)
 function xows_cli_pep_book_retr(room)
 {
   xows_xmp_bookmark_retract(room.addr);
+
+  // If bookmarks notify is disabled, force updating Room
+  if(!xows_options.cli_pepnotify_bkms) {
+    room.book = false;
+    xows_cli_peer_push(room);
+  }
 }
 
 /**

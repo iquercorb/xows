@@ -374,8 +374,8 @@ function xows_gui_rost_room_onpush(room)
 
   // Select destination <ul>
   const dst_ul = (room.publ) ? xows_doc("room_publ") :
-                              (room.book) ? xows_doc("room_book") :
-                                            xows_doc("room_priv");
+                               (room.book) ? xows_doc("room_book") :
+                                             xows_doc("room_priv");
 
   //let li_peer = document.getElementById(room.addr);
   let li_peer = xows_gui_rost_list_find(room.addr);
