@@ -537,10 +537,40 @@ function xows_gui_startup()
                       "mediation" : "optional" };
     navigator.credentials.get(options).then(  xows_gui_startup_oncreds,
                                               xows_gui_page_auth_open);
-  } else {
-    // Show login page
-    xows_gui_page_auth_open();
+
+    return; //< do not show login page
   }
+
+  // Check for stored SASL auth data
+  if(xows_cach_auth_has()) {
+
+    // Check whether option is enabled
+    if(xows_options.login_sasl_store) {
+
+      // Connect with saved SASL auth data
+      const auth_data = xows_cach_auth_get();
+
+      // extract username from JID
+      const user = auth_data.z.split("@")[0];
+
+      xows_log(2,"gui_startup","auto connect (stored SASL data)");
+
+      // Try connect
+      xows_gui_connect(user, null, false, false);
+
+      return; //< do not show login page
+
+    } else {
+
+      // Erase saved auth data
+      xows_cach_auth_reset();
+
+      xows_log(2,"gui_startup","stored SASL data erased");
+    }
+  }
+
+  // Show login page
+  xows_gui_page_auth_open();
 }
 
 /**
@@ -570,7 +600,7 @@ function xows_gui_startup_oncreds(creds)
  *
  * @param   {string}    user    Login username or Full JID
  * @param   {string}    pass    Login Password
- * @param   {boolean}   save    Indicate remember credential
+ * @param   {boolean}   save    Indicates to save credentials for auto-login
  * @param   {boolean}   regi    Register new account
  */
 function xows_gui_connect(user, pass, save, regi = false)
@@ -597,10 +627,7 @@ function xows_gui_connect(user, pass, save, regi = false)
     jid += "@"+xows_options.login_force_domain;
 
   // Launch the client connection
-  xows_cli_cnx_login( xows_options.xmpp_url,
-                    jid,
-                    xows_gui_auth.pass,
-                    regi);
+  xows_cli_cnx_login(xows_options.xmpp_url, jid, xows_gui_auth.pass, save, regi);
 }
 
 /**
@@ -612,7 +639,7 @@ function xows_gui_connect(user, pass, save, regi = false)
 function xows_gui_cli_onready(user, resume)
 {
   // Check whether user asked to remember
-  if(xows_gui_cred_support() && xows_gui_auth.save) {
+  if(xows_gui_cred_support() && xows_gui_auth.auto) {
 
     xows_log(2,"gui_cli_onready","Saving credential");
 
@@ -2342,13 +2369,13 @@ function xows_gui_page_auth_onclick(target)
 
       const user = xows_doc("auth_user").value.toLowerCase();
       const pass = xows_doc("auth_pass").value;
-      const cred = xows_doc("auth_cred").checked;
+      const save = xows_doc("auth_save").checked;
 
       // erase password from intput
       xows_doc("auth_pass").value = "";
 
       // Try connect and login
-      xows_gui_connect(user, pass, cred, false);
+      xows_gui_connect(user, pass, save, false);
     }
 
     return;
@@ -2368,8 +2395,8 @@ function xows_gui_page_auth_open()
   xows_doc("auth_pass").value = xows_gui_auth ? xows_gui_auth.pass : "";
 
   // Show or hide the automatic connection check box
-  (xows_gui_cred_support()) ? xows_doc_show("auth_save")
-                            : xows_doc_hide("auth_save");
+  let auto_login = xows_gui_cred_support() || xows_options.login_sasl_store;
+  xows_doc_show("auth_auto", auto_login);
 
   // Enable or disable connect button
   xows_doc("auth_cnct").disabled = !(xows_doc("auth_user").value.length &&

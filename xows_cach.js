@@ -375,56 +375,59 @@ function xows_cach_caps_get(node)
 /* ---------------------------------------------------------------------------
  * SASL Auth storage and caching routines
  * ---------------------------------------------------------------------------*/
-
 /**
- * Stores SCRAM auth parameters.
+ * Stores SASL auth parameters.
  *
- * @param   {string}    scram     SCRAM type
- * @param   {string}    user      Username
- * @param   {string}    ckey      Client key
- * @param   {string}    skey      Server key
+ * @param   {object}    data      Authentication data
  */
-function xows_cach_scram_save(scram, user, ckey, skey)
+function xows_cach_auth_save(data)
 {
+  if(!xows_options.login_sasl_store)
+    return; //< You Shall Not Save !
+
   // Store in live DB and localStorage
   try {
-    localStorage.setItem(scram, JSON.stringify({"user":user,"ckey":ckey,"skey":skey}));
+    localStorage.setItem("auth_data", JSON.stringify(data));
   } catch(e) {
-    xows_log(1,"cach_scram_save","storage error",e);
+    xows_log(1,"cach_auth_save","storage error",e);
   }
 }
 
 /**
- * Check whether stored SCRAM auth parameters is available
- *
- * @param   {string}    scram     SCRAM type
+ * Check whether stored SASL auth parameters is available
  *
  * @return  {boolean}   True if username was found, false otherwise
  */
-function xows_cach_scram_has(scram)
+function xows_cach_auth_has()
 {
-  return localStorage.hasOwnProperty(scram);
+  return localStorage.hasOwnProperty("auth_data");
 }
 
 /**
- * Retrieve stored SCRAM auth parameters.
+ * Retrieve stored SASL auth parameters.
  *
- * @param   {string}    scram     SCRAM type
- *
- * @return  {object}  SCRAM Auth parameters
+ * @return  {object}  Authentication data
  */
-function xows_cach_scram_get(scram)
+function xows_cach_auth_get()
 {
   // Try in localStorage (and load to live DB)
-  if(!localStorage.hasOwnProperty(scram))
-    return;
+  if(!localStorage.hasOwnProperty("auth_data"))
+    return null;
 
   let data = null;
   try {
-    data = JSON.parse(localStorage.getItem(scram));
+    data = JSON.parse(localStorage.getItem("auth_data"));
   } catch(e) {
-    xows_log(1,"cach_caps_get","JSON parse error",e);
+    xows_log(1,"cach_auth_get","JSON parse error",e);
   }
 
   return data;
+}
+
+/**
+ * Deletes stored SASL auth parameters.
+ */
+function xows_cach_auth_reset()
+{
+  localStorage.removeItem("auth_data");
 }

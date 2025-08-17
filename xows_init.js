@@ -52,6 +52,7 @@ let xows_options = {
   xmpp_url            : "ws://localhost/xmpp-websocket/", //< XMPP server Websocket address
 
   login_force_domain  : "",         //< Optional domain to append to XMPP login username
+  login_sasl_store    : false,      //< Allow SASL authentication data storage for auto-login
   login_fail_delay    : 2,          //< Delay (in seconds) between registration and failed attempts
   resume_timeout      : 3,          //< Delay (in minutes) before definitely abort connection resumption
   resume_try_delay    : 10,         //< Delay (in seconds) between each connection resumption attempt
@@ -90,6 +91,7 @@ function xows_init(options)
     if(options.hasOwnProperty("xmpp_url"))              xows_options.xmpp_url = options.xmpp_url;
 
     if(options.hasOwnProperty("login_force_domain"))    xows_options.login_force_domain = options.login_force_domain;
+    if(options.hasOwnProperty("login_sasl_store"))      xows_options.login_sasl_store = options.login_sasl_store;
     if(options.hasOwnProperty("login_fail_delay"))      xows_options.login_fail_delay = options.login_fail_delay;
     if(options.hasOwnProperty("resume_timeout"))        xows_options.resume_timeout = options.resume_timeout;
     if(options.hasOwnProperty("resume_try_delay"))      xows_options.resume_try_delay = options.resume_try_delay;

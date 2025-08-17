@@ -1100,18 +1100,19 @@ const XOWS_SESS_ABRT = 0x004;
  * Attempts to connect to the specified XMPP over WebSocket service using
  * the given authentication data.
  *
- * @param   {string}    url       XMPP over WebSocket service URL
- * @param   {string}    jid       User JID (username@domain)
- * @param   {string}    pass      Authentication password
- * @param   {boolean}   regi      Register a new account
+ * @param   {string}    url     XMPP over WebSocket service URL
+ * @param   {string}    jid     User JID (username@domain)
+ * @param   {string}    pass    Authentication password
+ * @param   {boolean}   save    Indicates to save credentials for auto-login
+ * @param   {boolean}   regi    Register a new account
  */
-function xows_cli_cnx_login(url, jid, pass, regi)
+function xows_cli_cnx_login(url, jid, pass, save, regi)
 {
   // Reset client state
   xows_cli_reset();
 
   // Open a new XMPP connection
-  xows_xmp_connect(url, jid, pass, regi);
+  xows_xmp_connect(url, jid, pass, save, regi);
 }
 
 /**

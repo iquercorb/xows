@@ -39,14 +39,24 @@
  *
  * ---------------------------------------------------------------------------*/
 /**
- * Storage variable for SASL challenge process
+ * Storage for SASL authentication data
  */
-let xows_sasl_data = null;
+let xows_sasl_auth = null;
+
+/**
+ * Storage for SASL password
+ */
+let xows_sasl_pass = null;
+
+/**
+ * Storage for SASL response data
+ */
+let xows_sasl_resp = null;
 
 /**
  * Storage variable for currently selected SASL mechanism
  */
-let xows_sasl_select = "";
+let xows_sasl_mechid = -1;
 
 /* ---------------------------------------------------------------------------
  * Mechanism function placeholders
@@ -60,7 +70,15 @@ let xows_sasl_select = "";
  *
  * @return  {string}    Initial SASL auth request string
  */
-let xows_sasl_get_request = function() {return "";};
+function xows_sasl_get_request()
+{
+  if(xows_sasl_mechid < 0) {
+    xows_log(1,"sasl_get_reques","no SASL mechanism selected");
+    return null;
+  }
+
+  return xows_sasl_mechanisms[xows_sasl_mechid].req();
+}
 
 /**
  * Returns the SASL challenge response string according the current
@@ -73,7 +91,15 @@ let xows_sasl_get_request = function() {return "";};
  *
  * @return  {string}    SASL challenge response string
  */
-let xows_sasl_get_response = function(challenge) {return "";};
+function xows_sasl_get_response(challenge)
+{
+  if(xows_sasl_mechid < 0) {
+    xows_log(1,"sasl_get_response","no SASL mechanism selected");
+    return null;
+  }
+
+  return xows_sasl_mechanisms[xows_sasl_mechid].res(challenge);
+}
 
 /**
  * Check SASL integrity according the current selected mechanism.
@@ -85,7 +111,15 @@ let xows_sasl_get_response = function(challenge) {return "";};
  *
  * @return  {string}    True if integrity check succeed, false otherwise
  */
-let xows_sasl_chk_integrity = function(signature) {return true;};
+function xows_sasl_chk_integrity(signature)
+{
+  if(xows_sasl_mechid < 0) {
+    xows_log(1,"sasl_chk_integrity","no SASL mechanism selected");
+    return false;
+  }
+
+  return xows_sasl_mechanisms[xows_sasl_mechid].chk(signature);
+}
 
 /**
  * Returns the standard name of the currently selected and initialized
@@ -93,23 +127,20 @@ let xows_sasl_chk_integrity = function(signature) {return true;};
  *
  * @return  {string}    Selected SASL mechanism string
  */
-function xows_sasl_get_selected()
+function xows_sasl_get_mechanism()
 {
-  return xows_sasl_select;
+  return xows_sasl_mechid >= 0 ? xows_sasl_mechanisms[xows_sasl_mechid].name : null;
 }
 
-/* ---------------------------------------------------------------------------
- * Event-Forwarding callback
- * ---------------------------------------------------------------------------*/
 /**
- * Function Event-Forwarding callback for SASL process fail
+ * Returns data of the last authentication attempts
+ *
+ * @return  {object}    Authentication data object
  */
-let xows_sasl_failure_cb = function() {};
-
-/**
- * Function Event-Forwarding callback for SASL process succeed
- */
-let xows_sasl_success_cb = function() {};
+function xows_sasl_get_data()
+{
+  return xows_sasl_auth;
+}
 
 /* ---------------------------------------------------------------------------
  * SASL auth PLAIN Mechanism functions
@@ -121,12 +152,12 @@ let xows_sasl_success_cb = function() {};
  */
 function xows_sasl_plain_req()
 {
-  let req = xows_sasl_data.authz + "\0";
-  req += xows_sasl_data.authc + "\0";
-  req += xows_sasl_data.passw;
+  let req = xows_sasl_auth.z + "\0";
+  req += xows_sasl_auth.c + "\0";
+  req += xows_sasl_pass;
 
-  // clear auth data
-  xows_sasl_data = {};
+  // clear password
+  xows_sasl_pass = null;
 
   return req;
 }
@@ -159,6 +190,21 @@ function xows_sasl_plain_chk(signature)
  * SASL SCRAM-SHA-1 Mechanism functions
  * ---------------------------------------------------------------------------*/
 /**
+ * Storage for SASL mechanism SCRAM-SHA-1 client Nonce
+ */
+let xows_sasl_sha1_cnon = null;
+
+/**
+ * Storage for SASL mechanism SCRAM-SHA-1 client-first-message-bare
+ */
+let xows_sasl_sha1_cfmb = null;
+
+/**
+ * Storage for SASL mechanism SCRAM-SHA-1 server proof data
+ */
+let xows_sasl_sha1_proof = null;
+
+/**
  * SASL mechanism SCRAM-SHA-1 auth request function
  *
  * @return  {string}    Initial authentication request string
@@ -166,14 +212,14 @@ function xows_sasl_plain_chk(signature)
 function xows_sasl_sha1_req()
 {
   // Generate Nonce and base request
-  xows_sasl_data.cnonce = xows_gen_nonce_asc(24);
+  xows_sasl_sha1_cnon = xows_gen_nonce_asc(24);
 
   // Compose auth initial request
-  let req = "n=" + xows_sasl_data.authc;
-  req += ",r=" + xows_sasl_data.cnonce;
+  let req = "n=" + xows_sasl_auth.c;
+  req += ",r=" + xows_sasl_sha1_cnon;
 
   // Store as "first-client-mesg-bare"
-  xows_sasl_data.client_first_message_bare = req;
+  xows_sasl_sha1_cfmb = req;
 
   // Finale request with GS2 header
   return "n,," + req;
@@ -182,7 +228,8 @@ function xows_sasl_sha1_req()
 /**
  * SASL mechanism SCRAM-SHA-1 challenge response function
  *
- * @param   {string}    challenge Received SASL challenge
+ * @param   {string}    challenge   Received SASL challenge
+ * @param   {object}   [data]       Optional saved data to use
  *
  * @return  {string}    Computed response to server challenge
  */
@@ -200,44 +247,65 @@ function xows_sasl_sha1_resp(challenge)
   }
 
   // Verify the server nonce begins by our cnonce
-  if(nonce.substring(0, 24) !== xows_sasl_data.cnonce) {
-    xows_sasl_data = {}; //< clear auth data
+  if(nonce.substring(0, 24) !== xows_sasl_sha1_cnon) {
+    xows_sasl_pass = null; //< clear password
     xows_log(0, "sasl_sha1_resp","SCRAM-SHA-1 challenge error","missing cnonce in server nonce");
-    if(xows_isfunc(xows_sasl_failure_cb))
-      xows_sasl_failure_cb();
     return "";
   }
 
   // Compose the auth message to compute reponse
   let response = "c=biws,r=" + nonce;
-  let auth_mesg = xows_sasl_data.client_first_message_bare;
+  let auth_mesg = xows_sasl_sha1_cfmb;
   auth_mesg += "," + challenge + "," + response;
 
-  // Comptute salted password
-  let salt_pass, tmp;
-  salt_pass = tmp = xows_hmac_sha1(xows_sasl_data.passw, xows_scram_mksalt(salt));
-  for(let i = 1; i < iter; ++i) {
-    tmp = xows_hmac_sha1(xows_sasl_data.passw, tmp);
-    for(let k = 0; k < 20; ++k) salt_pass[k] ^= tmp[k];
-  }
+  let ckey, skey;
 
-  // Create client and server keys
-  let ckey = xows_hmac_sha1(salt_pass, "Client Key");
-  const skey = xows_hmac_sha1(salt_pass, "Server Key");
+  // check for pre-filled authentication data
+  if(!xows_sasl_pass) {
+
+    if(xows_sasl_auth.salt !== salt || xows_sasl_auth.iter !== iter) {
+      xows_sasl_pass = null; //< clear password
+      xows_log(0, "sasl_sha1_resp","SCRAM-SHA-1 saved data error","Salt or Iteration does not match");
+      return "";
+    }
+
+    ckey = Uint8Array.from(xows_sasl_auth.ckey);
+    skey = Uint8Array.from(xows_sasl_auth.skey);
+
+  } else {
+
+    // Comptute salted password
+    let salt_pass, tmp;
+    salt_pass = tmp = xows_hmac_sha1(xows_sasl_pass, xows_scram_mksalt(salt));
+    for(let i = 1; i < iter; ++i) {
+      tmp = xows_hmac_sha1(xows_sasl_pass, tmp);
+      for(let k = 0; k < 20; ++k) salt_pass[k] ^= tmp[k];
+    }
+
+    // Create client and server keys
+    ckey = xows_hmac_sha1(salt_pass, "Client Key");
+    skey = xows_hmac_sha1(salt_pass, "Server Key");
+
+    // store keys in auth data (allowing to be saved)
+    xows_sasl_auth.salt = salt;
+    xows_sasl_auth.iter = iter;
+    xows_sasl_auth.ckey = Array.from(ckey);
+    xows_sasl_auth.skey = Array.from(skey);
+
+    // clear password
+    xows_sasl_pass = null;
+  }
 
   // Compute cproof : ckey XOR HMAC(H(ckey), Auth)
   const hkey = xows_hash_sha1(ckey);
   const csign = xows_hmac_sha1(hkey, auth_mesg);
   for(let k = 0; k < 20; k++) ckey[k] ^= csign[k];
 
-  // clear auth data
-  xows_sasl_data = {};
-
   // Compute sproof : HMAC(skey, Auth)
   const ssign = xows_hmac_sha1(skey, auth_mesg);
 
   // Store sproof for further integrity check
-  xows_sasl_data.sproof = xows_bytes_to_b64(ssign);
+  xows_sasl_sha1_proof = xows_bytes_to_b64(ssign);
 
   // Finalize the response with computed cproof
   response += ",p=" + xows_bytes_to_b64(ckey);
@@ -257,14 +325,8 @@ function xows_sasl_sha1_chk(signature)
   // parse the server response
   const matches = signature.match(/(v)=(.+)/); //v=Signature
 
-  // Get the stored server signature
-  const sproof = xows_sasl_data.sproof;
-
-  // clear auth data
-  xows_sasl_data = {};
-
   // Check we got the right signature from server
-  if(sproof !== matches[2]) {
+  if(xows_sasl_sha1_proof !== matches[2]) {
     xows_log(0,"sasl_sha1_chk","SCRAM-SHA-1 integrity check failed",
                 "supplied server signature mismatches the computed one");
     return false;
@@ -316,10 +378,8 @@ function xows_sasl_md5_resp(challenge)
   if(rspa !== undefined) return ""; //< we ignore it, respond nothing
 
   // Store auth data localy
-  const authc = xows_sasl_data.authc;
-  const authz = xows_sasl_data.authz;
-  const passw = xows_sasl_data.passw;
-  xows_sasl_data = {}; //< clean auth data
+  const authc = xows_sasl_auth.c;
+  const authz = xows_sasl_auth.z;
 
   // Create the digest-uri using the authz (JID) domain
   let digest_uri = "xmpp/" + authz.split("@")[1]; //< service domain
@@ -328,14 +388,36 @@ function xows_sasl_md5_resp(challenge)
   // Generate our cnonce
   const cnonce = xows_gen_nonce_asc(24);
 
+  // Compute MD5 reponse digest
+  let Y;
+  if(!xows_sasl_pass) {
+
+    if(xows_sasl_auth.realm !== realm) {
+      xows_sasl_pass = null; //< clear password
+      xows_log(0, "sasl_md5_resp","DIGEST-MD5 saved data error","Realm does not match");
+      return "";
+    }
+
+    Y = xows_sasl_auth.y;
+
+  } else {
+
+    Y = xows_bytes_to_str(xows_hash_md5(authc+":"+realm+":"+xows_sasl_pass));
+
+    // store auth data (allowing to be saved)
+    xows_sasl_auth.realm = realm;
+    xows_sasl_auth.y = Y;
+
+    // clear password
+    xows_sasl_pass = null;
+  }
+
   // This is not used, 00000001 is the recommanded value
   const nc = "00000001";
 
-  // Compute MD5 reponse digest
-  const Y = xows_bytes_to_str(xows_hash_md5(authc+":"+realm+":"+passw));
   const HA1 = xows_bytes_to_hex(xows_hash_md5(Y+":"+nonce+":"+cnonce+":"+authz));
   const HA2 = xows_bytes_to_hex(xows_hash_md5("AUTHENTICATE:"+digest_uri));
-  const HKD = xows_bytes_to_hex(xows_hash_md5(HA1+":"+nonce+":"+nc+"1:"+cnonce+":"+qop+":"+HA2));
+  const HKD = xows_bytes_to_hex(xows_hash_md5(HA1+":"+nonce+":"+nc+":"+cnonce+":"+qop+":"+HA2));
 
   // Compose response string
   let response = "charset=utf-8,";
@@ -394,41 +476,54 @@ const xows_sasl_mechanisms = [
  * @param   {string}    authz       Authorization ID
  * @param   {string}    authc       Authentication ID
  * @param   {string}    passw       Authentication Password
- * @param   {function}  onsuccess   Optional callback for SASL success
- * @param   {function}  onfailure   Optional callback for SASL failure
  *
  * @return  {boolean}   Ture if initialization succeed, false if no suitable implemented mechanism was found.
  */
-function xows_sasl_init(candidates, authz, authc, passw, onsuccess, onfailure)
+function xows_sasl_select(candidates/*, authz, authc, passw*/)
 {
   // Try to find a suitable SASL mechanism
-  let mech_idx = -1;
+  xows_sasl_mechid = -1;
   for(let i = 0; i < xows_sasl_mechanisms.length; ++i) {
     if(candidates.includes(xows_sasl_mechanisms[i].name)) {
-      xows_sasl_select = xows_sasl_mechanisms[i].name;
-      mech_idx = i;
-      break;
+      xows_sasl_mechid = i;
+      return xows_sasl_mechanisms[i].name;
     }
   }
 
-  if(mech_idx !== -1) {
+  return null;
+}
 
-    // Set custom callbacks
-    xows_sasl_failure_cb = onfailure;
-    xows_sasl_success_cb = onsuccess;
+/**
+ * Prepares SASL mechanism with the given auth data.
+ *
+ * @param   {object}    data        Authentication Data to use or null
+ * @param   {string}    authz       Authorization ID
+ * @param   {string}    authc       Authentication ID
+ * @param   {string}    passw       Authentication Password
+ *
+ * @return  {boolean}   Ture on success, false if no mechanism selected.
+ */
+function xows_sasl_prepare(data, authz, authc, passw)
+{
+  if(xows_sasl_mechid < 0) {
+    xows_log(1,"sasl_prepare","No SASL mechanism selected");
+    return false;
+  }
 
-    // Set the proper functions for start and challenge
-    xows_sasl_get_request = xows_sasl_mechanisms[mech_idx].req;
-    xows_sasl_get_response = xows_sasl_mechanisms[mech_idx].res;
-    xows_sasl_chk_integrity = xows_sasl_mechanisms[mech_idx].chk;
+  if(data) {
+
+    // set saved auth data
+    xows_sasl_auth = data;
+
+  } else {
 
     // Set initial auth data
-    xows_sasl_data = {};
-    xows_sasl_data.authz = xows_str_to_utf8(authz);
-    xows_sasl_data.authc = xows_str_to_utf8(authc);
-    xows_sasl_data.passw = xows_str_to_utf8(passw);
+    xows_sasl_auth = {"mech"  : xows_sasl_get_mechanism(),
+                      "z"     : xows_str_to_utf8(authz),
+                      "c"     : xows_str_to_utf8(authc)};
 
-    return true;
+    xows_sasl_pass = xows_str_to_utf8(passw);
   }
-  return false;
+
+  return true;
 }

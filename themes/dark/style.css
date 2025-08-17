@@ -3731,13 +3731,13 @@ chat-inpt[placeholder]:empty::before {
 #page_auth input[type="password"] {
   width: 200px;
 }
-#auth_save {
+#auth_auto {
   padding: 0;
 }
-#auth_save label {
+#auth_auto label {
   color: var(--text-tone2);
 }
-#auth_cred {
+#auth_auto input {
   display: inline !important;
   margin-right: 10px;
   vertical-align: middle;

@@ -54,7 +54,7 @@ let xows_xmp_addr = null;
 /**
  * Storage for session authentication data
  */
-const xows_xmp_auth = {"bare":null,"user":null,"pass":null,"regi":false};
+const xows_xmp_auth = {"bare":null,"user":null,"pass":null,"save":false,"regi":false};
 
 /**
  * Storage for current session host domain
@@ -281,6 +281,8 @@ function xows_xmp_reset(auth = true)
     xows_xmp_auth.jbar = null;
     xows_xmp_auth.user = null;
     xows_xmp_auth.pass = null;
+    xows_xmp_auth.save = false;
+    xows_xmp_auth.regi = false;
   }
 
   // Reset session data
@@ -295,10 +297,11 @@ function xows_xmp_reset(auth = true)
  *
  * @param   {string}    url       Server WebSocket address/URL
  * @param   {string}    jid       Authentication JID (user@domain)
- * @param   {string}    password  Authentication password
- * @param   {boolean}   register  Indiractes to proceed new account registration
+ * @param   {string}    pass      Authentication password
+ * @param   {boolean}   save      Indicates to save credentials for auto-login
+ * @param   {boolean}   regi      Indiractes to proceed new account registration
  */
-function xows_xmp_connect(url, jid, password, register)
+function xows_xmp_connect(url, jid, pass, save, regi)
 {
   // if socket already openned, close it
   xows_sck_close();
@@ -332,10 +335,9 @@ function xows_xmp_connect(url, jid, password, register)
   // store authentication data
   xows_xmp_auth.jbar = jid;
   xows_xmp_auth.user = jid_split[0];
-  xows_xmp_auth.pass = password;
-
-  // Is there a registration connexion
-  xows_xmp_auth.regi = register;
+  xows_xmp_auth.pass = pass;
+  xows_xmp_auth.save = save;
+  xows_xmp_auth.regi = regi;
 
   // Setup new WebSocket connection
   xows_sck_setup(url, "xmpp");
@@ -356,12 +358,6 @@ function xows_xmp_resume()
 {
   // Output log
   xows_log(2,"xmp_resume","try reconnect");
-
-  // Verify we have connexion parameters
-  if(!xows_xmp_addr || !xows_xmp_auth.jbar || !xows_xmp_auth.user || !xows_xmp_auth.pass) {
-    xows_log(1,"xmp_resume","unable to resume","parameters lost");
-    return;
-  }
 
   // close socket
   xows_sck_close();
@@ -1141,24 +1137,38 @@ const xows_xmp_sasl_mechanisms = [];
 function xows_xmp_sasl_auth_send()
 {
   // Try to initialize SASL
-  if(!xows_sasl_init(xows_xmp_sasl_mechanisms, xows_xmp_auth.jbar, xows_xmp_auth.user, xows_xmp_auth.pass)) {
+  const sasl_mech = xows_sasl_select(xows_xmp_sasl_mechanisms);
+  if(!sasl_mech) {
     xows_log(0,"xmp_sasl_auth_send","no suitable SASL mechanism");
     // Exit session (forward session close)
     xows_xmp_failure(XOWS_XMPP_FAIL, "unable to find a suitable authentication mechanism");
     return;
   }
 
-  // SASL succeed to Initialize, we start the process
-  const sasl_mechanism = xows_sasl_get_selected();
+  xows_log(2,"xmp_sasl_auth_send","select authentication mechanism",sasl_mech);
 
-  xows_log(2,"xmp_sasl_auth_send","select authentication mechanism",sasl_mechanism);
+  // If no password supplied, get saved auth data (if available)
+  let auth_data = null;
+  if(!xows_xmp_auth.pass) {
+
+    // Get saved auth data (or null)
+    auth_data = xows_cach_auth_get();
+
+    // Check whether saved auth data exists and SALS mechanism match
+    if(!auth_data || auth_data.mech !== sasl_mech) {
+      xows_xmp_failure(XOWS_XMPP_FAIL, "unable to find authentication data for automatic login");
+      return;
+    }
+  }
+
+  // Prepare SASL authentication data
+  xows_sasl_prepare(auth_data, xows_xmp_auth.jbar, xows_xmp_auth.user, xows_xmp_auth.pass);
 
   // Create SASL starting auth request
   const sasl_request = xows_sasl_get_request();
-
-  if(sasl_request.length !== 0) {
+  if(sasl_request) { // MD5-DIGEST have empty request
     xows_log(2,"xmp_sasl_auth_send","sending authentication request",sasl_request);
-    xows_xmp_send_raw(xows_xml_node("auth",{"xmlns":XOWS_NS_IETF_SASL,"mechanism":sasl_mechanism},btoa(sasl_request)));
+    xows_xmp_send_raw(xows_xml_node("auth",{"xmlns":XOWS_NS_IETF_SASL,"mechanism":sasl_mech},btoa(sasl_request)));
   }
 }
 
@@ -1253,6 +1263,10 @@ function xows_xmp_sasl_success_recv(stanza)
   }
 
   xows_log(2,"xmp_sasl_success_recv","authentication success");
+
+  // Save auth data if requested
+  if(xows_xmp_auth.save)
+    xows_cach_auth_save(xows_sasl_get_data());
 
   // Whenever a stream restart is mandated (eg. after successful SASL
   // negotiation), both the server and client streams are implicitly
@@ -2882,6 +2896,7 @@ function xows_xmp_regi_server_set_parse(from, type, error)
 
     // we are no longer on register process
     xows_xmp_auth.regi = false;
+
     // Start new authentication process
     xows_xmp_sasl_auth_send();
   }
