@@ -2277,8 +2277,11 @@ function xows_xmp_presence_send(to, type, show, stat, nick, mucx, phot)
 
   // Append the <show> and <priority> children
   if(show > XOWS_SHOW_OFF) {
+
     // Translate show level number to string
-    xows_xml_parent(stanza, xows_xml_node("show", null, xows_xmp_show_str.get(show)));
+    if(show !== XOWS_SHOW_ON) //> The <show> element must NOT be empty
+      xows_xml_parent(stanza, xows_xml_node("show", null, xows_xmp_show_str.get(show)));
+
     // Set priority according show level
     xows_xml_parent(stanza, xows_xml_node("priority", null, (show * 20)));
 
