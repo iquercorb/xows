@@ -377,7 +377,7 @@
   "Enter Channel name or address...":
   "Kanalname oder Addresse eingeben",
 
-  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
+  "If the specified Channel does not exist and if server does not restrict Channel creation, a new Channel will be created with you as owner.":
   "Falls der Kanal nicht existiert und Kanalerstellung vom Server erlaubt ist, wird ein Kanal mir dir als der Besitzer erstellt.",
 
   "Join":
@@ -395,7 +395,7 @@
   "Configure":
   "Konfigurieren",
 
-  "Channel acces":
+  "Channel access":
   "Kanalzugang",
 
   "Channel creation":
@@ -403,6 +403,15 @@
 
   "Channel join error":
   "Fehler beim Kanalbeitritt",
+
+  "Channel unvailable":
+  "",
+
+  "This Channel has been destroyed and is no longer available":
+  "",
+
+  "Unspecified reason":
+  "",
 
   "You cannot join this Channel because you are banned.":
   "Du kannst diesem Kanal nicht beitreten da du verbannt wurdest.",
@@ -649,6 +658,21 @@
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
   "Affiliation erlaubt es eine Liste von Mitgliedern festzulegen denen es erlaubt ist einen privaten Kanal zu betreten sowie die Besitzer und Administrator rollen zu vergeben. Ein Nichtmitglied kann den Kanal betreten sollange dieser öffentlich ist.",
+
+  "Channel destruction":
+  "",
+
+  "Deletes the Channel from the group chat service. This operation cannot be undone.":
+  "",
+
+  "Destroy Channel":
+  "",
+
+  "You can specify a reason for Channel destruction.":
+  "",
+
+  "Enter reason...":
+  "",
 
   "User profile":
   "Benutzerprofil",

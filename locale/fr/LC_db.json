@@ -377,7 +377,7 @@
   "Enter Channel name or address...":
   "Entrez le nom ou l'addresse du Salon...",
 
-  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
+  "If the specified Channel does not exist and if server does not restrict Channel creation, a new Channel will be created with you as owner.":
   "Si le Salon spécifié n'existe pas et si le serveur ne limite pas la création des Salons, un nouveau Salon sera créé avec vous en tant que propriétaire.",
 
   "Join":
@@ -395,7 +395,7 @@
   "Configure":
   "Configurer",
 
-  "Channel acces":
+  "Channel access":
   "Accès au Salon",
 
   "Channel creation":
@@ -403,6 +403,15 @@
 
   "Channel join error":
   "Erreur d'accès au Salon",
+
+  "Channel unvailable":
+  "Salon indisponible",
+
+  "This Channel has been destroyed and is no longer available":
+  "Ce Salon a été détruit et n'est plus dispolibe",
+
+  "Unspecified reason":
+  "Raison non spécifiée",
 
   "You cannot join this Channel because you are banned.":
   "Vous ne pouvez pas rejoindre ce Salon car vous avez été banis.",
@@ -649,6 +658,21 @@
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
   "L'affiliation permet de spécifier la liste des utilisateurs autorisés à accéder à un Salon réservé aux membres, à lui accorder le statut d'administrateur ou à en devenir propriétaire. Un utilisateur non-membre peut rejoindre le Salon tant qu'il n'est pas réservé aux membres.",
+
+  "Channel destruction":
+  "Destruction du Salon",
+
+  "Deletes the Channel from the group chat service. This operation cannot be undone.":
+  "Supprime le Salon du service de discussion de groupe. Cette opération est irréversible.",
+
+  "Destroy Channel":
+  "Détruire le Salon",
+
+  "You can specify a reason for Channel destruction.":
+  "Vous pouvez spécifier une raison pour la destruction du canal.",
+
+  "Enter reason...":
+  "Entrez la raison...",
 
   "User profile":
   "Profil d'utilisateur",

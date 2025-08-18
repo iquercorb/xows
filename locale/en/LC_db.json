@@ -377,7 +377,7 @@
   "Enter Channel name or address...":
   "",
 
-  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
+  "If the specified Channel does not exist and if server does not restrict Channel creation, a new Channel will be created with you as owner.":
   "",
 
   "Join":
@@ -395,13 +395,22 @@
   "Configure":
   "",
 
-  "Channel acces":
+  "Channel access":
   "",
 
   "Channel creation":
   "",
 
   "Channel join error":
+  "",
+
+  "Channel unvailable":
+  "",
+
+  "This Channel has been destroyed and is no longer available":
+  "",
+
+  "Unspecified reason":
   "",
 
   "You cannot join this Channel because you are banned.":
@@ -648,6 +657,21 @@
   "",
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
+  "",
+
+  "Channel destruction":
+  "",
+
+  "Deletes the Channel from the group chat service. This operation cannot be undone.":
+  "",
+
+  "Destroy Channel":
+  "",
+
+  "You can specify a reason for Channel destruction.":
+  "",
+
+  "Enter reason...":
   "",
 
   "User profile":

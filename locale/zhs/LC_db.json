@@ -377,7 +377,7 @@
   "Enter Channel name or address...":
   "输入群名或群聊地址",
 
-  "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.":
+  "If the specified Channel does not exist and if server does not restrict Channel creation, a new Channel will be created with you as owner.":
   "如果群不存在且服务器未限制，将会创建一个新的群。",
 
   "Join":
@@ -395,13 +395,22 @@
   "Configure":
   "配置",
 
-  "Channel acces":
+  "Channel access":
   "",
 
   "Channel creation":
   "",
 
   "Channel join error":
+  "",
+
+  "Channel unvailable":
+  "",
+
+  "This Channel has been destroyed and is no longer available":
+  "",
+
+  "Unspecified reason":
   "",
 
   "You cannot join this Channel because you are banned.":
@@ -647,8 +656,23 @@
   "Members list":
   "群员列表",
 
- "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
+  "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
   "群聊角色提供了一种方法，可以允许指定用户进入仅限成员的群、授予管理员权限或房间所有权。非成员用户可以加入群聊，直到它不仅限成员。",
+
+  "Channel destruction":
+  "",
+
+  "Deletes the Channel from the group chat service. This operation cannot be undone.":
+  "",
+
+  "Destroy Channel":
+  "",
+
+  "You can specify a reason for Channel destruction.":
+  "",
+
+  "Enter reason...":
+  "",
 
   "User profile":
   "用户资料",
