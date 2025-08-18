@@ -4040,3 +4040,6 @@ memb-radio.memb-delet[data-on="true"] {
   background-color: var(--reje-base);
   opacity: 1;
 }
+#muca_bt_dstr {
+  float: none;
+}

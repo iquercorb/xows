@@ -53,21 +53,21 @@ function xows_gui_muc_onjoin(room, code, error)
   // Handle error if any
   if(error) {
 
-    if(error.type == "auth") {
+    if(error.type === "auth") {
       // User is banned
-      if(error.name == "forbidden") { // banned user
+      if(error.name === "forbidden") { // banned user
         // Open error message dialog
         xows_gui_muc_fail_mbox_open("auth","You cannot join this Channel because you are banned.");
         return;
       }
       // Room require password
-      if(error.name == "not-authorized") {
+      if(error.name === "not-authorized") {
         // Open Room Password input dialog
         xows_gui_muc_pswd_ibox_open(room);
         return;
       }
       // Room require registration
-      if(error.name == "registration-required") {
+      if(error.name === "registration-required") {
         // Open Room Registration input dialog
         xows_gui_muc_regi_ibox_open(room);
         return;
@@ -75,6 +75,14 @@ function xows_gui_muc_onjoin(room, code, error)
     }
 
     if(error.type == "cancel") {
+
+      // Room was destroyed
+      if(error.name === "gone") {
+        // Open destroyed room warning message dialog
+        xows_gui_muc_dstr_mbox_open(error.text);
+        return;
+      }
+
       // Room creation not allowed
       if(error.name == "not-allowed") {
         // Open error message dialog
@@ -82,19 +90,19 @@ function xows_gui_muc_onjoin(room, code, error)
         return;
       }
       // Nickname conflict
-      if(error.name == "conflict") {
+      if(error.name === "conflict") {
         // Open Room Nickname Conflict input dialog
         xows_gui_muc_cflt_ibox_open(room);
         return;
       }
       // TODO: Room not available
-      if(error.name == "item-not-found") {
+      if(error.name === "item-not-found") {
         xows_gui_muc_fail_mbox_open("auth","The specified Channel does not exists or is currently locked waiting for configuration.");
         return;
       }
     }
 
-    if(error.type == "wait") {
+    if(error.type === "wait") {
       // TODO:
       if(error.name == "service-unavailable") {
         // Open error message dialog
@@ -136,6 +144,13 @@ function xows_gui_muc_onexit(room, mucx)
 
   // Reset offscreen element for this Room
   xows_gui_doc_reset(room);
+
+  // Check for Room destruction
+  if(mucx.destroy) {
+    // Open destroyed room warning message dialog
+    xows_gui_muc_dstr_mbox_open(mucx.destroy);
+    return;
+  }
 
   // Possible MUC Status codes
   //
@@ -215,12 +230,32 @@ function xows_gui_muc_join_ibox_open()
 {
   // Open the input box dialog
   xows_doc_ibox_open("Join or create a Channel",
-    "If the specified Room does not exist and if server does not restrict rooms creation, a new Room will be created with you as owner.",
+    "If the specified Channel does not exist and if server does not restrict Channel creation, a new Channel will be created with you as owner.",
     "Enter Channel name or address...", null,
     xows_gui_muc_join_ibox_onvalid, "Join",
     null, null,
     xows_gui_muc_join_ibox_oninput,
     true);
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Destroyed Message Dialog
+ * ---------------------------------------------------------------------------*/
+ /**
+ * Opens Join-Failure Message Dialog
+ *
+ * @param   {string}    reason     Destroy reason
+ */
+function xows_gui_muc_dstr_mbox_open(reason)
+{
+  const text = xows_l10n_get("This Channel has been destroyed and is no longer available")
+               + ":<br><b>" + reason + "</b>";
+
+  // Open message dialog
+  xows_doc_mbox_open(XOWS_STYL_WRN, "Channel unvailable", text,
+                     null, null,
+                     null, null);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1521,18 +1556,20 @@ function xows_gui_page_mucc_oninput(target)
       break;
 
     case "muc#roomconfig_maxusers":
-      if(xvalue[0] !== xows_doc("mucc_maxo").value) change = true;
+      if(xvalue) {
+        if(xvalue[0] !== xows_doc("mucc_maxo").value) change = true;
+      }
       break;
 
     case "muc#roomconfig_allowpm":
-      if(xvalue[0] !== xows_doc("mucc_alpm").value) change = true;
+      if(xvalue) {
+        if(xvalue[0] !== xows_doc("mucc_alpm").value) change = true;
+      }
       break;
     }
 
-    if(change) {
-      console.log("changed: "+xform[i]["var"]+": "+xvalue[0]);
+    if(change)
       break;
-    }
   }
 
   // Open Message Box for save changes
@@ -1872,8 +1909,14 @@ function xows_gui_page_muca_onabort()
  */
 function xows_gui_page_muca_oninput(target)
 {
+  // Check for click on destroy button
+  if(target.id === "muca_bt_dstr") {
+    xows_gui_muc_dstr_ibox_open(xows_gui_page_muca.room, null, null);
+    return;
+  }
+
   // Update GUI elements
-  if(target.tagName == "MEMB-RADIO") {
+  if(target.tagName === "MEMB-RADIO") {
 
     // Get related <li-memb> element
     const li_memb = target.closest("LI-MEMB");
@@ -1916,4 +1959,66 @@ function xows_gui_page_muca_open(room)
   xows_doc_page_open("page_muca",true,xows_gui_page_muca_onclose,
                                       xows_gui_page_muca_oninput,
                                       xows_gui_page_muca_oninput);
+}
+
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Deletion Input-Dialog (Room Administration (muca) Page)
+ * ---------------------------------------------------------------------------*/
+const xows_gui_muc_dstr_ibox = {room:null,alt:null,pass:null};
+
+/**
+ * Handles Room-Subject Input-Dialog input events
+ *
+ * @param   {string}    value     Dialog input field content
+ */
+function xows_gui_muc_dstr_ibox_oninput(value)
+{
+  // Dummy to prevent default behavior
+}
+
+/**
+ * Handles Room Deletion Input-Dialog abortion (click on Abort button)
+ *
+ * (Dummy function, required to show 'Abort' button)
+ */
+function xows_gui_muc_dstr_ibox_onabort() {}
+
+/**
+ * Handles Room Deletion Input-Dialog validation (click on Valid button)
+ *
+ * @param   {string}    value     Dialog input field content
+ */
+function xows_gui_muc_dstr_ibox_onvalid(value)
+{
+  const param = xows_gui_muc_dstr_ibox;
+
+  // Close MUC Admin page
+  xows_doc_page_close();
+
+  // Send destroy request
+  xows_cli_muc_destroy_query(param.room, param.alt, param.pass, value);
+}
+
+/**
+ * Opens Room Deletion Input-Dialog
+ *
+ * @param   {object}   room    ROOM Peer object
+ * @param   {string}   [alt]      Optional JID of alternate Room to join
+ * @param   {string}   [pass]     Optional password for alternate Room
+ */
+function xows_gui_muc_dstr_ibox_open(room, alt, pass)
+{
+  const param = xows_gui_muc_dstr_ibox;
+
+  param.room = room;
+  param.alt = alt;
+  param.pass = pass;
+
+  // Open Input Dialog-Box
+  xows_doc_ibox_open("Channel destruction",
+                     "You can specify a reason for Channel destruction.",
+                     "Enter reason...", null,
+                     xows_gui_muc_dstr_ibox_onvalid, "Destroy Channel",
+                     xows_gui_muc_dstr_ibox_onabort, "Cancel",
+                     xows_gui_muc_dstr_ibox_oninput, true);
 }

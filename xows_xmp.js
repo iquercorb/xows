@@ -2230,6 +2230,14 @@ function xows_xmp_presence_recv(stanza)
         const mucs = node.querySelectorAll("status"); //< search for <status>
         for(let j = 0; j < mucs.length; ++j)
           mucx.code.push(parseInt(mucs[j].getAttribute("code")));
+
+        // search for <destroy> element
+        const destroy = node.querySelector("destroy");
+        if(destroy) {
+          const reason = node.querySelector("reason");
+          mucx.destroy = reason ? xows_xml_innertext(reason) : "Unspecified reason";
+        }
+
       } continue;
     }
   }
@@ -4366,18 +4374,18 @@ function xows_xmp_muc_cfg_set_query(to, form, onparse)
  *
  * @param   {string}    to        Room JID to be destroyed
  * @param   {string}   [alt]      Optional JID of alternate Room to join
- * @param   {string}   [passwd]   Optional password for alternate Room
+ * @param   {string}   [pass]     Optional password for alternate Room
  * @param   {string}   [reason]   Optional reason string
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_muc_destroy_query(to, alt, passwd, reason, onparse)
+function xows_xmp_muc_destroy_query(to, alt, pass, reason, onparse)
 {
   // Base destroy node
   const destroy = xows_xml_node("destroy",null,null);
 
   // set optional elements
   if(alt) destroy.setAttribute("jid", alt);
-  if(passwd) xows_xml_parent(destroy,xows_xml_node("password",null,passwd));
+  if(pass) xows_xml_parent(destroy,xows_xml_node("password",null,pass));
   if(reason) xows_xml_parent(destroy,xows_xml_node("reason",null,reason));
 
   // Create and launch the query

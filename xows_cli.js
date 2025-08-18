@@ -4100,6 +4100,7 @@ function xows_cli_muc_nick_query(room)
   // Query for own reserved nickname, then join room
   xows_xmp_muc_nick_query(room.addr, xows_cli_muc_nick_parse);
 }
+
 /* ---------------------------------------------------------------------------
  * MUC - Room Join and Occupants management
  * ---------------------------------------------------------------------------*/
@@ -4677,7 +4678,7 @@ function xows_cli_muc_regi_get_result(from, data, form, error)
   // Retreive the contact related to this query
   const room = xows_cli_room_get(from);
   if(!room) {
-    xows_log(1,"cli_muc_register_parse","unknown/unsubscribed Room",from);
+    xows_log(1,"cli_muc_regi_get_result","unknown/unsubscribed Room",from);
     return;
   }
 
@@ -4737,6 +4738,52 @@ function xows_cli_muc_regi_get_query(room, nick, onresult)
 
   // Send request for Room register (will respond by xform)
   xows_xmp_regi_get_query(room.addr, xows_cli_muc_regi_get_result);
+}
+
+/* ---------------------------------------------------------------------------
+ * MUC - Room Destroy
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles result of MUC Room destruction query
+ *
+ * @param   {object}    from      Send JID or adress
+ * @param   {object}    data      Replied registration data
+ * @param   {object[]}  form      x:data form to be fulfilled
+ * @param   {object}    error     Error data if any
+ */
+function xows_cli_muc_destroy_result(from, type, error)
+{
+  // Retreive the contact related to this query
+  const room = xows_cli_room_get(from);
+  if(!room) {
+    xows_log(1,"cli_muc_destroy_result","unknown/unsubscribed Room",from);
+    return;
+  }
+
+  if(error) {
+    xows_log(1,"cli_muc_destroy_result","Room destruction error",error.name);
+    xows_cli_fw_onerror(error);
+    return;
+  }
+
+  xows_log(2,"cli_muc_destroy_result","Room destroyed",room.addr);
+
+  // Forward Room deletion
+  xows_cli_fw_roompull(room);
+}
+
+/**
+ * Query for MUC Room destruction request
+ *
+ * @param   {object}    room      ROOM Peer object
+ * @param   {string}   [alt]      Optional JID of alternate Room to join
+ * @param   {string}   [pass]     Optional password for alternate Room
+ * @param   {string}   [reason]   Optional reason string
+ * @param   {function}  onresult  Callback to parse received result
+ */
+function xows_cli_muc_destroy_query(room, alt, pass, reason)
+{
+  xows_xmp_muc_destroy_query(room.addr, alt, pass, reason, xows_cli_muc_destroy_result);
 }
 
 /* ---------------------------------------------------------------------------

@@ -407,13 +407,14 @@ function xows_gui_rost_room_onpush(room)
 function xows_gui_rost_room_onpull(room)
 {
   // Search <li-peer> element
-  //const li_peer = document.getElementById(room.addr);
   const li_peer = xows_gui_rost_list_find(room.addr);
   if(li_peer) {
 
     // switch peer if required
     if(xows_gui_peer && xows_gui_peer === room)
       xows_gui_peer_switch_to(null);
+
+    xows_log(2,"gui_rost_room_onpull","Remove Room element",room.addr);
 
     // delete <li_peer> element
     li_peer.parentNode.removeChild(li_peer);
