@@ -841,10 +841,6 @@ function xows_gui_doc_init(peer)
     chat_fram.classList.add("CHAT-BUDY");
   }
 
-  // Set chat input placeholder
-  const placeholder = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
-  xows_gui_doc(peer,"edit_inpt").setAttribute("placeholder",placeholder);
-
   // Set chat header bar informations
   xows_gui_doc_update(peer);
 }
@@ -1137,8 +1133,13 @@ function xows_gui_doc_update(peer, mask = 0xff)
   }
 
   if(mask & XOWS_UPDT_OTHR) {
+
     // Check whether file Upload is available
     xows_gui_doc(peer,"edit_upld").disabled = !xows_cli_services.has(XOWS_NS_HTTPUPLOAD);
+
+    // Set chat input placeholder
+    const text = xows_l10n_get("Send a message to")+" "+peer.name+" ...";
+    xows_gui_doc(peer,"edit_inpt").setAttribute("placeholder",text);
   }
 
   // Special mask to disable the preloading screen
