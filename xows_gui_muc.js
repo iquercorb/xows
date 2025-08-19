@@ -858,7 +858,7 @@ function xows_gui_muc_list_onclick(event)
  */
 function xows_gui_muc_list_find(room, addr)
 {
-  return xows_gui_doc(room,"mucl_list").querySelector("LI-PEER[data-id='"+addr+"']");
+  return xows_gui_doc(room,"mucl_list").querySelector("LI-PEER[data-id='"+xows_xml_escape(addr)+"']");
 }
 
 /**
@@ -936,7 +936,7 @@ function xows_gui_muc_list_onpush(occu, mucx)
       // Search for existing occupant <li-peer> element for this Room
       const li_peer = xows_gui_muc_list_find(occu.room, mucx.prev);
       // Change <li-peer> element id
-      if(li_peer) li_peer.dataset.id = occu.addr;
+      if(li_peer) li_peer.dataset.id = xows_xml_escape(occu.addr);
     }
 
     // checks whether we have a special status code with this occupant
@@ -1058,7 +1058,7 @@ function xows_gui_muc_occu_menu_onshow(button, menu)
   menu.style.top = (offsetTop - overflow) + "px";
 
   // Get related Occupant
-  const occu = xows_cli_occu_get(xows_gui_peer, button.closest("LI-PEER").dataset.id);
+  const occu = xows_cli_occu_get(xows_gui_peer, xows_xml_unesc(button.closest("LI-PEER").dataset.id));
 
   const is_ownr = (xows_gui_peer.affi === XOWS_AFFI_OWNR);
   const is_admn = !occu.self && (xows_gui_peer.affi > XOWS_AFFI_MEMB);
@@ -1156,7 +1156,7 @@ function xows_gui_muc_occu_menu_onclick(event)
   if(!li) return;
 
   // Retreive room occupant object
-  const occu = xows_cli_occu_get(xows_gui_peer, li_peer.dataset.id);
+  const occu = xows_cli_occu_get(xows_gui_peer, xows_xml_unesc(li_peer.dataset.id));
 
   let affi = null;
   let role = null;

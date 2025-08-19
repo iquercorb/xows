@@ -62,7 +62,7 @@ const XOWS_XML_UNESC_MAP = new Map([["&amp;","&"],["&lt;","<"],["&gt;",">"],["&a
 /**
  * Remplacement function for XML string escape
  */
-function xows_xml_escap_fnc(m) {return XOWS_XML_ESCAP_MAP.get(m);}
+function xows_xml_escap_fn(m) {return XOWS_XML_ESCAP_MAP.get(m);}
 
 /**
  * Rewrites the given string with XML escapes for reserved characters
@@ -73,13 +73,13 @@ function xows_xml_escap_fnc(m) {return XOWS_XML_ESCAP_MAP.get(m);}
  */
 function xows_xml_escape(str)
 {
-  return str.replace(/[\&<>'"]/g, xows_xml_escap_fnc);
+  return str.replace(/[\&<>'"]/g, xows_xml_escap_fn);
 }
 
 /**
  *  Remplacement function for XML string unescape
  */
-function xows_xml_unesc_fnc(m) {return XOWS_XML_UNESC_MAP.get(m);}
+function xows_xml_unesc_fn(m) {return XOWS_XML_UNESC_MAP.get(m);}
 
 /**
  * Rewrites the given XML escaped string with proper ASCII charaters
@@ -90,7 +90,7 @@ function xows_xml_unesc_fnc(m) {return XOWS_XML_UNESC_MAP.get(m);}
  */
 function xows_xml_unesc(str)
 {
-  return str.replace(/\&\w*;/g, xows_xml_unesc_fnc);
+  return str.replace(/\&\w*;/g, xows_xml_unesc_fn);
 }
 
 /**
@@ -177,7 +177,7 @@ function xows_xml_serialize(node)
   // Append attributes list
   for(let i = 0; i < node.attributes.length; ++i)
     result += " " + node.attributes[i].nodeName + "='" +
-                    node.attributes[i].nodeValue + "'";
+                    xows_xml_escape(node.attributes[i].nodeValue) + "'";
 
   // Append children
   const n = node.childNodes.length;

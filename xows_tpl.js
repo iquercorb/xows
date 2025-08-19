@@ -1364,7 +1364,7 @@ function xows_tpl_spawn_room_occu(occu, rost = false)
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-occu"].firstChild.cloneNode(true);
 
-  inst.dataset.id = occu.addr;
+  inst.dataset.id = xows_xml_escape(occu.addr);
   inst.dataset.ocid = occu.ocid;
 
   if(rost)
@@ -1502,7 +1502,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
   const inst = xows_tpl_model["hist-mesg"].firstChild.cloneNode(true);
 
   inst.dataset.id = mesg.id;
-  inst.dataset.from = mesg.from;
+  inst.dataset.from = xows_xml_escape(mesg.from);
   inst.dataset.time = mesg.time;
   if(mesg.orid) inst.dataset.orid = mesg.orid;
   if(mesg.szid) inst.dataset.szid = mesg.szid;
@@ -1522,7 +1522,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
     } else {
 
       // Get author Peer of quoted message
-      const peer_rply = xows_cli_author_get(peer, li_rpl.dataset.from, li_rpl.dataset.ocid);
+      const peer_rply = xows_cli_author_get(peer, xows_xml_unesc(li_rpl.dataset.from), li_rpl.dataset.ocid);
 
       // Check whether message is referencing ourself
       if(peer_rply.self)
@@ -1542,7 +1542,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
       rply_from.innerText = peer_rply.name;
 
       // Set reply author address
-      mesg_rply.dataset.to = peer_rply.addr;
+      mesg_rply.dataset.to = xows_xml_escape(peer_rply.addr);
     }
 
     // Correted (discarded) message doesn't have Body
@@ -1567,7 +1567,7 @@ function xows_tpl_mesg_spawn(peer, mesg, wait, li_prv, li_rep, li_rpl)
   } else if(li_prv && !li_rpl) {
     // If previous message author is different or if elapsed time is
     // greater than # minutes, we create a new full message block
-    append = ((li_prv.dataset.from === mesg.from) && ((mesg.time - li_prv.dataset.time) < XOWS_TPL_MESG_GROUP_TH));
+    append = ((xows_xml_unesc(li_prv.dataset.from) === mesg.from) && ((mesg.time - li_prv.dataset.time) < XOWS_TPL_MESG_GROUP_TH));
   }
 
   // Set message "Append" style
@@ -1677,10 +1677,10 @@ function xows_tpl_mesg_update(li_msg, peer, mesg, recp, li_rpl)
     } else {
 
       // Get author Peer of quoted message
-      const peer_rply = xows_cli_author_get(peer, li_rpl.dataset.from, li_rpl.dataset.ocid);
+      const peer_rply = xows_cli_author_get(peer, xows_xml_unesc(li_rpl.dataset.from), li_rpl.dataset.ocid);
 
       // Set reply author address
-      mesg_rply.dataset.to = peer_rply.addr;
+      mesg_rply.dataset.to = xows_xml_escape(peer_rply.addr);
     }
 
     // Update reference for corrected messages forwarding
