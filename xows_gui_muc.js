@@ -877,7 +877,15 @@ function xows_gui_muc_list_onclick(event)
  */
 function xows_gui_muc_list_find(room, addr)
 {
-  return xows_gui_doc(room,"mucl_list").querySelector("LI-PEER[data-id='"+xows_xml_escape(addr)+"']");
+  // We don't use querySelector() to search JID directly since Occupant JID
+  // may contain HTML/XML illegal characters not supported by CSS selector.
+  const li_peers = xows_gui_doc(room,"mucl_list").querySelectorAll("LI-PEER");
+  for(let i = 0; i < li_peers.length; ++i) {
+    if(li_peers[i].dataset.id === addr)
+      return li_peers[i];
+  }
+
+  return null;
 }
 
 /**
@@ -955,7 +963,7 @@ function xows_gui_muc_list_onpush(occu, mucx)
       // Search for existing occupant <li-peer> element for this Room
       const li_peer = xows_gui_muc_list_find(occu.room, mucx.prev);
       // Change <li-peer> element id
-      if(li_peer) li_peer.dataset.id = xows_xml_escape(occu.addr);
+      if(li_peer) li_peer.dataset.id = occu.addr;
     }
 
     // checks whether we have a special status code with this occupant
@@ -1034,6 +1042,8 @@ function xows_gui_muc_list_onpull(occu)
 
       // Show or hide list depending content
       src_ul.hidden = !src_ul.childElementCount;
+    } else {
+      xows_log(1,"gui_muc_list_onpull","Occupant element not found",occu.addr);
     }
   }
 

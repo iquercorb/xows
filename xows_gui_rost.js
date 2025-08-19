@@ -115,7 +115,15 @@ function xows_gui_rost_list_onclick(event)
  */
 function xows_gui_rost_list_find(addr)
 {
-  return xows_doc("rost_fram").querySelector("LI-PEER[data-id='"+addr+"']");
+  // We don't use querySelector() to search JID directly since Occupant JID
+  // may contain HTML/XML illegal characters not supported by CSS selector.
+  const li_peers = xows_doc("rost_fram").querySelectorAll("LI-PEER");
+  for(let i = 0; i < li_peers.length; ++i) {
+    if(li_peers[i].dataset.id === addr)
+      return li_peers[i];
+  }
+
+  return null;
 }
 
 /**
@@ -151,11 +159,22 @@ function xows_gui_rost_list_insert(dst_ul, li_peer, top = false)
  */
 function xows_gui_rost_list_rise(peer)
 {
-  const li_peer = xows_doc("rost_fram").querySelector("LI-PEER[data-id='"+peer.addr+"']");
-  const dst_ul = li_peer.parentNode;
+  // We don't use querySelector() to search JID directly since Occupant JID
+  // may contain HTML/XML illegal characters not supported by CSS selector.
+  let li_peer = null;
+  const li_peers = xows_doc("rost_fram").querySelectorAll("LI-PEER");
+  for(let i = 0; i < li_peers.length; ++i) {
+    if(li_peers[i].dataset.id === peer.addr) {
+      li_peer = li_peers[i];
+      break;
+    }
+  }
 
-  if(li_peer !== dst_ul.firstElementChild)
-    dst_ul.insertBefore(li_peer, dst_ul.firstElementChild);
+  if(li_peer) {
+    const dst_ul = li_peer.parentNode;
+    if(li_peer !== dst_ul.firstElementChild)
+      dst_ul.insertBefore(li_peer, dst_ul.firstElementChild);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -484,7 +503,7 @@ function xows_gui_rost_occu_onpush(occu, mucx)
       }
 
       // Search for existing occupant <li-peer> element for this Room
-      let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+mucx.prev+"']");
+      let li_peer = xows_gui_rost_list_find(mucx.prev);
 
       // Change <li-peer> element data-id
       if(li_peer) li_peer.dataset.id = occu.addr;
@@ -494,7 +513,7 @@ function xows_gui_rost_occu_onpush(occu, mucx)
     }
   }
 
-  let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+occu.addr+"']");
+  let li_peer = xows_gui_rost_list_find(occu.addr);
   if(li_peer) {
 
     // Update occupant <li_peer> element according template
@@ -540,7 +559,7 @@ function xows_gui_rost_occu_onpull(occu)
 {
   const dst_ul = xows_doc("priv_occu");
 
-  let li_peer = dst_ul.querySelector("LI-PEER[data-id='"+occu.addr+"']");
+  let li_peer = xows_gui_rost_list_find(occu.addr);
   if(li_peer) {
 
     // Update occupant <li_peer> element according template
