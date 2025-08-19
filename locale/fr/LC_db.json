@@ -95,8 +95,8 @@
   "Register":
   "S'inscrire",
 
-  "Username contains illegal character: ' \" & ; < >":
-  "Le nom d'utilisateur contient des caractères illégaux: ' \" & ; < >",
+  "Username contains illegal character: '\"&;<>/:@":
+  "Le nom d'utilisateur contient des caractères illégaux: '\"&;<>/:@",
 
   "Login with an existing account":
   "Se connecter avec un compte existant",
@@ -386,8 +386,8 @@
   "Join":
   "Rejoindre",
 
-  "Channel ID contains illegal character: ' \" & ; < >":
-  "L'ID du Salon contient des caractères illégaux: ' \" & ; < >",
+  "Channel ID contains illegal character: '\"&;<>/:@":
+  "L'ID du Salon contient des caractères illégaux: '\"&;<>/:@",
 
   "Channel initialization":
   "Initialization du Salon",

@@ -95,7 +95,7 @@
   "Register":
   "Registrieren",
 
-  "Username contains illegal character: ' \" & ; < >":
+  "Username contains illegal character: '\"&;<>/:@":
   "",
 
   "Login with an existing account":
@@ -386,7 +386,7 @@
   "Join":
   "Beitreten",
 
-  "Channel ID contains illegal character: ' \" & ; < >":
+  "Channel ID contains illegal character: '\"&;<>/:@":
   "",
 
   "Channel initialization":
