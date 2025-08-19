@@ -92,18 +92,18 @@ function xows_load_task_push(item, mask, onload, param)
 
     // Check for alrady planed task
     if(item.load & mask) {
-      xows_log(2,"load_task_push","Ignoring already planed tasks 0x"+item.load, item.addr || item.name);
+      xows_log(2,"load_task_push","Ignoring already planed tasks #"+item.load, item.addr || item.name);
       return;
     }
 
-    xows_log(2,"load_task_push","Updating tasks mask 0x"+item.load+"|0x"+mask, item.addr || item.name);
+    xows_log(2,"load_task_push","Updating tasks mask #"+item.load+"|"+mask, item.addr || item.name);
 
     // Get existing stack
     stack = xows_load_item_stk.get(item);
 
   } else {
 
-    xows_log(2,"load_task_push","Setting tasks mask 0x"+item.load+"|0x"+mask, item.addr || item.name);
+    xows_log(2,"load_task_push","Setting tasks mask #"+item.load+"|"+mask, item.addr || item.name);
 
     // Create new load stack for this item
     stack = [];
@@ -136,7 +136,7 @@ function xows_load_task_push(item, mask, onload, param)
       } else {
         // Something is not correct, either provided mask is invalid
         // or loading tasks functions were not properly pre-configured.
-        xows_log(1,"load_task_push","No task for bit 0x"+bit, item.addr || item.name);
+        xows_log(1,"load_task_push","No task for bit #"+bit, item.addr || item.name);
         // Set task as done already to prevent waiting infinitely
         xows_load_task_done(item, bit);
       }
@@ -158,7 +158,7 @@ function xows_load_task_push(item, mask, onload, param)
  */
 function xows_load_task_done(item, task)
 {
-  xows_log(2,"load_task_done","Task 0x"+task+" done",item.addr || item.name);
+  xows_log(2,"load_task_done","Task #"+task+" done",item.addr || item.name);
 
   // Remove load task bit
   item.load &= ~task;
