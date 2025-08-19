@@ -731,11 +731,9 @@ function xows_gui_mam_parse(peer, newer, result, count, complete)
   }
 
   // Inform MAM loaded
-  if(newer) {
-    xows_load_task_done(peer, XOWS_FETCH_NEWR);
-  } else {
-    xows_load_task_done(peer, XOWS_FETCH_OLDR);
-  }
+  const task = newer ? XOWS_FETCH_NEWR : XOWS_FETCH_OLDR;
+  if(peer.load & task)
+    xows_load_task_done(peer, task);
 }
 
 /* ---------------------------------------------------------------------------
