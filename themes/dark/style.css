@@ -2121,6 +2121,7 @@ peer-meta[placeholder]:empty::before {
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
 #chat_fram.CHAT-BUDY #chat_exit,
+#chat_fram.CHAT-BUDY #chat_menu,
 #chat_fram.CHAT-BUDY #chat_subj,
 #chat_fram.CHAT-BUDY #chat_nick,
 #chat_fram.CHAT-BUDY #chat_regi,
@@ -2181,6 +2182,9 @@ head-info badg-show {
 }
 #chat_exit {
   background-image: url("images/exit.svg");
+}
+#chat_menu {
+  background-image: url("images/menu_dots.svg");
 }
 #chat_subj {
   background-image: url("images/topic.svg");
