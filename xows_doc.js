@@ -753,8 +753,10 @@ function xows_doc_ibox_onabort(event)
  */
 function xows_doc_ibox_onvalid(event)
 {
-  if(xows_doc_ibox_param.onvalid)
-    xows_doc_ibox_param.onvalid(xows_doc("ibox_input").value);
+  if(xows_doc_ibox_param.onvalid) {
+    if(!xows_doc_ibox_param.onvalid(xows_doc("ibox_input").value))
+      return;
+  }
 
   xows_doc_ibox_close();
 }

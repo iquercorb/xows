@@ -596,6 +596,8 @@ function xows_gui_rost_subs_ibox_onvalid(value)
 {
   // Send a new subscription request
   xows_gui_rost_subs_rqst_pupu(value);
+
+  return true;
 }
 
 /**

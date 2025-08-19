@@ -219,8 +219,15 @@ function xows_gui_muc_join_ibox_oninput(value)
  */
 function xows_gui_muc_join_ibox_onvalid(value)
 {
+  if(!xows_xml_islegal(value)) {
+    xows_doc_ibox_error("Channel ID contains illegal character: ' \" & ; < >");
+    return false;
+  }
+
   // Join or create room
   xows_cli_muc_join(value);
+
+  return true;
 }
 
 /**
@@ -396,6 +403,8 @@ function xows_gui_muc_regi_ibox_onvalid(value)
 
   // Try register again
   xows_cli_muc_regi_get_query(room, value, xows_gui_muc_regi_ibox_onresult);
+
+  return true;
 }
 
 /**
@@ -471,6 +480,8 @@ function xows_gui_muc_pswd_ibox_onvalid(value)
 {
   // Try join again
   xows_cli_muc_join(xows_gui_muc_pswd_ibox.room, value);
+
+  return true;
 }
 
 /**
@@ -516,6 +527,8 @@ function xows_gui_muc_cflt_ibox_onvalid(value)
 
   // Try to join again
   xows_cli_muc_join(room);
+
+  return true;
 }
 
 /**
@@ -569,6 +582,8 @@ function xows_gui_muc_subj_ibox_onvalid(value)
   // If changed, inform of the new room topic
   if(subj != room.subj)
     xows_cli_muc_subj_set(room, subj);
+
+  return true;
 }
 
 /**
@@ -613,6 +628,8 @@ function xows_gui_muc_nick_ibox_onvalid(value)
   // If changed, inform of the new room topic
   if(nick != xows_jid_resc(room.join))
     xows_cli_muc_nick_set(room, nick);
+
+  return true;
 }
 
 /**
@@ -1997,6 +2014,8 @@ function xows_gui_muc_dstr_ibox_onvalid(value)
 
   // Send destroy request
   xows_cli_muc_destroy_query(param.room, param.alt, param.pass, value);
+
+  return true;
 }
 
 /**

@@ -2075,6 +2075,8 @@ function xows_gui_self_stat_ibox_onvalid(value)
   // If changed, inform of the new status
   if(value !== xows_cli_self.stat)
     xows_cli_pres_stat_set(value);
+
+  return true;
 }
 
 /**
@@ -2453,8 +2455,13 @@ function xows_gui_page_regi_onclick(target)
 
     if(!xows_doc("regi_subm").disabled) {
 
-      const user = xows_doc("regi_user").value.toLowerCase();
+      const user = xows_doc("regi_user").value;
       const pass = xows_doc("regi_pass").value;
+
+      if(!xows_xml_islegal(user)) {
+        xows_doc_popu_open(XOWS_STYL_WRN,"Username contains illegal character: ' \" & ; < >");
+        return;
+      }
 
       // erase password from intput
       //xows_doc("regi_pass").value = "";

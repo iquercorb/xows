@@ -60,6 +60,11 @@ const XOWS_XML_ESCAP_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'"
 const XOWS_XML_UNESC_MAP = new Map([["&amp;","&"],["&lt;","<"],["&gt;",">"],["&apos;","'"],["&quot;","\""]]);
 
 /**
+ * Regular Expression for XML illegal characters (to be escaped)
+ */
+const xows_xml_escap_reg = /[\&<>'"]/g;
+
+/**
  * Remplacement function for XML string escape
  */
 function xows_xml_escap_fn(m) {return XOWS_XML_ESCAP_MAP.get(m);}
@@ -73,7 +78,19 @@ function xows_xml_escap_fn(m) {return XOWS_XML_ESCAP_MAP.get(m);}
  */
 function xows_xml_escape(str)
 {
-  return str.replace(/[\&<>'"]/g, xows_xml_escap_fn);
+  return str.replace(xows_xml_escap_reg, xows_xml_escap_fn);
+}
+
+/**
+ * Check whether string contain XML illegal character.
+ *
+ * @param   {string}    str       String to text
+ *
+ * @return  {string}    True if string contain no illegal character, false otherwise.
+ */
+function xows_xml_islegal(str)
+{
+  return !xows_xml_escap_reg.test(str);
 }
 
 /**
