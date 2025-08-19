@@ -52,7 +52,7 @@ const xows_xml_doc = document.implementation.createDocument("jabber:client","Xow
 /**
  * Correspondence map to escape XML reserved characters
  */
-const XOWS_XML_ESCAP_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'","&apos;"],["\"","&quot;"],["\n","<br>"]]);
+const XOWS_XML_ESCAP_MAP = new Map([["&","&amp;"],["<","&lt;"],[">","&gt;"],["'","&apos;"],["\"","&quot;"]]);
 
 /**
  * Correspondence map to unescape and XML string

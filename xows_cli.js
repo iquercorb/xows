@@ -4050,8 +4050,6 @@ function xows_cli_muc_info_parse(from, node, idens, feats, xform, error)
     }
   }
 
-  console.log(JSON.stringify(room));
-
   if(room.load & XOWS_FETCH_MUCI) {
     xows_load_task_done(room, XOWS_FETCH_MUCI);
   } else {
