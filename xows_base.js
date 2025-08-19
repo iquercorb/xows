@@ -888,14 +888,26 @@ const xows_collator = new Intl.Collator();
 /**
  * Compare two strings
  *
- * @param   {string}  a   First string to compare
- * @param   {string}  b   Second string to compare
+ * @param   {string}  a     First string to compare
+ * @param   {string}  b     Second string to compare
  *
  * @return  {number}  A number indicating how a and b compare to each other
  */
 function xows_strcmp(a, b)
 {
   return xows_collator.compare(a, b);
+}
+
+/**
+ * Capitalize string
+ *
+ * @param   {string}  str   String to capitalize
+ *
+ * @return  {number}  Capitalized version of input string
+ */
+function xows_capitalize(str)
+{
+  return str.charAt(0).toUpperCase()+str.slice(1);
 }
 
 /**
