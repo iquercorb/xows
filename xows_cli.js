@@ -4315,15 +4315,18 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
     if(show > XOWS_SHOW_OFF) {
 
-      // MUC Occupant keep the same occupant-id but may change nickname, if we
-      // received a message with Occupant-ID but different Nickname, we created
-      // the OCCUPANT object is already create, but with the wrong JID. For this
-      // case, we make sure Occupant keep its current JID, not one from history
-      // message.
-      occu.addr = from;
-      occu.jlck = from;
-      occu.jrpc = from;
-      occu.name = xows_jid_resc(from);
+      // MUC Occupant keep the same occupant-id but may change nickname. If we
+      // receive an history message with occupant-id before Occupant joined
+      // the room, the OCCUPANT object is already created but with the wrong
+      // JID.
+      // For this case, we make sure the found Occupant has the proper JID, not
+      // the one from history messages.
+      if(occu.addr !== from) {
+        occu.addr = from;
+        occu.jlck = from;
+        occu.jrpc = from;
+        occu.name = xows_jid_resc(from);
+      }
 
     } else {
 
