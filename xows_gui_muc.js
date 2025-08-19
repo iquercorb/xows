@@ -1876,7 +1876,7 @@ function xows_gui_page_muca_onvalid()
   const param = xows_gui_page_muca;
 
   // Modify item list according current state and start edit cycle
-  let li_mods = xows_doc("page_muca").querySelectorAll(".MODIFIED");
+  let li_mods = xows_doc("page_muca").getElementsByClassName("MODIFIED");
 
   for(let i = 0; i < li_mods.length; ++i) {
 
@@ -1919,7 +1919,7 @@ function xows_gui_page_muca_onvalid()
 function xows_gui_page_muca_onabort()
 {
   // Reset values
-  let li_mods = xows_doc("page_muca").querySelectorAll(".MODIFIED");
+  let li_mods = xows_doc("page_muca").getElementsByClassName("MODIFIED");
 
   for(let i = 0; i < li_mods.length; ++i) {
 
@@ -1958,7 +1958,7 @@ function xows_gui_page_muca_oninput(target)
   }
 
   // Open or close Message Box for save changes
-  if(xows_doc("page_muca").querySelectorAll(".MODIFIED").length > 0) {
+  if(xows_doc("page_muca").getElementsByClassName("MODIFIED").length > 0) {
     xows_doc_popu_open_for_save(xows_gui_page_muca_onvalid,
                                 xows_gui_page_muca_onabort);
   } else {

@@ -1840,7 +1840,7 @@ function xows_tpl_admn_memb_spawn(item, affi)
       if((affi < XOWS_AFFI_OWNR) && (item.affi >= affi))
         inst.setAttribute("disabled","");
 
-      const radios = inst.querySelectorAll("MEMB-RADIO");
+      const radios = inst.getElementsByTagName("MEMB-RADIO");
 
       for(let i = 0; i < radios.length; ++i) {
         radios[i].dataset.on = (radios[i].dataset.affi == item.affi);
@@ -1864,7 +1864,7 @@ function xows_tpl_admn_memb_spawn(item, affi)
 function xows_tpl_admn_memb_update(li, affi, aref)
 {
   // Get list (or single) radio element(s)
-  const radio = li.querySelectorAll("MEMB-RADIO");
+  const radio = li.getElementsByTagName("MEMB-RADIO");
 
   if(radio.length > 1) {
     // Set proper radio on, switch off others
