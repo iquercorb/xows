@@ -891,11 +891,11 @@ function xows_cli_author_get(peer, addr, ocid)
 /**
  * Loading process tasks bits
  */
-const XOWS_FETCH_AVAT = xows_load_task_bit();   //< 0x01
-const XOWS_FETCH_NICK = xows_load_task_bit();   //< 0x02
-const XOWS_FETCH_MUCI = xows_load_task_bit();   //< 0x04
-const XOWS_FETCH_MUCN = xows_load_task_bit();   //< 0x08
-const XOWS_AWAIT_SUBJ = xows_load_task_bit();   //< 0x10
+const XOWS_FETCH_AVAT = xows_load_task_bit();   //< 0x01 - #1
+const XOWS_FETCH_NICK = xows_load_task_bit();   //< 0x02 - #2
+const XOWS_FETCH_MUCI = xows_load_task_bit();   //< 0x04 - #4
+const XOWS_FETCH_MUCN = xows_load_task_bit();   //< 0x08 - #8
+const XOWS_AWAIT_SUBJ = xows_load_task_bit();   //< 0x10 - #16
 
 /**
  * Module initialization.
@@ -1142,10 +1142,8 @@ function xows_cli_xmp_onready(bind, resume)
     xows_cach_peer_fetch(xows_cli_self);
 
     // If required set own default nickname
-    if(!xows_cli_self.name) {
-      const userid = bind.node;
-      xows_cli_self.name = userid.charAt(0).toUpperCase()+userid.slice(1);
-    }
+    if(!xows_cli_self.name)
+      xows_cli_self.name = xows_capitalize(bind.node);
 
     // Start features & services discovery
     xows_cli_warmup_start();
@@ -2653,9 +2651,8 @@ function xows_cli_pres_show_back()
 function xows_cli_self_edit(name, url, access)
 {
   // Update user settings
-  if(name) {
+  if(name)
     xows_cli_self.name = name;
-  }
 
   // Update user settings
   if(url) {
@@ -4019,22 +4016,24 @@ function xows_cli_muc_info_parse(from, node, idens, feats, xform, error)
   if(xform) {
     for(let i = 0; i < xform.length; ++i) {
       if(xform[i]["var"] === "muc#roomconfig_roomname")
-        if(xform[i].value) room.name = xform[i].value;
+        if(xform[i].value) room.name = xform[i].value[0];
 
       if(xform[i]["var"] === "muc#roominfo_description")
-        if(xform[i].value) room.desc = xform[i].value;
+        if(xform[i].value) room.desc = xform[i].value[0];
 
       if(xform[i]["var"] === "muc#roominfo_subject")
-        if(xform[i].value) room.subj = xform[i].value;
+        if(xform[i].value) room.subj = xform[i].value[0];
 
       if(xform[i]["var"] == "muc#roominfo_occupants")
-        if(xform[i].value) room.nocc = parseInt(xform[i].value); //< Number of occupants
+        if(xform[i].value) room.nocc = parseInt(xform[i].value[0]); //< Number of occupants
 
       //if(xform[i]["var"] == "muc#roominfo_lang")  = xform[i].value;
       //if(xform[i]["var"] == "muc#roomconfig_allowinvites")  = xform[i].value;
       //if(xform[i]["var"] == "muc#roomconfig_changesubject")  = xform[i].value;
     }
   }
+
+  console.log(JSON.stringify(room));
 
   if(room.load & XOWS_FETCH_MUCI) {
     xows_load_task_done(room, XOWS_FETCH_MUCI);
@@ -4443,9 +4442,8 @@ function xows_cli_muc_onsubj(id, from, subj)
   // Subject is the last thing sent after room join, we use it as
   // signal that we received all presences and history messages
   // following a newly joined room.
-  if(room.load & XOWS_AWAIT_SUBJ) {
+  if(room.load & XOWS_AWAIT_SUBJ)
     xows_load_task_done(room, XOWS_AWAIT_SUBJ);
-  }
 }
 
 /**
