@@ -4311,52 +4311,57 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
 
   // Get occupant object if exists
   let occu = xows_cli_occu_get(room, from, ocid);
+  if(occu) {
 
-  // Check wheter the occupant is to be removed
-  if(occu && show === XOWS_SHOW_OFF) {
+    if(show > XOWS_SHOW_OFF) {
 
-    // Check whether this is nickname change rather than true departure
-    if(mucx.code.includes(303)) {
-
-      // We add an extra ad-hoc property in mucx object
-      // to forward old occupant address to GUI allowing
-      // to perform proper document id switch.
-      mucx.prev = occu.addr;
-
-      // Change occupant nickname
-      occu.name = mucx.nick;
-
-      // Update occupant address
-      const addr = room.addr + "/" + occu.name;
-      occu.addr = addr;
-      occu.jlck = addr;
-
-      // Change Room "join" address for own nick changes
-      if(occu.self)
-        room.join = addr;
+      // MUC Occupant keep the same occupant-id but may change nickname, if we
+      // received a message with Occupant-ID but different Nickname, we created
+      // the OCCUPANT object is already create, but with the wrong JID. For this
+      // case, we make sure Occupant keep its current JID, not one from history
+      // message.
+      occu.addr = from;
+      occu.jlck = from;
+      occu.jrpc = from;
+      occu.name = xows_jid_resc(from);
 
     } else {
 
-      // set show off for last update
-      occu.show = show;
+      // Check whether this is nickname change rather than true departure
+      if(mucx.code.includes(303)) {
 
-      // Forward removed Private Conversation
-      if(xows_cli_ocpm_has(occu))
-        xows_cli_fw_occupull(occu);
+        // We add an extra ad-hoc property in mucx object
+        // to forward old occupant address to GUI allowing
+        // to perform proper document id switch.
+        mucx.prev = occu.addr;
 
-      // Forward removed Occupant
-      xows_cli_fw_mucpull(occu);
+        // Change occupant nickname
+        occu.name = mucx.nick;
 
-      return; //< return now
+        // Update occupant address
+        const addr = room.addr + "/" + occu.name;
+        occu.addr = addr;
+        occu.jlck = addr;
+
+        // Change Room "join" address for own nick changes
+        if(occu.self)
+          room.join = addr;
+
+      } else {
+
+        // set show off for last update
+        occu.show = show;
+
+        // Forward removed Private Conversation
+        if(xows_cli_ocpm_has(occu))
+          xows_cli_fw_occupull(occu);
+
+        // Forward removed Occupant
+        xows_cli_fw_mucpull(occu);
+
+        return; //< return now
+      }
     }
-  }
-
-
-  if(occu) {
-    // Update Occupant
-    occu.name = xows_jid_resc(from);
-    occu.jful = mucx.jful; //< The real JID, may be unavailable
-    occu.jbar = mucx.jful ? xows_jid_bare(mucx.jful) : null; //< Real bare JID;
   } else {
     // Create new Occupant object
     occu = xows_cli_occu_new(room, from, ocid, mucx.jful, null, self);
@@ -4367,6 +4372,8 @@ function xows_cli_muc_onpres(from, show, stat, mucx, ocid, phot)
   occu.stat = stat;
   occu.affi = mucx.affi;
   occu.role = mucx.role;
+  occu.jful = mucx.jful; //< The real JID, may be unavailable
+  occu.jbar = mucx.jful ? xows_jid_bare(mucx.jful) : null; //< Real bare JID
 
   // Update self Role and Affiliation with Room
   if(self) {
