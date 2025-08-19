@@ -953,7 +953,7 @@ function xows_gui_doc_import(peer)
 
   } else {
 
-    xows_log(2,"gui_doc_import","initia preloading",peer.addr);
+    xows_log(2,"gui_doc_import","initial preloading",peer.addr);
 
     let load_mask = 0;
 
