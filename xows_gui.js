@@ -1912,7 +1912,7 @@ function xows_gui_app_tab_select(tab_id)
   let sel_page;
 
   // Change the SELECTED tab
-  const rost_tabs = xows_doc("rost_tabs").querySelectorAll("ROST-TAB");
+  const rost_tabs = xows_doc("rost_tabs").getElementsByTagName("ROST-TAB");
 
   for(let i = 0; i < rost_tabs.length; ++i) {
 
