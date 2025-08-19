@@ -879,7 +879,7 @@ function xows_gui_muc_list_find(room, addr)
 {
   // We don't use querySelector() to search JID directly since Occupant JID
   // may contain HTML/XML illegal characters not supported by CSS selector.
-  const li_peers = xows_gui_doc(room,"mucl_list").getElementsByTagName("LI-PEER");
+  const li_peers = xows_gui_doc(room,"mucl_list").querySelectorAll("LI-PEER");
   for(let i = 0; i < li_peers.length; ++i) {
     if(li_peers[i].dataset.id === addr)
       return li_peers[i];
@@ -1659,7 +1659,7 @@ function xows_gui_page_mucc_open(room, xform)
   const page_mucc = xows_doc("page_mucc");
 
   // Hide all fieldset elements fieldset
-  const fieldsets = page_mucc.getElementsByTagName("FIELDSET");
+  const fieldsets = page_mucc.querySelectorAll("FIELDSET");
   for(let i = 0; i < fieldsets.length; ++i)
     fieldsets[i].hidden = true;
 
@@ -1876,7 +1876,7 @@ function xows_gui_page_muca_onvalid()
   const param = xows_gui_page_muca;
 
   // Modify item list according current state and start edit cycle
-  let li_mods = xows_doc("page_muca").getElementsByClassName("MODIFIED");
+  let li_mods = xows_doc("page_muca").querySelectorAll(".MODIFIED");
 
   for(let i = 0; i < li_mods.length; ++i) {
 
@@ -1919,7 +1919,7 @@ function xows_gui_page_muca_onvalid()
 function xows_gui_page_muca_onabort()
 {
   // Reset values
-  let li_mods = xows_doc("page_muca").getElementsByClassName("MODIFIED");
+  let li_mods = xows_doc("page_muca").querySelectorAll(".MODIFIED");
 
   for(let i = 0; i < li_mods.length; ++i) {
 
@@ -1958,7 +1958,7 @@ function xows_gui_page_muca_oninput(target)
   }
 
   // Open or close Message Box for save changes
-  if(xows_doc("page_muca").getElementsByClassName("MODIFIED").length > 0) {
+  if(xows_doc("page_muca").querySelectorAll(".MODIFIED").length > 0) {
     xows_doc_popu_open_for_save(xows_gui_page_muca_onvalid,
                                 xows_gui_page_muca_onabort);
   } else {

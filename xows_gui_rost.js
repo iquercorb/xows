@@ -117,7 +117,7 @@ function xows_gui_rost_list_find(addr)
 {
   // We don't use querySelector() to search JID directly since Occupant JID
   // may contain HTML/XML illegal characters not supported by CSS selector.
-  const li_peers = xows_doc("rost_fram").getElementsByTagName("LI-PEER");
+  const li_peers = xows_doc("rost_fram").querySelectorAll("LI-PEER");
   for(let i = 0; i < li_peers.length; ++i) {
     if(li_peers[i].dataset.id === addr)
       return li_peers[i];
@@ -162,7 +162,7 @@ function xows_gui_rost_list_rise(peer)
   // We don't use querySelector() to search JID directly since Occupant JID
   // may contain HTML/XML illegal characters not supported by CSS selector.
   let li_peer = null;
-  const li_peers = xows_doc("rost_fram").getElementsByTagName("LI-PEER");
+  const li_peers = xows_doc("rost_fram").querySelectorAll("LI-PEER");
   for(let i = 0; i < li_peers.length; ++i) {
     if(li_peers[i].dataset.id === peer.addr) {
       li_peer = li_peers[i];

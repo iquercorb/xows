@@ -266,7 +266,7 @@ function xows_gui_hist_resume(peer)
   if(!hist_ul || !hist_ul.children.length)
     return;
 
-  const sent = hist_ul.getElementsByClassName("MESG-SENT");
+  const sent = hist_ul.querySelectorAll(".MESG-SENT");
   for(let i = 0; i < sent.length; ++i) {
     if(!sent[i].classList.contains("MESG-RECP"))
       sent[i].classList.add("MESG-FAIL");
