@@ -44,8 +44,8 @@
 /**
  * Constants value for loading process tasks bits (see xows_load* )
  */
-const XOWS_FETCH_NEWR = xows_load_task_bit(); //< Newer history fetch
-const XOWS_FETCH_OLDR = xows_load_task_bit(); //< Older history fetch
+const XOWS_FETCH_NEWR = xows_load_task_bit();     //< 0x20 - #32
+const XOWS_FETCH_OLDR = xows_load_task_bit();     //< 0x40 - #64
 
 /**
  * Storage for user (own) authentication data (login, password, etc.)
