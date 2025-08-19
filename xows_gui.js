@@ -2458,8 +2458,8 @@ function xows_gui_page_regi_onclick(target)
       const user = xows_doc("regi_user").value;
       const pass = xows_doc("regi_pass").value;
 
-      if(!xows_xml_islegal(user)) {
-        xows_doc_popu_open(XOWS_STYL_WRN,"Username contains illegal character: ' \" & ; < >");
+      if(!xows_cli_isnodeprep(user)) {
+        xows_doc_popu_open(XOWS_STYL_WRN,"Username contains illegal character: '\"&;<>/:@");
         return;
       }
 

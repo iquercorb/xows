@@ -82,18 +82,6 @@ function xows_xml_escape(str)
 }
 
 /**
- * Check whether string contain XML illegal character.
- *
- * @param   {string}    str       String to text
- *
- * @return  {string}    True if string contain no illegal character, false otherwise.
- */
-function xows_xml_islegal(str)
-{
-  return !xows_xml_escap_reg.test(str);
-}
-
-/**
  *  Remplacement function for XML string unescape
  */
 function xows_xml_unesc_fn(m) {return XOWS_XML_UNESC_MAP.get(m);}

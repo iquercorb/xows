@@ -219,9 +219,11 @@ function xows_gui_muc_join_ibox_oninput(value)
  */
 function xows_gui_muc_join_ibox_onvalid(value)
 {
-  if(!xows_xml_islegal(value)) {
-    xows_doc_ibox_error("Channel ID contains illegal character: ' \" & ; < >");
-    return false;
+  if(!xows_isjid(value)) {
+    if(!xows_cli_isnodeprep(value)) {
+      xows_doc_ibox_error("Channel ID contains illegal character: '\"&;<>/:@");
+      return false;
+    }
   }
 
   // Join or create room

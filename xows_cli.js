@@ -151,6 +151,23 @@ function xows_cli_comp(a, b)
   return (xows_cli_collat.compare(a, b) === 0);
 }
 
+/**
+ * Regular Expression for Nodeprep illegal characters (RFC-6122)
+ */
+const xows_cli_nodeprep_reg = /[\&<>'"\/@:\u2100\u2101\u2105\u2106\u226E\u226F\u2A74\uFE13\uFE60\uFE64\uFE65\uFE6B\uFF02\uFF06\uFF07\uFF0F\uFF1C\uFF1E\uFF20]/g;
+
+/**
+ * Check whether string contain Nodeprep illegal character.
+ *
+ * @param   {string}    str       String to test
+ *
+ * @return  {string}    True if string contain no illegal character, false otherwise.
+ */
+function xows_cli_isnodeprep(str)
+{
+  return !xows_cli_nodeprep_reg.test(str);
+}
+
 /* ---------------------------------------------------------------------------
  *
  *                  PEER structures and related routines
