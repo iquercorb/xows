@@ -95,6 +95,9 @@
   "Register":
   "注册",
 
+  "Username contains illegal character: ' \" & ; < >":
+  "",
+
   "Login with an existing account":
   "登录已有账号",
 
@@ -382,6 +385,9 @@
 
   "Join":
   "加入",
+
+  "Channel ID contains illegal character: ' \" & ; < >":
+  "",
 
   "Channel initialization":
   "群聊初始化",
