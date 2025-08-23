@@ -700,16 +700,17 @@ menu-drop li.MENU-GRAYD {
   pointer-events: none;
   opacity: 0.5;
 }
-.menu-icon {
-  display: inline-block;
-  position:relative;
-  vertical-align: middle;
-  width:22px; height:100%;
-  margin: 0 5px;
-  border-color: inherit;
-}
 .menu-separ {
   border-bottom: 1px solid var(--base-tone4);
+}
+menu-icon {
+  display: inline-block;
+  width: 16px; height: 16px;
+  vertical-align: middle;
+  background-size: 16px;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin: 0 0 0 5px;
 }
 menu-text {
   display: inline;
@@ -1326,6 +1327,11 @@ dbox-icon.STYL-ASK {
   width: 48px; height: 48px;
   margin-right: 15px;
 }
+.prof-head .ROOM-AVAT {
+  background-size: 40px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
 .prof-head badg-show {
   top: 30px; left: 30px;
   width: 22px; height: 22px;
@@ -1356,7 +1362,11 @@ dbox-icon.STYL-ASK {
   margin: 0 0 15px 0;
   font-weight: 500;
 }
-#prof_occu,
+#prof_meta.PEER-CONT .meta-room,
+#prof_meta.PEER-ROOM .meta-cont {
+  display: none;
+}
+#prof_muc,
 #prof_cont {
   border-top: 1px solid var(--text-tone4);
 }
@@ -1933,10 +1943,12 @@ li-peer.PEER-ROOM peer-avat {
   background-position: center;
   background-repeat: no-repeat;
   background-size: 26px;
-  background-image: url("images/sharp.svg");
 }
 .room-bt-retr {
   background-image: url("images/delete.svg");
+}
+.ROOM-AVAT {
+  background-image: url("images/sharp.svg");
 }
 /* ------------------------------------------------------------------ */
 /* Main Page - Left Col - Foot Frame - User control panel */
@@ -2028,8 +2040,10 @@ li-peer.PEER-ROOM peer-avat {
 #drop_self li {
   padding: 10px 0;
 }
-#drop_self .menu-icon {
+.show-icon {
+  display: inline-block;
   position: unset;
+  vertical-align: middle;
   width: 14px; height: 14px;
   border: 2px solid var(--base-tone0);
   border-radius: 50%;
@@ -2129,7 +2143,7 @@ peer-meta[placeholder]:empty::before {
 #chat_fram.CHAT-ROOM #chat_calv,
 #chat_fram.CHAT-ROOM #chat_cala,
 #chat_fram.CHAT-BUDY #chat_cnfg,
-#chat_fram.CHAT-BUDY #chat_bkmk,
+#chat_fram.CHAT-BUDY #chat_bkad,
 #chat_fram.CHAT-BUDY #chat_mucl {
   display: none;
 }
@@ -2210,7 +2224,10 @@ head-info badg-show {
 #chat_cala {
   background-image: url("images/call.svg");
 }
-#chat_bkmk {
+#chat_bkad {
+  background-image: url("images/bookholo.svg");
+}
+#chat_bkrm {
   background-image: url("images/bookmark.svg");
 }
 #chat_addc {
@@ -3631,7 +3648,7 @@ chat-inpt[placeholder]:empty::before {
   display: none;
 }
 /* ------------------------------------------------------------------ */
-/* Occumants - Occupant common style */
+/* Occupants - Occupant common style */
 /* ------------------------------------------------------------------ */
 .occu-bt-menu {
   background-image: url("images/menu_dots.svg");
@@ -3639,7 +3656,7 @@ chat-inpt[placeholder]:empty::before {
   height: 20px;
 }
 /* ------------------------------------------------------------------ */
-/* Occumants - Occupant contextual menu */
+/* Occupants - Occupant contextual menu */
 /* ------------------------------------------------------------------ */
 #drop_occu {
   display: block;
@@ -3687,6 +3704,50 @@ chat-inpt[placeholder]:empty::before {
 #occu_sm_role:hover .subm-drop {
   display: block;
 }
+/* ------------------------------------------------------------------ */
+/* MUC - Room Options menu */
+/* ------------------------------------------------------------------ */
+#drop_room {
+  display: block;
+  z-index: 8;
+  text-align: left;
+  position:absolute;
+  width: 220px;
+  padding: 5px;
+  border-radius: 6px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+}
+#drop_room::after {
+  display: none;
+}
+#drop_room li {
+  padding: 10px 5px;
+}
+#drop_room .room-mi-info {
+  background-image: url("images/info_mono.svg");
+}
+#drop_room .room-mi-regi {
+  background-image: url("images/mucregi.svg");
+}
+#drop_room .room-mi-unrg {
+  background-image: url("images/mucunrg.svg");
+}
+#drop_room .room-mi-mucc {
+  background-image: url("images/gear.svg");
+}
+#drop_room .room-mi-muca {
+  background-image: url("images/admin.svg");
+}
+#drop_room .room-mi-subj {
+  background-image: url("images/topic.svg");
+}
+#drop_room .room-mi-nick {
+  background-image: url("images/arobase.svg");
+}
+#drop_room .room-mi-exit {
+  background-image: url("images/exit.svg");
+}
+
 /* ------------------------------------------------------------------ */
 /* Page for Wait Animation */
 /* ------------------------------------------------------------------ */

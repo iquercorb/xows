@@ -652,51 +652,6 @@ function xows_gui_muc_nick_ibox_open(room)
 }
 
 /* ---------------------------------------------------------------------------
- * Multi-User-Chat - Room Bookmark Popup Dialog
- * ---------------------------------------------------------------------------*/
-/**
- * Storage for Room-Bookmark Popup-Dialog parameters
- */
-const xows_gui_muc_book_popu = {room:null};
-
-/**
- * Handles Room-Bookmark Popup-Dialog abortion (click on Abort button)
- */
-function xows_gui_muc_book_popu_onabort()
-{
-  // reset parameters
-  xows_gui_muc_book_popu.room = null;
-}
-
-/**
- * Handles Room-Bookmark Popup-Dialog validation (click on Valid button)
- */
-function xows_gui_muc_book_popu_onvalid()
-{
-  const param = xows_gui_muc_book_popu;
-  // add bookmark
-  xows_cli_pep_book_publ(param.room);
-  param.room = null;
-}
-
-/**
- * Opens Room-Bookmark Popup-Dialog
- *
- * @param   {object}    room      Room object to add Bookmark
- */
-function xows_gui_muc_book_popu_open(room)
-{
-  // Store JID and name of contact to allow/deny
-  xows_gui_muc_book_popu.room = room;
-
-  // Open new MODAL Message Box with proper message
-  xows_doc_popu_open(XOWS_STYL_ASK, "Add Channel to bookmarks ?",
-                     xows_gui_muc_book_popu_onvalid, "Add Bookmark",
-                     xows_gui_muc_book_popu_onabort, "Cancel",
-                     true);
-}
-
-/* ---------------------------------------------------------------------------
  * Multi-User-Chat - Occupant Affiliation Message Dialog
  * ---------------------------------------------------------------------------*/
 /**
@@ -839,9 +794,6 @@ function xows_gui_muc_head_onclick(event)
 
   if(xows_gui_peer.type != XOWS_PEER_ROOM)
     return;
-
-  if(event.target.id == "muc_bt_admn")
-    xows_gui_page_muca_open(xows_gui_peer);
 }
 
 /**
@@ -1050,6 +1002,94 @@ function xows_gui_muc_list_onpull(occu)
   // Client can remove object from Room
   xows_cli_occu_rem(occu);
 }
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Options/Actions Menu
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles MUC-Room Options-Menu close (Menu closed)
+ */
+function xows_gui_muc_room_menu_onclose()
+{
+}
+
+/**
+ * Handles MUC-Room Options-Menu show (Menu shown)
+ *
+ * This properly position the Menu elements according related
+ * Occupant's element (<li-peer>) in Occupant List.
+ *
+ * @param   {element}    button   Menu trigger button element
+ * @param   {element}    menu     Menu element
+ */
+function xows_gui_muc_room_menu_onshow(button, menu)
+{
+  // Calculate menu position next to button
+  const rect = button.getBoundingClientRect();
+  console.log(rect);
+
+  menu.style.left = (rect.right - menu.offsetWidth) + "px";
+  menu.style.top = rect.bottom + "px";
+
+  const affi = xows_gui_peer.affi;
+  const role = xows_gui_peer.role;
+
+  xows_doc_show("room_mi_regi", (affi === XOWS_AFFI_NONE));
+  xows_doc_show("room_mi_unrg", (affi === XOWS_AFFI_MEMB));
+  xows_doc_show("room_mi_subj", (role > XOWS_ROLE_PART && affi > XOWS_AFFI_MEMB));
+  xows_doc_show("room_mi_mucc", (affi === XOWS_AFFI_OWNR));
+  xows_doc_show("room_mi_muca", (affi > XOWS_AFFI_MEMB));
+}
+
+/**
+ * Handles MUC-Room Options-Menu click events
+ *
+ * @param   {object}    event     Event object
+ */
+function xows_gui_muc_room_menu_onclick(event)
+{
+  // Close menu and unfocus button
+  xows_doc_menu_close();
+
+  // Get related menu item <li> element where click occurred
+  const li = event.target.closest("LI");
+  if(!li) return;
+
+  switch(li.id)
+  {
+  case "room_mi_info":
+    xows_gui_prof_open(xows_gui_peer);
+    return;
+  case "room_mi_regi":
+    // Open Register input box
+    xows_gui_muc_regi_ibox_open(xows_gui_peer);
+    return;
+  case "room_mi_unrg":
+    // Open Register input box
+    xows_gui_muc_unrg_mbox_open(xows_gui_peer);
+    return;
+  case "room_mi_mucc":
+    // Query for Chatoom configuration, will open Room config page
+    xows_cli_muc_cfg_get(xows_gui_peer, xows_gui_page_mucc_open);
+    return;
+  case "room_mi_muca":
+    // Open Room administration page
+    xows_gui_page_muca_open(xows_gui_peer);
+    return;
+  case "room_mi_subj":
+    // Open Room topic input box
+    xows_gui_muc_subj_ibox_open(xows_gui_peer);
+    return;
+  case "room_mi_nick":
+    // Open Nickname input box
+    xows_gui_muc_nick_ibox_open(xows_gui_peer);
+    return;
+  case "room_mi_exit":
+    // Leave Room
+    xows_cli_muc_leave(xows_gui_peer);
+    return;
+  }
+}
+
 
 /* ---------------------------------------------------------------------------
  * Multi-User-Chat - Room Occupant Contextual Menu
@@ -1230,6 +1270,91 @@ function xows_gui_muc_occu_menu_onclick(event)
       xows_cli_muc_role_set(occu, role);
     }
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * User Roster - Delete Bookmark Dialog
+ * ---------------------------------------------------------------------------*/
+/**
+ * Storage for Delete-Bookmark Message-Dialog parameters
+ */
+const xows_gui_muc_bkrm_mbox = {room:null};
+
+/**
+ * Handles Delete-Bookmark Message-Dialog abortion (click on Abort button)
+ */
+function xows_gui_muc_bkrm_mbox_onabort() {}
+
+/**
+ * Handles Delete-Bookmark Message-Dialog validation (click on Valid button)
+ */
+function xows_gui_muc_bkrm_mbox_onvalid()
+{
+  // Revoke contact subscription
+  xows_cli_pep_book_retr(xows_gui_muc_bkrm_mbox.room);
+}
+
+/**
+ * Opens Delete-Bookmark Message-Dialog.
+ *
+ * @param   {object}    cont      Contact object to revoke
+ */
+function xows_gui_muc_bkrm_mbox_open(room)
+{
+  // Store Contact object
+  xows_gui_muc_bkrm_mbox.room = room;
+
+  // Select proper text depending current state
+  let text = "Do you really want to delete Channel bookmark ?";
+
+  // Open message-box
+  xows_doc_mbox_open(XOWS_STYL_WRN, "Delete Channel bookmark", text,
+                     xows_gui_muc_bkrm_mbox_onvalid, "OK",
+                     xows_gui_muc_bkrm_mbox_onabort, "Cancel");
+}
+
+/* ---------------------------------------------------------------------------
+ * Multi-User-Chat - Room Bookmark Popup Dialog
+ * ---------------------------------------------------------------------------*/
+/**
+ * Storage for Room-Bookmark Popup-Dialog parameters
+ */
+const xows_gui_muc_bkad_mbox = {room:null};
+
+/**
+ * Handles Room-Bookmark Popup-Dialog abortion (click on Abort button)
+ */
+function xows_gui_muc_bkad_mbox_onabort()
+{
+  // reset parameters
+  xows_gui_muc_bkad_mbox.room = null;
+}
+
+/**
+ * Handles Room-Bookmark Popup-Dialog validation (click on Valid button)
+ */
+function xows_gui_muc_bkad_mbox_onvalid()
+{
+  const param = xows_gui_muc_bkad_mbox;
+  // add bookmark
+  xows_cli_pep_book_publ(param.room);
+  param.room = null;
+}
+
+/**
+ * Opens Room-Bookmark Popup-Dialog
+ *
+ * @param   {object}    room      Room object to add Bookmark
+ */
+function xows_gui_muc_bkad_mbox_open(room)
+{
+  // Store JID and name of contact to allow/deny
+  xows_gui_muc_bkad_mbox.room = room;
+
+  // Open new MODAL Message Box with proper message
+  xows_doc_mbox_open(XOWS_STYL_ASK, "Add Bookmark", "Add Channel to bookmarks ?",
+                     xows_gui_muc_bkad_mbox_onvalid, "OK",
+                     xows_gui_muc_bkad_mbox_onabort, "Cancel");
 }
 
 /* ---------------------------------------------------------------------------
@@ -1979,6 +2104,9 @@ function xows_gui_page_muca_open(room)
   // Initialize parameters
   const param = xows_gui_page_muca;
   param.room = room;
+
+  // Show or hide Room destruction section
+  xows_doc_show("muca_dstr", (room.affi === XOWS_AFFI_OWNR));
 
   // Start List load cycle
   param.stage = 0;

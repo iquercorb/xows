@@ -1048,7 +1048,6 @@ function xows_gui_doc(peer, id)
 const XOWS_UPDT_NOTI = 0x01;  //< Update Notification button
 const XOWS_UPDT_BUZY = 0x02;  //< Update according Call Buzy state
 const XOWS_UPDT_SUBJ = 0x04;  //< Update Room subject
-const XOWS_UPDT_ADMN = 0x08;  //< Update Room admin button
 const XOWS_UPDT_OTHR = 0x10;  //< Update other misc elements
 const XOWS_UPDT_ALL  = 0xff;  //< All common updates
 const XOWS_UPDT_LOAD = 0x100; //< Special mask for preloading
@@ -1081,24 +1080,14 @@ function xows_gui_doc_update(peer, mask = 0xff)
       // Chat header common elements
       xows_gui_doc(peer,"chat_titl").innerText = "# "+ peer.name;
       // Chat header room-specific buttons
-      xows_gui_doc(peer,"chat_bkmk").hidden = (peer.book || peer.publ);
-      xows_gui_doc(peer,"chat_nick").hidden = false;
-      xows_gui_doc(peer,"chat_regi").hidden = (peer.affi > XOWS_AFFI_NONE);
-      xows_gui_doc(peer,"chat_unrg").hidden = (peer.affi !== XOWS_AFFI_MEMB);
-      xows_gui_doc(peer,"chat_subj").hidden = (peer.role < XOWS_ROLE_MODO && peer.affi < XOWS_AFFI_ADMN);
-      xows_gui_doc(peer,"chat_cnfg").hidden = (peer.affi < XOWS_AFFI_OWNR);
+      xows_gui_doc(peer,"chat_bkad").hidden = (peer.book || peer.publ);
+      xows_gui_doc(peer,"chat_bkrm").hidden = !peer.book;
     }
 
     // Room subject
     if(mask & XOWS_UPDT_SUBJ) {
       const chat_meta = xows_gui_doc(peer, "chat_meta");
       chat_meta.innerText = peer.subj ? peer.subj : "";
-    }
-
-    // Muc Roster Admin button
-    if(mask & XOWS_UPDT_ADMN) {
-      const muc_bt_admn = xows_gui_doc(peer, "muc_bt_admn");
-      muc_bt_admn.hidden = (peer.affi < XOWS_AFFI_ADMN);
     }
 
   } else {
@@ -2120,29 +2109,21 @@ function xows_gui_chat_head_onclick(event)
 
   switch(event.target.id)
   {
-  case "chat_exit":
-    // Leave Room
-    xows_cli_muc_leave(xows_gui_peer);
+  case "chat_menu":
+    //xows_gui_muc_room_menu_open(xows_gui_peer);
+    // Open Room Options menu
+    xows_doc_menu_toggle(event.target, "drop_room",
+                         xows_gui_muc_room_menu_onclick,
+                         xows_gui_muc_room_menu_onshow,
+                         xows_gui_muc_room_menu_onclose);
     break;
-  case "chat_subj":
-    // Open Room topic input box
-    xows_gui_muc_subj_ibox_open(xows_gui_peer);
-    break;
-  case "chat_nick":
-    // Open Nickname input box
-    xows_gui_muc_nick_ibox_open(xows_gui_peer);
-    break;
-  case "chat_regi":
-    // Open Register input box
-    xows_gui_muc_regi_ibox_open(xows_gui_peer);
-    break;
-  case "chat_unrg":
-    // Open Register input box
-    xows_gui_muc_unrg_mbox_open(xows_gui_peer);
-    break;
-  case "chat_bkmk":
+  case "chat_bkad":
     // Open confirmation dialog
-    xows_gui_muc_book_popu_open(xows_gui_peer);
+    xows_gui_muc_bkad_mbox_open(xows_gui_peer);
+    break;
+  case "chat_bkrm":
+    // Open confirmation dialog
+    xows_gui_muc_bkrm_mbox_open(xows_gui_peer);
     break;
   case "chat_noti":
     // Set notification for this Peer
@@ -2155,10 +2136,6 @@ function xows_gui_chat_head_onclick(event)
     } else {
       xows_gui_wnd_noti_ask(); //< request permission
     }
-    break;
-  case "chat_cnfg":
-    // Query for Chatoom configuration, will open Room config page
-    xows_cli_muc_cfg_get(xows_gui_peer, xows_gui_page_mucc_open);
     break;
   case "chat_mucl":
     xows_gui_layout_muc_toggle();

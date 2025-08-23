@@ -1408,28 +1408,48 @@ function xows_doc_prof_update()
   const peer = xows_doc_prof_param.peer;
 
   const over_prof = xows_doc("over_prof");
+  const prof_meta = xows_doc("prof_meta");
+
+  // Select proper informations according peer type
+  let head_txt, addr_txt, avat_cls, meta_div, meta_txt;
+
+  if(peer.type === XOWS_PEER_ROOM) {
+    head_txt = "Channel informations";
+    addr_txt = peer.addr;
+    avat_cls = "ROOM-AVAT";
+    // Set proper class for meta section, this show and hide proper div
+    prof_meta.className = "PEER-ROOM";
+    meta_div = prof_meta.querySelector(".meta-room");
+    meta_txt = peer.desc;
+  } else {
+    head_txt = "Contact profile";
+    addr_txt = peer.jbar ? peer.jbar : "";
+    avat_cls = xows_tpl_spawn_avat_cls(peer);
+    // Set proper class for meta section, this show and hide proper div
+    prof_meta.className = "PEER-CONT";
+    meta_div = prof_meta.querySelector(".meta-cont");
+    meta_txt = peer.stat;
+    over_prof.querySelector("BADG-SHOW").dataset.show = peer.show || 0;
+  }
+
+  // Set popup head title
+  over_prof.querySelector("DBOX-HEAD").innerText = xows_l10n_get(head_txt);
 
   // Fill common peer informations
   over_prof.querySelector("PEER-NAME").innerText = peer.name;
-  over_prof.querySelector("PEER-ADDR").innerText = peer.jbar ? peer.jbar : "";
-  over_prof.querySelector("BADG-SHOW").dataset.show = peer.show || 0;
-  // Set proper class for avatar
-  over_prof.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(peer);
-
-  // Set State message or keep placeholder
-  const peer_meta = over_prof.querySelector("PEER-META");
-  peer_meta.innerText = peer.stat ? peer.stat : "";
-  peer_meta.className = peer.stat ? "" : "PLACEHOLD";
+  over_prof.querySelector("PEER-AVAT").className = avat_cls;
+  over_prof.querySelector("BADG-SHOW").hidden = (peer.type === XOWS_PEER_ROOM);
+  over_prof.querySelector("PEER-ADDR").innerText = addr_txt;
+  meta_div.querySelector("PEER-META").innerText = meta_txt;
 
   let cont;
   const prof_subs = xows_doc("prof_subs");
   const prof_addc = xows_doc("prof_addc");
 
-  // Set Occupant informations
-  if(peer.type === XOWS_PEER_OCCU) {
+    // Set Occupant informations
+  if(peer.type & XOWS_PEER_ROOM|XOWS_PEER_OCCU) {
 
-    if(peer.jbar)
-      cont = xows_cli_cont_get(peer.jbar);
+    xows_doc_show("prof_muc");
 
     let affi_txt;
     switch(peer.affi)
@@ -1456,19 +1476,22 @@ function xows_doc_prof_update()
     prof_role.innerText = xows_l10n_get(role_txt);
     prof_role.dataset.role = peer.role;
 
-    // Check if we can get Contact object
-    if(peer.jbar)
-      cont = xows_cli_cont_get(peer.jbar);
-
-    xows_doc_show("prof_occu");
+    if(peer.type === XOWS_PEER_OCCU) {
+      // Check if we can get Contact object
+      if(peer.jbar)
+        cont = xows_cli_cont_get(peer.jbar);
+    }
 
   } else {
 
+    xows_doc_hide("prof_muc");
+
     cont = peer;
-    xows_doc_hide("prof_occu");
   }
 
-  if(!peer.self) {
+  if(!peer.self && peer.type !== XOWS_PEER_ROOM) {
+
+    xows_doc_show("prof_cont");
 
     let subs_txt;
     let subs_lvl = 0;
@@ -1501,8 +1524,6 @@ function xows_doc_prof_update()
 
     prof_subs.innerText = xows_l10n_get(subs_txt);
     prof_subs.dataset.subs = subs_lvl;
-
-    xows_doc_show("prof_cont");
 
   } else {
 

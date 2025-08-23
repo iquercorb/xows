@@ -91,7 +91,7 @@ function xows_gui_rost_list_onclick(event)
       xows_gui_rost_unsb_mbox_open(xows_cli_cont_get(li_peer.dataset.id));
       return;
     case "room_bt_retr": //< Remove Room Bookmark
-      xows_gui_rost_bkrm_mbox_open(xows_cli_room_get(li_peer.dataset.id));
+      xows_gui_muc_bkrm_mbox_open(xows_cli_room_get(li_peer.dataset.id));
       return;
     }
   }
@@ -721,46 +721,5 @@ function xows_gui_rost_auth_mbox_open(addr)
                      "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?",
                      xows_gui_rost_auth_mbox_onvalid, "Allow",
                      xows_gui_rost_auth_mbox_onabort, "Deny");
-}
-
-/* ---------------------------------------------------------------------------
- * User Roster - Delete Bookmark Dialog
- * ---------------------------------------------------------------------------*/
-/**
- * Storage for Delete-Bookmark Message-Dialog parameters
- */
-const xows_gui_rost_bkrm_mbox = {room:null};
-
-/**
- * Handles Delete-Bookmark Message-Dialog abortion (click on Abort button)
- */
-function xows_gui_rost_bkrm_mbox_onabort() {}
-
-/**
- * Handles Delete-Bookmark Message-Dialog validation (click on Valid button)
- */
-function xows_gui_rost_bkrm_mbox_onvalid()
-{
-  // Revoke contact subscription
-  xows_cli_pep_book_retr(xows_gui_rost_bkrm_mbox.room);
-}
-
-/**
- * Opens Delete-Bookmark Message-Dialog.
- *
- * @param   {object}    cont      Contact object to revoke
- */
-function xows_gui_rost_bkrm_mbox_open(room)
-{
-  // Store Contact object
-  xows_gui_rost_bkrm_mbox.room = room;
-
-  // Select proper text depending current state
-  let text = "Do you really want to delete Channel bookmark ?";
-
-  // Open message-box
-  xows_doc_mbox_open(XOWS_STYL_WRN, "Delete Channel bookmark", text,
-                     xows_gui_rost_bkrm_mbox_onvalid, "OK",
-                     xows_gui_rost_bkrm_mbox_onabort, "Cancel");
 }
 

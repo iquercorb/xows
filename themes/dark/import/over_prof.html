@@ -1,5 +1,7 @@
 <dbox-head>${'Contact profile'}</dbox-head>
+
 <btn-close id="prof_close"></btn-close>
+
 <div class="prof-head">
   <peer-avat class="">
     <badg-show data-show=0></badg-show>
@@ -8,12 +10,19 @@
     <peer-name></peer-name>
     <peer-addr></peer-addr>
   </peer-info>
-
 </div>
-<section>
-  <h4>${'Status message'}:</h4>
-  <peer-meta placeholder="${'This user have no status message'}" title="${'Status message'}"></peer-meta>
+
+<section id="prof_meta" class="PEER-CONT">
+  <div class="meta-cont">
+    <h4>${'Status message'}:</h4>
+    <peer-meta placeholder="${'This user have no status message'}" title="${'Status message'}"></peer-meta>
+  </div>
+  <div class="meta-room">
+    <h4>${'Channel description'}:</h4>
+    <peer-meta placeholder="${'This channel have no description'}" title="${'Channel description'}"></peer-meta>
+  </div>
 </section>
+
 <section id="prof_cont">
   <div>
     <label>${'Contact subscription'}:</label>
@@ -21,7 +30,8 @@
     <button hidden id="prof_addc" class="btn-action" title="${'Subscribe'}">${'Subscribe'}</button>
   </div>
 </section>
-<section hidden id="prof_occu">
+
+<section hidden id="prof_muc">
   <div>
     <label>${'Affiliation to Channel'}:</label>
     <prof-badg id="prof_affi" title="${'Affiliation to Channel'}" data-affi="0"></prof-badg>
