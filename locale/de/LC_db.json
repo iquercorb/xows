@@ -233,8 +233,11 @@
   "Audio call":
   "Anruf",
 
-  "Add Channel to Bookmarks":
+  "Add to Bookmarks":
   "Kanal zu den Lesezeichen hinzufügen",
+
+  "Remove from Bookmarks":
+  "",
 
   "Register to Channel":
   "",

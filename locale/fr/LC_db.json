@@ -233,8 +233,11 @@
   "Audio call":
   "Appel audio",
 
-  "Add Channel to Bookmarks":
-  "Ajouter le Salon aux Favoris",
+  "Add to Bookmarks":
+  "Ajouter aux Favoris",
+
+  "Remove from Bookmarks":
+  "Supprimer le Favoris",
 
   "Register to Channel":
   "S'enregistrer au Salon",

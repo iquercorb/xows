@@ -233,8 +233,11 @@
   "Audio call":
   "语音通话",
 
-  "Add Channel to Bookmarks":
+  "Add to Bookmarks":
   "把群聊保存到书签",
+
+  "Remove from Bookmarks":
+  "",
 
   "Register to Channel":
   "",
