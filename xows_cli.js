@@ -1226,10 +1226,26 @@ function xows_cli_cnx_resume(start = false)
  */
 function xows_cli_cnx_timeout()
 {
-  // Reset client state
-  xows_cli_reset();
+    // Output log
+    xows_log(2,"cli_cnx_timeout","resume timed out");
 
+  // Reset pending timeouts
+  if(xows_cli_cnx_resume_pnd) {
+    clearTimeout(xows_cli_cnx_resume_pnd);
+    xows_cli_cnx_resume_pnd = null;
+  }
+
+  // Reset pending timeouts
+  if(xows_cli_cnx_resume_hnd) {
+    clearTimeout(xows_cli_cnx_resume_hnd);
+    xows_cli_cnx_resume_hnd = null;
+  }
+
+  // Say goodbye
   xows_cli_fw_onclose(XOWS_SESS_ABRT,"unable to resume connection");
+
+  // Close the connection
+  xows_xmp_disconnect(0);
 }
 
 /**

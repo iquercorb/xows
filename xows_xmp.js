@@ -418,6 +418,9 @@ function xows_xmp_disconnect()
   // Reset to initial state
   xows_xmp_reset();
 
+  // Reset pending connection recover
+  xows_xmp_resume_pnd = false;
+
   // Close session with server
   xows_xmp_fram_close_send();
 
