@@ -2194,23 +2194,8 @@ head-info badg-show {
   position: unset;
   border: none;
 }
-#chat_exit {
-  background-image: url("images/exit.svg");
-}
 #chat_menu {
   background-image: url("images/menu_dots.svg");
-}
-#chat_subj {
-  background-image: url("images/topic.svg");
-}
-#chat_nick {
-  background-image: url("images/arobase.svg");
-}
-#chat_regi {
-  background-image: url("images/mucregi.svg");
-}
-#chat_unrg {
-  background-image: url("images/mucunrg.svg");
 }
 #chat_noti {
   background-image: url("images/notify_on.svg");
@@ -2232,9 +2217,6 @@ head-info badg-show {
 }
 #chat_addc {
   background-image: url("images/contadd.svg");
-}
-#chat_cnfg {
-  background-image: url("images/gear.svg");
 }
 #chat_mucl {
   background-image: url("images/contacts.svg");
