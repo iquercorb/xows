@@ -5,7 +5,7 @@ XOWS XMPP Web-Client
 XMPP Over WebSocket
 
 
-Version: 0.9.9
+Version: 0.9.9b
 ----------------------------------------------------------------------------------------
 
 Presentation
