@@ -25,8 +25,8 @@
 
     <release>
       <Version>
-        <revision>0.9.9</revision>
-        <created>2025-08-11</created>
+        <revision>0.9.9b</revision>
+        <created>2025-08-24</created>
         <file-release rdf:resource='https://github.com/iquercorb/xows/releases/download/0.9.9/Xows_0.9.9.zip'/>
       </Version>
     </release>
