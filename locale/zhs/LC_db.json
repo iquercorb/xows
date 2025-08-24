@@ -234,7 +234,7 @@
   "语音通话",
 
   "Information":
-  "信息",
+  "频道信息",
 
   "Add to Bookmarks":
   "保存到书签",
@@ -303,10 +303,10 @@
   "用户没有状态信息",
 
   "Contact subscription":
-  "联系人认证",
+  "联系人订阅",
 
   "Mutual":
-  "相互认证",
+  "互为联系人",
 
   "Pending":
   "等待处理",
@@ -450,19 +450,19 @@
   "服务器错误请重新加入",
 
   "Revoke contact subscription":
-  "撤回联系人认证",
+  "撤回联系人订阅",
 
   "Do you really want to remove contact and revoke subscription authorization ?":
-  "您真的想移除联系人并撤回认证吗？",
+  "您真的想移除联系人并撤回订阅吗？",
 
   "Do you really want to remove contact and abort subscription authorization request ?":
-  "您想要移除联系人并中止认证请求吗？",
+  "您想要移除联系人并中止订阅请求吗？",
 
   "Contact subscription request":
-  "联系人认证请求",
+  "联系人订阅申请",
 
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
-  "新的联系人申请认证，您是否同意认证并添加到联系人列表？",
+  "新的联系人申请订阅，您是否同意并添加到联系人列表？",
 
   "Delete Channel bookmark":
   "删除频道书签",
@@ -483,7 +483,7 @@
   "拒绝",
 
   "New subscription authorization request was sent":
-  "认证请求已发送",
+  "订阅请求已发送",
 
   "Send a message to":
   "发送到",
@@ -513,7 +513,7 @@
   "输入联系人 XMPP 地址...",
 
   "A subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
-  "认证请求会发送到该地址，请等待对方同意。",
+  "订阅请求会发送到该地址，请等待对方同意。",
 
   "Submit":
   "提交",
@@ -579,7 +579,7 @@
   "仅限成员(关系)加入",
 
   "Enable this to restrict Channel access and only allow those that have at least the Member affiliation":
-  "启用此选项可限制频道访问权限，只允许具有成员或以上关系的JID加入(可在关系列表中查看)",
+  "启用此选项可限制频道访问权限，只允许具有成员或以上频道关系的用户(JID)进入频道",
 
   "Moderated Channel":
   "频道发言管控",
@@ -663,13 +663,13 @@
   "被封禁的用户不允许加入或注册为频道成员。您可以取消对用户的封禁，以便在服务器规则允许的情况下，用户可以再次加入并注册为频道成员。",
 
   "Occupants affiliation":
-  "成员频道关系",
+  "频道关系",
 
   "Members list":
-  "成员列表",
+  "关系列表(成员)",
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
-  "频道关系列表(区别于频道权限)，列表内的用户可以在开启[仅限成员(关系)加入]时进入频道、授予管理员或所有者。没有成员关系的用户(不在列表中或无频道关系)只能在频道不开启[仅限成员(关系)加入]时加入。",
+  "列表内的用户(JID)可以在频道开启[仅限成员(关系)加入]时进入频道、被授予管理员关系或所有者关系，该列表仅列出频道关系为成员的用户(JID)，不会列出频道关系为管理员或所有者的用户(JID)。",
 
   "Channel destruction":
   "删除频道",
