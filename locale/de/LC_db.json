@@ -96,7 +96,7 @@
   "Registrieren",
 
   "Username contains illegal character: '\"&;<>/:@":
-  "",
+  "Benutzername enthält invalide Zeichen: '\"&;<>/:@",
 
   "Login with an existing account":
   "Mit bestehendem Konto anmelden",
@@ -147,7 +147,7 @@
   "Serverfehler",
 
   "Remove bookmark":
-  "",
+  "Lesezeichen entfernen",
 
   "Channels":
   "Kanäle",
@@ -237,16 +237,16 @@
   "Kanal zu den Lesezeichen hinzufügen",
 
   "Remove from Bookmarks":
-  "",
+  "Entferne von den Lesezeichen",
 
   "Register to Channel":
-  "",
+  "Bei Kanal registrieren",
 
   "Unregister from Channel":
-  "",
+  "Bei Kanal deregistrieren",
 
   "Leave the Channel":
-  "",
+  "Kanal verlassen",
 
   "Change nickname":
   "Spitzname wechseln",
@@ -390,7 +390,7 @@
   "Beitreten",
 
   "Channel ID contains illegal character: '\"&;<>/:@":
-  "",
+  "Kanal ID enthält invalide Zeichen: '\"&;<>/:@",
 
   "Channel initialization":
   "Kanalinitialisierung",
@@ -414,13 +414,13 @@
   "Fehler beim Kanalbeitritt",
 
   "Channel unvailable":
-  "",
+  "Kanal nicht erreichbar",
 
   "This Channel has been destroyed and is no longer available":
-  "",
+  "Dieser Kanal wurde zerstört und ist nicht mehr erreichbar",
 
   "Unspecified reason":
-  "",
+  "Unspezifizierter Grund",
 
   "You cannot join this Channel because you are banned.":
   "Du kannst diesem Kanal nicht beitreten da du verbannt wurdest.",
@@ -462,16 +462,16 @@
   "Ein neuer Kontakt fragt nach Abbomentautorisierung. Willst du diese autorisieren und den Kontakt hinzufügen ?",
 
   "Delete Channel bookmark":
-  "",
+  "Kanallesezeichen löschen",
 
   "Do you really want to delete Channel bookmark ?":
-  "",
+  "Willst du wirklich dieses Kanallesezeichen löschen ?",
 
   "Channel unregister":
-  "",
+  "Kanalderegistrierung",
 
   "Do you really want to unregister from Channel ?":
-  "",
+  "Willst du dich wirklich von diesem Kanal deregistrieren ?",
 
   "Allow":
   "Erlauben",
@@ -533,7 +533,7 @@
   "Channel subject":
   "Kanalthema",
 
-  "Channel informations":
+  "Channel information":
   "Kanalinformationen",
 
   "Access &amp; moderation":
@@ -669,19 +669,19 @@
   "Affiliation erlaubt es eine Liste von Mitgliedern festzulegen denen es erlaubt ist einen privaten Kanal zu betreten sowie die Besitzer und Administrator rollen zu vergeben. Ein Nichtmitglied kann den Kanal betreten sollange dieser öffentlich ist.",
 
   "Channel destruction":
-  "",
+  "Kanalzerstörung",
 
   "Deletes the Channel from the group chat service. This operation cannot be undone.":
-  "",
+  "Löscht diesen Kanal von dem Gruppenchatservice. Diese Operation kann nicht rückgängig gemacht werden",
 
   "Destroy Channel":
-  "",
+  "Kanal zerstören",
 
   "You can specify a reason for Channel destruction.":
-  "",
+  "Du kannst einen Grund für die Kanalzerstörung angeben.",
 
   "Enter reason...":
-  "",
+  "Grund eingeben...",
 
   "User profile":
   "Benutzerprofil",
