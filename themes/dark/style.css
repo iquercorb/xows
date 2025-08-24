@@ -2134,16 +2134,11 @@ peer-meta[placeholder]:empty::before {
 }
 #chat_fram.CHAT-ROOM chat-addr,
 #chat_fram.CHAT-ROOM badg-show,
-#chat_fram.CHAT-BUDY #chat_exit,
 #chat_fram.CHAT-BUDY #chat_menu,
-#chat_fram.CHAT-BUDY #chat_subj,
-#chat_fram.CHAT-BUDY #chat_nick,
-#chat_fram.CHAT-BUDY #chat_regi,
-#chat_fram.CHAT-BUDY #chat_unrg,
 #chat_fram.CHAT-ROOM #chat_calv,
 #chat_fram.CHAT-ROOM #chat_cala,
-#chat_fram.CHAT-BUDY #chat_cnfg,
 #chat_fram.CHAT-BUDY #chat_bkad,
+#chat_fram.CHAT-BUDY #chat_bkrm,
 #chat_fram.CHAT-BUDY #chat_mucl {
   display: none;
 }
