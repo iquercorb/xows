@@ -1414,7 +1414,7 @@ function xows_doc_prof_update()
   let head_txt, addr_txt, avat_cls, meta_div, meta_txt;
 
   if(peer.type === XOWS_PEER_ROOM) {
-    head_txt = "Channel informations";
+    head_txt = "Channel information";
     addr_txt = peer.addr;
     avat_cls = "ROOM-AVAT";
     // Set proper class for meta section, this show and hide proper div
