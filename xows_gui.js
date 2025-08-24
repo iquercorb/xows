@@ -1080,7 +1080,7 @@ function xows_gui_doc_update(peer, mask = 0xff)
       // Chat header common elements
       xows_gui_doc(peer,"chat_titl").innerText = "# "+ peer.name;
       // Chat header room-specific buttons
-      xows_gui_doc(peer,"chat_bkad").hidden = (peer.book || peer.publ);
+      xows_gui_doc(peer,"chat_bkad").hidden = (peer.book || (peer.locl && peer.publ));
       xows_gui_doc(peer,"chat_bkrm").hidden = !peer.book;
     }
 

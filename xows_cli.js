@@ -367,11 +367,15 @@ const xows_cli_room = [];
  */
 function xows_cli_room_new(addr, name)
 {
-  if(!name) {
-    // Compose display name from JID
-    const roomid = addr.split("@")[0];
-    name = roomid[0].toUpperCase()+roomid.slice(1);
-  }
+  // Split Room address
+  const split = addr.split("@");
+
+  // Compose default Room name
+  if(!name)
+    name = split[0][0].toUpperCase()+split[0].slice(1);
+
+  // Check whether room is local
+  const locl = xows_cli_services.get(XOWS_NS_MUC).includes(split[1]);
 
   const room = {
     // Room basic informations
@@ -392,7 +396,7 @@ function xows_cli_room_new(addr, name)
     "role": 0,              //< Self Room Role (Level)
     "affi": 0,              //< Self Room Affiliation (Level)
     "nick": null,           //< Reserverd Nickname in Room
-    "rcon": false,          //< Signal connect loss recover
+    "locl": locl,           //< Indicate Room is related to local MUC services
     // Room Occupants list
     "occu": [],             //< Room occupant array
     "writ": [],             //< Chatstate writting occupants list
@@ -1559,10 +1563,6 @@ function xows_cli_warmup_roster(items, error)
   // Parse received roster items
   xows_cli_rost_parse(items, error);
 
-  // Fetch for bookmarks
-  if(!xows_options.cli_pepnotify_bkms)
-    xows_cli_pep_book_fetch();
-
   // Fetch own data from server and go configure client
   xows_load_task_push(xows_cli_self, XOWS_FETCH_AVAT|XOWS_FETCH_NICK, xows_cli_warmup_config);
 }
@@ -1623,6 +1623,10 @@ function xows_cli_warmup_config()
       xows_cli_services.get(XOWS_NS_HTTPUPLOAD).push(entity);
     }
   }
+
+  // Fetch for bookmarks
+  if(!xows_options.cli_pepnotify_bkms)
+    xows_cli_pep_book_fetch();
 
   // If MUC service available, we take one more step to discover public
   // Rooms and fetching informations about all of them.
@@ -3361,7 +3365,7 @@ function xows_cli_pep_book_parse(from, items, retrs, error)
 
       // Checks whether this is a public room, in this case we ignore
       // the bookmark, Room stay in 'PUBLIC ROOMS' section.
-      if(room.publ)
+      if(room.locl && room.publ)
         return;
 
     } else {
