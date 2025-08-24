@@ -96,7 +96,7 @@
   "注册",
 
   "Username contains illegal character: '\"&;<>/:@":
-  "",
+  "用户名含有不允许的特殊字符： '\"&;<>/:@",
 
   "Login with an existing account":
   "登录已有账号",
@@ -147,31 +147,31 @@
   "服务器错误",
 
   "Remove bookmark":
-  "",
+  "删除书签",
 
   "Channels":
-  "群聊",
+  "频道",
 
   "Join or create a Channel":
-  "加入或创建群聊",
+  "加入或创建频道",
 
   "Query public Channels list":
-  "查询公开群聊列表",
+  "查询公开频道列表",
 
   "Bookmarks":
   "书签",
 
   "Public Channels":
-  "公开群聊",
+  "公开频道",
 
   "Private Channels":
-  "私人群聊",
+  "私人频道",
 
   "Private messages":
-  "私聊",
+  "私信",
 
   "Room occupant":
-  "群成员",
+  "频道成员",
 
   "Edit user profile":
   "编辑个人信息",
@@ -222,7 +222,7 @@
   "设置昵称",
 
   "Specify your new nickname for this Channel.":
-  "设置你在本群的新昵称。",
+  "设置你在本频道的新昵称。",
 
   "Enter a nickname...":
   "输入昵称...",
@@ -234,22 +234,22 @@
   "语音通话",
 
   "Information":
-  "",
+  "信息",
 
   "Add to Bookmarks":
-  "把群聊保存到书签",
+  "保存到书签",
 
   "Remove from Bookmarks":
-  "",
+  "从书签中删除",
 
   "Register to Channel":
-  "",
+  "注册到频道",
 
   "Unregister from Channel":
-  "",
+  "取消注册到频道",
 
   "Leave the Channel":
-  "",
+  "离开当前频道",
 
   "Change nickname":
   "更改昵称",
@@ -264,7 +264,7 @@
   "关闭通知",
 
   "Channel occupants list":
-  "群成员列表",
+  "频道成员列表",
 
   "Back to recent messages":
   "返回最新消息",
@@ -315,19 +315,19 @@
   "不可用",
 
   "Affiliation to Channel":
-  "群内角色",
+  "频道内关系",
 
   "Role in Channel":
-  "群内权限",
+  "频道内权限",
 
   "Occupant options":
-  "群员选项",
+  "成员选项",
 
   "Affiliation":
-  "角色",
+  "频道关系",
 
   "Owner":
-  "群主",
+  "所有者",
 
   "Administrator":
   "管理员",
@@ -336,16 +336,16 @@
   "成员",
 
   "Unaffiliated":
-  "访客",
+  "无频道关系",
 
   "Role":
-  "权限",
+  "频道权限",
 
   "Moderator":
-  "群管理",
+  "主理人",
 
   "Participant":
-  "群成员",
+  "参与者",
 
   "Visitor":
   "访客",
@@ -357,49 +357,49 @@
   "封禁",
 
   "Occupants":
-  "群成员",
+  "成员",
 
   "Change occupant role":
-  "更改群员权限",
+  "更改成员权限",
 
   "Assign the Channel role":
-  "指定群员权限",
+  "指定成员权限",
 
   "Kick occupant":
-  "踢出群员",
+  "踢出成员",
 
   "Change occupant affiliation":
-  "更改群员角色",
+  "更改成员的频道关系",
 
   "Grant Channel affiliation":
-  "授予角色",
+  "授予频道关系",
 
   "Ban occupant":
-  "封禁群员",
+  "封禁成员",
 
   "to occupant":
-  "调整为群员",
+  "变更为成员",
 
   "Add this Contact":
   "添加联系人",
 
   "Enter Channel name or address...":
-  "输入群名或群聊地址",
+  "输入频道名或频道地址",
 
   "If the specified Channel does not exist and if server does not restrict Channel creation, a new Channel will be created with you as owner.":
-  "如果群不存在且服务器未限制，将会创建一个新的群。",
+  "如果频道不存在且服务器未限制，将会创建一个新的频道。",
 
   "Join":
   "加入",
 
   "Channel ID contains illegal character: '\"&;<>/:@":
-  "",
+  "频道名含有不允许的特殊字符：'\"&;<>/:@",
 
   "Channel initialization":
-  "群聊初始化",
+  "频道初始化",
 
   "You just created a new Channel, would you want to configure it right now ?":
-  "你创建了一个新群，是否现在进行配置？",
+  "你创建了一个新频道，是否现在进行配置？",
 
   "Ignore":
   "以后再说",
@@ -408,49 +408,49 @@
   "配置",
 
   "Channel access":
-  "",
+  "频道访问",
 
   "Channel creation":
-  "",
+  "频道创建",
 
   "Channel join error":
-  "",
+  "频道加入错误",
 
   "Channel unvailable":
-  "",
+  "频道不可用",
 
   "This Channel has been destroyed and is no longer available":
-  "",
+  "频道已被删除且不再可用",
 
   "Unspecified reason":
-  "",
+  "未指定原因",
 
   "You cannot join this Channel because you are banned.":
-  "",
+  "已被频道封禁，无法加入。",
 
   "The specified Channel does not exists and Channel creation is restricted.":
-  "",
+  "频道不存在且频道创建被限制。",
 
   "The specified Channel does not exists or is currently locked waiting for configuration.":
-  "",
+  "频道不存在或被锁定等待管理员进行配置。",
 
   "The Channel is temporarily unavailable because it have reached maximum number of occupants.":
-  "",
+  "频道暂时不可用，成员已满。",
 
   "You were banned from the Channel":
-  "您被该群管理封禁",
+  "您被该频道封禁",
 
   "You were kicked from the Channel":
-  "您被该群管理踢出",
+  "您被该频道踢出",
 
   "Rules changes caused you to leave the Channel":
-  "群规则变更请重新加入",
+  "频道规则变更请重新加入",
 
   "Server error caused you to leave the Channel":
   "服务器错误请重新加入",
 
   "Revoke contact subscription":
-  "移除联系人",
+  "撤回联系人认证",
 
   "Do you really want to remove contact and revoke subscription authorization ?":
   "您真的想移除联系人并撤回认证吗？",
@@ -459,22 +459,22 @@
   "您想要移除联系人并中止认证请求吗？",
 
   "Contact subscription request":
-  "联系人添加请求",
+  "联系人认证请求",
 
   "A new contact is requesting subscription authorization. Would you like to grant authorization and add this contact ?":
-  "新的联系人添加申请，您是否同意并添加到联系人列表？",
+  "新的联系人申请认证，您是否同意认证并添加到联系人列表？",
 
   "Delete Channel bookmark":
-  "",
+  "删除频道书签",
 
   "Do you really want to delete Channel bookmark ?":
-  "",
+  "您真的想要删除频道书签吗？",
 
   "Channel unregister":
-  "",
+  "取消注册到频道",
 
   "Do you really want to unregister from Channel ?":
-  "",
+  "你真的想要取消在该频道的注册吗？",
 
   "Allow":
   "同意",
@@ -483,7 +483,7 @@
   "拒绝",
 
   "New subscription authorization request was sent":
-  "添加请求已发送",
+  "认证请求已发送",
 
   "Send a message to":
   "发送到",
@@ -513,31 +513,31 @@
   "输入联系人 XMPP 地址...",
 
   "A subscription authorization request will be sent to the specified address, you'll have to wait for contact to allow to that request.":
-  "添加请求会发送到该地址，请等待对方同意。",
+  "认证请求会发送到该地址，请等待对方同意。",
 
   "Submit":
   "提交",
 
   "Configure Channel...":
-  "配置群聊",
+  "配置频道",
 
   "Set Channel subject...":
-  "设置群主题",
+  "设置频道主题",
 
   "Add Channel to bookmarks ?":
-  "把群添加到书签？",
+  "把频道添加到书签？",
 
   "Add Bookmark":
   "添加书签",
 
   "Channel configuration":
-  "群聊配置",
+  "频道配置",
 
   "Channel subject":
-  "群聊主题",
+  "频道主题",
 
   "Channel information":
-  "群聊信息",
+  "频道信息",
 
   "Access &amp; moderation":
   "权限与管理",
@@ -546,25 +546,25 @@
   "其他选项",
 
   "Channel title":
-  "群名",
+  "频道名",
 
   "Channel description":
-  "群介绍",
+  "频道介绍",
 
   "Persistent Channel":
-  "非临时群聊",
+  "非临时频道",
 
   "Unless this option is enabled, Channel will be automatically deleted once all occupants have left it":
-  "除非启用此选项，否则一旦所有参与者离开，群聊将自动删除",
+  "除非启用此选项，否则一旦所有参与者离开，频道将自动删除",
 
   "Public Channel":
-  "公开群聊",
+  "公开频道",
 
   "A public Channel can be found by any user through normal means such as searching and service discovery":
-  "任何用户都可以通过搜索和服务发现等正常方式找到公开群聊",
+  "任何用户都可以通过搜索和服务发现等正常方式找到公开频道",
 
   "Protected by password":
-  "群聊密码保护",
+  "频道密码保护",
 
   "Password":
   "密码",
@@ -573,31 +573,31 @@
   "输入密码...",
 
   "A password-protected Channel requires to provide a password to join it":
-  "被密码保护的群聊需要输入密码才能加入",
+  "被密码保护的频道需要输入密码才能加入",
 
   "Allowed to members only":
-  "仅限成员加入",
+  "仅限成员(关系)加入",
 
   "Enable this to restrict Channel access and only allow those that have at least the Member affiliation":
-  "启用此选项可限制群聊访问权限，只允许具有成员或以上权限的群员加入",
+  "启用此选项可限制频道访问权限，只允许具有成员或以上关系的JID加入(可在关系列表中查看)",
 
   "Moderated Channel":
-  "发言许可",
+  "频道发言管控",
 
   "In moderated Channels, occupants must be given permission to speak by a Channel moderator":
-  "开启发言许可后，群员需要管理员授予的权限才能发言",
+  "开启频道发言管控后，只有频道主理人给予了权限的成员才能发言",
 
   "Maximum Occupants Count":
-  "",
+  "频道成员上限",
 
   "Set the maximum number of occupants the Channel may accept":
-  "",
+  "为频道设置人数上限",
 
   "Occupants anonymity":
-  "群员地址匿名",
+  "成员地址匿名",
 
   "In a Non-Anonymous Channel, occupants address is exposed to others, otherwise only Moderators can view occupants address":
-  "公开模式下所有人地址公开，其他模式只有管理员可以看到群员地址，",
+  "公开模式下所有人地址公开，其他模式只有管理员可以看到成员地址，",
 
   "Semi-Anonymous":
   "半匿名",
@@ -606,40 +606,40 @@
   "公开",
 
   "Occupants visibility":
-  "特定角色可见",
+  "成员可见",
 
   "Set Channel occupants visibility according their assigned Role":
-  "根据权限设置群员地址的可见性",
+  "根据权限设置成员地址的可见性",
 
   "Allow Private Messages":
-  "",
+  "允许私信",
 
   "Anyone":
-  "",
+  "所有人",
 
   "Participants":
-  "",
+  "参与者",
 
   "Moderators":
-  "",
+  "主理人",
 
   "None":
-  "",
+  "无",
 
   "Set Channel occupants that are allowed to send private messages according their assigned Role":
-  "",
+  "根据分配的权限允许发送私信的频道成员",
 
   "History max length":
   "历史记录最大长度",
 
   "Specify the maximum number of previous messages that should be sent to users when they join the Channel":
-  "设定最大数量，用于群员加入群聊时显示的历史记录",
+  "设定最大数量，用于成员加入频道时显示的历史记录",
 
   "History default length":
   "历史消息默认值",
 
   "Specify the number of previous messages sent to new users when they join the Channel":
-  "设定数量，用于新用户加入群聊显示的历史记录",
+  "设定数量，用于新用户加入频道显示的历史记录",
 
   "Enable messages archiving":
   "启用消息存档",
@@ -648,7 +648,7 @@
   "使用消息归档管理(PEP-0313)持久化存储消息",
 
   "Channel administration":
-  "群管理",
+  "频道管理",
 
   "List is empty":
   "列表为空",
@@ -660,31 +660,31 @@
   "封禁列表",
 
   "Banned users are not allowed to join nor register as member in the Room. You can cancel ban for an user so it can join again and register as member if server rules allow it.":
-  "被封禁的用户不允许加入或注册为群成员。您可以取消对用户的封禁，以便在服务器规则允许的情况下，用户可以再次加入并注册为群成员。",
+  "被封禁的用户不允许加入或注册为频道成员。您可以取消对用户的封禁，以便在服务器规则允许的情况下，用户可以再次加入并注册为频道成员。",
 
   "Occupants affiliation":
-  "群聊角色",
+  "成员频道关系",
 
   "Members list":
-  "群员列表",
+  "成员列表",
 
   "Affiliation provides a way to specify a list of users who are allowed to enter a members-only Room, grant Administrator status or Room ownership. A non-member user can join the Room until it is not members-only.":
-  "群聊角色提供了一种方法，可以允许指定用户进入仅限成员的群、授予管理员权限或房间所有权。非成员用户可以加入群聊，直到它不仅限成员。",
+  "频道关系列表(区别于频道权限)，列表内的用户可以在开启[仅限成员(关系)加入]时进入频道、授予管理员或所有者。没有成员关系的用户(不在列表中或无频道关系)只能在频道不开启[仅限成员(关系)加入]时加入。",
 
   "Channel destruction":
-  "",
+  "删除频道",
 
   "Deletes the Channel from the group chat service. This operation cannot be undone.":
-  "",
+  "从服务器上删除频道，该操作不可撤销。",
 
   "Destroy Channel":
-  "",
+  "删除频道",
 
   "You can specify a reason for Channel destruction.":
-  "",
+  "你可以指明删除原因。",
 
   "Enter reason...":
-  "",
+  "输入原因...",
 
   "User profile":
   "用户资料",
