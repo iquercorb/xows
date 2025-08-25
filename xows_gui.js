@@ -1940,8 +1940,9 @@ const xows_gui_self_prev = {name:null,addr:null,avat:null,stat:null};
  * all GUI elements (including Peer's chat interfaces).
  *
  * @param   {object}    self      User Peer object
+ * @param   {number}    mask      Changes bitmask
  */
-function xows_gui_self_onpush(self)
+function xows_gui_self_onpush(self, mask)
 {
   // Update User Panel
   xows_doc("self_show").dataset.show = self.show;

@@ -256,9 +256,10 @@ function xows_gui_rost_roomlst_update()
  * Handles Roster Contact add or changes event (forwarded from CLI Module)
  *
  * @param   {object}    cont      CONTACT Peer object
+ * @param   {number}    mask      Changes bitmask
  * @param   {string}   [text]     Optional Error text
  */
-function xows_gui_rost_cont_onpush(cont, text)
+function xows_gui_rost_cont_onpush(cont, mask, text)
 {
   // Null Contact mean we properly received Roster Contacts list
   // but it is empty (user doesn't have any Contact in roster).
@@ -285,11 +286,11 @@ function xows_gui_rost_cont_onpush(cont, text)
     } else {
 
       // Update the existing contact <li-peer> element according template
-      xows_tpl_update_rost_cont(li_peer, cont, text);
+      xows_tpl_update_rost_cont(li_peer, cont, mask, text);
       // Update chat title bar
       xows_gui_doc_update(cont);
       // Update message history
-      xows_gui_hist_update(cont, cont);
+      xows_gui_hist_update(cont, cont, mask);
       // If contact goes offline, ensure chatstat resets
       if(cont.show < 1) xows_gui_edit_onchst(cont, 0);
     }
@@ -349,8 +350,9 @@ function xows_gui_rost_cont_onpull(cont)
  * from CLI Module)
  *
  * @param   {object}    cont      CONTACT Peer object
+ * @param   {number}    mask      Changes bitmask
  */
-function xows_gui_rost_subs_onpush(cont)
+function xows_gui_rost_subs_onpush(cont, mask)
 {
   const dst_ul = xows_doc("cont_pend");
 
@@ -379,8 +381,9 @@ function xows_gui_rost_subs_onpush(cont)
  * Handles Roster Room add or changes event (forwarded from CLI Module)
  *
  * @param   {object}    room      ROOM Peer object
+ * @param   {number}    mask      Changes bitmask
  */
-function xows_gui_rost_room_onpush(room)
+function xows_gui_rost_room_onpush(room, mask)
 {
   // Check for null object, meaning previous public room query response
   if(!room) {
@@ -400,7 +403,7 @@ function xows_gui_rost_room_onpush(room)
   let li_peer = xows_gui_rost_list_find(room.addr);
   if(li_peer) {
     // Update room <li_peer> element according template
-    xows_tpl_update_rost_room(li_peer, room);
+    xows_tpl_update_rost_room(li_peer, room, mask);
     // Update chat title bar
     xows_gui_doc_update(room);
   } else {
@@ -474,7 +477,7 @@ function xows_gui_rost_occu_init(occu)
   xows_cli_ocpm_add(occu);
 
   // Create Occupant Private Message offscreen structure
-  xows_gui_rost_occu_onpush(occu);
+  xows_gui_rost_occu_onpush(occu, 0xff);
 
   // Switch to Occupant
   xows_gui_peer_switch_to(occu.addr);
@@ -485,9 +488,10 @@ function xows_gui_rost_occu_init(occu)
  * (forwarded from CLI Module)
  *
  * @param   {object}    occu      OCCUPANT Peer object
+ * @param   {number}    mask      Changes bitmask
  * @param   {object}   [mucx]     Optional MUC x extra parameters
  */
-function xows_gui_rost_occu_onpush(occu, mucx)
+function xows_gui_rost_occu_onpush(occu, mask, mucx)
 {
   const dst_ul = xows_doc("priv_occu");
 
@@ -517,11 +521,11 @@ function xows_gui_rost_occu_onpush(occu, mucx)
   if(li_peer) {
 
     // Update occupant <li_peer> element according template
-    xows_tpl_update_room_occu(li_peer, occu);
+    xows_tpl_update_room_occu(li_peer, occu, mask);
     // Update chat title bar
     xows_gui_doc_update(occu);
     // Update message history
-    xows_gui_hist_update(occu, occu);
+    xows_gui_hist_update(occu, occu, mask);
 
     // Except for nickname change, if Occupant is found offline, this mean
     // a Private Conversation is open and occupant joined again, so, we inform

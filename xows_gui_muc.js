@@ -894,9 +894,10 @@ function xows_gui_muc_list_insert(dst_ul, li_peer)
  * Handles MUC Room Occupant add or changes event (forwarded from CLI Module)
  *
  * @param   {object}    occu      OCCUPANT Peer object
+ * @parm    {number}    mask      Changes bitmask
  * @param   {object}   [mucx]     Optionnal MUX x extra parameters
  */
-function xows_gui_muc_list_onpush(occu, mucx)
+function xows_gui_muc_list_onpush(occu, mask, mucx)
 {
   // Get Occupant's Room
   const room = occu.room;
@@ -942,7 +943,7 @@ function xows_gui_muc_list_onpush(occu, mucx)
   if(li_peer) {
 
     // Update the existing <li-peer> ellement according template
-    xows_tpl_update_room_occu(li_peer, occu);
+    xows_tpl_update_room_occu(li_peer, occu, mask);
 
   } else {
 
@@ -958,14 +959,14 @@ function xows_gui_muc_list_onpush(occu, mucx)
   // Update occupant list
   xows_gui_muc_list_update(room);
 
-  // Update message history avatars
-  xows_gui_hist_update(room, occu);
+  // Update message history elements
+  xows_gui_hist_update(room, occu, mask);
 
   // Update Private Message with relatives
   if(occu.self) {
     for(let i = 0; i < xows_cli_ocpm.length; ++i)
       if(xows_cli_ocpm[i].room === room)
-        xows_gui_hist_update(xows_cli_ocpm[i], occu);
+        xows_gui_hist_update(xows_cli_ocpm[i], occu, mask);
   }
 }
 

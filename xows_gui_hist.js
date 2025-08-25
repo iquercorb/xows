@@ -217,9 +217,14 @@ function xows_gui_hist_onclick(event)
  *
  * @param   {object}    peer      Peer object
  * @param   {object}    author    Author's Peer object to be updated
+ * @param   {number}    mask      Bitmask for selective changes
  */
-function xows_gui_hist_update(peer, author)
+function xows_gui_hist_update(peer, author, mask = 0xFF)
 {
+  // no changes, no processing
+  if(!(mask & XOWS_PUSH_NAME|XOWS_PUSH_AVAT))
+    return;
+
   // If incoming message is off-screen we get history <div> and <ul> of
   // fragment history corresponding to contact
   const hist_ul = xows_gui_doc(peer, "hist_ul");
@@ -230,23 +235,27 @@ function xows_gui_hist_update(peer, author)
   // Get peer ID
   const ident =  xows_cli_peer_iden(author);
 
-  // Set new content for all elements
-  const from_nodes = hist_ul.querySelectorAll("MESG-FROM[data-peer='"+ident+"'],RPLY-FROM[data-peer='"+ident+"']");
-  for(let i = 0; i < from_nodes.length; ++i)
-    if(author.name != from_nodes[i].innerText)
-      from_nodes[i].innerText = author.name;
+  if(mask & XOWS_PUSH_NAME) {
 
-  if(!author.avat)
-    return;
+    // Set new content for all elements
+    const from_nodes = hist_ul.querySelectorAll("MESG-FROM[data-peer='"+ident+"'],RPLY-FROM[data-peer='"+ident+"']");
+    for(let i = 0; i < from_nodes.length; ++i)
+      //if(author.name != from_nodes[i].innerText)
+        from_nodes[i].innerText = author.name;
 
-  // Retrieve or generate avatar CSS class
-  const avat_cls = xows_tpl_spawn_avat_cls(author);
+  }
 
-  // Set new CSS class to all corresponding elements
-  const avat_nodes = hist_ul.querySelectorAll("MESG-AVAT[data-peer='"+ident+"'],RPLY-AVAT[data-peer='"+ident+"']");
-  for(let i = 0; i < avat_nodes.length; ++i)
-    if(avat_cls != avat_nodes[i].className)
-      avat_nodes[i].className = avat_cls;
+  if(mask & XOWS_PUSH_AVAT) {
+
+    // Retrieve or generate avatar CSS class
+    const avat_cls = xows_tpl_spawn_avat_cls(author);
+
+    // Set new CSS class to all corresponding elements
+    const avat_nodes = hist_ul.querySelectorAll("MESG-AVAT[data-peer='"+ident+"'],RPLY-AVAT[data-peer='"+ident+"']");
+    for(let i = 0; i < avat_nodes.length; ++i)
+      //if(avat_cls != avat_nodes[i].className)
+        avat_nodes[i].className = avat_cls;
+  }
 }
 
 /**

@@ -1273,33 +1273,42 @@ function xows_tpl_spawn_rost_cont(cont, text)
  *
  * @param   {element}   li_peer   Roster-Contact <li-peer> element to update
  * @param   {object}    cont      CONTACT Peer object
+ * @param   {number}    mask      Changes bitmask
  * @param   {string}   [text]     Optional error text
  */
-function xows_tpl_update_rost_cont(li_peer, cont, text)
+function xows_tpl_update_rost_cont(li_peer, cont, mask, text)
 {
+  const authorized = xows_asbool(cont.subs & XOWS_SUBS_TO);
   const badg_show = li_peer.querySelector("BADG-SHOW");
-  const bttn_subs = li_peer.querySelector("[name='cont_bt_rtry']");
+
+  if(!authorized !== li_peer.classList.contains("PEER-DENY")) {
+    li_peer.classList.toggle("PEER-DENY", !authorized);
+    li_peer.querySelector("[name='cont_bt_rtry']").disabled = authorized;
+    badg_show.hidden = !authorized;
+  }
 
   // Update content
-  if(cont.subs & XOWS_SUBS_TO) {
-    li_peer.title = cont.name+" ("+cont.addr+")";
-    li_peer.classList.remove("PEER-DENY");
-    li_peer.querySelector("PEER-NAME").innerText = cont.name;
-    li_peer.querySelector("PEER-META").innerText = cont.stat ? cont.stat : "";
-    badg_show.hidden = false;
-    badg_show.dataset.show = cont.show || 0;
-    bttn_subs.disabled = true;
-    // Set proper class for avatar
-    li_peer.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
+  if(authorized) {
+
+    if(mask & XOWS_PUSH_SHOW)
+      badg_show.dataset.show = cont.show || 0;
+
+    if(mask & XOWS_PUSH_NAME) {
+      li_peer.title = cont.name+" ("+cont.addr+")";
+      li_peer.querySelector("PEER-NAME").innerText = cont.name;
+    }
+
+    if(mask & XOWS_PUSH_META)
+      li_peer.querySelector("PEER-META").innerText = cont.stat ? cont.stat : "";
+
+    if(mask & XOWS_PUSH_AVAT)
+      li_peer.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(cont);
+
   } else {
-    // We awaits for contact subscription
     li_peer.title = cont.addr;
-    li_peer.classList.add("PEER-DENY");
     li_peer.querySelector("PEER-NAME").innerText = cont.addr;
     li_peer.querySelector("PEER-META").innerText = text ? xows_l10n_get(text)
                                                         : xows_l10n_get("Authorization pending");
-    badg_show.hidden = true;
-    bttn_subs.disabled = false;
   }
 }
 
@@ -1336,13 +1345,19 @@ function xows_tpl_spawn_rost_room(room)
  *
  * @param   {element}   li_peer   Roster-Room <li-peer> element to update
  * @param   {object}    room      ROOM Peer Object
+ * @param   {number}    mask      Changes bitmask
  */
-function xows_tpl_update_rost_room(li_peer, room)
+function xows_tpl_update_rost_room(li_peer, room, mask)
 {
   // Update content
-  li_peer.title = room.name+" ("+room.addr+")";
-  li_peer.querySelector("PEER-NAME").innerText = room.name;
-  li_peer.querySelector("PEER-META").innerText = room.desc;
+  if(mask & XOWS_PUSH_NAME) {
+    li_peer.title = room.name+" ("+room.addr+")";
+    li_peer.querySelector("PEER-NAME").innerText = room.name;
+  }
+
+  if(mask & XOWS_PUSH_META)
+    li_peer.querySelector("PEER-META").innerText = room.desc;
+
   li_peer.querySelector("BADG-LOCK").hidden = !(room.prot || !room.open);
   li_peer.querySelector("[name='room_bt_retr']").disabled = !room.book;
 }
@@ -1387,16 +1402,24 @@ function xows_tpl_spawn_room_occu(occu, rost = false)
  *
  * @param   {element}   li        MUC-Occupant <li-peer> element to update
  * @param   {object}    occu      OCCUPANT Peer object
+ * @param   {number}    mask      Changes bitmask
  */
-function xows_tpl_update_room_occu(li, occu)
+function xows_tpl_update_room_occu(li, occu, mask)
 {
   // Update content
-  li.title = occu.name+" ("+occu.addr+")";
-  li.querySelector("PEER-NAME").innerText = occu.name;
-  li.querySelector("PEER-META").innerText = occu.stat ? occu.stat : "";
-  li.querySelector("BADG-SHOW").dataset.show = occu.show || 0;
-  // Set proper class for avatar
-  li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(occu);
+  if(mask & XOWS_PUSH_NAME) {
+    li.title = occu.name+" ("+occu.addr+")";
+    li.querySelector("PEER-NAME").innerText = occu.name;
+  }
+
+  if(mask & XOWS_PUSH_SHOW)
+    li.querySelector("BADG-SHOW").dataset.show = occu.show || 0;
+
+  if(mask & XOWS_PUSH_META)
+    li.querySelector("PEER-META").innerText = occu.stat ? occu.stat : "";
+
+  if(mask & XOWS_PUSH_AVAT)
+    li.querySelector("PEER-AVAT").className = xows_tpl_spawn_avat_cls(occu);
 }
 
 /* ---------------------------------------------------------------------------

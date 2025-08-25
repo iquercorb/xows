@@ -79,10 +79,10 @@ const xows_load_item_stk = new Map();
  * @param   {function}  onload    Function to call once load finished
  * @param   {*}        [param]    Optional parameter to pass to Onload
  */
-function xows_load_task_push(item, mask, onload, param)
+function xows_load_task_push(item, mask, onload, ...param)
 {
   if(mask === 0) {
-    onload(item, param);
+    onload(item, ...param);
     return;
   }
 
@@ -192,7 +192,7 @@ function xows_load_task_done(item, task)
       xows_load_item_stk.delete(item);
 
     // Call configured onload
-    entry.onload(item, entry.param);
+    entry.onload(item, ...entry.param);
 
     // Check for firing of onempty function
     xows_load_onempty_check();
