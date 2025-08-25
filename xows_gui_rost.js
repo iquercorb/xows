@@ -110,16 +110,17 @@ function xows_gui_rost_list_onclick(event)
  * Find Peer element (<li-peer>) matching the given JID.
  *
  * @param   {string}    addr    Peer JID (address)
+ * @param   {string}   [ocid]   MUC Occupant Anonymous-ID
  *
  * @return  (element}   Peer element (<li-peer>) or null if not found
  */
-function xows_gui_rost_list_find(addr)
+function xows_gui_rost_list_find(addr, ocid = null)
 {
   // We don't use querySelector() to search JID directly since Occupant JID
   // may contain HTML/XML illegal characters not supported by CSS selector.
   const li_peers = xows_doc("rost_fram").querySelectorAll("LI-PEER");
   for(let i = 0; i < li_peers.length; ++i) {
-    if(li_peers[i].dataset.id === addr)
+    if((ocid && li_peers[i].dataset.ocid == ocid) || li_peers[i].dataset.id === addr)
       return li_peers[i];
   }
 
@@ -286,7 +287,7 @@ function xows_gui_rost_cont_onpush(cont, mask, text)
     } else {
 
       // Update the existing contact <li-peer> element according template
-      xows_tpl_update_rost_cont(li_peer, cont, mask, text);
+      xows_tpl_update_peer_cont(li_peer, cont, mask, text);
       // Update chat title bar
       xows_gui_doc_update(cont);
       // Update message history
@@ -302,7 +303,7 @@ function xows_gui_rost_cont_onpush(cont, mask, text)
 
   if(!li_peer) {
     // This is a roster contact (with or without pending authorization)
-    li_peer = xows_tpl_spawn_rost_cont(cont, text);
+    li_peer = xows_tpl_spawn_peer_cont(cont, text);
     // Initialize offscreen documents
     xows_gui_doc_init(cont);
   }
@@ -360,10 +361,10 @@ function xows_gui_rost_subs_onpush(cont, mask)
   let li_peer = xows_gui_rost_list_find(cont.addr);
   if(li_peer) {
     // Update existing element
-    xows_tpl_update_rost_subs(li_peer, cont);
+    xows_tpl_update_peer_subs(li_peer, cont);
   } else {
     // Create new <li-peer> element from template
-    li_peer = xows_tpl_spawn_rost_subs(cont);
+    li_peer = xows_tpl_spawn_peer_subs(cont);
   }
 
   // Insert <li-peer> into proper <ul>
@@ -403,12 +404,12 @@ function xows_gui_rost_room_onpush(room, mask)
   let li_peer = xows_gui_rost_list_find(room.addr);
   if(li_peer) {
     // Update room <li_peer> element according template
-    xows_tpl_update_rost_room(li_peer, room, mask);
+    xows_tpl_update_peer_room(li_peer, room, mask);
     // Update chat title bar
     xows_gui_doc_update(room);
   } else {
     // Append new instance of room <li_peer> from template to roster <ul>
-    li_peer = xows_tpl_spawn_rost_room(room);
+    li_peer = xows_tpl_spawn_peer_room(room);
     // Initialize offscreen documents
     xows_gui_doc_init(room);
   }
@@ -507,7 +508,7 @@ function xows_gui_rost_occu_onpush(occu, mask, mucx)
       }
 
       // Search for existing occupant <li-peer> element for this Room
-      let li_peer = xows_gui_rost_list_find(mucx.prev);
+      let li_peer = xows_gui_rost_list_find(mucx.prev, occu.ocid);
 
       // Change <li-peer> element data-id
       if(li_peer) li_peer.dataset.id = occu.addr;
@@ -517,11 +518,11 @@ function xows_gui_rost_occu_onpush(occu, mask, mucx)
     }
   }
 
-  let li_peer = xows_gui_rost_list_find(occu.addr);
+  let li_peer = xows_gui_rost_list_find(occu.addr, occu.ocid);
   if(li_peer) {
 
     // Update occupant <li_peer> element according template
-    xows_tpl_update_room_occu(li_peer, occu, mask);
+    xows_tpl_update_peer_occu(li_peer, occu, mask);
     // Update chat title bar
     xows_gui_doc_update(occu);
     // Update message history
@@ -540,7 +541,7 @@ function xows_gui_rost_occu_onpush(occu, mask, mucx)
     }
   } else {
     // Append new instance of occupant <li_peer> from template to roster <ul>
-    li_peer = xows_tpl_spawn_room_occu(occu, true); //< Special for Private Message
+    li_peer = xows_tpl_spawn_peer_occu(occu, true); //< Special for Private Message
     // Initialize offscreen documents
     xows_gui_doc_init(occu);
   }
@@ -563,11 +564,11 @@ function xows_gui_rost_occu_onpull(occu)
 {
   const dst_ul = xows_doc("priv_occu");
 
-  let li_peer = xows_gui_rost_list_find(occu.addr);
+  let li_peer = xows_gui_rost_list_find(occu.addr, occu.ocid);
   if(li_peer) {
 
     // Update occupant <li_peer> element according template
-    xows_tpl_update_room_occu(li_peer, occu);
+    xows_tpl_update_peer_occu(li_peer, occu);
 
     // Update chat title bar
     xows_gui_doc_update(occu);

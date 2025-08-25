@@ -1199,7 +1199,7 @@ function xows_tpl_spawn_avat_cls(peer)
  *
  * @return  {element}   Roster-Pending-Contact <li-peer> element
  */
-function xows_tpl_spawn_rost_subs(cont)
+function xows_tpl_spawn_peer_subs(cont)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-pend"].firstChild.cloneNode(true);
@@ -1219,7 +1219,7 @@ function xows_tpl_spawn_rost_subs(cont)
  * @param   {element}   li_peer   Roster-Pending-Contact <li-peer> element to update
  * @param   {object}    cont      CONTACT Peer object
  */
-function xows_tpl_update_rost_subs(li_peer, cont)
+function xows_tpl_update_peer_subs(li_peer, cont)
 {
   // Update content
   li_peer.title = cont.addr;
@@ -1238,7 +1238,7 @@ function xows_tpl_update_rost_subs(li_peer, cont)
  *
  * @return  {element}   Roster-Contact <li-peer> element
  */
-function xows_tpl_spawn_rost_cont(cont, text)
+function xows_tpl_spawn_peer_cont(cont, text)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-cont"].firstChild.cloneNode(true);
@@ -1276,7 +1276,7 @@ function xows_tpl_spawn_rost_cont(cont, text)
  * @param   {number}    mask      Changes bitmask
  * @param   {string}   [text]     Optional error text
  */
-function xows_tpl_update_rost_cont(li_peer, cont, mask, text)
+function xows_tpl_update_peer_cont(li_peer, cont, mask, text)
 {
   const authorized = xows_asbool(cont.subs & XOWS_SUBS_TO);
   const badg_show = li_peer.querySelector("BADG-SHOW");
@@ -1323,7 +1323,7 @@ function xows_tpl_update_rost_cont(li_peer, cont, mask, text)
  *
  * @return  {element}   Roster-Room <li-peer> element
  */
-function xows_tpl_spawn_rost_room(room)
+function xows_tpl_spawn_peer_room(room)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-room"].firstChild.cloneNode(true);
@@ -1347,7 +1347,7 @@ function xows_tpl_spawn_rost_room(room)
  * @param   {object}    room      ROOM Peer Object
  * @param   {number}    mask      Changes bitmask
  */
-function xows_tpl_update_rost_room(li_peer, room, mask)
+function xows_tpl_update_peer_room(li_peer, room, mask)
 {
   // Update content
   if(mask & XOWS_PUSH_NAME) {
@@ -1374,7 +1374,7 @@ function xows_tpl_update_rost_room(li_peer, room, mask)
  *
  * @return  {element}   MUC-Occupant <li-peer> Element
  */
-function xows_tpl_spawn_room_occu(occu, rost = false)
+function xows_tpl_spawn_peer_occu(occu, rost = false)
 {
   // Clone DOM tree from template
   const inst = xows_tpl_model["peer-occu"].firstChild.cloneNode(true);
@@ -1404,7 +1404,7 @@ function xows_tpl_spawn_room_occu(occu, rost = false)
  * @param   {object}    occu      OCCUPANT Peer object
  * @param   {number}    mask      Changes bitmask
  */
-function xows_tpl_update_room_occu(li, occu, mask)
+function xows_tpl_update_peer_occu(li, occu, mask)
 {
   // Update content
   if(mask & XOWS_PUSH_NAME) {

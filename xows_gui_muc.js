@@ -825,15 +825,16 @@ function xows_gui_muc_list_onclick(event)
  * Find MUC Occupant element (<li-peer>) matching specified occupant JID.
  *
  * @param   {object}    room      ROOM Peer object
- * @param   {object}    addr      Occupant JID (MUC address)
+ * @param   {string}    addr      Occupant JID (MUC address)
+ * @param   {string}   [ocid]     Occupant Anonymous-ID
  */
-function xows_gui_muc_list_find(room, addr)
+function xows_gui_muc_list_find(room, addr, ocid = null)
 {
   // We don't use querySelector() to search JID directly since Occupant JID
   // may contain HTML/XML illegal characters not supported by CSS selector.
   const li_peers = xows_gui_doc(room,"mucl_list").querySelectorAll("LI-PEER");
   for(let i = 0; i < li_peers.length; ++i) {
-    if(li_peers[i].dataset.id === addr)
+    if((ocid && li_peers[i].dataset.ocid === ocid) || li_peers[i].dataset.id === addr)
       return li_peers[i];
   }
 
@@ -914,7 +915,7 @@ function xows_gui_muc_list_onpush(occu, mask, mucx)
       }
 
       // Search for existing occupant <li-peer> element for this Room
-      const li_peer = xows_gui_muc_list_find(occu.room, mucx.prev);
+      const li_peer = xows_gui_muc_list_find(occu.room, mucx.prev, occu.ocid);
       // Change <li-peer> element id
       if(li_peer) li_peer.dataset.id = occu.addr;
     }
@@ -939,16 +940,16 @@ function xows_gui_muc_list_onpush(occu, mask, mucx)
   }
 
   // Search for existing occupant <li-peer> element for this Room
-  let li_peer = xows_gui_muc_list_find(occu.room, occu.addr);
+  let li_peer = xows_gui_muc_list_find(occu.room, occu.addr, occu.ocid);
   if(li_peer) {
 
     // Update the existing <li-peer> ellement according template
-    xows_tpl_update_room_occu(li_peer, occu, mask);
+    xows_tpl_update_peer_occu(li_peer, occu, mask);
 
   } else {
 
     // Create new <li-peer> element from template
-    li_peer = xows_tpl_spawn_room_occu(occu);
+    li_peer = xows_tpl_spawn_peer_occu(occu);
   }
 
   // Insert <li-peer> into proper destination <ul>
@@ -987,7 +988,7 @@ function xows_gui_muc_list_onpull(occu)
   } else {
 
     // Search and remove <li_peer> in document
-    const li_peer = xows_gui_muc_list_find(occu.room, occu.addr);
+    const li_peer = xows_gui_muc_list_find(occu.room, occu.addr, occu.ocid);
     if(li_peer) {
 
       const src_ul = li_peer.parentNode;
