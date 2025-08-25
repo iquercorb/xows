@@ -244,11 +244,11 @@ function xows_xmp_error_parse(stanza)
 
     // Check for <condition> child
     const cond = xows_xml_ns_select(error, XOWS_NS_IETF_STANZAS);
-    if(cond) data.name = cond.tagName;
+    data.name = cond ? cond.tagName : "";
 
     // Check for <text> child (error message)
     const text = error.querySelector("text");
-    if(text) data.text = xows_xml_innertext(text);
+    data.text = text ? xows_xml_innertext(text) : "";
   }
 
   return data;
