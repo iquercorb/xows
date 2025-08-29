@@ -396,9 +396,14 @@ function xows_gui_rost_room_onpush(room, mask)
   }
 
   // Select destination <ul>
-  const dst_ul = (room.publ) ? xows_doc("room_publ") :
-                               (room.book) ? xows_doc("room_book") :
-                                             xows_doc("room_priv");
+  let dst_ul;
+  if(room.publ && room.locl) {
+    dst_ul = xows_doc("room_publ");
+  } else if(room.book) {
+    dst_ul = xows_doc("room_book");
+  } else {
+    dst_ul = xows_doc("room_priv");
+  }
 
   //let li_peer = document.getElementById(room.addr);
   let li_peer = xows_gui_rost_list_find(room.addr);
@@ -415,7 +420,7 @@ function xows_gui_rost_room_onpush(room, mask)
   }
 
   // Insert <li-peer> into proper <ul>
-  if(li_peer.parentNode != dst_ul)
+  if(li_peer.parentNode !== dst_ul)
     xows_gui_rost_list_insert(dst_ul, li_peer);
 
   // Update room list <ul> visibility

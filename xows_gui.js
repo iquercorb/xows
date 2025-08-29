@@ -1956,25 +1956,23 @@ function xows_gui_self_onpush(self, mask)
   // Selective update for Avatar or Name changed
   if(xows_gui_self_prev.avat !== self.avat || xows_gui_self_prev.name !== self.name) {
 
-    // Create new Avatar CSS class
+    // Update avatar
     const avat_cls = xows_tpl_spawn_avat_cls(self); //< Add avatar CSS class
-
-    // Update User Panel
     xows_doc("self_avat").className = avat_cls;
-    xows_doc("self_name").innerText = self.name;
-
-    // Update User Presence-Menu
     drop_self.querySelector("PEER-AVAT").className = avat_cls;
+
+    // Update Nickname
+    xows_doc("self_name").innerText = self.name;
     drop_self.querySelector("PEER-NAME").innerText = self.name;
 
     // Update all opened chat history
     for(let i = 0; i < xows_cli_cont.length; ++i)
       if(xows_cli_cont[i].live)
-        xows_gui_hist_update(xows_cli_cont[i], self);
+        xows_gui_hist_update(xows_cli_cont[i], self, mask);
 
     for(let i = 0; i < xows_cli_room.length; ++i)
       if(xows_cli_room[i].live)
-        xows_gui_hist_update(xows_cli_room[i], self);
+        xows_gui_hist_update(xows_cli_room[i], self, mask);
   }
 
   // Copy self object to be later compared (to make selective updates)
@@ -2498,8 +2496,10 @@ function xows_gui_page_user_onabort()
     xows_doc("user_avat").data = null; //< ad-hoc property
   }
 
+  // Set avatar icon
   xows_doc("user_avat").style.backgroundImage = "url(\""+data+"\")";
 
+  // Set access model
   xows_doc("user_accs").checked = true;
 }
 
@@ -2512,7 +2512,7 @@ function xows_gui_page_user_onvalid()
   // Update user profile
   xows_cli_self_edit(xows_doc("user_name").value,
                      xows_doc("user_avat").data,
-                     xows_doc("user_accs").checked?"open":"presence");
+                     xows_doc("user_accs").checked);
 }
 
 /**
