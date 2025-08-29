@@ -624,8 +624,9 @@ function xows_xmp_send(stanza, onresult, onparse)
  *
  * @param   {element}     stanza      XML node
  * @param   {function}   [onresult]   Callback for query result forwarding
+ * @param   {function}   [onparse]    Callback for parsed result forwarding
  */
-function xows_xmp_send_raw(stanza, onresult)
+function xows_xmp_send_raw(stanza, onresult, onparse)
 {
   if(!xows_sck_sock) {
     xows_log(0,"xmp_send_raw","socket is closed");
@@ -646,7 +647,7 @@ function xows_xmp_send_raw(stanza, onresult)
 
     // If callaback is supplied, add request to stack
     if(xows_isfunc(onresult))
-      xows_xmp_query_stack.set(id,{"onresult":onresult,"onparse":null});
+      xows_xmp_query_stack.set(id,{"onresult":onresult,"onparse":onparse});
   }
 
   // Send serialized data to socket
@@ -2833,7 +2834,7 @@ function xows_xmp_regi_get_query(to, onparse)
 
   if(to !== null) iq.setAttribute("to",to);
 
-  xows_xmp_send(iq, xows_xmp_regi_get_parse, onparse);
+  xows_xmp_send_raw(iq, xows_xmp_regi_get_parse, onparse);
 }
 
 /**
@@ -2867,7 +2868,7 @@ function xows_xmp_regi_set_query(to, data, xform, onparse)
   if(to !== null) iq.setAttribute("to",to);
 
   // Use generic iq parse function to forward  unhandled error
-  xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
+  xows_xmp_send_raw(iq, xows_xmp_iq_parse, onparse);
 }
 
 /**
