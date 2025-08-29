@@ -3129,14 +3129,19 @@ const XOWS_NS_VCARDXUPDATE = "vcard-temp:x:update";
  *
  * This is used to publish user (own) vCard-Temp.
  *
- * @param   {object}    vcard     vCard data to set
- * @param   {function} [onparse]  Optional callback to receive query result
+ * @param   {element}     vcard     vCard element
+ * @param   {function}   [onparse]  Optional callback to receive query result
  */
 function xows_xmp_vcardt_set_query(vcard, onparse)
 {
+  // Put vCard child elements in array to be updated
+  const data = [];
+  for(let i = 0; i < vcard.children.length; ++i)
+    data.push(vcard.children[i]);
+
   // Create and launch the query
   const iq = xows_xml_node("iq",{"type":"set","to":xows_xmp_bind.jbar},
-              xows_xml_node("vCard",{"xmlns":XOWS_NS_VCARD},vcard));
+                xows_xml_node("vCard",{"xmlns":XOWS_NS_VCARD},data));
 
   // Use generic iq parse function to forward  unhandled error
   xows_xmp_send(iq, xows_xmp_iq_parse, onparse);
@@ -3192,6 +3197,16 @@ function xows_xmp_vcardt_get_query(to, onparse)
   // Use generic iq parsing function
   xows_xmp_send(iq, xows_xmp_vcardt_get_parse, onparse);
 }
+
+/* ---------------------------------------------------------------------------
+ *
+ * User Avatar to vCard-Based Avatars Conversion (XEP-0398)
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Constant values for User Avatar to vCard-Based Avatars Conversion (XEP-0398) XMLNS
+ */
+const XOWS_NS_PEPVCARDCONV = "urn:xmpp:pep-vcard-conversion:0";
 
 /* ---------------------------------------------------------------------------
  *
@@ -3648,10 +3663,9 @@ const XOWS_NS_AVATAR_META  = "urn:xmpp:avatar:metadata";
  *
  * @param   {string}    hash      Base-64 encoded SAH-1 hash of data
  * @param   {string}    data      Base-64 encoded Data to publish
- * @param   {string}    access    Pubsub Access model to define
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_avat_data_publish(hash, data, access, onparse)
+function xows_xmp_avat_data_publish(hash, data, onparse)
 {
   // The <publish> child
   const publish = xows_xml_node("publish",{"node":XOWS_NS_AVATAR_DATA},
@@ -3659,7 +3673,7 @@ function xows_xmp_avat_data_publish(hash, data, access, onparse)
                       xows_xml_node("data",{"xmlns":XOWS_NS_AVATAR_DATA},data)));
 
   // Publish PEP node
-  xows_xmp_pubsub_publish(XOWS_NS_AVATAR_DATA, publish, access, onparse); //< access option generate precondition error
+  xows_xmp_pubsub_publish(XOWS_NS_AVATAR_DATA, publish, null, onparse);
 }
 
 /**
@@ -3670,10 +3684,9 @@ function xows_xmp_avat_data_publish(hash, data, access, onparse)
  * @param   {number}    bytes     Image data size in bytes
  * @param   {number}    width     Image width in pixel
  * @param   {number}    height    Image width in pixel
- * @param   {string}    access    Pubsub Access model to define
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, onparse)
+function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, onparse)
 {
   let publish;
 
@@ -3694,7 +3707,7 @@ function xows_xmp_avat_meta_publish(hash, type, bytes, width, height, access, on
   }
 
   // Publish PEP node
-  xows_xmp_pubsub_publish(XOWS_NS_AVATAR_META, publish, access, onparse);
+  xows_xmp_pubsub_publish(XOWS_NS_AVATAR_META, publish, null, onparse);
 }
 
 /**
