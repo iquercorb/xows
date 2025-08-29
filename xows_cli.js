@@ -976,7 +976,7 @@ function xows_cli_init()
   xows_doc_listener_add(window, "unload",       xows_cli_onuload);
 
   // Setup Load taks callback functions
-  xows_load_task_set(XOWS_FETCH_AVAT, xows_cli_avat_fetch_fetch);
+  xows_load_task_set(XOWS_FETCH_AVAT, xows_cli_avat_fetch);
   xows_load_task_set(XOWS_FETCH_NICK, xows_cli_pep_nick_fetch);
   xows_load_task_set(XOWS_FETCH_MUCI, xows_cli_muc_info_query);
   xows_load_task_set(XOWS_FETCH_MUCN, xows_cli_muc_nick_query);
@@ -2772,7 +2772,7 @@ function xows_cli_self_edit(name, uri, open)
 function xows_cli_self_publ_nick()
 {
   if(xows_cli_self_publ_param.mask & XOWS_PUSH_NAME) {
-    xows_cli_pep_nick_self_publ(xows_cli_self_publ_avat);
+    xows_cli_pep_nick_publ(xows_cli_self_publ_avat);
   } else {
     xows_cli_self_publ_avat();
   }
@@ -2787,7 +2787,7 @@ function xows_cli_self_publ_nick()
 function xows_cli_self_publ_avat()
 {
   if(xows_cli_self_publ_param.mask & XOWS_PUSH_AVAT) {
-    xows_cli_pep_avatdata_self_publ(xows_cli_self_publ_vcdt);
+    xows_cli_avat_data_publ(xows_cli_self_publ_vcdt);
   } else {
     xows_cli_self_publ_vcdt();
   }
@@ -2802,7 +2802,7 @@ function xows_cli_self_publ_avat()
 function xows_cli_self_publ_vcdt()
 {
   if(!xows_cli_features.includes(XOWS_NS_PEPVCARDCONV)) {
-    xows_cli_vcdt_self_publ(xows_cli_self_publ_mode);
+    xows_cli_vcdt_publ(xows_cli_self_publ_mode);
   } else {
     xows_cli_self_publ_mode();
   }
@@ -2817,8 +2817,7 @@ function xows_cli_self_publ_vcdt()
 function xows_cli_self_publ_mode()
 {
   if(xows_cli_self_publ_param.open) {
-    // The only PEP node that usually not have "open" access-mode is the
-    // avatar-data node so we only change thise one for now.
+    xows_cli_pep_chmod(XOWS_NS_AVATAR_META, "open", null);
     xows_cli_pep_chmod(XOWS_NS_AVATAR_DATA, "open", xows_cli_self_publ_end);
   } else {
     xows_cli_self_publ_end();
@@ -2838,13 +2837,13 @@ function xows_cli_self_publ_end()
 
 /* ---------------------------------------------------------------------------
  *
- * vCard-Temp Publication and Query routines
+ * vCard-Temp routines
  *
  * ---------------------------------------------------------------------------*/
 /**
  * Storage for own vCard-Temp publication parameters
  */
-const xows_cli_vcdt_self_publ_param = {onpubl:null};
+const xows_cli_vcdt_publ_param = {onpubl:null};
 
 /**
  * Publish user (own) vCard-temp according current Nickname and Avatar.
@@ -2854,12 +2853,12 @@ const xows_cli_vcdt_self_publ_param = {onpubl:null};
  *
  * @param   {function}   [onpubl]   Callback for publication result
  */
-function xows_cli_vcdt_self_publ(onpubl)
+function xows_cli_vcdt_publ(onpubl)
 {
-  xows_cli_vcdt_self_publ_param.onpubl = onpubl;
+  xows_cli_vcdt_publ_param.onpubl = onpubl;
 
   // Query own vCard-temp
-  xows_xmp_vcardt_get_query(null, xows_cli_vcdt_self_publ_edit);
+  xows_xmp_vcardt_get_query(null, xows_cli_vcdt_publ_edit);
 }
 
 /**
@@ -2872,9 +2871,9 @@ function xows_cli_vcdt_self_publ(onpubl)
  * @param   {object}    vcard     vCard content
  * @param   {object}   [error]    Error data if any
  */
-function xows_cli_vcdt_self_publ_edit(from, vcard, error)
+function xows_cli_vcdt_publ_edit(from, vcard, error)
 {
-  const param = xows_cli_vcdt_self_publ_param;
+  const param = xows_cli_vcdt_publ_param;
 
   if(error) {
     xows_log(1,"cli_vcdt_pub_edit","query onw vCard error",error.name);
@@ -2915,86 +2914,6 @@ function xows_cli_vcdt_self_publ_edit(from, vcard, error)
   xows_xmp_vcardt_set_query(vcard, param.onpubl);
 }
 
-/**
- * Handles the parsed result (the vCard data) of a vCard-temp fetch query.
- *
- * Currently, this function only checks for <PHOTO> in the hope of getting
- * an Avatar, as a fallback process, if Avatar cannot be retrieved via
- * the PEP (XEP-0084 User Avatar) mechanism.
- *
- * @param   {string}    from      vCard Contact JID or null
- * @param   {object}    vcard     vCard content
- * @param   {object}   [error]    Error data if any
- */
-function xows_cli_vcdt_peer_parse(from, vcard, error)
-{
-  // Retreive Peer (Contact or Occupant) related to this query
-  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
-  if(!peer) {
-    xows_log(1,"cli_vcard_parse","unknown/unsubscribed JID",from);
-    return;
-  }
-
-  if(error) {
-
-    // No avatar available
-    peer.avat = null;
-
-    xows_log(1,"cli_vcard_parse","error parsing vcard",from);
-
-  } else {
-
-    let data = null;
-
-    // We are only interested in avatar
-    const photo = vcard.querySelector("PHOTO");
-    if(photo) {
-      // It happen that PHOTO node is empty...
-      const type = photo.querySelector("TYPE");
-      const binval = photo.querySelector("BINVAL");
-      if(type && binval) {
-        // create proper data-url string
-        data = "data:"+xows_xml_innertext(type)+";base64,"+xows_xml_innertext(binval);
-      }
-    }
-
-    if(data) {
-
-      // Save image in cache
-      peer.avat = xows_cach_avat_save(data);
-
-      xows_log(2,"cli_vcardt_parse","set avatar from photo",peer.avat);
-
-    } else {
-
-      xows_log(2,"cli_vcardt_parse","no photo");
-
-      // No avatar available
-      peer.avat = null;
-    }
-  }
-
-  if(peer.load & XOWS_FETCH_AVAT) {
-    xows_load_task_done(peer, XOWS_FETCH_AVAT);
-  } else {
-    xows_cli_peer_push(peer, XOWS_PUSH_AVAT);
-  }
-
-  // Allow new avatar fetch
-  xows_cli_avat_fetch_fetch_stk.delete(peer);
-}
-
-/**
- * Query vCard-temp for the specified Peer (or user itself).
- *
- * @param   {string}    peer      Peer object
- */
-function xows_cli_vcdt_peer_fetch(peer)
-{
-  // Query Vcard-temps (mainly for Avatar)
-  xows_xmp_vcardt_get_query(peer.addr, xows_cli_vcdt_peer_parse);
-}
-
 /* ---------------------------------------------------------------------------
  *
  * PEP (Pubsub) Related routines
@@ -3017,7 +2936,7 @@ function xows_cli_msg_onpubs(from, node, items, retrs)
   if(node === XOWS_NS_AVATAR_META) {
     if(items.length) {
       // Send to avatar metadata parsing function
-      xows_cli_avat_fetch_meta_parse(from, items[0].child);
+      xows_cli_avat_meta_parse(from, items[0].child);
     }
   }
 
@@ -3168,289 +3087,9 @@ function xows_cli_pep_nick_fetch(peer)
  *
  * @param   {function}   [onpubl]   Callback for publication result
  */
-function xows_cli_pep_nick_self_publ(onpubl)
+function xows_cli_pep_nick_publ(onpubl)
 {
   xows_xmp_nick_publish(xows_cli_self.name, onpubl);
-}
-
-/* ---------------------------------------------------------------------------
- * PEP (Pubsub) - Avatar (XEP-0084 User Avatar) routines
- * ---------------------------------------------------------------------------*/
-/**
- * Constant size for generated Avatars
- */
-const XOWS_AVAT_SIZE  = 48;
-
-/**
- * Stack for PEP User Avatar (XEP-0084) Avatar Data and Metadata processing
- */
-const xows_cli_avat_parse_stk = new Map();
-
-/**
- * Handles parsed result of PEP User Avatar (XEP-0084) Data query.
- *
- * @param   {string}    from      Avatar Contact JID.
- * @param   {object}    hash      Avtar ID (data SHA-1 hash)
- * @param   {object}    data      Avtar data
- * @param   {object}   [error]    Error data if any
- */
-function xows_cli_avat_fetch_data_parse(from, hash, data, error)
-{
-  // Retreive Peer (Contact or Occupant) related to this query
-  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
-  if(!peer) {
-    xows_log(1,"cli_avat_data_parse","unknown/unsubscribed JID",from);
-    return;
-  }
-
-  let fallback = false;
-
-  // get stack entry for this peer
-  if(!xows_cli_avat_parse_stk.has(hash)) {
-    xows_log(1,"cli_pep_avat_data_parse","invalid data",from);
-    fallback = true;
-  }
-
-  // Get metadata info (file type) and delete entry
-  const type = xows_cli_avat_parse_stk.get(hash);
-  xows_cli_avat_parse_stk.delete(hash);
-
-  if(error) {
-    xows_log(1,"cli_pep_avat_data_parse","error result",from);
-    fallback = true;
-  }
-
-  if(fallback) {
-    // As fallback, try to get avatar from Vcard
-    xows_cli_vcdt_peer_fetch(peer);
-    return;
-  }
-
-  // Compose data-URL and add data to cache
-  xows_cach_avat_save("data:"+type+";base64,"+data, hash);
-
-  // Set new avatar
-  peer.avat = hash;
-
-  xows_log(2,"cli_pep_avat_data_parse","data fetched",from);
-
-  if(peer.load & XOWS_FETCH_AVAT) {
-    xows_load_task_done(peer, XOWS_FETCH_AVAT);
-  } else {
-    xows_cli_peer_push(peer, XOWS_PUSH_AVAT);
-  }
-
-  // Allow new avatar fetch
-  xows_cli_avat_fetch_fetch_stk.delete(peer);
-}
-
-/**
- * Handles received PEP User Avatar (XEP-0084) Metadata query result
- * or notification (forwarded from XMPP Module).
- *
- * @param   {string}    from      Query result Sender JID
- * @param   {object}    item      Received PupSub item content (<metadata> Node)
- * @param   {object}   [error]    Error data if any
- */
-function xows_cli_avat_fetch_meta_parse(from, item, error)
-{
-  // Retreive Peer (Contact or Occupant) related to this query
-  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
-  if(!peer) {
-    xows_log(1,"cli_pep_avat_meta_parse","unknown/unsubscribed JID",from);
-    return;
-  }
-
-  let info = null;
-  if(item)
-    // Notice, the <info> node may be missing if no Avatar available
-    info = item.querySelector("info");
-
-  let fallback = false;
-
-  if(error) {
-    xows_log(1,"cli_pep_avat_meta_parse","error result",peer.addr);
-    fallback = true;
-  } else if(!info) {
-    xows_log(1,"cli_pep_avat_meta_parse","avatar unavailable",peer.addr);
-    fallback = true;
-  }
-
-  if(fallback) {
-
-    // If option is set and if missing Avatar is ours
-    // Generate a temporary Avatar and publish it
-    if(xows_options.cli_avat_autopub && peer === xows_cli_self) {
-
-      // Generate temporary avatar data
-      const data = xows_cach_avat_temp_data(peer.addr, null);
-
-      // Save temp avatar as real avatar and get proper hash value
-      peer.avat = xows_cach_avat_save(data);
-
-      xows_log(1,"cli_pep_avat_meta_parse","publish own default (generated) avatar");
-
-      // Publish this avatar
-      xows_cli_pep_avatdata_self_publ(data, "open");
-
-      // Set Peer avatar as loaded
-      if(peer.load & XOWS_FETCH_AVAT)
-        xows_load_task_done(peer, XOWS_FETCH_AVAT);
-
-      // Allow new avatar fetch
-      xows_cli_avat_fetch_fetch_stk.delete(peer);
-
-      return;
-    }
-
-    // As fallback, try to get avatar from Vcard
-    xows_cli_vcdt_peer_fetch(peer);
-
-    return;
-  }
-
-  // We only need id (data Hash) and type
-  const hash = info.getAttribute("id");
-  const type = info.getAttribute("type");
-
-  // Check whether we need to donwload data
-  if(xows_cach_avat_has(hash)) {
-
-    xows_log(2,"cli_pep_avat_meta_parse","cached data",peer.addr);
-
-    // Set Peer avatar
-    peer.avat = hash;
-
-    if(peer.load & XOWS_FETCH_AVAT) {
-      xows_load_task_done(peer, XOWS_FETCH_AVAT);
-    } else {
-      xows_cli_peer_push(peer, XOWS_PUSH_AVAT);
-    }
-
-  } else {
-
-    xows_log(2,"cli_pep_avat_meta_parse","fetch data",peer.addr);
-
-    // add new stack entry for this peer
-    xows_cli_avat_parse_stk.set(hash, type);
-    // Query for Avatar Data
-    xows_xmp_avat_data_get_query(peer.addr, hash, xows_cli_avat_fetch_data_parse);
-  }
-}
-
-/**
- * Stack for per-Peer PEP User Avatar (XEP-0084) fetching process.
- */
-const xows_cli_avat_fetch_fetch_stk = new Map();
-
-/**
- * Fetch Avatar for the specified Peer (or user itself)
- *
- * This function starts an Avatar fetching process that is not limited to PEP
- * User Avatar (XEP-0084). It first send a query for PEP User Avatar then
- * fallbacks to query vCard-temp if no avatar can be retreived via PEP.
- *
- * @param   {string}    peer     Peer object
- */
-function xows_cli_avat_fetch_fetch(peer)
-{
-  if(xows_cli_avat_fetch_fetch_stk.has(peer)) {
-
-    xows_log(1,"cli_avat_fetch","peer already in stack",peer.addr);
-
-    if(peer.load & XOWS_FETCH_AVAT)
-      xows_load_task_done(peer, XOWS_FETCH_AVAT);
-
-    return;
-  }
-
-  // Create dummy entry to prevent multiple query
-  xows_cli_avat_fetch_fetch_stk.set(peer, peer);
-
-  // We start by querying XEP-0084 Avatar Meta-Data
-  xows_xmp_avat_meta_get_query(peer.addr, xows_cli_avat_fetch_meta_parse);
-}
-
-/**
- * Stored temporary parameters for PEP User Avatar (XEP-0084) publication
- */
-const xows_cli_pep_avat_self_publ_param = {daturi:null,onpubl:null};
-
-/**
- * Publish user (own) PEP User Avatar (XEP-0084) Data and Metadat according
- * current defined Avatar.
- *
- * @param   {function}   [onpubl]   Callback for publication result
- */
-function xows_cli_pep_avatdata_self_publ(onpubl)
-{
-  let daturi;
-  if(xows_cli_self.avat) {
-    daturi = xows_cach_avat_get(xows_cli_self.avat);
-  } else {
-    // Disable avatar
-    xows_xmp_avat_meta_publish(null, null, null, null, null, onpubl);
-    return;
-  }
-
-  // Store parameters for MetaData publication
-  const param = xows_cli_pep_avat_self_publ_param;
-  param.daturi = daturi;
-  param.onpubl = onpubl;
-
-  // Get avatar Base64 data and create binary hash value
-  const base64 = xows_uri_to_data(daturi);
-  const binary = xows_b64_to_bytes(base64);
-  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
-
-  // Publish data, the onparse function is set to send metadata
-  xows_xmp_avat_data_publish(hash, base64, xows_cli_pep_avatmeta_self_publ);
-}
-
-/**
- * Handles PEP User Avatar (XEP-0084) Data query result then
- * publish corresponding Metadata.
- *
- * This function is used for the PEP User Avatar publication process, has
- * few utility outside this automated process and should not be called
- * alone outside this context.
- *
- * @param   {string}    from      Query result Sender JID
- * @param   {string}    type      Query result type
- * @param   {object}    error     Query error data if any
- */
-function xows_cli_pep_avatmeta_self_publ(from, type, error)
-{
-  // If data publish succeed, follow by sending meta-data
-  if(type !== "result") {
-    xows_log(1,"cli_pep_avat_meta_publ","data publication error");
-    return;
-  }
-
-  // Get stored params
-  const param = xows_cli_pep_avat_self_publ_param;
-
-  // Get image binary data and create hash value
-  const base64 = xows_uri_to_data(param.daturi);
-  const binary = xows_b64_to_bytes(base64);
-  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
-
-  xows_xmp_avat_meta_publish(hash, xows_uri_to_type(param.daturi), binary.length,
-                             XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, param.onpubl);
-}
-
-/**
- * Disables (removes) user (onw) PEP User Avatar (XEP-0084)
- *
- * This function also send updated presence to advert Avatar changes.
- */
-function xows_cli_avat_fetch_disable()
-{
-  xows_xmp_avat_meta_publish(null);
-  xows_cli_self.avat = null;
-
-  // Advert removed avatar
-  xows_cli_pres_update(XOWS_PUSH_AVAT);
 }
 
 /* ---------------------------------------------------------------------------
@@ -3577,6 +3216,300 @@ function xows_cli_pep_book_fetch()
 {
   xows_xmp_bookmark_get_query(xows_cli_pep_book_parse);
 }
+
+/* ---------------------------------------------------------------------------
+ *
+ * Avatar Related routines
+ *
+ * ---------------------------------------------------------------------------*/
+/**
+ * Constant size for generated Avatars
+ */
+const XOWS_AVAT_SIZE  = 48;
+
+/**
+ * Stored temporary parameters for PEP User Avatar (XEP-0084) publication
+ */
+const xows_cli_avat_publ_param = {daturi:null,onpubl:null};
+
+/**
+ * Publish user (own) PEP User Avatar (XEP-0084) Data and Metadat according
+ * current defined Avatar.
+ *
+ * @param   {function}   [onpubl]   Callback for publication result
+ */
+function xows_cli_avat_data_publ(onpubl)
+{
+  let daturi;
+  if(xows_cli_self.avat) {
+    daturi = xows_cach_avat_get(xows_cli_self.avat);
+  } else {
+    // Disable avatar
+    xows_xmp_avat_meta_publish(null, null, null, null, null, onpubl);
+    return;
+  }
+
+  // Store parameters for MetaData publication
+  const param = xows_cli_avat_publ_param;
+  param.daturi = daturi;
+  param.onpubl = onpubl;
+
+  // Get avatar Base64 data and create binary hash value
+  const base64 = xows_uri_to_data(daturi);
+  const binary = xows_b64_to_bytes(base64);
+  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
+
+  // Publish data, the onparse function is set to send metadata
+  xows_xmp_avat_data_publish(hash, base64, xows_cli_avat_meta_publ);
+}
+
+/**
+ * Handles PEP User Avatar (XEP-0084) Data query result then
+ * publish corresponding Metadata.
+ *
+ * This function is used for the PEP User Avatar publication process, has
+ * few utility outside this automated process and should not be called
+ * alone outside this context.
+ *
+ * @param   {string}    from      Query result Sender JID
+ * @param   {string}    type      Query result type
+ * @param   {object}    error     Query error data if any
+ */
+function xows_cli_avat_meta_publ(from, type, error)
+{
+  // If data publish succeed, follow by sending meta-data
+  if(type !== "result") {
+    xows_log(1,"cli_pep_avat_meta_publ","data publication error");
+    return;
+  }
+
+  // Get stored params
+  const param = xows_cli_avat_publ_param;
+
+  // Get image binary data and create hash value
+  const base64 = xows_uri_to_data(param.daturi);
+  const binary = xows_b64_to_bytes(base64);
+  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
+
+  xows_xmp_avat_meta_publish(hash, xows_uri_to_type(param.daturi), binary.length,
+                             XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, param.onpubl);
+}
+
+/**
+ * Stack for Avatar Fetch processing
+ */
+const xows_cli_avat_fetch_stk = [];
+
+/**
+ * Fetch Avatar for the specified Peer
+ *
+ * Starts the Avatar fetch round-trip for the specified Peer
+ *
+ * @param   {object}    peer    Peer object.
+ */
+function xows_cli_avat_fetch(peer)
+{
+  if(xows_cli_avat_fetch_stk.includes(peer))
+    return;
+
+  xows_cli_avat_fetch_stk.push(peer);
+
+  xows_xmp_avat_meta_get_query(peer.addr, xows_cli_avat_meta_parse);
+}
+
+/**
+ * Avatar fetch processing end point.
+ *
+ * This function is part of the automated Avatar fetch round-trip processing.
+ *
+ * @param   {object}    peer      Peer object
+ * @param   {string}    hash      Avtar ID (data SHA-1 hash)
+ */
+function xows_cli_avat_fetch_done(peer, hash)
+{
+  // Set Peer avatar
+  peer.avat = hash;
+
+  let i = xows_cli_avat_fetch_stk.indexOf(peer);
+  xows_cli_avat_fetch_stk.splice(i, 1);
+
+  if(peer.load & XOWS_FETCH_AVAT) {
+    xows_load_task_done(peer, XOWS_FETCH_AVAT);
+  } else {
+    xows_cli_peer_push(peer, XOWS_PUSH_AVAT);
+  }
+}
+
+/**
+ * Handles parsed result of vCard-Temp (XEP-0054) query for Avatar.
+ *
+ * This function is part of the automated Avatar fetch round-trip processing.
+ *
+ * @param   {string}    from      Query result Sender JID
+ * @param   {object}    vcard     vCard element
+ * @param   {object}   [error]    Error data if any
+ */
+function xows_cli_avat_vcdt_parse(from, vcard, error)
+{
+  // Retreive Peer (Contact or Occupant) related to this query
+  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
+  if(!peer) {
+    xows_log(1,"cli_avat_fetch2_vcdt_parse","unknown/unsubscribed JID",from);
+    return;
+  }
+
+  let hash = null;
+
+  if(error) {
+    xows_log(1,"cli_avat_fetch2_vcdt_parse","error parsing vcard",from);
+  } else {
+    // We are only interested in avatar
+    const photo = vcard.querySelector("PHOTO");
+    if(photo) {
+      // It happen that PHOTO node is empty...
+      const type = photo.querySelector("TYPE");
+      const binv = photo.querySelector("BINVAL");
+      if(type && binv) {
+        // create proper data-url string
+        hash = xows_cach_avat_save("data:"+xows_xml_innertext(type)+";base64,"+xows_xml_innertext(binv));
+        xows_log(2,"cli_avat_fetch2_vcdt_parse","Set avatar from photo",hash);
+      } else {
+        xows_log(2,"cli_avat_fetch2_vcdt_parse","No photo");
+      }
+    }
+  }
+
+  xows_cli_avat_fetch_done(peer, hash);
+}
+
+/**
+ * Handles received PEP User Avatar (XEP-0084) Metadata query result for .
+ *
+ * This function is part of the automated Avatar fetch round-trip processing.
+ *
+ * @param   {string}    from      Query result Sender JID
+ * @param   {object}    item      Received PupSub item content (<metadata> Node)
+ * @param   {object}   [error]    Error data if any
+ */
+function xows_cli_avat_meta_parse(from, item, error)
+{
+  // Retreive Peer (Contact or Occupant) related to this query
+  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
+  if(!peer) {
+    xows_log(1,"cli_avat_pepmeta_parse","unknown/unsubscribed JID",from);
+    return;
+  }
+
+  // The <info> node may be missing if no Avatar available
+  let info = null;
+  if(item) info = item.querySelector("info");
+
+  let fallback = false;
+
+  if(error) {
+    xows_log(1,"cli_avat_pepmeta_parse","error result",peer.addr);
+    fallback = true;
+  } else if(!info) {
+    xows_log(1,"cli_avat_pepmeta_parse","avatar unavailable",peer.addr);
+    fallback = true;
+  }
+
+  if(fallback) {
+
+    // If option is set and if missing Avatar is ours
+    // Generate a temporary Avatar and publish it
+    if(xows_options.cli_avat_autopub && peer === xows_cli_self) {
+
+      // Generate temporary avatar data
+      const data = xows_cach_avat_temp_data(peer.addr, null);
+
+      xows_log(1,"cli_avat_pepmeta_parse","publish own default (generated) avatar");
+
+      // Save temp avatar as real avatar and get proper hash value
+      xows_cli_avat_fetch_done(peer, xows_cach_avat_save(data));
+
+      // Publish this avatar
+      xows_cli_avat_data_publ();
+
+      return;
+    }
+
+    // We fallback only if we are in Avatar Fetch processing
+    if(xows_cli_avat_fetch_stk.includes(peer)) {
+      xows_xmp_vcardt_get_query(peer.addr, xows_cli_avat_vcdt_parse);
+    } else {
+      xows_cli_avat_fetch_done(peer, null);
+    }
+    return;
+  }
+
+  // We only need id (data Hash) and type
+  const hash = info.getAttribute("id");
+
+  // Check whether we need to donwload data
+  if(xows_cach_avat_has(hash)) {
+
+    xows_log(2,"cli_avat_pepmeta_parse","Cached data",peer.addr);
+
+    xows_cli_avat_fetch_done(peer, hash);
+
+  } else {
+
+    xows_log(2,"cli_avat_pepmeta_parse","Fetching data",peer.addr);
+
+    // Add new stack entry for this hash
+    xows_cli_avat_data_stk.set(hash, info.getAttribute("type"));
+
+    // Query for Avatar Data
+    xows_xmp_avat_data_get_query(peer.addr, hash, xows_cli_avat_data_parse);
+  }
+}
+
+/**
+ * Stack for per-Peer PEP User Avatar (XEP-0084) fetching process.
+ */
+const xows_cli_avat_data_stk = new Map();
+
+/**
+ * Handles parsed result of PEP User Avatar (XEP-0084) Data query.
+ *
+ * This function is part of the automated Avatar fetch round-trip processing.
+ *
+ * @param   {string}    from      Query result Sender JID
+ * @param   {string}    hash      Avtar ID (data SHA-1 hash)
+ * @param   {string}    data      Avtar data
+ * @param   {object}   [error]    Error data if any
+ */
+function xows_cli_avat_data_parse(from, hash, data, error)
+{
+  // Retreive Peer (Contact or Occupant) related to this query
+  const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
+  if(!peer) {
+    xows_log(1,"cli_avat_fetch2_data_parse","unknown/unsubscribed JID",from);
+    return;
+  }
+
+  // Retreive MetaData file type and delete entry
+  const type = xows_cli_avat_data_stk.get(hash);
+  xows_cli_avat_data_stk.delete(hash);
+
+  if(error) {
+    xows_log(1,"cli_avat_fetch2_data_parse","error result",from);
+    // We fallback only if we are in Avatar Fetch processing
+    if(xows_cli_avat_fetch_stk.includes(peer)) {
+      xows_xmp_vcardt_get_query(peer.addr, xows_cli_avat_vcdt_parse);
+    } else {
+      xows_cli_avat_fetch_done(peer, null);
+    }
+    return;
+  }
+
+  // Compose data-URL and add data to cache
+  xows_cach_avat_save("data:"+type+";base64,"+data, hash);
+
+  xows_cli_avat_fetch_done(peer, hash);
+}
+
 
 /* ---------------------------------------------------------------------------
  *
