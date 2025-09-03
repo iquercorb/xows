@@ -45,7 +45,7 @@
  * Global application constants
  */
 const XOWS_APP_NAME = "Xows";
-const XOWS_APP_VERS = "0.9.9b";
+const XOWS_APP_VERS = "0.9.9c";
 const XOWS_APP_NODE = "https://github.com/iquercorb/xows";
 
 /**
