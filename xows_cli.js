@@ -1215,7 +1215,7 @@ function xows_cli_cnx_resume(start = false)
   if(!start) {
 
     // Output log
-    xows_log(2,"cli_resume","stop resume process");
+    xows_log(2,"cli_cnx_resume","stop resume process");
 
     // Reset pending timeouts
     if(xows_cli_cnx_resume_pnd) {
@@ -1234,12 +1234,12 @@ function xows_cli_cnx_resume(start = false)
 
   if(!xows_cli_cnx_resume_pnd) {
     // Output log
-    xows_log(2,"cli_resume","start resume process");
+    xows_log(2,"cli_cnx_resume","start resume process");
     xows_cli_cnx_resume_pnd = setTimeout(xows_cli_cnx_timeout, xows_options.resume_timeout*(1000*60));
   }
 
   // Output log
-  xows_log(2,"cli_resume","attempt to reconnect in "+xows_options.resume_try_delay+" seconds");
+  xows_log(2,"cli_cnx_resume","attempt to reconnect in "+xows_options.resume_try_delay+" seconds");
 
   if(xows_cli_cnx_resume_hnd) clearTimeout(xows_cli_cnx_resume_hnd);
   xows_cli_cnx_resume_hnd = setTimeout(xows_xmp_resume, xows_options.resume_try_delay*1000);
@@ -1277,7 +1277,7 @@ function xows_cli_cnx_timeout()
  */
 function xows_cli_cnx_close()
 {
-  xows_log(2,"cli_disconnect","prepare disconnect");
+  xows_log(2,"cli_cnx_close","prepare disconnect");
 
   // Terminate all call session
   for(const peer of xows_cli_call_db.keys()) {
@@ -1479,7 +1479,7 @@ function xows_cli_warmup_discitms_host(from, items, error)
 
       const jid = items[i].jid;
 
-      xows_log(2,"cli_init_discoitems_host","discovered item", jid);
+      xows_log(2,"cli_warmup_discitms_host","discovered item", jid);
 
       // Add item to host item list and stack for disco#info
       entity.item.push(jid);
@@ -1557,7 +1557,7 @@ function xows_cli_warmup_extdisc_host(from, svcs, error)
     const type = svcs[i].type;
 
     // Output some logs
-    xows_log(2,"cli_extdisco_parse","discovered external",type+" ("+svcs[i].host+":"+svcs[i].port+")");
+    xows_log(2,"cli_warmup_extdisc_host","discovered external",type+" ("+svcs[i].host+":"+svcs[i].port+")");
 
     // Add external service to list
     xows_cli_extservs.push(svcs[i]);
@@ -1646,7 +1646,7 @@ function xows_cli_warmup_config()
 
   // Fetch for bookmarks
   if(!xows_options.cli_pepnotify_bkms)
-    xows_cli_pep_book_fetch();
+    xows_cli_pep_bkmk_fetch();
 
   // If MUC service available, we take one more step to discover public
   // Rooms and fetching informations about all of them.
@@ -2082,7 +2082,7 @@ function xows_cli_pres_onsubs(from, type, nick)
         xows_cli_fw_contpush(cont, 0x0);
       } else {
         // This should not happen
-        xows_log(1,"cli_xmp_onsubscribe","subscribe revoked from unknow contact",from);
+        xows_log(1,"cli_pres_onsubs","subscribe revoked from unknow contact",from);
       }
     } break;
 
@@ -2094,7 +2094,7 @@ function xows_cli_pres_onsubs(from, type, nick)
         xows_cli_fw_contpush(cont, 0x0);
       } else {
         // This should not happen
-        xows_log(1,"cli_xmp_onsubscribe","request allowed from unknow contact",from);
+        xows_log(1,"cli_pres_onsubs","request allowed from unknow contact",from);
       }
     } break;
 
@@ -2266,7 +2266,7 @@ function xows_cli_msg_onrecv(mesg, error)
   }
 
   if(!peer) {
-    xows_log(1,"cli_xmp_onmessage","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_msg_onrecv","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -2370,7 +2370,7 @@ function xows_cli_msg_onrecp(id, from, to, receipt)
   }
 
   if(!peer) {
-    xows_log(1,"cli_xmp_onreceipt","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_msg_onrecp","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -2413,7 +2413,7 @@ function xows_cli_chst_onrecv(id, from, type, state, ocid)
   }
 
   if(!peer) {
-    xows_log(1,"cli_xmp_onchatstate","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_chst_onrecv","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -2531,7 +2531,7 @@ function xows_cli_msg_onretr(id, from, type, usid)
   }
 
   if(!peer) {
-    xows_log(1,"cli_xmp_onretract","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_msg_onretr","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -2876,7 +2876,7 @@ function xows_cli_vcdt_publ_edit(from, vcard, error)
   const param = xows_cli_vcdt_publ_param;
 
   if(error) {
-    xows_log(1,"cli_vcdt_pub_edit","query onw vCard error",error.name);
+    xows_log(1,"cli_vcdt_publ_edit","query onw vCard error",error.name);
     if(xows_isfunc(param.onpubl))
       param.onpubl(from, "error", error);
     return;
@@ -2930,7 +2930,7 @@ function xows_cli_vcdt_publ_edit(from, vcard, error)
  */
 function xows_cli_msg_onpubs(from, node, items, retrs)
 {
-  xows_log(2,"cli_xmp_onpubsub","received notification",node);
+  xows_log(2,"cli_msg_onpubs","received notification",node);
 
   // Checks for avatar notification
   if(node === XOWS_NS_AVATAR_META) {
@@ -2952,7 +2952,7 @@ function xows_cli_msg_onpubs(from, node, items, retrs)
   if(node === XOWS_NS_BOOKMARKS) {
     if(items.length || retrs.length) {
       // Send to bookmark parsing function
-      xows_cli_pep_book_parse(from, items, retrs);
+      xows_cli_pep_bkmk_parse(from, items, retrs);
     }
   }
 }
@@ -3050,12 +3050,12 @@ function xows_cli_pep_nick_parse(from, item, error)
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
   if(!peer) {
-    xows_log(1,"cli_nick_parse","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_pep_nick_parse","unknown/unsubscribed JID",from);
     return;
   }
 
   if(error) {
-    xows_log(1,"cli_nick_parse","error parse nickname",from);
+    xows_log(1,"cli_pep_nick_parse","error parse nickname",from);
   } else {
     // nickname may be empty string, in this case we keep the
     // automatically generated one
@@ -3104,10 +3104,10 @@ function xows_cli_pep_nick_publ(onpubl)
  * @param   {object[]}  items     List of <retract> nodes
  * @param   {object}    error     Error data if any
  */
-function xows_cli_pep_book_parse(from, items, retrs, error)
+function xows_cli_pep_bkmk_parse(from, items, retrs, error)
 {
   if(error) {
-    xows_log(1,"cli_pep_book_parse","bookmarks error result",error.name);
+    xows_log(1,"cli_pep_bkmk_parse","bookmarks error result",error.name);
     return;
   }
 
@@ -3155,7 +3155,7 @@ function xows_cli_pep_book_parse(from, items, retrs, error)
     // Check whether Room already exists
     const room = xows_cli_room_get(addr);
     if(!room) {
-      xows_log(1,"cli_pep_book_parse","bookmark room not found",addr);
+      xows_log(1,"cli_pep_bkmk_parse","bookmark room not found",addr);
       continue;
     }
 
@@ -3175,14 +3175,14 @@ function xows_cli_pep_book_parse(from, items, retrs, error)
  * @param   {string}   [auto]     Optional set auto-join to bookmark
  * @param   {string}   [nick]     Optional alternative preferend nickname
  */
-function xows_cli_pep_book_publ(room, auto, name, nick)
+function xows_cli_pep_bkmk_publ(room, auto, name, nick)
 {
   const mrk_name = name ? name : room.name;
   const mrk_nick = nick ? nick :
                           room.nick ? room.nick :
                                       xows_jid_resc(room.join);
 
-  xows_xmp_bookmark_publish(room.addr, mrk_name, auto, mrk_nick, null);
+  xows_xmp_bkmk_publish(room.addr, mrk_name, auto, mrk_nick, null);
 
   // If bookmarks notify is disabled, force updating Room
   if(!xows_options.cli_pepnotify_bkms) {
@@ -3196,9 +3196,9 @@ function xows_cli_pep_book_publ(room, auto, name, nick)
  *
  * @param   {object}    room      ROOM Peer object
  */
-function xows_cli_pep_book_retr(room)
+function xows_cli_pep_bkmk_retr(room)
 {
-  xows_xmp_bookmark_retract(room.addr);
+  xows_xmp_bkmk_retract(room.addr);
 
   // If bookmarks notify is disabled, force updating Room
   if(!xows_options.cli_pepnotify_bkms) {
@@ -3212,9 +3212,9 @@ function xows_cli_pep_book_retr(room)
  *
  * @param   {string}    peer      Peer object
  */
-function xows_cli_pep_book_fetch()
+function xows_cli_pep_bkmk_fetch()
 {
-  xows_xmp_bookmark_get_query(xows_cli_pep_book_parse);
+  xows_xmp_bkmk_get_query(xows_cli_pep_bkmk_parse);
 }
 
 /* ---------------------------------------------------------------------------
@@ -3230,7 +3230,7 @@ const XOWS_AVAT_SIZE  = 48;
 /**
  * Stored temporary parameters for PEP User Avatar (XEP-0084) publication
  */
-const xows_cli_avat_publ_param = {daturi:null,onpubl:null};
+const xows_cli_avat_publ_param = {hash:null,type:null,blen:null,onpubl:null};
 
 /**
  * Publish user (own) PEP User Avatar (XEP-0084) Data and Metadat according
@@ -3240,9 +3240,9 @@ const xows_cli_avat_publ_param = {daturi:null,onpubl:null};
  */
 function xows_cli_avat_data_publ(onpubl)
 {
-  let daturi;
+  let uri;
   if(xows_cli_self.avat) {
-    daturi = xows_cach_avat_get(xows_cli_self.avat);
+    uri = xows_cach_avat_get(xows_cli_self.avat);
   } else {
     // Disable avatar
     xows_xmp_avat_meta_publish(null, null, null, null, null, onpubl);
@@ -3251,16 +3251,20 @@ function xows_cli_avat_data_publ(onpubl)
 
   // Store parameters for MetaData publication
   const param = xows_cli_avat_publ_param;
-  param.daturi = daturi;
+
+  // Extract image Base64 encoded data
+  const data = xows_uri_to_data(uri);
+
+  // Store image Metadata
+  param.hash = xows_cli_self.avat;
+  param.type = xows_uri_to_type(uri);
+  param.blen = xows_b64_to_bytes(data).length;
+
+  // Store onpubl callback
   param.onpubl = onpubl;
 
-  // Get avatar Base64 data and create binary hash value
-  const base64 = xows_uri_to_data(daturi);
-  const binary = xows_b64_to_bytes(base64);
-  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
-
   // Publish data, the onparse function is set to send metadata
-  xows_xmp_avat_data_publish(hash, base64, xows_cli_avat_meta_publ);
+  xows_xmp_avat_data_publish(param.hash, data, xows_cli_avat_meta_publ);
 }
 
 /**
@@ -3279,19 +3283,14 @@ function xows_cli_avat_meta_publ(from, type, error)
 {
   // If data publish succeed, follow by sending meta-data
   if(type !== "result") {
-    xows_log(1,"cli_pep_avat_meta_publ","data publication error");
+    xows_log(1,"cli_avat_meta_publ","data publication error");
     return;
   }
 
   // Get stored params
   const param = xows_cli_avat_publ_param;
 
-  // Get image binary data and create hash value
-  const base64 = xows_uri_to_data(param.daturi);
-  const binary = xows_b64_to_bytes(base64);
-  const hash = xows_bytes_to_hex(xows_hash_sha1(binary));
-
-  xows_xmp_avat_meta_publish(hash, xows_uri_to_type(param.daturi), binary.length,
+  xows_xmp_avat_meta_publish(param.hash, param.type, param.blen,
                              XOWS_AVAT_SIZE, XOWS_AVAT_SIZE, param.onpubl);
 }
 
@@ -3354,14 +3353,14 @@ function xows_cli_avat_vcdt_parse(from, vcard, error)
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
   if(!peer) {
-    xows_log(1,"cli_avat_fetch2_vcdt_parse","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_avat_vcdt_parse","unknown/unsubscribed JID",from);
     return;
   }
 
   let hash = null;
 
   if(error) {
-    xows_log(1,"cli_avat_fetch2_vcdt_parse","error parsing vcard",from);
+    xows_log(1,"cli_avat_vcdt_parse","error parsing vcard",from);
   } else {
     // We are only interested in avatar
     const photo = vcard.querySelector("PHOTO");
@@ -3372,9 +3371,9 @@ function xows_cli_avat_vcdt_parse(from, vcard, error)
       if(type && binv) {
         // create proper data-url string
         hash = xows_cach_avat_save("data:"+xows_xml_innertext(type)+";base64,"+xows_xml_innertext(binv));
-        xows_log(2,"cli_avat_fetch2_vcdt_parse","Set avatar from photo",hash);
+        xows_log(2,"cli_avat_vcdt_parse","Set avatar from photo",hash);
       } else {
-        xows_log(2,"cli_avat_fetch2_vcdt_parse","No photo");
+        xows_log(2,"cli_avat_vcdt_parse","No photo");
       }
     }
   }
@@ -3396,7 +3395,7 @@ function xows_cli_avat_meta_parse(from, item, error)
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
   if(!peer) {
-    xows_log(1,"cli_avat_pepmeta_parse","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_avat_meta_parse","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -3407,10 +3406,10 @@ function xows_cli_avat_meta_parse(from, item, error)
   let fallback = false;
 
   if(error) {
-    xows_log(1,"cli_avat_pepmeta_parse","error result",peer.addr);
+    xows_log(1,"cli_avat_meta_parse","error result",peer.addr);
     fallback = true;
   } else if(!info) {
-    xows_log(1,"cli_avat_pepmeta_parse","avatar unavailable",peer.addr);
+    xows_log(1,"cli_avat_meta_parse","avatar unavailable",peer.addr);
     fallback = true;
   }
 
@@ -3420,10 +3419,10 @@ function xows_cli_avat_meta_parse(from, item, error)
     // Generate a temporary Avatar and publish it
     if(xows_options.cli_avat_autopub && peer === xows_cli_self) {
 
+      xows_log(1,"cli_avat_meta_parse","publish own default (generated) avatar");
+
       // Generate temporary avatar data
       const data = xows_cach_avat_temp_data(peer.addr, null);
-
-      xows_log(1,"cli_avat_pepmeta_parse","publish own default (generated) avatar");
 
       // Save temp avatar as real avatar and get proper hash value
       xows_cli_avat_fetch_done(peer, xows_cach_avat_save(data));
@@ -3449,13 +3448,13 @@ function xows_cli_avat_meta_parse(from, item, error)
   // Check whether we need to donwload data
   if(xows_cach_avat_has(hash)) {
 
-    xows_log(2,"cli_avat_pepmeta_parse","Cached data",peer.addr);
+    xows_log(2,"cli_avat_meta_parse","Cached data",peer.addr);
 
     xows_cli_avat_fetch_done(peer, hash);
 
   } else {
 
-    xows_log(2,"cli_avat_pepmeta_parse","Fetching data",peer.addr);
+    xows_log(2,"cli_avat_meta_parse","Fetching data",peer.addr);
 
     // Add new stack entry for this hash
     xows_cli_avat_data_stk.set(hash, info.getAttribute("type"));
@@ -3485,7 +3484,7 @@ function xows_cli_avat_data_parse(from, hash, data, error)
   // Retreive Peer (Contact or Occupant) related to this query
   const peer = xows_cli_peer_get(from, XOWS_PEER_CONT|XOWS_PEER_OCCU);
   if(!peer) {
-    xows_log(1,"cli_avat_fetch2_data_parse","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_avat_data_parse","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -3494,7 +3493,7 @@ function xows_cli_avat_data_parse(from, hash, data, error)
   xows_cli_avat_data_stk.delete(hash);
 
   if(error) {
-    xows_log(1,"cli_avat_fetch2_data_parse","error result",from);
+    xows_log(1,"cli_avat_data_parse","error result",from);
     // We fallback only if we are in Avatar Fetch processing
     if(xows_cli_avat_fetch_stk.includes(peer)) {
       xows_xmp_vcardt_get_query(peer.addr, xows_cli_avat_vcdt_parse);
@@ -3538,7 +3537,7 @@ function xows_cli_mam_fetch_parse(from, bare, result, count, complete)
   // Retreive Peer related to this query
   const peer = xows_cli_peer_get(from ? from : bare, XOWS_PEER_ANY);
   if(!peer) {
-    xows_log(1,"cli_mam_collect","unknown/unsubscribed JID",from ? from : bare);
+    xows_log(1,"cli_mam_fetch_parse","unknown/unsubscribed JID",from ? from : bare);
     return;
   }
 
@@ -3569,7 +3568,7 @@ function xows_cli_mam_fetch_parse(from, bare, result, count, complete)
   // Get history pull params
   const param = xows_cli_mam_fetch_param.get(peer);
   if(!param) {
-    xows_log(1,"cli_mam_collect","unexpected MAM result",from ? from : bare);
+    xows_log(1,"cli_mam_fetch_parse","unexpected MAM result",from ? from : bare);
     return;
   }
 
@@ -3612,7 +3611,7 @@ function xows_cli_mam_fetch_parse(from, bare, result, count, complete)
     }
   }
 
-  xows_log(2,"cli_mam_collect",visibles+" gathered messages for", peer.addr);
+  xows_log(2,"cli_mam_fetch_parse",visibles+" gathered messages for", peer.addr);
 
   if(xows_isfunc(param.onresult))
     param.onresult(peer, (param.start !== null), pool, visibles, complete);
@@ -4041,7 +4040,7 @@ function xows_cli_muc_list_query(ondisco)
 {
   // Verify the server provide MUC service
   if(!xows_cli_services.has(XOWS_NS_MUC)) {
-    xows_log(1,"cli_muc_discoitems_query","aborted","no MUC service available");
+    xows_log(1,"cli_muc_list_query","aborted","no MUC service available");
     return;
   }
 
@@ -4160,7 +4159,7 @@ function xows_cli_muc_nick_parse(from, nick, error)
   // Get room object (should exist)
   let room = xows_cli_room_get(from);
   if(!room) {
-    xows_log(1,"cli_muc_join_nick_result","unknown/unsubscribed Room",from);
+    xows_log(1,"cli_muc_nick_parse","unknown/unsubscribed Room",from);
     return;
   }
 
@@ -4516,7 +4515,7 @@ function xows_cli_muc_onnoti(id, from, codes)
 {
   const room = xows_cli_room_get(from);
   if(!room) {
-    xows_log(1,"cli_xmp_onsubject","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_muc_onnoti","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -4546,7 +4545,7 @@ function xows_cli_muc_onsubj(id, from, subj)
 {
   const room = xows_cli_room_get(from);
   if(!room) {
-    xows_log(1,"cli_xmp_onsubject","unknown/unsubscribed JID",from);
+    xows_log(1,"cli_muc_onsubj","unknown/unsubscribed JID",from);
     return;
   }
 
@@ -4762,7 +4761,7 @@ function xows_cli_muc_regi_set_result(from, type, error)
   // Retreive the contact related to this query
   const room = xows_cli_room_get(from);
   if(!room) {
-    xows_log(1,"cli_muc_register_parse","unknown/unsubscribed Room",from);
+    xows_log(1,"cli_muc_regi_set_result","unknown/unsubscribed Room",from);
     return;
   }
 
