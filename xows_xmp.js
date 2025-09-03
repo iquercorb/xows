@@ -601,7 +601,7 @@ function xows_xmp_send(stanza, onresult, onparse)
 
   } else {
 
-    xows_log(2,"xows_xmp_send","enqueue stanza");
+    xows_log(2,"xmp_send","enqueue stanza");
 
     // Add timestamp for delayed delivery
     const stamp = new Date().toISOString();
@@ -661,11 +661,11 @@ function xows_xmp_send_raw(stanza, onresult, onparse)
 function xows_xmp_flush()
 {
   if(!xows_sck_sock) {
-    xows_log(0,"xmp_send_raw","socket is closed");
+    xows_log(0,"xmp_flush","socket is closed");
     return;
   }
 
-  xows_log(2,"xows_xmp_flush","flushing stanzas queue");
+  xows_log(2,"xmp_flush","flushing stanzas queue");
 
   while(xows_xmp_send_que.length)
     // Send serialized data to socket
@@ -3421,7 +3421,7 @@ const XOWS_NS_BOOKMARKS = "urn:xmpp:bookmarks:1";
  * @param   {string}    nick      Room prefered nick
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_bookmark_publish(jid, name, auto, nick, onparse)
+function xows_xmp_bkmk_publish(jid, name, auto, nick, onparse)
 {
   // The <conference> node
   const conference = xows_xml_node("conference",{"xmlns":XOWS_NS_BOOKMARKS,"name":name,"autojoin":auto});
@@ -3444,7 +3444,7 @@ function xows_xmp_bookmark_publish(jid, name, auto, nick, onparse)
  * @param   {string}    jid       Bookmark Room JID
  * @param   {function} [onparse]  Optional callback to receive query result
  */
-function xows_xmp_bookmark_retract(jid, onparse)
+function xows_xmp_bkmk_retract(jid, onparse)
 {
   xows_xmp_pubsub_retract(XOWS_NS_BOOKMARKS, jid, onparse);
 }
@@ -3455,7 +3455,7 @@ function xows_xmp_bookmark_retract(jid, onparse)
  * @param   {element}   stanza    Received <iq> stanza
  * @param   {function}  onparse   Callback for parsed result forwarding
  */
-function xows_xmp_bookmark_get_parse(stanza, onparse)
+function xows_xmp_bkmk_get_parse(stanza, onparse)
 {
   const type = stanza.getAttribute("type");
 
@@ -3470,7 +3470,7 @@ function xows_xmp_bookmark_get_parse(stanza, onparse)
   const itemls = [];
 
   if(type === "error") {
-    xows_xmp_error_log(stanza,1,"xmp_nick_get_parse");
+    xows_xmp_error_log(stanza,1,"xmp_bookmark_get_parse");
     error = xows_xmp_error_parse(stanza);
   } else {
     // Get each <item>
@@ -3490,14 +3490,14 @@ function xows_xmp_bookmark_get_parse(stanza, onparse)
  *
  * @param   {function}  onparse   Callback for parsed result forwarding
  */
-function xows_xmp_bookmark_get_query(onparse)
+function xows_xmp_bkmk_get_query(onparse)
 {
   // Create the query
   const iq =  xows_xml_node("iq",{"type":"get"},
                 xows_xml_node("pubsub",{"xmlns":XOWS_NS_PUBSUB},
                   xows_xml_node("items",{"node":XOWS_NS_BOOKMARKS})));
   // Send query
-  xows_xmp_send(iq, xows_xmp_bookmark_get_parse, onparse);
+  xows_xmp_send(iq, xows_xmp_bkmk_get_parse, onparse);
 }
 
 /* ---------------------------------------------------------------------------
@@ -3850,7 +3850,7 @@ function xows_xmp_mam_result_recv(result)
   // Get result queryid
   const qid = result.getAttribute("queryid");
   if(!xows_xmp_mam_stack.has(qid)) {
-    xows_log(1,"xmp_recv_mam_result","unknown queryid for MAM result",qid);
+    xows_log(1,"xmp_mam_result_recv","unknown queryid for MAM result",qid);
     return;
   }
 
@@ -3960,7 +3960,7 @@ function xows_xmp_mam_result_recv(result)
                                                           recp, retr, repl, rpid, rpto,
                                                           orid, szid, ocid, page));
 
-  xows_log(2,"xmp_recv_mam_result","Adding archived message to result stack","from "+from);
+  xows_log(2,"xmp_mam_result_recv","Adding archived message to result stack","from "+from);
 
   return true; //< stanza processed
 }
@@ -5074,7 +5074,7 @@ function xows_xmp_jing_recv(stanza)
       // Convert jingle RTP Session description to SDP string
       data = xows_xmp_jing_jingle2sdp(jingle);
       if(data === null) {
-        xows_log(1,"xmp_recv_jingle","error","RTP to SDP conversion failed");
+        xows_log(1,"xmp_jing_recv","error","RTP to SDP conversion failed");
         // Send back error
         xows_xmp_iq_error_send(id, from, "cancel", "bad-request");
         return;

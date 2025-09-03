@@ -381,7 +381,7 @@ function xows_gui_hist_mesg_retr(peer, usid)
   const li_msg = xows_gui_hist_mesg_find(peer, usid);
 
   if(!li_msg) {
-    xows_log(1,"gui_hist_mesg_retract","retracted message not found",usid);
+    xows_log(1,"gui_hist_mesg_retr","retracted message not found",usid);
     return;
   }
 
@@ -467,7 +467,7 @@ function xows_gui_hist_onrecv(peer, mesg, wait, self, error)
     // Mark message as failed
     if(err_li) err_li.classList.add("MESG-FAIL");
     // Print warning log
-    xows_log(1,"gui_cli_onmessage","message error",error.name);
+    xows_log(1,"gui_hist_onrecv","message error",error.name);
     return;
   }
 
@@ -565,7 +565,7 @@ function xows_gui_hist_onrecp(peer, id)
   if(li_msg) {
     li_msg.classList.add("MESG-RECP");
   } else {
-    xows_log(1,"gui_cli_onreceipt","message not found",id);
+    xows_log(1,"gui_hist_onrecp","message not found",id);
   }
 }
 

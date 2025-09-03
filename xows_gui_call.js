@@ -814,7 +814,7 @@ function xows_gui_call_onerror(peer, internal, error)
 
     // Ignore unsuported-info error since it is not critital
     if(error.jing === "unsupported-info") {
-      xows_log(1,"cli_jing_parse","received unsuported info from",peer.addr);
+      xows_log(1,"gui_call_onerror","received unsuported info from",peer.addr);
       return;
     }
 

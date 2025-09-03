@@ -508,7 +508,7 @@ function xows_gui_rost_occu_onpush(occu, mask, mucx)
       // The mucx object should embedd an extrea ad-hoc property
       // containing the old occupant address to switch
       if(!mucx.prev) {
-        xows_log(1,"gui_cli_onprivpush","missing previous JID for nickname change");
+        xows_log(1,"gui_rost_occu_onpush","missing previous JID for nickname change");
         return;
       }
 

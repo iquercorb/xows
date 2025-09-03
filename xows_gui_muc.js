@@ -308,7 +308,7 @@ function xows_gui_muc_init_mbox_onvalid()
 {
   const room = xows_gui_muc_init_mbox.room;
 
-  xows_log(2,"gui_room_init_onvalid","request initial Room config",room.addr);
+  xows_log(2,"gui_muc_init_mbox_onvalid","request initial Room config",room.addr);
 
   // Send Room config form request, XMPP server will reply which
   // will automatically opens the Room Configuration page.
@@ -910,7 +910,7 @@ function xows_gui_muc_list_onpush(occu, mask, mucx)
       // The mucx object should embedd an extrea ad-hoc property
       // containing the old occupant address to switch
       if(!mucx.prev) {
-        xows_log(1,"gui_cli_onoccupush","missing previous JID for nickname change");
+        xows_log(1,"gui_muc_list_onpush","missing previous JID for nickname change");
         return;
       }
 
@@ -1293,7 +1293,7 @@ function xows_gui_muc_bkrm_mbox_onabort() {}
 function xows_gui_muc_bkrm_mbox_onvalid()
 {
   // Revoke contact subscription
-  xows_cli_pep_book_retr(xows_gui_muc_bkrm_mbox.room);
+  xows_cli_pep_bkmk_retr(xows_gui_muc_bkrm_mbox.room);
 }
 
 /**
@@ -1339,7 +1339,7 @@ function xows_gui_muc_bkad_mbox_onvalid()
 {
   const param = xows_gui_muc_bkad_mbox;
   // add bookmark
-  xows_cli_pep_book_publ(param.room);
+  xows_cli_pep_bkmk_publ(param.room);
   param.room = null;
 }
 

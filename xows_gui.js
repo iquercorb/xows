@@ -110,7 +110,7 @@ function xows_gui_devs_oninfos(devinfo)
   // Update media infos list
   xows_gui_devs_data = devinfo;
 
-  xows_log(2,"gui_devices_oninfo","received medias infos");
+  xows_log(2,"gui_devs_oninfos","received medias infos");
 
   // Update relevant GUI element
   if(xows_gui_peer)
@@ -241,7 +241,7 @@ function xows_gui_frag_import(slot)
   }
 
   if(!xows_doc_frag_db.has(slot)) {
-    xows_log(1,"gui_peer_frag_import","fragment doesn't exist",slot);
+    xows_log(1,"gui_frag_import","fragment doesn't exist",slot);
     return;
   }
 
@@ -1228,12 +1228,12 @@ function xows_gui_peer_switch_to(addr)
     // Set window title
     xows_gui_wnd_title_set("@" + peer.name + " - XOWS");
     // Some debug log
-    xows_log(2,"gui_switch_peer","peer \""+peer.addr+"\"","selected");
+    xows_log(2,"gui_peer_switch_to","peer \""+peer.addr+"\"","selected");
   }
 
   if(!xows_gui_peer) {
 
-    xows_log(2,"gui_switch_peer","unselect peer");
+    xows_log(2,"gui_peer_switch_to","unselect peer");
 
     // Back to roster view in case of narrow-screen
     xows_gui_layout_rost_view();
@@ -1444,7 +1444,7 @@ function xows_gui_wnd_noti_emit(peer, body)
   if(!peer.noti)
     return;
 
-  xows_log(2,"gui_wnd_noti_emi", peer.name, Notification.permission);
+  xows_log(2,"gui_wnd_noti_emit", peer.name, Notification.permission);
 
   switch(Notification.permission)
   {
@@ -1505,7 +1505,7 @@ function xows_gui_wnd_media_try(constr, onmedia, onabort, payload)
   } else {
 
     if(!param.constr) {
-      xows_log(1,"gui_getmedia_try","invalid usage","constraints not defined");
+      xows_log(1,"gui_wnd_media_try","invalid usage","constraints not defined");
       return;
     }
   }
@@ -1547,7 +1547,7 @@ function xows_gui_wnd_media_onfail(error)
     // This may be a temporary hardware or system error, maybe we can retry
     // to acquire and ask again to user.
 
-    xows_log(1,"gui_getmedia_onfail","input devices access failed",error.name);
+    xows_log(1,"gui_wnd_media_onfail","input devices access failed",error.name);
 
     // Opend message dialog
     xows_doc_mbox_open(XOWS_STYL_ASK, "Input devices access",
