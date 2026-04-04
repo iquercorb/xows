@@ -56,7 +56,8 @@ function xows_wrtc_gen_credential(name, secret)
 {
   const expire = parseInt(Date.now()/1000) + 24*3600;
   const username = expire+":"+name;
-  const password = xows_bytes_to_b64(xows_hmac_sha1(username, secret));
+  // TURN REST API: password = base64(HMAC-SHA1(secret, username))
+  const password = xows_bytes_to_b64(xows_hmac_sha1(secret, username));
 
   return {"username":username,"password":password};
 }
@@ -110,6 +111,16 @@ function xows_wrtc_onneednego(event)
 
   // Request to create an SDP Offer
   rpc.createOffer().then((rsd) => rpc.setLocalDescription(rsd))
+                   .then(() => {
+                      // Set a fallback timeout: if ICE gathering doesn't
+                      // complete within 5s, send the SDP with what we have.
+                      setTimeout(() => {
+                        if(rpc.iceGatheringState !== "complete") {
+                          xows_log(1,"wrtc_onneednego","ICE gathering timeout, forcing SDP delivery");
+                          xows_wrtc_sdp_deliver(rpc);
+                        }
+                      }, 5000);
+                   })
                    .then(null, (err) => xows_wrtc_onerror(rpc, err));
 }
 
@@ -132,29 +143,72 @@ function xows_wrtc_onicestate(event)
     db.onstate(rpc, rpc.iceGatheringState, db.param);
 
   if(rpc.iceGatheringState === "complete") {
-    // Forward generated local SDP
-    if(xows_isfunc(db.onsdesc))
-      db.onsdesc(rpc, rpc.localDescription.sdp, db.param);
+    xows_wrtc_sdp_deliver(rpc);
   }
+}
+
+/**
+ * Handles WebRTC Peer Connection ICE candidate event.
+ *
+ * When event.candidate is null, ICE gathering is complete. This is a
+ * more reliable signal than onicegatheringstatechange in some browsers.
+ *
+ * @param   {object}      event    RTCPeerConnectionIceEvent object
+ */
+function xows_wrtc_onicecandidate(event)
+{
+  const rpc = event.target;
+
+  if(event.candidate) {
+    xows_log(2,"wrtc_onicecandidate","ICE candidate:",event.candidate.type,event.candidate.protocol,event.candidate.address);
+  } else {
+    xows_log(2,"wrtc_onicecandidate","ICE gathering finished (null candidate)");
+    xows_wrtc_sdp_deliver(rpc);
+  }
+}
+
+/**
+ * Delivers local SDP description to the callback, guarding against
+ * duplicate delivery.
+ *
+ * @param   {object}      rpc       Instance of RTCPeerConnection object
+ */
+function xows_wrtc_sdp_deliver(rpc)
+{
+  const db = xows_wrtc_db.get(rpc);
+  if(!db || db.sdp_sent)
+    return;
+
+  if(!rpc.localDescription || !rpc.localDescription.sdp)
+    return;
+
+  db.sdp_sent = true;
+
+  xows_log(2,"wrtc_sdp_deliver","Forwarding local SDP");
+
+  // Forward generated local SDP
+  if(xows_isfunc(db.onsdesc))
+    db.onsdesc(rpc, rpc.localDescription.sdp, db.param);
 }
 
 /**
  * Handles WebRTC Peer Connection ICE candidate error (forwarded from
  * RTCPeerConnection object)
  *
+ * ICE candidate errors are normal during the gathering process - they
+ * indicate that a specific STUN/TURN server or candidate path failed,
+ * not that the overall connection will fail. The actual connection
+ * failure is detected via onconnectionstatechange going to "failed".
+ *
  *@param   {object}      event    RTCPeerConnectionIceErrorEvent object
  */
 function xows_wrtc_oniceerror(event)
 {
-  const rpc = event.target;
-
-  xows_log(1,"wrtc_oniceerror",event.name);
-
-  const db = xows_wrtc_db.get(rpc);
-
-  // Forward error
-  if(xows_isfunc(db.onerror))
-    db.onerror(rpc, event, db.param);
+  // Log as warning but do NOT forward as fatal error
+  xows_log(1,"wrtc_oniceerror","ICE candidate error:"
+            ,"code=" + event.errorCode
+            ,"url=" + event.url
+            ,"text=" + event.errorText);
 }
 
 /**
@@ -218,7 +272,16 @@ function xows_wrtc_new(icelist, onsdesc, ontrack, onstate, onerror, param)
   const iceservers = [];
 
   for(let i = 0; i < icelist.length; ++i) {
-    const ice = {urls:icelist[i].type+":"+icelist[i].host+":"+icelist[i].port};
+
+    // Build proper ICE server URL
+    // STUN format: stun:host[:port]
+    // TURN format: turn:host[:port][?transport=udp|tcp]
+    let url = icelist[i].type+":"+icelist[i].host;
+    if(icelist[i].port) url += ":"+icelist[i].port;
+    if(icelist[i].transport && icelist[i].type.startsWith("turn"))
+      url += "?transport="+icelist[i].transport;
+
+    const ice = {urls:url};
     xows_log(2,"xows_wrtc_new","using ICE",ice.urls);
     // Check whether we need to generate credentials
     if(icelist[i].secret) {
@@ -239,9 +302,10 @@ function xows_wrtc_new(icelist, onsdesc, ontrack, onstate, onerror, param)
   rpc.onnegotiationneeded = xows_wrtc_onneednego;
   rpc.onconnectionstatechange = xows_wrtc_oncnxstate;
   rpc.onicegatheringstatechange = xows_wrtc_onicestate;
+  rpc.onicecandidate = xows_wrtc_onicecandidate;
   rpc.onicecandidateerror = xows_wrtc_oniceerror;
 
-  xows_wrtc_db.set(rpc,{"onerror":onerror,"onstate":onstate,"onsdesc":onsdesc,"ontrack":ontrack,"param":param});
+  xows_wrtc_db.set(rpc,{"onerror":onerror,"onstate":onstate,"onsdesc":onsdesc,"ontrack":ontrack,"param":param,"sdp_sent":false});
 
   return rpc;
 }
@@ -279,6 +343,15 @@ function xows_wrtc_set_local_stream(rpc, stream)
 
     // Request to create an SDP Answer
     rpc.createAnswer().then((rsd) => rpc.setLocalDescription(rsd))
+                      .then(() => {
+                        // Fallback timeout for answer ICE gathering
+                        setTimeout(() => {
+                          if(rpc.iceGatheringState !== "complete") {
+                            xows_log(1,"wrtc_local_stream","ICE gathering timeout (answer), forcing SDP delivery");
+                            xows_wrtc_sdp_deliver(rpc);
+                          }
+                        }, 5000);
+                      })
                       .then(null, (err) => xows_wrtc_onerror(rpc, err));
   }
 

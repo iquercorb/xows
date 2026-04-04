@@ -258,18 +258,27 @@ function xows_gui_call_view_part_add(peer, part, stream)
   let element;
   let media = call_grid.querySelector("[data-part='"+part.addr+"']");
   if(media) {
-    // Simply update stream
-    media.srcObject = stream;
-    return;
-  } else {
-    // Create <strm-audio> or <strm-video> element from template
-    if(is_video) {
-      element = xows_tpl_spawn_stream_video(part);
-      media = element.querySelector("video");
+    // Check if we need to upgrade from audio to video element
+    const was_video = (media.tagName === "VIDEO");
+    if(is_video && !was_video) {
+      // Remove old audio element and its parent wrapper
+      const old_element = media.closest("strm-audio");
+      if(old_element) old_element.remove();
+      // Fall through to create new video element
     } else {
-      element = xows_tpl_spawn_stream_audio(part);
-      media = element.querySelector("audio");
+      // Simply update stream
+      media.srcObject = stream;
+      return;
     }
+  }
+
+  // Create <strm-audio> or <strm-video> element from template
+  if(is_video) {
+    element = xows_tpl_spawn_stream_video(part);
+    media = element.querySelector("video");
+  } else {
+    element = xows_tpl_spawn_stream_audio(part);
+    media = element.querySelector("audio");
   }
 
   // Mute audio output since it will be managed through AudioContext
@@ -277,9 +286,11 @@ function xows_gui_call_view_part_add(peer, part, stream)
 
   // Set stream to Media element
   if(!part.self) {
-    // Plug media element to 'master' output
-    xows_snd_outpt_new(peer, stream);
-    xows_snd_outpt_gain_set(peer, parseInt(xows_gui_doc(peer,"call_volu").value) / 100);
+    // Plug media element to 'master' output (only if stream has audio)
+    if(stream.getAudioTracks().length) {
+      xows_snd_outpt_new(peer, stream);
+      xows_snd_outpt_gain_set(peer, parseInt(xows_gui_doc(peer,"call_volu").value) / 100);
+    }
     media.srcObject = stream;
     media.autoplay = true;
   } else {
@@ -405,6 +416,10 @@ function xows_gui_hist_ring_show(peer, type, reason)
       case "unsupported-applications":
       case "unsupported-transports":
         text = "The other party encountered error";
+        break;
+
+      case "timeout":
+        text = "No answer from the other party";
         break;
 
       default:
@@ -703,8 +718,11 @@ function xows_gui_call_self_hangup(peer, reason)
  */
 function xows_gui_call_onoffer(peer, stream)
 {
-  // Add remote participant to Call View
-  xows_gui_call_view_part_add(peer, peer, stream);
+  // Add remote participant to Call View (if stream is available;
+  // for JMI propose, stream is null until session-initiate arrives)
+  if(stream) {
+    xows_gui_call_view_part_add(peer, peer, stream);
+  }
 
   // If peer is offscreen during incomming call, add notification
   if(peer !== xows_gui_peer)

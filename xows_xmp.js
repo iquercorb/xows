@@ -123,6 +123,7 @@ function xows_xmp_set_callback(event, callback)
     case "mucsubj":   xows_xmp_fw_muc_onsubj = callback; break;
     case "mucnoti":   xows_xmp_fw_muc_onnoti = callback; break;
     case "jingrecv":  xows_xmp_fw_jing_onecv = callback; break;
+    case "jmsgrecv":  xows_xmp_fw_jmsg_onrecv = callback; break;
     case "error":     xows_xmp_fw_onerror = callback; break;
   }
 }
@@ -1659,6 +1660,17 @@ function xows_xmp_message_recv(stanza)
         */
       }
       continue;
+    }
+
+    // Check for Jingle Message Initiation (XEP-0353)
+    if(xmlns === XOWS_NS_JINGLE_MSG || xmlns === "urn:xmpp:jingle-message:1") {
+      const medias = [];
+      const descs = node.querySelectorAll("description");
+      for(let j = 0; j < descs.length; ++j)
+        medias.push(descs[j].getAttribute("media"));
+      xows_log(2,"xmp_message_recv","JMI message:",tname,"xmlns="+xmlns,"id="+node.getAttribute("id"),"from="+from);
+      xows_xmp_fw_jmsg_onrecv(from, tname, node.getAttribute("id"), medias);
+      return true;
     }
 
     // Check for chat state notification
@@ -4693,11 +4705,17 @@ const XOWS_NS_JINGLE_DTLS  = "urn:xmpp:jingle:apps:dtls:0";           //< XEP-01
 const XOWS_NS_JINGLE_GRP   = "urn:xmpp:jingle:apps:grouping:0";       //< XEP-0166 / XEP-0338
 const XOWS_NS_JINGLE_SSMA  = "urn:xmpp:jingle:apps:rtp:ssma:0";       //< XEP-0166 / XEP-0339
 const XOWS_NS_JINGLE_RTPI  = "urn:xmpp:jingle:apps:rtp:info:1";       //< XEP-0167
+const XOWS_NS_JINGLE_MSG   = "urn:xmpp:jingle-message:0";             //< XEP-0353
 
 /**
  * Module Event-Forwarding callback for Received Jingle IQ
  */
 let xows_xmp_fw_jing_onecv = function() {};
+
+/**
+ * Module Event-Forwarding callback for Received Jingle Message (XEP-0353)
+ */
+let xows_xmp_fw_jmsg_onrecv = function() {};
 
 /* ---------------------------------------------------------------------------
  * Jingle - Session Description Protocol (SDP) conversions
@@ -4740,11 +4758,9 @@ function xows_xmp_jing_jingle2sdp(jingle)
     sdp += "\r\n";
   }
 
-  //a=msid-semantic:WMS *
-  // not implemented
-
-  //a=ice-options:trickle
-  // not handled by jingle
+  // Check for trickle ICE support (standard or Conversations-specific)
+  if(jingle.querySelector("trickle"))
+    sdp += "a=ice-options:trickle\r\n";
 
   // Medias infos from <content> nodes
   const content = jingle.querySelectorAll(":scope > content");
@@ -4756,7 +4772,7 @@ function xows_xmp_jing_jingle2sdp(jingle)
 
     //m=audio 9 UDP/TLS/RTP/SAVPF 109 9 0 8 101
     sdp += "m="+description.getAttribute("media");
-    sdp += fingerprints.length ? " 1 RTP/SAVPF" : " RTP/AVPF";
+    sdp += fingerprints.length ? " 9 UDP/TLS/RTP/SAVPF" : " 9 RTP/AVPF";
 
     const payload_type = description.querySelectorAll("payload-type");
     for(let j = 0; j < payload_type.length; ++j)
@@ -4770,12 +4786,12 @@ function xows_xmp_jing_jingle2sdp(jingle)
     const senders = transport.getAttribute("senders");
     switch(senders)
     {
-    case "both": sdp += "a=sendrecv"; break;
-    case "initiator": sdp += "a=sendonly"; break;
-    case "responder": sdp += "a=recvonly"; break;
-    case "none": sdp += "a=inactive"; break;
+    case "both": sdp += "a=sendrecv\r\n"; break;
+    case "initiator": sdp += "a=sendonly\r\n"; break;
+    case "responder": sdp += "a=recvonly\r\n"; break;
+    case "none": sdp += "a=inactive\r\n"; break;
+    default: sdp += "a=sendrecv\r\n"; break;
     }
-    sdp += "\r\n";
 
     //a=mid:0
     sdp += "a=mid:"+content[i].getAttribute("name")+"\r\n";
@@ -4805,13 +4821,25 @@ function xows_xmp_jing_jingle2sdp(jingle)
       sdp += " "+rtp_hdrext[j].getAttribute("uri")+"\r\n";
     }
 
+    //a=extmap-allow-mixed
+    if(description.querySelector("extmap-allow-mixed"))
+      sdp += "a=extmap-allow-mixed\r\n";
+
     //a=fmtp:97 profile-level-id=42e01f;level-asymmetry-allowed=1
     for(let j = 0; j < payload_type.length; ++j) {
       const parameter = payload_type[j].querySelectorAll("parameter");
       if(parameter.length) {
         sdp += "a=fmtp:"+payload_type[j].getAttribute("id")+" ";
         for(let k = 0; k < parameter.length; ++k) {
-          sdp += parameter[k].getAttribute("name")+"="+parameter[k].getAttribute("value");
+          const pname = parameter[k].getAttribute("name");
+          const pvalue = parameter[k].getAttribute("value");
+          if(pname && pvalue) {
+            sdp += pname+"="+pvalue;
+          } else if(pname) {
+            sdp += pname;
+          } else if(pvalue) {
+            sdp += pvalue;
+          }
           if(k < (parameter.length - 1)) sdp += ";";
         }
         sdp += "\r\n";
@@ -4848,13 +4876,11 @@ function xows_xmp_jing_jingle2sdp(jingle)
     }
 
     //a=ssrc:1815119038 cname:{082af9fe-ac02-43d5-b5b6-069a14fa999f}
-    const source = description.querySelectorAll("source");
+    const source = description.querySelectorAll(":scope > source");
     for(let j = 0; j < source.length; ++j) {
-      sdp += "a=ssrc:"+source[j].getAttribute("ssrc");
-      const parameter = source[j].querySelector("parameter");
-      if(parameter)
-        sdp += " "+parameter.getAttribute("name")+":"+parameter.getAttribute("value");
-      sdp += "\r\n";
+      const params = source[j].querySelectorAll("parameter");
+      for(let k = 0; k < params.length; ++k)
+        sdp += "a=ssrc:"+source[j].getAttribute("ssrc")+" "+params[k].getAttribute("name")+":"+params[k].getAttribute("value")+"\r\n";
     }
 
     //a=ssrc-group:FID 1815119038 3975978373
@@ -4940,8 +4966,17 @@ function xows_xmp_jing_sdp2jingle(sdp)
         const payload_type = description.querySelector("payload-type[id='"+fmt[j].payload+"']");
         if(payload_type) {
           for(let k = 0; k < fmt[j].config.length; ++k) {
-            const param = fmt[j].config[k].split('=');
-            xows_xml_parent(payload_type, xows_xml_node("parameter",{"name":param[0],"value":param[1]}));
+            const eqIdx = fmt[j].config[k].indexOf('=');
+            let pname, pvalue;
+            if(eqIdx !== -1) {
+              pname = fmt[j].config[k].substring(0, eqIdx);
+              pvalue = fmt[j].config[k].substring(eqIdx + 1);
+            } else {
+              // No key=value format (e.g. RED codec "111/111") — use whole string as value
+              pname = "";
+              pvalue = fmt[j].config[k];
+            }
+            xows_xml_parent(payload_type, xows_xml_node("parameter",{"name":pname,"value":pvalue}));
           }
         }
       }
@@ -4971,13 +5006,20 @@ function xows_xmp_jing_sdp2jingle(sdp)
       }
     }
 
-    // add <source> nodes
+    // add <source> nodes, grouping parameters by SSRC (XEP-0339)
     if(sdpjson.media[i].ssrc) {
       const ssrc = sdpjson.media[i].ssrc;
+      const ssrc_map = new Map();
       for(let j = 0; j < ssrc.length; ++j) {
-        // new <source> node with <parameter> into <description>
-        xows_xml_parent(description, xows_xml_node("source",{"xmlns":XOWS_NS_JINGLE_SSMA,"ssrc":ssrc[j].id},
-                                        xows_xml_node("parameter",{"name":ssrc[j].attribute,"value":ssrc[j].value})));
+        if(!ssrc_map.has(ssrc[j].id))
+          ssrc_map.set(ssrc[j].id, []);
+        ssrc_map.get(ssrc[j].id).push(ssrc[j]);
+      }
+      for(const [id, params] of ssrc_map) {
+        const source = xows_xml_node("source",{"xmlns":XOWS_NS_JINGLE_SSMA,"ssrc":id});
+        for(let j = 0; j < params.length; ++j)
+          xows_xml_parent(source, xows_xml_node("parameter",{"name":params[j].attribute,"value":params[j].value}));
+        xows_xml_parent(description, source);
       }
     }
 
@@ -5079,6 +5121,7 @@ function xows_xmp_jing_recv(stanza)
         xows_xmp_iq_error_send(id, from, "cancel", "bad-request");
         return;
       }
+      xows_log(2,"xmp_jing_recv","Generated SDP:\n"+data);
     } break;
 
   case "session-info": {
@@ -5086,6 +5129,35 @@ function xows_xmp_jing_recv(stanza)
       // otherwise this is a session ping
       if(jingle.childNodes.length)
         data = jingle.childNodes[0].tagName;
+    } break;
+
+  case "transport-info": {
+      // Extract ICE candidates from transport-info
+      const content = jingle.querySelector("content");
+      if(content) {
+        const transport = content.querySelector("transport");
+        if(transport) {
+          const candidates = transport.querySelectorAll("candidate");
+          const mid = content.getAttribute("name");
+          const ufrag = transport.getAttribute("ufrag");
+          data = [];
+          for(let i = 0; i < candidates.length; ++i) {
+            const c = candidates[i];
+            let candstr = "candidate:"+c.getAttribute("foundation")
+                        +" "+c.getAttribute("component")
+                        +" "+c.getAttribute("protocol").toUpperCase()
+                        +" "+c.getAttribute("priority")
+                        +" "+c.getAttribute("ip")
+                        +" "+c.getAttribute("port")
+                        +" typ "+c.getAttribute("type");
+            if(c.hasAttribute("rel-addr")) candstr += " raddr "+c.getAttribute("rel-addr");
+            if(c.hasAttribute("rel-port")) candstr += " rport "+c.getAttribute("rel-port");
+            if(c.hasAttribute("generation")) candstr += " generation "+c.getAttribute("generation");
+            if(ufrag) candstr += " ufrag "+ufrag;
+            data.push({"candidate":candstr,"sdpMid":mid,"sdpMLineIndex":0});
+          }
+        }
+      }
     } break;
   }
 
@@ -5130,14 +5202,15 @@ function xows_xmp_jing_parse(stanza, onparse)
  * @parma   {string}    to          Destination JID
  * @parma   {string}    sdp         SDP offer string
  * @param   {function} [onparse]    Optional callback to receive query result
+ * @param   {string}   [sid]        Optional session ID (reuse JMI sid)
  *
  * @return  {string}    Initiated Jingle session ID
  */
-function xows_xmp_jing_initiate_sdp(to, sdp, onparse)
+function xows_xmp_jing_initiate_sdp(to, sdp, onparse, sid)
 {
   // Create <jingle> RTP session from SDP string
   const jingle = xows_xmp_jing_sdp2jingle(sdp);
-  const sid = xows_gen_nonce_asc(16); // xows_sdp_get_sid(sdp);
+  if(!sid) sid = xows_gen_nonce_asc(16);
 
   // Complete <jingle> node with proper attributes
   jingle.setAttribute("initiator",xows_xmp_bind.jful);
@@ -5240,6 +5313,73 @@ function xows_xmp_jing_error(id, to, type, condjing, condxmpp)
 }
 
 /* ---------------------------------------------------------------------------
+ * Jingle Message Initiation (XEP-0353) - Send functions
+ * ---------------------------------------------------------------------------*/
+/**
+ * Sends a Jingle Message Initiation <propose> message.
+ *
+ * @parma   {string}    to          Destination bare JID
+ * @parma   {string}    sid         Jingle session ID
+ * @parma   {string[]}  medias      Array of media types (e.g. ["audio","video"])
+ */
+function xows_xmp_jmsg_propose_send(to, sid, medias)
+{
+  const descs = [];
+  for(let i = 0; i < medias.length; ++i)
+    descs.push(xows_xml_node("description",{"xmlns":XOWS_NS_JINGLE_RTP1,"media":medias[i]}));
+  xows_xmp_send(xows_xml_node("message",{"to":to,"type":"chat"},
+                  xows_xml_node("propose",{"xmlns":XOWS_NS_JINGLE_MSG,"id":sid}, descs)));
+}
+
+/**
+ * Sends a Jingle Message Initiation <retract> message.
+ *
+ * @parma   {string}    to          Destination bare JID
+ * @parma   {string}    sid         Jingle session ID
+ */
+function xows_xmp_jmsg_retract_send(to, sid)
+{
+  xows_xmp_send(xows_xml_node("message",{"to":to,"type":"chat"},
+                  xows_xml_node("retract",{"xmlns":XOWS_NS_JINGLE_MSG,"id":sid})));
+}
+
+/**
+ * Sends a Jingle Message Initiation <proceed> message.
+ *
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    sid         Jingle session ID
+ */
+function xows_xmp_jmsg_proceed_send(to, sid)
+{
+  xows_xmp_send(xows_xml_node("message",{"to":to},
+                  xows_xml_node("proceed",{"xmlns":XOWS_NS_JINGLE_MSG,"id":sid})));
+}
+
+/**
+ * Sends a Jingle Message Initiation <reject> message.
+ *
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    sid         Jingle session ID
+ */
+function xows_xmp_jmsg_reject_send(to, sid)
+{
+  xows_xmp_send(xows_xml_node("message",{"to":to},
+                  xows_xml_node("reject",{"xmlns":XOWS_NS_JINGLE_MSG,"id":sid})));
+}
+
+/**
+ * Sends a Jingle Message Initiation <ringing> message.
+ *
+ * @parma   {string}    to          Destination JID
+ * @parma   {string}    sid         Jingle session ID
+ */
+function xows_xmp_jmsg_ringing_send(to, sid)
+{
+  xows_xmp_send(xows_xml_node("message",{"to":to},
+                  xows_xml_node("ringing",{"xmlns":XOWS_NS_JINGLE_MSG,"id":sid})));
+}
+
+/* ---------------------------------------------------------------------------
  *
  * XMPP API - Entity Capabilities (XEP-0115)
  *
@@ -5295,7 +5435,8 @@ function xows_xmp_caps_self_features()
     xows_xml_node("feature",{"var":XOWS_NS_JINGLE}),
     xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTP1}),
     xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTPA}),
-    xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTPV})
+    xows_xml_node("feature",{"var":XOWS_NS_JINGLE_RTPV}),
+    xows_xml_node("feature",{"var":XOWS_NS_JINGLE_MSG})
   ];
 
   return caps;

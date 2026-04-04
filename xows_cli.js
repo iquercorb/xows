@@ -970,6 +970,7 @@ function xows_cli_init()
   xows_xmp_set_callback("mucsubj",    xows_cli_muc_onsubj);
   xows_xmp_set_callback("mucnoti",    xows_cli_muc_onnoti);
   xows_xmp_set_callback("jingrecv",   xows_cli_call_jing_onrecv);
+  xows_xmp_set_callback("jmsgrecv",   xows_cli_call_jmsg_onrecv);
 
   // Set event listener to handle page quit or reload
   xows_doc_listener_add(window, "beforeunload", xows_cli_onuload);
@@ -5173,13 +5174,15 @@ function xows_cli_call_create(peer, dir, ste)
   // Create session data object
   const session =  {
     "sid" : null,   //< Jingle SID
-    "ste" : ste     //< Call session state
+    "ste" : ste,    //< Call session state
+    "jmi" : null    //< JMI media info (if session started via XEP-0353)
   };
 
   xows_def_readonly(session,"dir",dir);
   xows_def_readonly(session,"rpc",rpc);
   xows_def_readonly(session,"loc",{"pnd":false, "sdp": null, "str":null});
   xows_def_readonly(session,"rmt",{"pnd":false, "sdp": null, "str":null});
+  xows_def_readonly(session,"ice_queue",[]);  //< Queued ICE candidates before remote SDP
 
   Object.seal(session); //< prevet structure modification
 
@@ -5271,6 +5274,9 @@ function xows_cli_call_medias(peer)
               video : sess.rmt.str.getVideoTracks().length > 0 };
   } else if(sess.rmt.sdp) {
     remot = xows_sdp_get_medias(sess.rmt.sdp);
+  } else if(sess.jmi) {
+    // JMI case: use propose medias when no SDP/stream available
+    remot = { audio : sess.jmi.audio, video : sess.jmi.video };
   }
 
   let local = null;
@@ -5437,6 +5443,25 @@ function xows_cli_call_clear(peer)
 }
 
 /**
+ * Flush queued ICE candidates after remote description has been set.
+ *
+ * @param   {object}    peer    Peer object
+ */
+function xows_cli_call_ice_flush(peer)
+{
+  const sess = xows_cli_call_db.get(peer);
+  if(!sess || !sess.ice_queue.length)
+    return;
+
+  xows_log(2,"cli_call_ice_flush","Flushing",sess.ice_queue.length,"queued ICE candidates");
+  while(sess.ice_queue.length) {
+    const c = sess.ice_queue.shift();
+    sess.rpc.addIceCandidate(new RTCIceCandidate(c))
+      .catch((e) => xows_log(1,"cli_call_ice_flush","Failed:",e.message));
+  }
+}
+
+/**
  *
  * Offer (invite) the specified Peer for Media Call Session.
  *
@@ -5452,6 +5477,10 @@ function xows_cli_call_self_invite(peer, audio, video)
   // Create new (outbound) session dataset for Peer
   const sess = xows_cli_call_create(peer, XOWS_CALL_OUBD, XOWS_CALL_PEND);
 
+  // Generate session ID for JMI
+  const sid = xows_gen_nonce_asc(16);
+  sess.sid = sid;
+
   // Create new Stream object to combine audio and video tracks
   const stream = new MediaStream();
 
@@ -5464,12 +5493,33 @@ function xows_cli_call_self_invite(peer, audio, video)
       stream.addTrack(track);
   }
 
-  // Set session RPC and local stream
+  // Set session local stream (don't set on RPC yet - wait for proceed)
   sess.loc.str = stream;
 
-  // Set RTC local stream, then wait for RTC to generate a local SDP
-  // that will be passed to 'xows_cli_wrtc_onsdesc' callback
-  xows_wrtc_set_local_stream(sess.rpc, stream);
+  // Build media list for propose
+  const medias = [];
+  if(stream.getAudioTracks().length) medias.push("audio");
+  if(stream.getVideoTracks().length) medias.push("video");
+
+  // Store JMI info
+  sess.jmi = {audio: medias.includes("audio"), video: medias.includes("video")};
+
+  // Send JMI propose to peer's bare JID
+  xows_log(2,"cli_call_invite","Sending JMI propose to",peer.addr);
+  xows_xmp_jmsg_propose_send(peer.jbar, sid, medias);
+
+  // Fallback: if no JMI response (ringing/proceed) within 10s,
+  // fall back to direct session-initiate for non-JMI clients
+  setTimeout(() => {
+    if(xows_cli_call_db.has(peer)) {
+      const s = xows_cli_call_db.get(peer);
+      if(s.sid === sid && s.ste === XOWS_CALL_PEND && !s.loc.sdp) {
+        xows_log(1,"cli_call_invite","No JMI response, falling back to direct session-initiate");
+        // Initiate RTC directly
+        xows_wrtc_set_local_stream(s.rpc, s.loc.str);
+      }
+    }
+  }, 10000);
 }
 
 /**
@@ -5507,6 +5557,13 @@ function xows_cli_call_self_accept(peer, audio, video)
   // Set session local stream
   sess.loc.str = stream;
 
+  // JMI case: no remote SDP yet, send <proceed> and wait for session-initiate
+  if(sess.jmi && !sess.rmt.sdp) {
+    xows_log(2,"cli_call_accept","JMI: sending proceed for",peer.addr);
+    xows_xmp_jmsg_proceed_send(peer.jrpc, sess.sid);
+    return;
+  }
+
   // Set RTC remote SDP, then wait for RTC to generate remote Stream
   // that will be passed to 'xows_cli_wrtc_ontrack' callback
   xows_wrtc_set_local_stream(sess.rpc, stream);
@@ -5538,7 +5595,15 @@ function xows_cli_call_self_hangup(peer, reason)
   // Send Jingle session terminate
   if(sess.sid) {
     if(!reason) reason = "success";
-    xows_xmp_jing_terminate(peer.jrpc, sess.sid, reason);
+    if(sess.jmi && !sess.loc.sdp && sess.dir === XOWS_CALL_OUBD) {
+      // JMI outbound: no SDP created yet, retract the proposal
+      xows_xmp_jmsg_retract_send(peer.jbar, sess.sid);
+    } else if(sess.jmi && !sess.rmt.sdp && sess.dir === XOWS_CALL_INBD) {
+      // JMI inbound: no session-initiate received yet, send JMI reject
+      xows_xmp_jmsg_reject_send(peer.jrpc, sess.sid);
+    } else {
+      xows_xmp_jing_terminate(peer.jrpc, sess.sid, reason);
+    }
   }
 
   // Clear call session
@@ -5577,6 +5642,9 @@ function xows_cli_call_peer_invite(peer, from, sid, sdp)
   // Set RTC remote SDP, then wait for RTC to generate remote Stream
   // that will be passed to 'xows_cli_wrtc_ontrack' callback
   xows_wrtc_set_remote_sdp(sess.rpc, sdp);
+
+  // Flush any queued ICE candidates
+  xows_cli_call_ice_flush(peer);
 }
 
 /**
@@ -5599,6 +5667,9 @@ function xows_cli_call_peer_accept(peer, sdp)
   // Set RTC remote SDP, then wait for RTC to generate remote Stream
   // that will be passed to 'xows_cli_wrtc_ontrack' callback
   xows_wrtc_set_remote_sdp(sess.rpc, sdp);
+
+  // Flush any queued ICE candidates
+  xows_cli_call_ice_flush(peer);
 }
 
 /**
@@ -5712,8 +5783,18 @@ function xows_cli_call_jing_onrecv(from, id, sid, action, data)
   switch(action)
   {
   case "session-initiate": {
-      // Handle received call Offer
-      xows_cli_call_peer_invite(peer, from, sid, data);
+      if(sess && sess.dir === XOWS_CALL_INBD && sess.jmi) {
+        // JMI: session already exists from propose, update with SDP
+        xows_log(2,"cli_xmp_onjingle","JMI session-initiate from",from);
+        peer.jrpc = from;
+        sess.rmt.sdp = data;
+        xows_wrtc_set_remote_sdp(sess.rpc, data);
+        // Flush any queued ICE candidates
+        xows_cli_call_ice_flush(peer);
+      } else {
+        // Direct session-initiate: create new session
+        xows_cli_call_peer_invite(peer, from, sid, data);
+      }
     } break;
 
   case "session-accept": {
@@ -5748,6 +5829,26 @@ function xows_cli_call_jing_onrecv(from, id, sid, action, data)
       xows_cli_call_peer_hangup(peer, data);
     } break;
 
+  case "transport-info": {
+      // Add trickle ICE candidates to RTC connection
+      if(data && data.length) {
+        if(sess.rpc.remoteDescription) {
+          // Remote description is set, add candidates directly
+          for(let i = 0; i < data.length; ++i) {
+            const iceCandidate = new RTCIceCandidate(data[i]);
+            sess.rpc.addIceCandidate(iceCandidate)
+              .then(() => xows_log(2,"cli_xmp_onjingle","Added ICE candidate from",from))
+              .catch((e) => xows_log(1,"cli_xmp_onjingle","Failed to add ICE candidate:",e.message));
+          }
+        } else {
+          // Queue candidates until remote description is set
+          xows_log(2,"cli_xmp_onjingle","Queueing ICE candidate (no remote SDP yet)");
+          for(let i = 0; i < data.length; ++i)
+            sess.ice_queue.push(data[i]);
+        }
+      }
+    } break;
+
   default:
     xows_xmp_iq_error_send(id, from, "cancel", "bad-request"); //< Send back iq error
     break;
@@ -5755,6 +5856,149 @@ function xows_cli_call_jing_onrecv(from, id, sid, action, data)
 
   // Acknoledge reception (send back "result" type iq)
   xows_xmp_iq_result_send(id, from);
+}
+
+/* ---------------------------------------------------------------------------
+ * Media Call Sessions - Jingle Message Initiation (XEP-0353)
+ * ---------------------------------------------------------------------------*/
+/**
+ * Handles received Jingle Message Initiation (XEP-0353) signaling
+ * (forwarded from XMPP Module)
+ *
+ * @param   {string}    from      Sender JID
+ * @param   {string}    action    JMI action (propose, proceed, retract, reject, accept, ringing)
+ * @param   {string}    sid       Session ID
+ * @param   {string[]}  medias    Array of media type strings
+ */
+function xows_cli_call_jmsg_onrecv(from, action, sid, medias)
+{
+  xows_log(2,"cli_jmsg_onrecv","received",action,"sid="+sid);
+
+  // Retreive related Peer
+  const peer = xows_cli_peer_get(from, XOWS_PEER_ANY);
+  if(!peer) {
+    xows_log(1,"cli_jmsg_onrecv","unknown peer",from);
+    return;
+  }
+
+  // Ignore messages from self (carbon copies of our own JMI)
+  if(peer.self) {
+    xows_log(2,"cli_jmsg_onrecv","ignoring self carbon copy");
+    return;
+  }
+
+  switch(action)
+  {
+  case "propose": {
+      // Check if already in a call
+      if(xows_cli_call_buzy()) {
+        xows_log(2,"cli_jmsg_onrecv","busy, rejecting propose from",from);
+        xows_xmp_jmsg_reject_send(from, sid);
+        return;
+      }
+
+      // Set Peer's Jingle resource JID
+      peer.jrpc = from;
+
+      if(peer.type === XOWS_PEER_OCCU) {
+        if(xows_cli_ocpm_add(peer))
+          xows_cli_fw_occupush(peer);
+      }
+
+      // Parse media types from propose
+      const jmi = {audio: false, video: false};
+      for(let i = 0; i < medias.length; ++i) {
+        if(medias[i] === "audio") jmi.audio = true;
+        if(medias[i] === "video") jmi.video = true;
+      }
+
+      // Create new (inbound) session dataset for Peer
+      const sess = xows_cli_call_create(peer, XOWS_CALL_INBD, XOWS_CALL_RING);
+      sess.sid = sid;
+      sess.jmi = jmi;
+
+      // Send ringing notification back to caller
+      xows_xmp_jmsg_ringing_send(from, sid);
+
+      // Forward as incoming call offer (null stream, JMI)
+      xows_cli_fw_calloffer(peer, null);
+    } break;
+
+  case "retract": {
+      if(!xows_cli_call_db.has(peer))
+        return;
+      const sess = xows_cli_call_db.get(peer);
+      if(sess.sid !== sid)
+        return;
+      // Caller retracted the call
+      xows_cli_call_peer_hangup(peer, "success");
+    } break;
+
+  case "accept": {
+      // Another device of same account accepted the call
+      if(!xows_cli_call_db.has(peer))
+        return;
+      const sess = xows_cli_call_db.get(peer);
+      if(sess.sid !== sid)
+        return;
+      // Dismiss ringing - call was picked up elsewhere
+      xows_cli_call_peer_hangup(peer, "success");
+    } break;
+
+  case "finish": {
+      // Call finished (sent by some clients after session-terminate)
+      if(!xows_cli_call_db.has(peer))
+        return;
+      const sess = xows_cli_call_db.get(peer);
+      if(sess.sid !== sid)
+        return;
+      xows_cli_call_peer_hangup(peer, "success");
+    } break;
+
+  case "proceed": {
+      // Peer accepted to proceed - now initiate the actual Jingle session
+      xows_log(2,"cli_jmsg_onrecv","proceed from",from,"sid="+sid);
+      if(!xows_cli_call_db.has(peer)) {
+        xows_log(1,"cli_jmsg_onrecv","proceed: no session for peer",peer.addr);
+        return;
+      }
+      const sess = xows_cli_call_db.get(peer);
+      xows_log(2,"cli_jmsg_onrecv","proceed: sess.sid="+sess.sid,"dir="+sess.dir,"has loc.str="+!!sess.loc.str);
+      if(sess.sid !== sid || sess.dir !== XOWS_CALL_OUBD)
+        return;
+
+      // Update peer JID to the full JID that sent proceed
+      peer.jrpc = from;
+
+      xows_log(2,"cli_jmsg_onrecv","Peer proceeded, initiating RTC for",peer.addr);
+
+      // Now set local stream on RPC to trigger SDP offer creation
+      xows_wrtc_set_local_stream(sess.rpc, sess.loc.str);
+    } break;
+
+  case "reject": {
+      // Peer rejected the proposal
+      if(!xows_cli_call_db.has(peer))
+        return;
+      const sess = xows_cli_call_db.get(peer);
+      if(sess.sid !== sid || sess.dir !== XOWS_CALL_OUBD)
+        return;
+
+      xows_log(2,"cli_jmsg_onrecv","Peer rejected proposal",peer.addr);
+      xows_cli_call_peer_hangup(peer, "decline");
+    } break;
+
+  case "ringing": {
+      // Peer is ringing
+      if(!xows_cli_call_db.has(peer))
+        return;
+      const sess = xows_cli_call_db.get(peer);
+      if(sess.sid !== sid || sess.dir !== XOWS_CALL_OUBD)
+        return;
+      // Forward ringing state to GUI
+      xows_cli_fw_callstate(peer, "ringing");
+    } break;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -5791,7 +6035,19 @@ function xows_cli_wrtc_onsdesc(rpc, sdp, peer)
 
     // Send SDP offer via Jingle, then wait for remote peer Jingle
     // answer, either with session-accept or session-terminate.
-    sess.sid = xows_xmp_jing_initiate_sdp(peer.jrpc, sdp, xows_cli_call_jing_parse);
+    // Reuse existing SID (from JMI propose) if available
+    sess.sid = xows_xmp_jing_initiate_sdp(peer.jrpc, sdp, xows_cli_call_jing_parse, sess.sid);
+
+    // Set a timeout: if peer doesn't respond within 30s, terminate
+    setTimeout(() => {
+      if(xows_cli_call_db.has(peer)) {
+        const s = xows_cli_call_db.get(peer);
+        if(s.sid === sess.sid && s.ste === XOWS_CALL_PEND) {
+          xows_log(1,"cli_wrtc_onsdesc","Call timeout, no answer from",peer.addr);
+          xows_cli_call_peer_hangup(peer, "timeout");
+        }
+      }
+    }, 30000);
   }
 }
 
@@ -5812,13 +6068,26 @@ function xows_cli_wrtc_ontrack(rpc, stream, peer)
   sess.rmt.str = stream;
 
   if(sess.dir === XOWS_CALL_INBD) {
-    xows_log(2,"cli_wrtc_ontrack","Received offer stream from",peer.addr);
 
-    // Send "ringing" session info to Peer
-    xows_xmp_jing_info(peer.jrpc, sess.sid, "ringing", xows_cli_call_jing_parse);
+    if(sess.jmi && sess.loc.str && !sess.loc.pnd) {
+      // JMI pre-accepted: user already accepted, set local stream now
+      sess.loc.pnd = true; // Prevent repeated calls from per-track ontrack events
+      xows_log(2,"cli_wrtc_ontrack","JMI auto-accept for",peer.addr);
+      xows_wrtc_set_local_stream(sess.rpc, sess.loc.str);
+    }
 
-    // Stream follows remote Offer for local callee
-    xows_cli_fw_calloffer(peer, stream);
+    if(sess.jmi && sess.loc.pnd) {
+      // Forward each track arrival so GUI can update (audio → video)
+      xows_cli_fw_callanwse(peer, stream);
+    } else if(!sess.loc.pnd) {
+      xows_log(2,"cli_wrtc_ontrack","Received offer stream from",peer.addr);
+
+      // Send "ringing" session info to Peer
+      xows_xmp_jing_info(peer.jrpc, sess.sid, "ringing", xows_cli_call_jing_parse);
+
+      // Stream follows remote Offer for local callee
+      xows_cli_fw_calloffer(peer, stream);
+    }
 
   } else {
     xows_log(2,"cli_wrtc_ontrack","Received answer stream from",peer.addr);
@@ -5848,6 +6117,18 @@ function xows_cli_wrtc_onstate(rpc, state, peer)
   if(state === "connected") {
     // Set session as connected
     xows_cli_call_db.get(peer).ste = XOWS_CALL_CNTD;
+  }
+
+  if(state === "failed") {
+    // Connection truly failed - terminate the call
+    xows_cli_call_db.get(peer).ste = XOWS_CALL_HGUP;
+
+    // Forward error (as DOMException-like object for GUI compatibility)
+    xows_cli_fw_callerror(peer, true, {name: "Connection failed"});
+
+    // Hang up with peer
+    xows_cli_call_self_hangup(peer, "failed-transport");
+    return;
   }
 
   xows_cli_fw_callstate(peer, state);
